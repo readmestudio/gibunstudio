@@ -9,7 +9,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const supabase = createClient();
   const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const handleKakaoLogin = async () => {
@@ -19,6 +18,7 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
         options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -40,6 +40,7 @@ export default function LoginPage() {
     setLoading(true);
     setMessage(null);
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
