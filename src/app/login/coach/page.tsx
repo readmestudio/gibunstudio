@@ -5,6 +5,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default function CoachLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
