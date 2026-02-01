@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { STEP_PROMPTS } from "@/lib/emotion-diary/prompts";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 export async function POST(request: NextRequest) {
   try {
     const { messages, currentStep, day } = await request.json();
@@ -14,6 +12,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const stepLimits: Record<number, number> = { 2: 9, 3: 10, 4: 12, 5: 13, 6: 15 };
     const stepLimit = day ? (stepLimits[day] ?? 15) : 15;

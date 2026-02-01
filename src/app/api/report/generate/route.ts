@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 export async function POST(request: NextRequest) {
   try {
     const { rawData, userName } = await request.json();
@@ -13,6 +11,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const systemContent = `당신은 1급 심리상담사입니다. 
 사용자의 7일 내면 아이 찾기 로우데이터를 분석하여 리포트를 작성합니다.
