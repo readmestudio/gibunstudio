@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "";
   const [email, setEmail] = useState("");
@@ -13,7 +13,11 @@ export default function LoginPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const redirectTo = `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+
+  const getRedirectTo = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+  };
 
   const handleKakaoLogin = async () => {
     if (!hasSupabase) {
@@ -25,7 +29,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
-        options: { redirectTo },
+        options: { redirectTo: getRedirectTo() },
       });
       if (error) throw error;
     } catch (err) {
@@ -47,7 +51,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: redirectTo },
+        options: { emailRedirectTo: getRedirectTo() },
       });
       if (error) throw error;
       setMessage({ type: "success", text: "이메일로 인증 링크를 보냈습니다. 확인 후 로그인하세요." });
@@ -122,5 +126,20 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-md px-4 py-16">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
