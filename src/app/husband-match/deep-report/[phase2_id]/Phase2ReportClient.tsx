@@ -139,7 +139,7 @@ export function Phase2ReportClient({ result }: Phase2ReportClientProps) {
             <div>
               <p className="text-gray-600">분석한 채널</p>
               <p className="font-bold text-purple-600">
-                {Object.values(result.phase1_results.channel_categories).reduce(
+                {(Object.values(result.phase1_results.channel_categories) as number[]).reduce(
                   (a: number, b: number) => a + b,
                   0
                 )}
