@@ -1,0 +1,17 @@
+export const COGNITIVE_ERROR_ITEMS = [
+  { id: "black-white", label: "흑백논리", desc: "모든 일을 성공 아니면 실패로만 본다" },
+  { id: "fortune-telling", label: "점쟁이 예언", desc: "앞으로도 분명 안 좋은 일이 생길 거라 미리 생각한다" },
+  { id: "catastrophizing", label: "재앙화", desc: "작은 일도 최악의 결과로 이어질 것 같다고 느낀다" },
+  { id: "discounting", label: "장점 무시하기", desc: "잘한 일도 운이었을 뿐이라 넘긴다" },
+  { id: "emotional-reasoning", label: "감정적 추론", desc: "불안하면 그게 사실일 거라고 믿는다" },
+  { id: "labeling", label: "낙인찍기", desc: "실수하면 스스로를 무능하다고 부른다" },
+  { id: "mental-filter", label: "정신적 여과", desc: "좋은 건 안 보이고 안 좋은 한 가지만 계속 떠오른다" },
+  { id: "mind-reading", label: "독심술", desc: "다른 사람이 나를 부정적으로 보고 있다고 확신한다" },
+  { id: "overgeneralization", label: "지나친 일반화", desc: "한 번 실패하면 항상 그럴 거라고 생각한다" },
+  { id: "perfectionism", label: "강박적 부담", desc: "나는 늘 완벽해야 한다고 느낀다" },
+  { id: "double-standard", label: "이중잣대", desc: "남에게는 관대하고 나에게는 엄격하다" },
+  { id: "magnification", label: "과장 / 축소", desc: "내 단점은 크게, 장점은 작게 느껴진다" },
+  { id: "self-blame", label: "자기 탓", desc: "다른 사람의 태도도 결국 내 잘못 같다고 느낀다" },
+  { id: "tunnel-vision", label: "터널 시야", desc: "스트레스를 받으면 상황의 부정적인 면만 보게 된다" },
+  { id: "unhelpful-thought", label: "도움 안 되는 생각", desc: "사실일 수는 있지만 나를 더 불안하게 만드는 생각을 반복한다" },
+] as const;

@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 7일 내면 아이 찾기
 
-## Getting Started
+Next.js 기반의 심리 상담 플랫폼
 
-First, run the development server:
+## 주요 기능
+
+- 온보딩 감정 테스트
+- 7일 내면 아이 찾기 프로그램
+- 1:1 심리 상담 예약
+- 코치 모드 (관리자)
+
+## 기술 스택
+
+- Next.js 16 (App Router)
+- TypeScript
+- Tailwind CSS
+- Supabase (Auth + DB)
+- OpenAI GPT (감정일기, 리포트 생성)
+
+## 시작하기
+
+### 1. 환경변수 설정
+
+`.env.local` 파일 생성:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+필요한 환경변수:
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase 프로젝트 URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon key
+- `OPENAI_API_KEY` - OpenAI API 키
+- `COACH_EMAILS` - 코치 계정 이메일 (쉼표 구분)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. 개발 서버 실행
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+http://localhost:3000 접속
 
-To learn more about Next.js, take a look at the following resources:
+### 3. 빌드
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 프로젝트 구조
 
-## Deploy on Vercel
+```
+/src
+  /app                 # Next.js App Router 페이지
+    /api               # API 라우트
+    /auth              # 인증 콜백
+    /coach             # 코치 모드
+    /dashboard         # 수강생 대시보드
+    /login             # 로그인
+    /onboarding        # 감정 테스트
+    /payment           # 결제
+    /programs          # 프로그램 상세
+  /components          # 재사용 컴포넌트
+    /layout            # Header, Footer
+    /missions          # 미션 컴포넌트
+  /lib                 # 유틸리티, 데이터
+    /auth              # 인증 관련
+    /emotion-diary     # 감정일기
+    /missions          # 미션 데이터
+    /onboarding        # 온보딩 테스트
+    /report            # 리포트 템플릿
+    /supabase          # Supabase 클라이언트
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+/docs                  # 프로젝트 문서
+  /missions            # 미션별 상세 문서
+  /inspections         # 검사 상세 문서
+  /templates           # 템플릿 문서
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 다음 단계
+
+1. **Supabase 설정**
+   - 프로젝트 생성
+   - 테이블 스키마 구성 (users, purchases, missions, reports 등)
+   - Auth 프로바이더 설정 (Kakao OAuth)
+
+2. **데이터 레이어 연결**
+   - 구매/입금 확인 플로우
+   - 미션 제출 저장
+   - 리포트 생성/퍼블리시
+
+3. **카카오 알림톡 연동**
+   - 비즈니스 계정 설정
+   - 템플릿 승인
+   - 발송 시점 구현
+
+4. **배포**
+   - Vercel 프로젝트 연결
+   - 환경변수 설정
+   - 도메인 연결
+
+## 문서
+
+자세한 내용은 `/docs` 폴더 참조:
+- [전체 계획](docs/plan.md)
+- [미션 상세](docs/missions/)
+- [검사 상세](docs/inspections/)
+- [템플릿](docs/templates/)
