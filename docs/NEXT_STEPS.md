@@ -54,7 +54,23 @@ http://localhost:3000 접속
 COACH_EMAILS=your-coach-email@example.com
 ```
 
-### 6. 개발 서버 재시작
+### 6. 코치 계정 생성 (비밀번호 설정)
+코치 로그인은 Supabase Auth의 이메일/비밀번호 방식을 사용합니다. Supabase 대시보드에서 사용자를 직접 추가해야 합니다.
+
+1. Supabase Dashboard > **Authentication** > **Users**
+2. **Add user** > **Create new user** 클릭
+3. Email: 코치 이메일 (예: `fibillionwave@gmail.com`), Password: 원하는 비밀번호 입력
+4. **Create user** 클릭
+5. 이후 `/login/coach`에서 해당 이메일·비밀번호로 로그인
+
+(선택) `coach_accounts` 테이블에 레코드 추가:
+```sql
+INSERT INTO public.coach_accounts (id, email)
+SELECT id, email FROM auth.users WHERE email = 'your-coach@example.com';
+```
+현재 로직은 `COACH_EMAILS` env만 사용하므로, .env.local에 이메일이 있으면 이 단계는 생략 가능합니다.
+
+### 7. 개발 서버 재시작
 ```bash
 npm run dev
 ```

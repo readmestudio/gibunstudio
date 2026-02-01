@@ -4,8 +4,8 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "7일 내면 아이 찾기 | 나는 왜 관계가 힘들까?",
-  description: "내면 아이를 만나 반복되는 패턴을 찾아보세요",
+  title: "GIBUN | 유튜브 알고리즘으로 미래의 남편상 찾기",
+  description: "유튜브는 당신의 모든 것을 알고 있다! 유튜브 로그인만하면 나의 결혼 가치관부터 미래의 남편상까지 모두 알 수 있어요",
 };
 
 export default function RootLayout({

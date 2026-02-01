@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const redirectTo = `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
 
   const handleKakaoLogin = async () => {
     if (!hasSupabase) {
@@ -21,7 +25,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo },
       });
       if (error) throw error;
     } catch (err) {
@@ -43,7 +47,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: redirectTo },
       });
       if (error) throw error;
       setMessage({ type: "success", text: "이메일로 인증 링크를 보냈습니다. 확인 후 로그인하세요." });
