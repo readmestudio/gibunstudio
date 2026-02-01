@@ -397,7 +397,7 @@ function QuestionRenderer({
     const r = (value as { first?: string; second?: string; third?: string } | undefined) || {};
     const opts = def.rank6Options!;
     const setRank = (which: 'first' | 'second' | 'third', id: string) => {
-      onChange({ ...r, [which]: id });
+      onChange({ ...r, [which]: id } as Phase1SurveyAnswer[keyof Phase1SurveyAnswer]);
     };
     return (
       <div className="space-y-4">
