@@ -14,7 +14,6 @@ export default function CoachLoginPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const router = useRouter();
 
-  const supabase = createClient();
   const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const handleCoachLogin = async (e: React.FormEvent) => {
@@ -26,6 +25,7 @@ export default function CoachLoginPage() {
     setLoading(true);
     setMessage(null);
     try {
+      const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       // 코치 여부는 서버에서 검증 (COACH_EMAILS)
