@@ -73,7 +73,7 @@ export function getCategoryDescription(categoryId: CategoryId): string {
   return CHANNEL_CATEGORIES[categoryId].description;
 }
 
-export function getCategoryKeywords(categoryId: CategoryId): string[] {
+export function getCategoryKeywords(categoryId: CategoryId): readonly string[] {
   return CHANNEL_CATEGORIES[categoryId].keywords;
 }
 
