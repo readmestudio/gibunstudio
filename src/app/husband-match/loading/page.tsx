@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoadingPage() {
+function LoadingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('YouTube 데이터 가져오는 중...');
@@ -124,5 +124,17 @@ export default function LoadingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoadingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-12 h-12 border-4 border-[var(--accent)] border-t-transparent rounded-full"></div>
+      </div>
+    }>
+      <LoadingContent />
+    </Suspense>
   );
 }
