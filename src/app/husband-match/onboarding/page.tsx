@@ -116,7 +116,7 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          {/* YouTube 연동 버튼 (Google OAuth는 YouTube 권한만, 가입/로그인 아님) */}
+          {/* 메인: YouTube 연동 */}
           <a
             href="/api/auth/google"
             className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white border-2 border-[var(--border)] rounded-lg hover:border-[var(--accent)] hover:bg-[var(--surface)] transition-all font-medium text-[var(--foreground)]"
@@ -127,11 +127,24 @@ export default function OnboardingPage() {
                 d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"
               />
             </svg>
-            YouTube 연동하기
+            YouTube로 3초 만에 분석하기
           </a>
           <p className="mt-3 text-center text-xs text-[var(--foreground)]/60">
             카카오/이메일로 로그인한 계정에 YouTube 구독 데이터만 연동됩니다. Google로 가입되지 않습니다.
           </p>
+
+          {/* 서브: 서베이로 분석 */}
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <Link
+              href="/husband-match/survey"
+              className="block w-full text-center py-3 text-sm font-medium text-[var(--foreground)]/80 hover:text-[var(--accent)] hover:underline"
+            >
+              직접 답변으로 분석하기
+            </Link>
+            <p className="mt-1 text-center text-xs text-[var(--foreground)]/50">
+              YouTube 없이 12문항에 답하면 같은 남편상 리포트를 받을 수 있어요
+            </p>
+          </div>
         </div>
 
         {/* Back to Home */}

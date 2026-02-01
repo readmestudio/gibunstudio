@@ -6,6 +6,7 @@ import { estimateEnneagram } from '@/lib/husband-match/analysis/estimate-enneagr
 import { estimateMBTI } from '@/lib/husband-match/analysis/estimate-mbti';
 import { createVector } from '@/lib/husband-match/analysis/create-vector';
 import { matchHusbandType } from '@/lib/husband-match/analysis/match-husband-type';
+import { buildVectorFromSurvey } from '@/lib/husband-match/analysis/survey-to-vector';
 import { chatCompletion } from '@/lib/openai-client';
 import { SYSTEM_PROMPT } from '@/lib/husband-match/prompts/system-prompt';
 import {
@@ -15,6 +16,7 @@ import {
 import { generateMetaphor } from '@/lib/husband-match/prompts/metaphor-generator';
 import type { ReportCard } from '@/lib/husband-match/types';
 import type { ChannelData } from '@/lib/husband-match/types';
+import type { Phase1SurveyAnswer } from '@/lib/husband-match/data/phase1-survey-questions';
 
 const CARD_TITLES: Record<number, { title: string; subtitle?: string; card_type: ReportCard['card_type'] }> = {
   1: { title: '당신의 YouTube, 당신의 마음', subtitle: '분석을 시작합니다', card_type: 'intro' },
@@ -47,12 +49,9 @@ async function generateCardContent(
 /**
  * Phase 1 Analysis API
  *
- * 1. Fetch user's YouTube subscriptions
- * 2. Categorize channels (LLM)
- * 3. Calculate TCI, Enneagram, MBTI
- * 4. Create vector & match husband type
- * 5. Generate 10 report cards (LLM)
- * 6. Store in phase1_results
+ * - survey_answers 있음: buildVectorFromSurvey → 기존 Phase 1 로직 (채널 조회/LLM 분류 스킵)
+ * - survey_answers 없음: YouTube 구독 조회 → categorizeChannels → TCI/Enneagram/MBTI → 벡터·매칭
+ * 공통: 10장 카드 LLM 생성, phase1_results 저장
  */
 export async function POST(request: NextRequest) {
   try {
@@ -80,35 +79,59 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { data: subscriptions, error: subsError } = await supabase
-      .from('youtube_subscriptions')
-      .select('channel_id, channel_title, channel_description')
-      .eq('user_id', user.id);
+    let channel_categories: Awaited<ReturnType<typeof categorizeChannels>>;
+    let tci_scores: ReturnType<typeof calculateTCI>;
+    let enneagram_center: ReturnType<typeof estimateEnneagram>['center'];
+    let enneagram_type: number;
+    let mbti_scores: ReturnType<typeof estimateMBTI>['scores'];
+    let mbti_type: string;
+    let user_vector: number[];
+    let channelCount: number;
 
-    if (subsError || !subscriptions || subscriptions.length === 0) {
-      return NextResponse.json(
-        { error: 'No YouTube subscriptions found. Please connect your YouTube account first.' },
-        { status: 400 }
-      );
+    const body = await request.json().catch(() => ({}));
+    const survey_answers = body.survey_answers as Phase1SurveyAnswer | undefined;
+
+    if (survey_answers && Object.keys(survey_answers).length > 0) {
+      const surveyResult = buildVectorFromSurvey(survey_answers);
+      channel_categories = surveyResult.channel_categories;
+      tci_scores = surveyResult.tci_scores;
+      enneagram_center = surveyResult.enneagram_center;
+      enneagram_type = surveyResult.enneagram_type;
+      mbti_scores = surveyResult.mbti_scores;
+      mbti_type = surveyResult.mbti_type;
+      user_vector = surveyResult.user_vector;
+      channelCount = Object.values(channel_categories).reduce((s, v) => s + v, 0) || 1;
+    } else {
+      const { data: subscriptions, error: subsError } = await supabase
+        .from('youtube_subscriptions')
+        .select('channel_id, channel_title, channel_description')
+        .eq('user_id', user.id);
+
+      if (subsError || !subscriptions || subscriptions.length === 0) {
+        return NextResponse.json(
+          { error: 'No YouTube subscriptions found. Please connect your YouTube account first.' },
+          { status: 400 }
+        );
+      }
+
+      const channels: ChannelData[] = subscriptions.map((row: { channel_id: string; channel_title: string; channel_description: string }) => ({
+        channel_id: row.channel_id,
+        channel_title: row.channel_title,
+        channel_description: row.channel_description ?? '',
+      }));
+
+      channel_categories = await categorizeChannels(channels);
+      tci_scores = calculateTCI(channel_categories);
+      const enneagram = estimateEnneagram(tci_scores, channel_categories);
+      enneagram_center = enneagram.center;
+      enneagram_type = enneagram.type;
+      const mbti = estimateMBTI(tci_scores, channel_categories);
+      mbti_scores = mbti.scores;
+      mbti_type = mbti.type;
+      user_vector = createVector(tci_scores, enneagram_center, channel_categories);
+      channelCount = channels.length;
     }
 
-    const channels: ChannelData[] = subscriptions.map((row: { channel_id: string; channel_title: string; channel_description: string }) => ({
-      channel_id: row.channel_id,
-      channel_title: row.channel_title,
-      channel_description: row.channel_description ?? '',
-    }));
-
-    const channel_categories = await categorizeChannels(channels);
-    const tci_scores = calculateTCI(channel_categories);
-    const { center: enneagram_center, type: enneagram_type } = estimateEnneagram(
-      tci_scores,
-      channel_categories
-    );
-    const { scores: mbti_scores, type: mbti_type } = estimateMBTI(
-      tci_scores,
-      channel_categories
-    );
-    const user_vector = createVector(tci_scores, enneagram_center, channel_categories);
     const matchResult = matchHusbandType(
       user_vector,
       mbti_scores,
@@ -116,7 +139,7 @@ export async function POST(request: NextRequest) {
     );
 
     const cardData: Phase1CardData = {
-      channelCount: channels.length,
+      channelCount,
       channel_categories,
       tci_scores,
       enneagram_center,

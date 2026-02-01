@@ -48,13 +48,20 @@ http://localhost:3000 접속
 7. Kakao Developers > 내 애플리케이션 > 플랫폼 > Web
    - Redirect URI 추가: `https://xxx.supabase.co/auth/v1/callback`
 
-### 5. 코치 계정 지정
+### 5. 이메일 즉시 가입 (이메일/비밀번호 로그인·가입)
+일반 사용자는 로그인 페이지에서 **이메일 + 비밀번호**로 로그인하거나 가입할 수 있습니다. 가입 시 **이메일 인증 없이 바로 활성화**하려면:
+
+1. Supabase Dashboard > **Authentication** > **Providers** > **Email**
+2. **Confirm email** 옵션을 **비활성화(끄기)** 하면, `signUp` 후 인증 링크 없이 바로 로그인됩니다.
+3. (선택) `profiles` 테이블에 사용자 본인 INSERT/UPDATE가 가능하도록 RLS 정책이 적용되어 있어야 합니다. `docs/supabase-schema.sql`의 `Users can insert own profile`, `Users can update own profile` 정책을 적용해 두세요.
+
+### 6. 코치 계정 지정
 `.env.local`에 추가:
 ```
 COACH_EMAILS=your-coach-email@example.com
 ```
 
-### 6. 코치 계정 생성 (비밀번호 설정)
+### 7. 코치 계정 생성 (비밀번호 설정)
 코치 로그인은 Supabase Auth의 이메일/비밀번호 방식을 사용합니다. Supabase 대시보드에서 사용자를 직접 추가해야 합니다.
 
 1. Supabase Dashboard > **Authentication** > **Users**
@@ -70,7 +77,7 @@ SELECT id, email FROM auth.users WHERE email = 'your-coach@example.com';
 ```
 현재 로직은 `COACH_EMAILS` env만 사용하므로, .env.local에 이메일이 있으면 이 단계는 생략 가능합니다.
 
-### 7. 개발 서버 재시작
+### 8. 개발 서버 재시작
 ```bash
 npm run dev
 ```

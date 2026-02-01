@@ -222,9 +222,13 @@ ALTER TABLE public.mission_submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.counseling_bookings ENABLE ROW LEVEL SECURITY;
 
--- 사용자는 자신의 데이터만 조회 가능
+-- 사용자는 자신의 프로필 조회/생성/수정 가능
 CREATE POLICY "Users can view own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "Users can view own purchases" ON public.purchases
   FOR SELECT USING (auth.uid() = user_id);
