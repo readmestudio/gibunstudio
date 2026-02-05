@@ -34,6 +34,31 @@ export function Footer() {
             </Link>
           </div>
         </div>
+        {/* 고객센터 정보 */}
+        <div className="mt-10 pt-8 border-t border-[var(--border)]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <p className="text-sm font-semibold text-[var(--foreground)] mb-2">고객센터</p>
+              <p className="text-lg font-bold text-[var(--foreground)]">070-7954-9188</p>
+              <p className="text-xs text-[var(--foreground)]/60 mt-1">
+                월-금 10:00 - 18:00<br />
+                lunch 12:00 - 13:00<br />
+                토,일요일 및 공휴일 OFF
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[var(--foreground)] mb-2">COMPANY INFO</p>
+              <div className="text-xs text-[var(--foreground)]/60 space-y-1">
+                <p>주식회사 원모어스푼 CEO 손창민</p>
+                <p>CPO 주식회사 원모어스푼 (2morespoons@gmail.com)</p>
+                <p>NETWORK NO. 2025-서울마포-0668</p>
+                <p>COMPANY NO. 143-88-03414</p>
+                <p>ADD 서울특별시 마포구 마포대로 12 (마포동) 1606-씨13호</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <p className="mt-8 text-xs text-[var(--foreground)]/50">
           © {new Date().getFullYear()} GIBUN. All rights reserved.
         </p>
