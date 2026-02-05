@@ -206,6 +206,10 @@ CREATE TABLE IF NOT EXISTS public.phase2_results (
   -- LLM 생성 심층 카드 (8장)
   deep_cards JSONB NOT NULL, -- [{title, content, card_type, metaphor}, ...]
 
+  -- 코치 퍼블리시 후 유저 노출
+  published_at TIMESTAMPTZ DEFAULT NULL,
+  published_by UUID REFERENCES public.coach_accounts(id) DEFAULT NULL,
+
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(phase1_id)
 );

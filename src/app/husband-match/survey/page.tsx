@@ -25,9 +25,8 @@ function Phase1SurveyClient() {
       .then(({ data: { user } }) => {
         setIsLoggedIn(!!user);
         setLoading(false);
-        if (!user) router.replace('/login?next=/husband-match/survey');
       });
-  }, [router]);
+  }, []);
 
   const q = PHASE1_SURVEY_QUESTIONS[step];
   const isLast = step === PHASE1_SURVEY_QUESTIONS.length - 1;
@@ -42,7 +41,7 @@ function Phase1SurveyClient() {
     if (q.type === 'rank3of9') return Array.isArray(a) && (a as string[]).length === 3;
     if (q.type === 'multi') {
       const arr = a as string[] | undefined;
-      if (q.id === 'S2') return Array.isArray(arr) && arr.length >= 1;
+      if (q.id === 'S2_channels' || q.id === 'S2') return Array.isArray(arr) && arr.length >= 1;
       if (q.id === 'S4') return Array.isArray(arr) && arr.length === 2;
       if (q.id === 'S9') return Array.isArray(arr) && arr.length === 2;
       if (q.id === 'S12') return Array.isArray(arr) && arr.length === 2;
@@ -67,10 +66,23 @@ function Phase1SurveyClient() {
       setAnswer('S6', [50, 50, 50]);
     }
     if (isLast) {
-      setSubmitLoading(true);
-      setError(null);
       const toSend = { ...answers };
       if (toSend.S6 == null) toSend.S6 = [50, 50, 50];
+
+      if (!isLoggedIn) {
+        try {
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem('husband_match_survey_answers', JSON.stringify(toSend));
+          }
+          router.replace('/login?next=/husband-match/survey/claim');
+        } catch (_) {
+          setError('저장에 실패했습니다. 로그인 후 다시 시도해 주세요.');
+        }
+        return;
+      }
+
+      setSubmitLoading(true);
+      setError(null);
       try {
         const res = await fetch('/api/analyze/phase1', {
           method: 'POST',
@@ -101,7 +113,7 @@ function Phase1SurveyClient() {
     if (step > 0) setStep((s) => s - 1);
   };
 
-  if (loading || !isLoggedIn) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[var(--surface)] to-white px-4">
         <p className="text-[var(--foreground)]/70">확인 중...</p>
@@ -167,6 +179,69 @@ function Phase1SurveyClient() {
   );
 }
 
+// 옵션 id → 유튜브 스타일 가상 썸네일 그라데이션 (카테고리별)
+function getThumbnailClass(optionId: string): string {
+  const base = optionId.replace(/_\d+$/, '').replace(/^ch_/, '');
+  const map: Record<string, string> = {
+    music: 'from-red-400 to-red-600',
+    reading: 'from-blue-400 to-blue-600',
+    sports: 'from-emerald-400 to-emerald-600',
+    cooking: 'from-amber-400 to-orange-500',
+    travel: 'from-teal-400 to-cyan-600',
+    gaming: 'from-violet-400 to-purple-600',
+    tech: 'from-indigo-400 to-blue-600',
+    art: 'from-pink-400 to-rose-500',
+    education: 'from-slate-400 to-slate-600',
+    entertainment: 'from-yellow-400 to-amber-500',
+    calm: 'from-slate-300 to-slate-500',
+    active: 'from-emerald-400 to-teal-500',
+    fun: 'from-amber-300 to-yellow-500',
+    learn: 'from-indigo-400 to-slate-500',
+    taste: 'from-orange-300 to-amber-500',
+    creative: 'from-pink-400 to-violet-500',
+    family: 'from-rose-300 to-pink-500',
+    success: 'from-amber-400 to-yellow-600',
+    nature: 'from-green-400 to-emerald-600',
+    human: 'from-orange-400 to-amber-500',
+    sport: 'from-emerald-500 to-teal-600',
+    stability: 'from-slate-400 to-blue-500',
+    growth: 'from-emerald-400 to-teal-500',
+    depth: 'from-indigo-500 to-violet-600',
+    book: 'from-blue-500 to-indigo-600',
+    cook: 'from-orange-400 to-amber-600',
+    heal: 'from-pink-300 to-rose-400',
+    ent: 'from-amber-400 to-yellow-500',
+    lifestyle: 'from-amber-400 to-orange-500',
+    career: 'from-indigo-500 to-slate-600',
+  };
+  return map[base] ?? 'from-gray-400 to-gray-600';
+}
+
+function ThumbnailCard({
+  optionId,
+  label,
+  selected,
+  onSelect,
+  className = '',
+}: {
+  optionId: string;
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`flex flex-col overflow-hidden rounded-xl border-2 text-left transition-all ${selected ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/30' : 'border-[var(--border)] hover:border-[var(--foreground)]/30'} ${className}`}
+    >
+      <div className={`aspect-video w-full bg-gradient-to-br ${getThumbnailClass(optionId)}`} />
+      <span className="p-2 text-sm font-medium text-[var(--foreground)]">{label}</span>
+    </button>
+  );
+}
+
 function QuestionRenderer({
   def,
   value,
@@ -184,26 +259,21 @@ function QuestionRenderer({
       onChange(next as [string, string, string]);
     };
     return (
-      <div className="space-y-2">
+      <div className="space-y-4">
         {([0, 1, 2] as const).map((idx) => (
           <div key={idx}>
             <p className="mb-2 text-xs font-medium text-[var(--foreground)]/60">
               {idx === 0 ? '1위' : idx === 1 ? '2위' : '3위'}
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {def.options!.map((opt) => (
-                <button
+                <ThumbnailCard
                   key={opt.id}
-                  type="button"
-                  onClick={() => setRank(idx, opt.id)}
-                  className={`rounded-lg border px-3 py-2 text-sm ${
-                    arr[idx] === opt.id
-                      ? 'border-[var(--accent)] bg-[var(--accent-muted)]'
-                      : 'border-[var(--border)] hover:border-[var(--foreground)]/30'
-                  }`}
-                >
-                  {opt.label}
-                </button>
+                  optionId={opt.id}
+                  label={opt.label}
+                  selected={arr[idx] === opt.id}
+                  onSelect={() => setRank(idx, opt.id)}
+                />
               ))}
             </div>
           </div>
@@ -219,6 +289,25 @@ function QuestionRenderer({
       const next = arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id].slice(-max);
       onChange(next);
     };
+    const useCards = ['S1', 'S2_channels', 'S2', 'S4', 'S9', 'S12'].includes(def.id);
+    if (useCards) {
+      return (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {def.options.map((opt) => (
+            <ThumbnailCard
+              key={opt.id}
+              optionId={opt.id}
+              label={opt.label}
+              selected={arr.includes(opt.id)}
+              onSelect={() => toggle(opt.id)}
+            />
+          ))}
+          {(def.id === 'S4' || def.id === 'S9' || def.id === 'S12') && (
+            <p className="col-span-full text-xs text-[var(--foreground)]/60">2개만 선택해 주세요</p>
+          )}
+        </div>
+      );
+    }
     return (
       <div className="space-y-2">
         {def.options.map((opt) => (
@@ -406,18 +495,15 @@ function QuestionRenderer({
             <p className="mb-2 text-sm font-medium text-[var(--foreground)]/80">
               {idx === 0 ? '1위' : idx === 1 ? '2위' : '3위'}
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {opts.map((opt) => (
-                <button
+                <ThumbnailCard
                   key={opt.id}
-                  type="button"
-                  onClick={() => setRank(which, opt.id)}
-                  className={`rounded-lg border px-3 py-2 text-sm ${
-                    r[which] === opt.id ? 'border-[var(--accent)] bg-[var(--accent-muted)]' : 'border-[var(--border)]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
+                  optionId={opt.id}
+                  label={opt.label}
+                  selected={r[which] === opt.id}
+                  onSelect={() => setRank(which, opt.id)}
+                />
               ))}
             </div>
           </div>
@@ -429,18 +515,15 @@ function QuestionRenderer({
   if (def.type === 'single' && def.options) {
     const sel = value as string | undefined;
     return (
-      <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {def.options.map((opt) => (
-          <button
+          <ThumbnailCard
             key={opt.id}
-            type="button"
-            onClick={() => onChange(opt.id)}
-            className={`block w-full rounded-lg border px-3 py-2 text-left text-sm ${
-              sel === opt.id ? 'border-[var(--accent)] bg-[var(--accent-muted)]' : 'border-[var(--border)]'
-            }`}
-          >
-            {opt.label}
-          </button>
+            optionId={opt.id}
+            label={opt.label}
+            selected={sel === opt.id}
+            onSelect={() => onChange(opt.id)}
+          />
         ))}
       </div>
     );

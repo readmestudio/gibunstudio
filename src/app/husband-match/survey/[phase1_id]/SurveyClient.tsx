@@ -52,10 +52,10 @@ export function SurveyClient({ phase1Id, paymentId }: SurveyClientProps) {
         throw new Error('Failed to submit survey');
       }
 
-      const { phase2_id } = await response.json();
+      await response.json();
 
-      // Redirect to deep report
-      router.push(`/husband-match/deep-report/${phase2_id}`);
+      // 검토 후 마이페이지에서 확인하도록 안내 페이지로 이동
+      router.push('/husband-match/report-pending');
     } catch (error) {
       console.error('Survey submission error:', error);
       alert('서베이 제출에 실패했습니다. 다시 시도해주세요.');

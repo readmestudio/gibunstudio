@@ -4,6 +4,37 @@
 
 ---
 
+## 오늘(2026-02-01) 개발 진행 내용
+
+### 인증·온보딩
+- **이메일 즉시 가입·로그인**: 이메일 인증 없이 가입 가능, 가입 시 이름·연락처 수집 (`profiles` 저장)
+- **코치 로그인**: 관리자가 수동 지정한 이메일만 코치 모드 진입 (`COACH_EMAILS`, `/login/coach`)
+- **비밀번호 리셋**: `scripts/set-user-password.js` — `.env.local` 또는 인라인 env로 Supabase 사용자 비밀번호 변경
+
+### 남편상 서비스 (GIBUN)
+- **온보딩**: 로그인 없이 시작 화면 — "유튜브 알고리즘으로 미래의 남편상 찾기" + "테스트 시작하기" → 서베이 진입
+- **서베이**: 비로그인으로 12문항 진행 → "결과 보기" 시도 시 로그인 유도 → sessionStorage 저장 후 `/login?next=/husband-match/survey/claim` → 로그인 후 claim 페이지에서 Phase1 API 제출 → 리포트 페이지 이동
+- **채널 이름 문항**: "자주 보거나 구독하는 채널" 선택 문항(S2_channels) 추가, `survey-to-vector` 반영
+- **서베이 UI**: 카테고리/취향 선택을 유튜브 스타일 가상 썸네일(그라데이션 카드)로 표시
+
+### Phase 2 코치 컨펌·퍼블리시
+- **DB**: `phase2_results` 에 `published_at`, `published_by` 추가
+- **Deep Report**: `published_at` 있을 때만 리포트 노출, 없으면 "리포트 검토 중" 안내 + 마이페이지 링크
+- **코치**: "남편상 Phase 2" 메뉴, `/coach/husband-match` 목록(검토 대기/퍼블리시 완료), 퍼블리시 버튼 → `POST /api/coach/phase2/publish`
+- **서베이 제출 후**: deep-report 직행 제거 → `/husband-match/report-pending` 안내 페이지로 이동
+- **마이페이지**: "남편상 분석" 섹션에서 퍼블리시된 Phase 2 목록 및 `/husband-match/deep-report/[phase2_id]` 링크
+
+### 브랜딩·UI
+- **GIBUN**: 서비스명 GIBUN, 로고·파비콘 적용, Header/Footer/메타데이터 반영
+- **히어로**: "유튜브 알고리즘으로 미래의 남편상 찾기" / "유튜브는 당신의 모든 것을 알고 있다! …"
+- **상담 부트캠프**: 네비 "7일 프로그램" → "상담 부트캠프", 홈 섹션 "7일 내면 아이 찾기" → "7일간의 상담 부트캠프"
+- **오픈 예정**: 7일 프로그램(상담 부트캠프) 오픈 예정 뱃지, 클릭 시 "오픈 예정인 프로그램입니다" 팝업 + 이름·휴대폰 입력 "오픈 알림 받기" → `open_notifications` 저장, `POST /api/open-notify`
+
+### 문서
+- **카카오 로그인 준비**: `docs/KAKAO_LOGIN_SETUP.md` — 카카오 REST API 키·Client Secret, Supabase Kakao Provider 설정, Redirect URI 등 체크리스트
+
+---
+
 # 🆕 NEW: YouTube 남편상 분석 서비스 (2026-02-01)
 
 ## ✅ 완료된 작업 (Claude Code)

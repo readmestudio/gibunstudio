@@ -5,6 +5,7 @@
 
 export type Phase1SurveyAnswer = {
   S1?: [string, string, string]; // 이미지 카드 9개 중 1·2·3위 (카드 id 3개)
+  S2_channels?: string[]; // 자주 보는/구독 채널 이름 선택 (채널 id)
   S2?: string[]; // 채널 목록 체크박스 복수 선택 (채널 id)
   S3?: ['A' | 'B', 'A' | 'B', 'A' | 'B', 'A' | 'B']; // 양자택일 4쌍
   S4?: [string, string]; // 무드보드 6개 중 2개 선택
@@ -70,6 +71,31 @@ const S1_OPTIONS: Phase1QuestionOption[] = [
   { id: 'tech', label: 'IT·테크', categoryWeights: { tech: 100 } },
   { id: 'art', label: '힐링·영성·패션뷰티', categoryWeights: { art: 100 } },
   { id: 'entertainment', label: '예능·브이로그', categoryWeights: { entertainment: 100 } },
+];
+
+// S2_channels: 자주 보거나 구독하는 채널 이름 (가상 채널 목록)
+const CHANNEL_NAMES: Phase1QuestionOption[] = [
+  { id: 'ch_music1', label: '김계란', categoryWeights: { music: 100 } },
+  { id: 'ch_music2', label: '인디스페이스', categoryWeights: { music: 100 } },
+  { id: 'ch_reading1', label: '책읽아웃', categoryWeights: { reading: 100 } },
+  { id: 'ch_reading2', label: '지식한스푼', categoryWeights: { reading: 100 } },
+  { id: 'ch_sports1', label: '헬스장가자', categoryWeights: { sports: 100 } },
+  { id: 'ch_sports2', label: '등산로', categoryWeights: { sports: 100 } },
+  { id: 'ch_cooking1', label: '오늘의밥상', categoryWeights: { cooking: 100 } },
+  { id: 'ch_cooking2', label: '홈카페일상', categoryWeights: { cooking: 100 } },
+  { id: 'ch_travel1', label: '세계곳곳', categoryWeights: { travel: 100 } },
+  { id: 'ch_travel2', label: '맛집탐방', categoryWeights: { travel: 100 } },
+  { id: 'ch_gaming1', label: '게임하는형', categoryWeights: { gaming: 100 } },
+  { id: 'ch_gaming2', label: 'e스포츠하이라이트', categoryWeights: { gaming: 100 } },
+  { id: 'ch_tech1', label: '테크리뷰', categoryWeights: { tech: 100 } },
+  { id: 'ch_tech2', label: '재테크톡', categoryWeights: { tech: 50, education: 50 } },
+  { id: 'ch_art1', label: '힐링타임', categoryWeights: { art: 100 } },
+  { id: 'ch_art2', label: '뷰티로그', categoryWeights: { art: 100 } },
+  { id: 'ch_edu1', label: '강의한스푼', categoryWeights: { education: 100 } },
+  { id: 'ch_edu2', label: '성장일기', categoryWeights: { education: 100 } },
+  { id: 'ch_ent1', label: '채널A 하이라이트', categoryWeights: { entertainment: 100 } },
+  { id: 'ch_ent2', label: '브이로그일상', categoryWeights: { entertainment: 100 } },
+  { id: 'ch_ent3', label: '유머클립', categoryWeights: { entertainment: 100 } },
 ];
 
 // S2: 채널 목록 체크박스 (복수 선택) — 유사 채널 타입
@@ -210,6 +236,13 @@ export const PHASE1_SURVEY_QUESTIONS: Phase1SurveyQuestionDef[] = [
     subtitle: '1위, 2위, 3위',
     type: 'rank3of9',
     options: S1_OPTIONS,
+  },
+  {
+    id: 'S2_channels',
+    title: '자주 보거나 구독하는 채널을 선택해 주세요',
+    subtitle: '해당하는 채널을 모두 골라주세요',
+    type: 'multi',
+    options: CHANNEL_NAMES,
   },
   {
     id: 'S2',

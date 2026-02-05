@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "reset-password": "node scripts/set-user-password.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
@@ -21,6 +22,7 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "dotenv": "^16.4.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

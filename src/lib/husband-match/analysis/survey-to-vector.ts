@@ -53,6 +53,11 @@ function applyS1(answers: Phase1SurveyAnswer, cat: ChannelCategories) {
   rank.forEach((id, i) => addWeights(cat, getOptionWeights('S1', id), scales[i]));
 }
 
+// S2_channels: 자주 보는/구독 채널 이름 선택
+function applyS2Channels(answers: Phase1SurveyAnswer, cat: ChannelCategories) {
+  answers.S2_channels?.forEach((id) => addWeights(cat, getOptionWeights('S2_channels', id), 1));
+}
+
 // S2: 채널 목록 복수 선택
 function applyS2(answers: Phase1SurveyAnswer, cat: ChannelCategories) {
   answers.S2?.forEach((id) => addWeights(cat, getOptionWeights('S2', id), 1));
@@ -223,6 +228,7 @@ export function buildVectorFromSurvey(answers: Phase1SurveyAnswer): SurveyVector
   const cat = emptyCategories();
 
   applyS1(answers, cat);
+  applyS2Channels(answers, cat);
   applyS2(answers, cat);
   applyS3(answers, cat);
   applyS4(answers, cat);

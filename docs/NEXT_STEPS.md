@@ -39,9 +39,12 @@ http://localhost:3000 접속
 4. Run 클릭
 
 ### 4. 카카오 OAuth 설정
+**상세 가이드:** [docs/KAKAO_LOGIN_SETUP.md](KAKAO_LOGIN_SETUP.md) 참조
+
+요약:
 1. https://developers.kakao.com 로그인
 2. 애플리케이션 추가
-3. REST API 키 복사
+3. REST API 키 복사, Client Secret(코드) 생성
 4. Supabase Dashboard > Authentication > Providers > Kakao
 5. Client ID (REST API 키), Client Secret 입력
 6. Redirect URL: `https://xxx.supabase.co/auth/v1/callback`

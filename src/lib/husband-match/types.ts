@@ -147,6 +147,8 @@ export interface Phase2Result {
   };
   deep_cards: ReportCard[];
   created_at: string;
+  published_at?: string | null;
+  published_by?: string | null;
 }
 
 export interface Payment {

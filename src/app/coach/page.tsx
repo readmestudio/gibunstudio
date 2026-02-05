@@ -45,6 +45,17 @@ export default async function CoachPage() {
             입금 확인, 예약 요청, 확정, 줌 링크 설정
           </p>
         </Link>
+        <Link
+          href="/coach/husband-match"
+          className="block rounded-xl border border-[var(--border)] bg-white p-6 transition-colors hover:bg-[var(--surface)] hover:border-[var(--accent)]"
+        >
+          <h2 className="text-lg font-semibold text-[var(--foreground)]">
+            남편상 Phase 2
+          </h2>
+          <p className="mt-2 text-sm text-[var(--foreground)]/70">
+            최종 리포트 검토 대기 목록, 퍼블리시
+          </p>
+        </Link>
       </div>
     </div>
   );
