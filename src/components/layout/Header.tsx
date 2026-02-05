@@ -2,16 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { signOut } from "@/app/actions/auth";
-import { OpenNotifyModal } from "@/components/OpenNotifyModal";
 
 export function Header() {
-  const pathname = usePathname();
   const [user, setUser] = useState<{ email?: string } | null>(null);
-  const [showOpenNotify, setShowOpenNotify] = useState(false);
 
   useEffect(() => {
     const client = createClient();
@@ -25,27 +21,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center">
           <Image src="/logo.png" alt="GIBUN" width={36} height={36} className="h-9 w-auto" />
-          <span className="text-xl font-semibold text-[var(--foreground)]">GIBUN</span>
         </Link>
         <nav className="flex items-center gap-6">
-          <button
-            type="button"
-            onClick={() => setShowOpenNotify(true)}
-            className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${pathname === "/programs/7day" ? "text-[var(--foreground)]" : "text-[var(--foreground)]/80 hover:text-[var(--foreground)]"}`}
-          >
-            상담 부트캠프
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
-              오픈 예정
-            </span>
-          </button>
-          <Link
-            href="/programs/counseling"
-            className={`text-sm font-medium transition-colors ${pathname === "/programs/counseling" ? "text-[var(--foreground)]" : "text-[var(--foreground)]/80 hover:text-[var(--foreground)]"}`}
-          >
-            1:1 상담
-          </Link>
           {user ? (
             <>
               <Link
@@ -78,7 +57,6 @@ export function Header() {
           )}
         </nav>
       </div>
-      <OpenNotifyModal isOpen={showOpenNotify} onClose={() => setShowOpenNotify(false)} />
     </header>
   );
 }

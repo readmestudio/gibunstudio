@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BootcampSection } from "@/components/BootcampSection";
+import { ProgramCards } from "@/components/ProgramCards";
 
 export default function Home() {
   return (
@@ -78,17 +79,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* WHO WE ARE - placeholder */}
-      <section className="py-16 sm:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="text-2xl font-bold text-[var(--foreground)]">
-            WHO WE ARE
-          </h2>
-          <p className="mt-4 text-[var(--foreground)]/70">
-            추후 디벨롭 예정
-          </p>
-        </div>
-      </section>
+      {/* 프로그램 카드 3개 */}
+      <ProgramCards />
 
       {/* 7일간의 상담 부트캠프 섹션 */}
       <BootcampSection />
