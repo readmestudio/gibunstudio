@@ -19,13 +19,13 @@ export default function OnboardingPage() {
         {/* 메인 CTA */}
         <div className="bg-white rounded-2xl shadow-lg border border-[var(--border)] p-8 mb-6">
           <Link
-            href="/husband-match/survey"
+            href="/husband-match/capture"
             className="block w-full text-center py-5 px-6 rounded-xl bg-[var(--accent)] text-[var(--foreground)] font-semibold text-lg hover:bg-[var(--accent-hover)] transition-all"
           >
             테스트 시작하기
           </Link>
           <p className="mt-4 text-center text-sm text-[var(--foreground)]/60">
-            로그인 없이 바로 시작할 수 있어요. 결과를 보려면 마지막에 로그인하면 됩니다.
+            구독 목록 캡처를 3장 이상 올리면 분석해 드려요. 결과를 보려면 로그인이 필요합니다.
           </p>
 
           {/* 나중에 YouTube 연동 (접어두기) */}

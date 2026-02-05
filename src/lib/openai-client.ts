@@ -30,3 +30,36 @@ export async function chatCompletion(
 
   return response.choices[0].message.content;
 }
+
+/** Image content for Vision API: base64 data URL or URL */
+export type VisionImageInput = { type: 'url'; url: string } | { type: 'base64'; mediaType: string; data: string };
+
+/**
+ * Vision API: send image(s) + text prompt, get text response.
+ * Used to extract channel names from YouTube subscription screenshot(s).
+ */
+export async function visionCompletion(
+  imageInputs: VisionImageInput[],
+  textPrompt: string,
+  options?: { model?: string; max_tokens?: number }
+): Promise<string> {
+  const content: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }> = [];
+
+  for (const img of imageInputs) {
+    if (img.type === 'url') {
+      content.push({ type: 'image_url', image_url: { url: img.url } });
+    } else {
+      const url = `data:${img.mediaType};base64,${img.data}`;
+      content.push({ type: 'image_url', image_url: { url } });
+    }
+  }
+  content.push({ type: 'text', text: textPrompt });
+
+  const response = await getOpenAI().chat.completions.create({
+    model: options?.model || 'gpt-4o',
+    messages: [{ role: 'user', content }],
+    max_tokens: options?.max_tokens ?? 1024,
+  });
+
+  return response.choices[0].message.content ?? '';
+}

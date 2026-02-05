@@ -117,11 +117,17 @@ function LoginContent() {
     }
   };
 
+  const needsLogin = !!next && next.startsWith("/");
+
   return (
     <div className="mx-auto max-w-md px-4 py-16">
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">로그인</h1>
+      <h1 className="text-2xl font-bold text-[var(--foreground)]">
+        {needsLogin ? "로그인이 필요해요" : "로그인"}
+      </h1>
       <p className="mt-2 text-[var(--foreground)]/70">
-        가입 시 이메일과 전화번호를 필수로 받습니다. 검사 결과지 전송에 사용됩니다.
+        {needsLogin
+          ? "카카오로 시작하기를 누르면 인증 후 바로 이용할 수 있어요."
+          : "가입 시 이메일과 전화번호를 필수로 받습니다. 검사 결과지 전송에 사용됩니다."}
       </p>
 
       <div className="mt-6 flex rounded-lg border border-[var(--border)] p-1">
