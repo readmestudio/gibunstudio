@@ -129,7 +129,7 @@ export default function CapturePage() {
           구독 목록 캡처하기
         </h1>
         <p className="text-sm text-[var(--foreground)]/70 text-center mb-6">
-          유튜브에서 구독 > 전체 > 관련성 순으로 설정한 뒤, 보이는 구독 목록을 3장 이상 캡처해 올려주세요.
+          유튜브에서 구독 &gt; 전체 &gt; 관련성 순으로 설정한 뒤, 보이는 구독 목록을 3장 이상 캡처해 올려주세요.
         </p>
 
         {/* Guide carousel */}
