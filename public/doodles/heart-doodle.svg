@@ -1,0 +1,30 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 메인 하트 - 손그림 스타일 -->
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M100 170c-3-3-60-45-70-80-8-28 12-55 40-55 18 0 26 12 30 20 4-8 12-20 30-20 28 0 48 27 40 55-10 35-67 77-70 80z"
+  />
+  <!-- 작은 별 장식 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M45 45l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"
+  />
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M160 55l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"
+  />
+  <!-- 물결선 장식 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M30 130c5-3 10 3 15 0s10 3 15 0"
+  />
+</svg>

@@ -39,10 +39,10 @@ export function CognitiveErrorMission({ onSubmit, submitted = false }: Props) {
         {COGNITIVE_ERROR_ITEMS.map((item) => (
           <label
             key={item.id}
-            className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+            className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors ${
               selected.has(item.id)
-                ? "border-[var(--accent)] bg-[var(--accent-muted)]"
-                : "border-[var(--border)] bg-white hover:border-[var(--foreground)]/20"
+                ? "border-[var(--foreground)] bg-[var(--surface)]"
+                : "border-[var(--border)] bg-white hover:border-[var(--foreground)]/50"
             } ${submitted ? "cursor-default" : ""}`}
           >
             <input
@@ -64,7 +64,7 @@ export function CognitiveErrorMission({ onSubmit, submitted = false }: Props) {
         <button
           type="button"
           onClick={handleSubmit}
-          className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--accent-hover)]"
+          className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)]"
         >
           제출하기
         </button>

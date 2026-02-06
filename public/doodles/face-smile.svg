@@ -1,0 +1,41 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 얼굴 윤곽 -->
+  <circle
+    cx="100"
+    cy="100"
+    r="60"
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <!-- 눈 -->
+  <circle cx="75" cy="90" r="5" fill="#191919"/>
+  <circle cx="125" cy="90" r="5" fill="#191919"/>
+  <!-- 미소 -->
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    d="M70 120c10 15 50 15 60 0"
+  />
+  <!-- 볼터치 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M55 110c3 0 8 0 10-2"
+  />
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M135 110c3 0 8 0 10-2"
+  />
+  <!-- 별 장식 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M165 55l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"
+  />
+</svg>

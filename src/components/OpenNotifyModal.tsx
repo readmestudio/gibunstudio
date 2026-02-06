@@ -53,7 +53,7 @@ export function OpenNotifyModal({ isOpen, onClose }: Props) {
       aria-labelledby="open-notify-title"
     >
       <div
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl border-2 border-[var(--foreground)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -86,7 +86,7 @@ export function OpenNotifyModal({ isOpen, onClose }: Props) {
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="홍길동"
-              className="mt-1 w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+              className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
             />
           </div>
           <div>
@@ -100,7 +100,7 @@ export function OpenNotifyModal({ isOpen, onClose }: Props) {
               onChange={(e) => setPhone(e.target.value)}
               required
               placeholder="010-1234-5678"
-              className="mt-1 w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+              className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
             />
           </div>
           {message && (
@@ -111,7 +111,7 @@ export function OpenNotifyModal({ isOpen, onClose }: Props) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-[var(--accent)] px-4 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--accent-hover)] disabled:opacity-50"
+            className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-50"
           >
             오픈 알림 받기
           </button>

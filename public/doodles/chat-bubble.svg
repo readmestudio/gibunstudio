@@ -1,0 +1,32 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 메인 말풍선 -->
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M40 50c-5 2-10 8-10 20v50c0 15 10 25 25 25h10l15 25 15-25h50c15 0 25-10 25-25V70c0-15-10-25-25-25H55c-5 0-10 2-15 5z"
+  />
+  <!-- 점선 장식 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-dasharray="4 6"
+    d="M70 85h60"
+  />
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-dasharray="4 6"
+    d="M70 105h40"
+  />
+  <!-- 작은 별 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M160 40l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"
+  />
+</svg>

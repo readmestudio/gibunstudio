@@ -53,7 +53,7 @@ export function CoreBeliefMission({ onSubmit, submitted = false }: Props) {
         <button
           type="button"
           onClick={handleSubmit}
-          className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--accent-hover)]"
+          className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)]"
         >
           제출하기
         </button>

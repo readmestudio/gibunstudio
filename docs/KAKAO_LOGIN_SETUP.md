@@ -15,7 +15,7 @@
 | **Client Secret** | 내 애플리케이션 → 제품 설정 → 카카오 로그인 → "Client Secret" → "코드" 생성 (Supabase Kakao **Client Secret**로 사용) |
 
 ---
-
+1
 ## 2. 카카오 개발자 콘솔 설정
 
 ### 2-1. 애플리케이션 생성·앱 키 확인

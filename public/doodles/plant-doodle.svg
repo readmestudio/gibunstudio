@@ -1,0 +1,46 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 화분 -->
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M60 150h80l-10 30H70z"
+  />
+  <!-- 줄기 -->
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    d="M100 150V90"
+  />
+  <!-- 잎들 - 손그림 스타일 -->
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M100 120c-20-5-35-25-25-40 15 5 30 25 25 40z"
+  />
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M100 100c20-10 40-20 35-40-20 5-40 25-35 40z"
+  />
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M100 90c-15-15-15-35 0-45 10 15 10 35 0 45z"
+  />
+  <!-- 작은 별 장식 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M50 70l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"
+  />
+</svg>

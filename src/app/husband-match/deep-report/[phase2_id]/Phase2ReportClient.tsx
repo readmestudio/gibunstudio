@@ -29,17 +29,17 @@ export function Phase2ReportClient({ result }: Phase2ReportClientProps) {
 
   // Add completion card
   const completionCard = (
-    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-sm border border-purple-200 overflow-hidden min-h-[500px] flex flex-col">
-      <div className="p-8 pb-6 border-b border-purple-200">
-        <h2 className="text-2xl font-bold text-gray-900 leading-tight">
-          분석이 완료되었습니다! 🎉
+    <div className="bg-white rounded-2xl shadow-sm border-2 border-[var(--foreground)] overflow-hidden min-h-[500px] flex flex-col">
+      <div className="p-8 pb-6 border-b border-[var(--border)]">
+        <h2 className="text-2xl font-bold text-[var(--foreground)] leading-tight">
+          분석이 완료되었습니다!
         </h2>
       </div>
       <div className="flex-1 p-8 flex flex-col justify-center">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-6 bg-purple-100 rounded-full flex items-center justify-center">
+          <div className="w-20 h-20 mx-auto mb-6 bg-[var(--surface)] rounded-full flex items-center justify-center border-2 border-[var(--foreground)]">
             <svg
-              className="w-10 h-10 text-purple-600"
+              className="w-10 h-10 text-[var(--foreground)]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -52,23 +52,23 @@ export function Phase2ReportClient({ result }: Phase2ReportClientProps) {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-3">
+          <h3 className="text-xl font-bold text-[var(--foreground)] mb-3">
             심층 분석이 완료되었습니다
           </h3>
-          <p className="text-gray-700 mb-6">
+          <p className="text-[var(--foreground)]/70 mb-6">
             YouTube 데이터와 설문을 교차 분석하여 당신의 진짜 모습과 이상적인 파트너상을
             찾았습니다.
           </p>
 
           {/* Insights Summary */}
-          <div className="bg-white rounded-xl border border-purple-200 p-6 mb-6">
-            <h4 className="font-semibold text-gray-900 mb-3">핵심 인사이트</h4>
+          <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-6 mb-6">
+            <h4 className="font-semibold text-[var(--foreground)] mb-3">핵심 인사이트</h4>
             <div className="space-y-2 text-sm text-left">
               {result.cross_validation_insights.hidden_desires.map(
                 (desire, index) => (
                   <div key={index} className="flex items-start gap-2">
-                    <span className="text-purple-600 mt-0.5">•</span>
-                    <span className="text-gray-700">{desire}</span>
+                    <span className="text-[var(--foreground)] mt-0.5">•</span>
+                    <span className="text-[var(--foreground)]/70">{desire}</span>
                   </div>
                 )
               )}
@@ -77,16 +77,16 @@ export function Phase2ReportClient({ result }: Phase2ReportClientProps) {
 
           {/* Authenticity Score */}
           <div className="mb-8">
-            <p className="text-sm text-gray-600 mb-2">진정성 점수</p>
-            <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden">
+            <p className="text-sm text-[var(--foreground)]/60 mb-2">진정성 점수</p>
+            <div className="relative h-4 bg-[var(--surface)] rounded-full overflow-hidden border border-[var(--border)]">
               <div
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500"
+                className="absolute inset-y-0 left-0 bg-[var(--foreground)]"
                 style={{
                   width: `${result.cross_validation_insights.authenticity_score * 100}%`,
                 }}
               ></div>
             </div>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-[var(--foreground)]/60 mt-1">
               {(result.cross_validation_insights.authenticity_score * 100).toFixed(0)}% - YouTube와
               설문의 일치도
             </p>
@@ -97,19 +97,19 @@ export function Phase2ReportClient({ result }: Phase2ReportClientProps) {
         <div className="space-y-3">
           <Link
             href="/"
-            className="block w-full py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors text-center"
+            className="block w-full py-3 bg-white text-[var(--foreground)] font-semibold rounded-lg border-2 border-[var(--foreground)] hover:bg-[var(--surface)] transition-colors text-center"
           >
             홈으로 돌아가기
           </Link>
           <button
             onClick={() => window.print()}
-            className="w-full py-3 bg-white text-gray-900 font-medium rounded-lg border-2 border-gray-300 hover:border-purple-600 transition-colors"
+            className="w-full py-3 bg-white text-[var(--foreground)]/70 font-medium rounded-lg border border-[var(--border)] hover:border-[var(--foreground)]/50 transition-colors"
           >
             리포트 저장하기
           </button>
         </div>
 
-        <p className="mt-6 text-xs text-gray-600 text-center">
+        <p className="mt-6 text-xs text-[var(--foreground)]/60 text-center">
           이 리포트는 언제든지 다시 볼 수 있습니다
         </p>
       </div>
@@ -119,26 +119,25 @@ export function Phase2ReportClient({ result }: Phase2ReportClientProps) {
   const allCards = [...deepCards, completionCard];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4">
+    <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full mb-4 border border-purple-200">
-            <span className="text-2xl">✨</span>
-            <span className="text-sm font-medium text-purple-900">Deep Analysis</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full mb-4 border-2 border-[var(--foreground)]">
+            <span className="text-sm font-medium text-[var(--foreground)]">Deep Analysis</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl font-bold text-[var(--foreground)] mb-3">
             심층 분석 리포트
           </h1>
-          <p className="text-gray-700">
+          <p className="text-[var(--foreground)]/70">
             YouTube + 설문 교차 분석 결과
           </p>
 
           {/* Stats */}
           <div className="mt-6 flex items-center justify-center gap-6 text-sm">
             <div>
-              <p className="text-gray-600">분석한 채널</p>
-              <p className="font-bold text-purple-600">
+              <p className="text-[var(--foreground)]/60">분석한 채널</p>
+              <p className="font-bold text-[var(--foreground)]">
                 {(Object.values(result.phase1_results.channel_categories) as number[]).reduce(
                   (a: number, b: number) => a + b,
                   0
@@ -146,15 +145,15 @@ export function Phase2ReportClient({ result }: Phase2ReportClientProps) {
                 개
               </p>
             </div>
-            <div className="w-px h-8 bg-gray-300"></div>
+            <div className="w-px h-8 bg-[var(--border)]"></div>
             <div>
-              <p className="text-gray-600">응답한 질문</p>
-              <p className="font-bold text-purple-600">9개</p>
+              <p className="text-[var(--foreground)]/60">응답한 질문</p>
+              <p className="font-bold text-[var(--foreground)]">9개</p>
             </div>
-            <div className="w-px h-8 bg-gray-300"></div>
+            <div className="w-px h-8 bg-[var(--border)]"></div>
             <div>
-              <p className="text-gray-600">매칭 타입</p>
-              <p className="font-bold text-purple-600">
+              <p className="text-[var(--foreground)]/60">매칭 타입</p>
+              <p className="font-bold text-[var(--foreground)]">
                 {result.phase1_results.matched_husband_type.split('_')[0]}
               </p>
             </div>
@@ -166,7 +165,7 @@ export function Phase2ReportClient({ result }: Phase2ReportClientProps) {
 
         {/* Footer */}
         <div className="mt-12 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-[var(--foreground)]/60">
             이 분석은 AI를 활용하여 생성되었으며, 참고용으로만 사용하시기 바랍니다.
           </p>
         </div>

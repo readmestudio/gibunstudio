@@ -1,0 +1,19 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 손그림 화살표 -->
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M40 100c20-5 40 10 60 5s40-15 50-5"
+  />
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M140 90l15 10-15 10"
+  />
+  <!-- 점 장식 -->
+  <circle cx="35" cy="100" r="3" fill="#191919"/>
+</svg>

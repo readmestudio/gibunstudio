@@ -49,7 +49,7 @@ export function HabitMapperMission({ onSubmit, submitted = false }: Props) {
             트리거(시작 계기) → 행동 → 결과(보상). 이 구조를 이해하면 습관을 의지가 아니라
             이해를 통해 바꿀 수 있어요.
           </p>
-          <div className="rounded-xl border-2 border-[var(--accent)] bg-[var(--accent-muted)] p-6">
+          <div className="rounded-xl border-2 border-[var(--foreground)] bg-[var(--surface)] p-6">
             <p className="font-medium text-[var(--foreground)]">
               내가 고치고 싶은 습관(행동)을 적어보세요.
             </p>
@@ -65,7 +65,7 @@ export function HabitMapperMission({ onSubmit, submitted = false }: Props) {
             type="button"
             onClick={() => setStep(2)}
             disabled={!behavior.trim()}
-            className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] disabled:opacity-50"
+            className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] disabled:opacity-50 hover:bg-[var(--surface)]"
           >
             다음
           </button>
@@ -88,7 +88,7 @@ export function HabitMapperMission({ onSubmit, submitted = false }: Props) {
             type="button"
             onClick={() => setStep(3)}
             disabled={!triggers.trim()}
-            className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] disabled:opacity-50"
+            className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] disabled:opacity-50 hover:bg-[var(--surface)]"
           >
             다음
           </button>
@@ -124,7 +124,7 @@ export function HabitMapperMission({ onSubmit, submitted = false }: Props) {
             type="button"
             onClick={() => setStep(4)}
             disabled={!shortTerm.trim() || !longTerm.trim()}
-            className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] disabled:opacity-50"
+            className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] disabled:opacity-50 hover:bg-[var(--surface)]"
           >
             다음
           </button>
@@ -159,7 +159,7 @@ export function HabitMapperMission({ onSubmit, submitted = false }: Props) {
             <button
               type="button"
               onClick={handleSubmit}
-              className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)]"
+              className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)]"
             >
               제출하기
             </button>

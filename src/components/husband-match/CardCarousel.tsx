@@ -128,7 +128,7 @@ export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
               disabled={index >= cards.length}
               className={`h-2 rounded-full transition-all ${
                 index === currentIndex
-                  ? 'w-8 bg-[var(--accent)]'
+                  ? 'w-8 bg-[var(--foreground)]'
                   : index < cards.length
                   ? 'w-2 bg-[var(--foreground)]/20 hover:bg-[var(--foreground)]/40'
                   : 'w-2 bg-[var(--foreground)]/10 cursor-not-allowed'

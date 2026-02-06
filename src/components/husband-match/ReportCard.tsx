@@ -20,7 +20,7 @@ interface ReportCardProps {
   hexagonData?: HexagonChartData;
 }
 
-// 육각형 차트 컴포넌트
+// 육각형 차트 컴포넌트 - 검정색 모노톤
 function HexagonChart({ data }: { data: HexagonChartData }) {
   const { labels, values } = data;
   const numPoints = 6;
@@ -72,12 +72,12 @@ function HexagonChart({ data }: { data: HexagonChartData }) {
           <line key={i} x1={centerX} y1={centerY} x2={p.x} y2={p.y} stroke="#e5e5e5" strokeWidth="1" />
         ))}
 
-        {/* 데이터 영역 */}
-        <path d={dataPath} fill="rgba(79, 70, 229, 0.2)" stroke="#4F46E5" strokeWidth="2" />
+        {/* 데이터 영역 - 검정색 모노톤 */}
+        <path d={dataPath} fill="rgba(25, 25, 25, 0.1)" stroke="#191919" strokeWidth="2" />
 
         {/* 데이터 포인트 */}
         {dataPoints.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="5" fill="#4F46E5" />
+          <circle key={i} cx={p.x} cy={p.y} r="5" fill="#191919" />
         ))}
 
         {/* 라벨 */}
@@ -104,7 +104,7 @@ function HexagonChart({ data }: { data: HexagonChartData }) {
             x={p.x}
             y={p.y - 12}
             textAnchor="middle"
-            className="text-[9px] font-bold fill-[#4F46E5]"
+            className="text-[9px] font-bold fill-[#191919]"
           >
             {values[i]}
           </text>
@@ -153,11 +153,11 @@ export function ReportCard({
   const showHexagonChart = cardNumber === 2 && hexagonData;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden min-h-[500px] max-h-[85vh] flex flex-col">
+    <div className="bg-white rounded-2xl shadow-sm border-2 border-[var(--foreground)] overflow-hidden min-h-[500px] max-h-[85vh] flex flex-col">
       {/* Header */}
       <div className="p-8 pb-6 border-b border-[var(--border)] flex-shrink-0">
         {metadata?.subtitle && (
-          <p className="text-sm font-medium text-[var(--accent)] mb-2">
+          <p className="text-sm font-medium text-[var(--foreground)]/60 mb-2">
             {metadata.subtitle}
           </p>
         )}
@@ -169,7 +169,7 @@ export function ReportCard({
             {metadata.tags.map((tag, index) => (
               <span
                 key={index}
-                className="px-3 py-1 text-xs font-medium bg-[var(--surface)] text-[var(--foreground)]/70 rounded-full"
+                className="px-3 py-1 text-xs font-medium bg-[var(--surface)] text-[var(--foreground)]/70 rounded-full border border-[var(--border)]"
               >
                 {tag}
               </span>
@@ -188,7 +188,7 @@ export function ReportCard({
       {/* Content - 스크롤 가능 */}
       <div className="flex-1 p-8 overflow-y-auto">
         {metadata?.highlight && (
-          <div className="mb-6 p-4 bg-[var(--accent)]/10 border-l-4 border-[var(--accent)] rounded-r">
+          <div className="mb-6 p-4 bg-[var(--surface)] border-l-4 border-[var(--foreground)] rounded-r">
             <p className="text-sm font-medium text-[var(--foreground)]">
               {metadata.highlight}
             </p>
@@ -206,7 +206,7 @@ export function ReportCard({
       <div className="p-6 border-t border-[var(--border)] bg-[var(--surface)]/30 flex-shrink-0">
         <button
           onClick={handleShare}
-          className="flex items-center gap-2 text-sm font-medium text-[var(--accent)] hover:underline"
+          className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]/70 hover:text-[var(--foreground)] hover:underline"
         >
           <svg
             className="w-4 h-4"

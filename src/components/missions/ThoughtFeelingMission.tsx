@@ -58,8 +58,8 @@ export function ThoughtFeelingMission({ onSubmit, submitted = false }: Props) {
                   disabled={submitted}
                   className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
                     answers[idx] === opt
-                      ? "bg-[var(--accent)] text-[var(--foreground)]"
-                      : "border border-[var(--border)] text-[var(--foreground)]/80 hover:border-[var(--accent)]"
+                      ? "bg-[var(--foreground)] text-white"
+                      : "border border-[var(--border)] text-[var(--foreground)]/80 hover:border-[var(--foreground)]"
                   }`}
                 >
                   {opt}
@@ -75,7 +75,7 @@ export function ThoughtFeelingMission({ onSubmit, submitted = false }: Props) {
           type="button"
           onClick={handleSubmit}
           disabled={!allAnswered}
-          className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] disabled:opacity-50 hover:bg-[var(--accent-hover)]"
+          className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] disabled:opacity-50 hover:bg-[var(--surface)]"
         >
           제출하기
         </button>

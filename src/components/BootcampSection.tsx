@@ -11,7 +11,7 @@ export function BootcampSection() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <h2 className="flex items-center gap-2 text-2xl font-bold text-[var(--foreground)]">
           7일간의 상담 부트캠프
-          <span className="rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-800">
+          <span className="rounded bg-[var(--accent)] px-2 py-0.5 text-sm font-medium text-[var(--foreground)]">
             오픈 예정
           </span>
         </h2>
@@ -21,7 +21,7 @@ export function BootcampSection() {
         <button
           type="button"
           onClick={() => setShowOpenNotify(true)}
-          className="mt-6 inline-flex items-center text-[var(--accent)] font-medium hover:underline"
+          className="mt-6 inline-flex items-center text-[var(--foreground)] font-medium hover:underline"
         >
           자세히 보기 →
         </button>

@@ -7,7 +7,7 @@ interface PaymentGateProps {
 
 export function PaymentGate({ onProceed, phase1Id }: PaymentGateProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden min-h-[500px] flex flex-col">
+    <div className="bg-white rounded-2xl shadow-sm border-2 border-[var(--foreground)] overflow-hidden min-h-[500px] flex flex-col">
       {/* Header */}
       <div className="p-8 pb-6 border-b border-[var(--border)]">
         <h2 className="text-2xl font-bold text-[var(--foreground)] leading-tight">
@@ -18,11 +18,11 @@ export function PaymentGate({ onProceed, phase1Id }: PaymentGateProps) {
       {/* Content */}
       <div className="flex-1 p-8 flex flex-col justify-center">
         {/* Preview with Blur */}
-        <div className="mb-8 p-6 bg-gradient-to-br from-[var(--accent)]/10 to-[var(--accent)]/5 rounded-xl relative overflow-hidden">
+        <div className="mb-8 p-6 bg-[var(--surface)] rounded-xl relative overflow-hidden border border-[var(--border)]">
           <div className="absolute inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center">
             <div className="text-center">
               <svg
-                className="w-12 h-12 mx-auto mb-3 text-[var(--accent)]"
+                className="w-12 h-12 mx-auto mb-3 text-[var(--foreground)]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -54,7 +54,7 @@ export function PaymentGate({ onProceed, phase1Id }: PaymentGateProps) {
         <div className="space-y-3 mb-8">
           <div className="flex items-start gap-3">
             <svg
-              className="w-5 h-5 text-[var(--accent)] mt-0.5 flex-shrink-0"
+              className="w-5 h-5 text-[var(--foreground)] mt-0.5 flex-shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -73,7 +73,7 @@ export function PaymentGate({ onProceed, phase1Id }: PaymentGateProps) {
           </div>
           <div className="flex items-start gap-3">
             <svg
-              className="w-5 h-5 text-[var(--accent)] mt-0.5 flex-shrink-0"
+              className="w-5 h-5 text-[var(--foreground)] mt-0.5 flex-shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -92,7 +92,7 @@ export function PaymentGate({ onProceed, phase1Id }: PaymentGateProps) {
           </div>
           <div className="flex items-start gap-3">
             <svg
-              className="w-5 h-5 text-[var(--accent)] mt-0.5 flex-shrink-0"
+              className="w-5 h-5 text-[var(--foreground)] mt-0.5 flex-shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -113,16 +113,16 @@ export function PaymentGate({ onProceed, phase1Id }: PaymentGateProps) {
 
         {/* Price */}
         <div className="text-center mb-6">
-          <div className="inline-block px-6 py-3 bg-[var(--accent)]/10 rounded-lg">
+          <div className="inline-block px-6 py-3 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
             <p className="text-sm text-[var(--foreground)]/70 mb-1">심층 분석 가격</p>
-            <p className="text-3xl font-bold text-[var(--accent)]">₩4,900</p>
+            <p className="text-3xl font-bold text-[var(--foreground)]">₩4,900</p>
           </div>
         </div>
 
         {/* CTA Button */}
         <button
           onClick={onProceed}
-          className="w-full py-4 bg-[var(--accent)] text-white font-semibold rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
+          className="w-full py-4 bg-white text-[var(--foreground)] font-semibold rounded-lg border-2 border-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
         >
           심층 분석 시작하기
         </button>

@@ -130,18 +130,18 @@ function LoginContent() {
           : "가입 시 이메일과 전화번호를 필수로 받습니다. 검사 결과지 전송에 사용됩니다."}
       </p>
 
-      <div className="mt-6 flex rounded-lg border border-[var(--border)] p-1">
+      <div className="mt-6 flex rounded-lg border-2 border-[var(--foreground)] p-1">
         <button
           type="button"
           onClick={() => { setTab("login"); setMessage(null); }}
-          className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${tab === "login" ? "bg-[var(--accent)] text-[var(--foreground)]" : "text-[var(--foreground)]/70 hover:text-[var(--foreground)]"}`}
+          className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${tab === "login" ? "bg-[var(--foreground)] text-white" : "text-[var(--foreground)]/70 hover:text-[var(--foreground)]"}`}
         >
           로그인
         </button>
         <button
           type="button"
           onClick={() => { setTab("signup"); setMessage(null); }}
-          className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${tab === "signup" ? "bg-[var(--accent)] text-[var(--foreground)]" : "text-[var(--foreground)]/70 hover:text-[var(--foreground)]"}`}
+          className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${tab === "signup" ? "bg-[var(--foreground)] text-white" : "text-[var(--foreground)]/70 hover:text-[var(--foreground)]"}`}
         >
           가입
         </button>
@@ -179,7 +179,7 @@ function LoginContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="example@email.com"
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
               />
             </div>
             <div>
@@ -193,13 +193,13 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={loading || !hasSupabase}
-              className="w-full rounded-lg bg-[var(--accent)] px-4 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--accent-hover)] disabled:opacity-50"
+              className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-50"
             >
               이메일로 로그인
             </button>
@@ -217,7 +217,7 @@ function LoginContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="example@email.com"
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
               />
             </div>
             <div>
@@ -232,7 +232,7 @@ function LoginContent() {
                 required
                 minLength={6}
                 placeholder="6자 이상"
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
               />
             </div>
             <div>
@@ -246,7 +246,7 @@ function LoginContent() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="홍길동"
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
               />
             </div>
             <div>
@@ -260,13 +260,13 @@ function LoginContent() {
                 onChange={(e) => setPhone(e.target.value)}
                 required
                 placeholder="010-0000-0000"
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={loading || !hasSupabase}
-              className="w-full rounded-lg bg-[var(--accent)] px-4 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--accent-hover)] disabled:opacity-50"
+              className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-50"
             >
               가입하기
             </button>
@@ -282,7 +282,7 @@ function LoginContent() {
 
       <p className="mt-8 text-center text-sm text-[var(--foreground)]/60">
         코치님이라면{" "}
-        <Link href="/login/coach" className="font-medium text-[var(--accent)] hover:underline">
+        <Link href="/login/coach" className="font-medium text-[var(--foreground)] hover:underline">
           여기를 클릭해서 로그인하세요
         </Link>
       </p>
@@ -295,8 +295,8 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className="mx-auto max-w-md px-4 py-16">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-8 bg-[var(--surface)] rounded w-1/3"></div>
+          <div className="h-4 bg-[var(--surface)] rounded w-2/3"></div>
         </div>
       </div>
     }>

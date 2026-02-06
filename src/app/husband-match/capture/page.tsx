@@ -116,14 +116,14 @@ export default function CapturePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--surface)]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-[var(--foreground)]/60">로딩 중...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--surface)] pb-24">
+    <div className="min-h-screen bg-white pb-24">
       <div className="max-w-lg mx-auto px-4 pt-6">
         <h1 className="text-xl font-bold text-[var(--foreground)] mb-2 text-center">
           구독 목록 캡처하기
@@ -133,8 +133,8 @@ export default function CapturePage() {
         </p>
 
         {/* Guide carousel */}
-        <div className="rounded-2xl overflow-hidden bg-white border border-[var(--border)] shadow-sm mb-6">
-          <div className="relative aspect-[4/3] bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center overflow-hidden">
+        <div className="rounded-2xl overflow-hidden bg-white border-2 border-[var(--foreground)] mb-6">
+          <div className="relative aspect-[4/3] bg-[var(--surface)] flex items-center justify-center overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={guideStep}
@@ -144,7 +144,7 @@ export default function CapturePage() {
                 transition={{ duration: 0.2 }}
                 className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center"
               >
-                <div className="w-24 h-24 rounded-2xl bg-white/90 shadow-lg flex items-center justify-center mb-4">
+                <div className="w-24 h-24 rounded-2xl bg-white border-2 border-[var(--foreground)] flex items-center justify-center mb-4">
                   <span className="text-3xl font-bold text-[var(--foreground)]">{guideStep + 1}</span>
                 </div>
                 <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
@@ -153,13 +153,9 @@ export default function CapturePage() {
                 <p className="text-sm text-[var(--foreground)]/70 mb-4">
                   {GUIDE_STEPS[guideStep].desc}
                 </p>
-                <motion.span
-                  className="inline-block px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--foreground)] font-medium"
-                  animate={{ scale: [1, 1.05, 1], boxShadow: ['0 0 0 0 rgba(255,232,18,0.4)', '0 0 0 12px rgba(255,232,18,0)', '0 0 0 0 rgba(255,232,18,0)'] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
+                <span className="inline-block px-4 py-2 rounded-lg bg-white border-2 border-[var(--foreground)] text-[var(--foreground)] font-medium">
                   {GUIDE_STEPS[guideStep].highlight} 클릭
-                </motion.span>
+                </span>
               </motion.div>
             </AnimatePresence>
           </div>
@@ -177,7 +173,7 @@ export default function CapturePage() {
                   key={i}
                   type="button"
                   onClick={() => setGuideStep(i)}
-                  className={`w-2 h-2 rounded-full transition-colors ${guideStep === i ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}
+                  className={`w-2 h-2 rounded-full transition-colors ${guideStep === i ? 'bg-[var(--foreground)]' : 'bg-[var(--border)]'}`}
                   aria-label={`단계 ${i + 1}`}
                 />
               ))}
@@ -193,7 +189,7 @@ export default function CapturePage() {
         </div>
 
         {/* Upload area */}
-        <div className="rounded-2xl bg-white border border-[var(--border)] shadow-sm p-4 mb-4">
+        <div className="rounded-2xl bg-white border-2 border-[var(--foreground)] p-4 mb-4">
           <p className="text-sm font-medium text-[var(--foreground)] mb-3">
             캡처한 이미지 올리기 (3장 이상)
           </p>
@@ -208,19 +204,19 @@ export default function CapturePage() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full py-4 rounded-xl border-2 border-dashed border-[var(--border)] text-[var(--foreground)]/60 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors text-sm"
+            className="w-full py-4 rounded-xl border-2 border-dashed border-[var(--border)] text-[var(--foreground)]/60 hover:border-[var(--foreground)] hover:text-[var(--foreground)] transition-colors text-sm"
           >
             사진 선택 (갤러리에서 선택)
           </button>
           {previews.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-2">
               {previews.map((url, i) => (
-                <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-[var(--surface)]">
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-[var(--surface)] border border-[var(--border)]">
                   <img src={url} alt={`캡처 ${i + 1}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeFile(i)}
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center"
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-[var(--foreground)] text-white text-xs flex items-center justify-center"
                     aria-label="삭제"
                   >
                     ×
@@ -230,7 +226,7 @@ export default function CapturePage() {
             </div>
           )}
           {files.length > 0 && files.length < MIN_IMAGES && (
-            <p className="mt-2 text-xs text-amber-600">
+            <p className="mt-2 text-xs text-[var(--foreground)]/60">
               {MIN_IMAGES - files.length}장 더 올려주세요.
             </p>
           )}
@@ -245,7 +241,7 @@ export default function CapturePage() {
             type="button"
             onClick={handleSubmit}
             disabled={files.length < MIN_IMAGES || submitLoading}
-            className="w-full py-4 rounded-xl bg-[var(--accent)] text-[var(--foreground)] font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--accent-hover)] transition-colors"
+            className="w-full py-4 rounded-xl bg-white text-[var(--foreground)] font-semibold border-2 border-[var(--foreground)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--surface)] transition-colors"
           >
             {submitLoading ? '분석 중...' : '분석하기'}
           </button>
@@ -266,12 +262,12 @@ export default function CapturePage() {
                 <div className="w-full border-t border-[var(--border)]" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-[var(--surface)] px-2 text-[var(--foreground)]/60">또는</span>
+                <span className="bg-white px-2 text-[var(--foreground)]/60">또는</span>
               </div>
             </div>
             <Link
               href="/login?next=/husband-match/capture"
-              className="block w-full py-3 rounded-xl border border-[var(--border)] text-center font-medium text-[var(--foreground)] hover:bg-[var(--border)]/30 transition-colors"
+              className="block w-full py-3 rounded-xl border-2 border-[var(--foreground)] text-center font-medium text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
             >
               이메일로 로그인
             </Link>

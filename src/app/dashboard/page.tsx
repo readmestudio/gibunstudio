@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       <div className="mt-12 grid gap-6 sm:grid-cols-2">
         <Link
           href="/dashboard/7day"
-          className="block rounded-xl border border-[var(--border)] bg-white p-6 transition-colors hover:bg-[var(--surface)] hover:border-[var(--accent)]"
+          className="block rounded-xl border-2 border-[var(--foreground)] bg-white p-6 transition-colors hover:bg-[var(--surface)]"
         >
           <h2 className="text-lg font-semibold text-[var(--foreground)]">
             7일 내면 아이 찾기
@@ -40,7 +40,7 @@ export default async function DashboardPage() {
         </Link>
         <Link
           href="/dashboard/counseling"
-          className="block rounded-xl border border-[var(--border)] bg-white p-6 transition-colors hover:bg-[var(--surface)] hover:border-[var(--accent)]"
+          className="block rounded-xl border-2 border-[var(--foreground)] bg-white p-6 transition-colors hover:bg-[var(--surface)]"
         >
           <h2 className="text-lg font-semibold text-[var(--foreground)]">
             1:1 상담
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         </Link>
 
         {/* 남편상 분석: 퍼블리시된 Phase 2 최종 리포트 */}
-        <div className="sm:col-span-2 rounded-xl border border-[var(--border)] bg-white p-6">
+        <div className="sm:col-span-2 rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
           <h2 className="text-lg font-semibold text-[var(--foreground)]">
             남편상 분석
           </h2>
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
                 <li key={row.id}>
                   <Link
                     href={`/husband-match/deep-report/${row.id}`}
-                    className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)] hover:border-[var(--accent)]"
+                    className="inline-flex items-center gap-2 rounded-lg border-2 border-[var(--foreground)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)]"
                   >
                     최종 리포트 보기
                     {row.published_at && (

@@ -120,7 +120,7 @@ export function EmotionDiaryMission({ day, maxStep, onSubmit, submitted = false 
           type="button"
           onClick={handleStart}
           disabled={loading}
-          className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--accent-hover)] disabled:opacity-50"
+          className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-50"
         >
           {loading ? "시작 중..." : "감정일기 시작하기"}
         </button>
@@ -145,7 +145,7 @@ export function EmotionDiaryMission({ day, maxStep, onSubmit, submitted = false 
             <div
               className={`max-w-[85%] rounded-lg px-4 py-2 ${
                 m.role === "user"
-                  ? "bg-[var(--accent)] text-[var(--foreground)]"
+                  ? "bg-[var(--foreground)] text-white"
                   : "bg-white border border-[var(--border)] text-[var(--foreground)]"
               }`}
             >
@@ -181,7 +181,7 @@ export function EmotionDiaryMission({ day, maxStep, onSubmit, submitted = false 
         <button
           type="submit"
           disabled={loading || !input.trim() || submitted}
-          className="rounded-lg bg-[var(--accent)] px-6 py-2 font-semibold text-[var(--foreground)] disabled:opacity-50 hover:bg-[var(--accent-hover)]"
+          className="rounded-lg bg-white px-6 py-2 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] disabled:opacity-50 hover:bg-[var(--surface)]"
         >
           전송
         </button>
@@ -191,7 +191,7 @@ export function EmotionDiaryMission({ day, maxStep, onSubmit, submitted = false 
         <button
           type="button"
           onClick={finishDiary}
-          className="rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--accent-hover)]"
+          className="rounded-lg bg-white px-6 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)]"
         >
           오늘 감정일기 마치기
         </button>

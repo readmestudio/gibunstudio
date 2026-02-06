@@ -57,7 +57,7 @@ export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
   const allCards = [...reportCards, paymentGateCard];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] to-white py-12 px-4">
+    <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -67,11 +67,11 @@ export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
           <p className="text-[var(--foreground)]/70">
             YouTube 구독 채널 기반 성격 및 이상형 분석
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-[var(--border)]">
+          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border-2 border-[var(--foreground)]">
             <span className="text-sm font-medium text-[var(--foreground)]/60">
               매칭 타입:
             </span>
-            <span className="text-sm font-bold text-[var(--accent)]">
+            <span className="text-sm font-bold text-[var(--foreground)]">
               {result.matched_husband_type}
             </span>
             <span className="text-sm text-[var(--foreground)]/60">

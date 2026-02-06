@@ -88,17 +88,100 @@ npm run lint         # ESLint 실행
 - `OPENAI_API_KEY` - OpenAI API 키
 - `COACH_EMAILS` - 코치 계정 이메일 (쉼표 구분)
 
-## 테마/디자인
+## 테마/디자인 (Monotone 스타일)
 
+### 디자인 원칙
+- **모든 그라데이션 제거** → 순수 화이트 기반
+- **검정색은 텍스트와 테두리에만 사용**
+- **노란색(accent) 5% 미만으로 제한** (New 뱃지, 오픈 예정 등 특수 케이스만)
+- **손그림 일러스트레이션 사용** (Monotone 스타일)
+
+### CSS 변수
+
+```css
+:root {
+  /* 기본 색상 - Monotone 스타일 */
+  --background: #ffffff;
+  --foreground: #191919;
+
+  /* 노란색 accent - 5% 미만 사용 */
+  --accent: #FFE812;
+  --accent-hover: #f5de0f;
+  --accent-muted: #fff8b8;
+
+  /* 그레이 스케일 */
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #e5e5e5;
+  --gray-300: #d4d4d4;
+  --gray-400: #a3a3a3;
+  --gray-500: #737373;
+
+  /* 시맨틱 색상 */
+  --border: #e5e5e5;
+  --border-dark: #d4d4d4;
+  --surface: #fafafa;
+  --surface-hover: #f5f5f5;
+}
 ```
---background: #ffffff (흰색)
---foreground: #191919 (다크 그레이)
---accent: #FFE812 (노란색 - 브랜드 컬러)
---accent-hover: #f5de0f
---accent-muted: #fff8b8
---border: #e5e5e5
---surface: #fafafa
+
+### 버튼 스타일 시스템
+
+```tsx
+// Primary (흰색 + 검정 테두리) - 기본 CTA
+className="bg-white border-2 border-[var(--foreground)] text-[var(--foreground)] hover:bg-[var(--surface)]"
+
+// Secondary (회색 테두리)
+className="bg-white border border-[var(--border)] text-[var(--foreground)]/70 hover:border-[var(--foreground)]/50"
+
+// 카카오 로그인 (브랜드 가이드라인 준수)
+className="bg-[#FEE500] text-[#191919] hover:bg-[#FADA0A]"
 ```
+
+### 노란색(accent) 사용 원칙
+
+**사용 허용 (5% 미만)**
+- "New", "오픈 예정" 등 뱃지
+- 진행률 표시 완료 상태
+- 특별한 강조가 필요한 텍스트 (아주 제한적)
+
+**사용 금지**
+- 기본 버튼 배경
+- 링크 텍스트
+- 차트/그래프 색상
+- 폼 포커스 상태
+
+### 손그림 일러스트레이션
+
+**파일 위치**: `/public/doodles/`
+
+| 파일명 | 용도 |
+|--------|------|
+| `heart-doodle.svg` | 상담 부트캠프 카드 |
+| `chat-bubble.svg` | 1:1 상담 카드 |
+| `star-sparkle.svg` | 금쪽 상담소 카드 |
+| `arrow-squiggle.svg` | 스크롤 유도 |
+| `plant-doodle.svg` | 힐링/성장 |
+| `face-smile.svg` | 긍정 피드백 |
+| `underline-wave.svg` | 제목 강조 |
+
+**SVG 스타일 가이드**
+- stroke만 사용 (fill 없음)
+- stroke 색상: `#191919`
+- stroke-width: 1.5~2.5
+- stroke-linecap: round
+- 손그림 느낌의 자연스러운 불규칙한 선
+
+### 컴포넌트별 스타일 요약
+
+| 컴포넌트 | 배경 | 테두리 | 특이사항 |
+|----------|------|--------|----------|
+| 카드 | `bg-white` | `border-2 border-[var(--foreground)]` | 손그림 일러스트 |
+| 버튼 | `bg-white` | `border-2 border-[var(--foreground)]` | hover: `bg-[var(--surface)]` |
+| 입력 필드 | `bg-white` | `border-2 border-[var(--border)]` | focus: `border-[var(--foreground)]` |
+| 모달 | `bg-white` | `border-2 border-[var(--foreground)]` | |
+| 차트 | - | - | 검정색 `#191919` |
+| 프로그레스 dot | - | - | 활성: `bg-[var(--foreground)]` |
 
 ## 주의사항
 
