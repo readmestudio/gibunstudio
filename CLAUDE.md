@@ -106,3 +106,175 @@ npm run lint         # ESLint 실행
 - OpenAI 클라이언트는 싱글톤 지연 초기화 패턴 적용
 - `useSearchParams` 사용 시 반드시 Suspense 바운더리로 감싸기
 - API 라우트에서 인증 체크 필수 (`supabase.auth.getUser()`)
+
+---
+
+## 남편상 분석 파이프라인 (Husband Match)
+
+### 개요
+YouTube 구독 채널을 분석하여 심리 프로필(TCI, MBTI, Enneagram)을 추정하고, 이상형 남편 타입을 매칭하는 서비스.
+Spotify Wrapped 스타일의 시각적 분석 카드 11장 제공.
+
+### 핵심 파일 구조
+
+```
+src/lib/husband-match/
+├── data/
+│   ├── youtube-categories.ts    # 16개 YouTube 카테고리 + TCI 가중치 매트릭스
+│   ├── categories.ts            # 10개 내부 카테고리 (기존)
+│   └── husband-types.ts         # 48개 남편 타입 정의 + idealVector
+├── analysis/
+│   ├── youtube-analysis.ts      # YouTube 카테고리 분류, 희소성 계산, TCI 산출
+│   ├── categorize-channels.ts   # LLM 기반 채널 카테고리 분류
+│   ├── calculate-tci.ts         # TCI 7차원 점수 계산
+│   ├── estimate-enneagram.ts    # 애니어그램 유형 추정
+│   ├── estimate-mbti.ts         # MBTI 유형 추정
+│   ├── create-vector.ts         # 18차원 사용자 벡터 생성
+│   └── match-husband-type.ts    # 코사인 유사도 기반 매칭
+├── prompts/
+│   ├── card-prompts.ts          # 카드별 LLM 프롬프트 + 헬퍼 함수
+│   └── system-prompt.ts         # LLM 시스템 프롬프트
+└── types.ts                     # 타입 정의 (Phase1Result, ReportCard 등)
+
+src/app/api/analyze/phase1/
+└── run-from-channels.ts         # 메인 파이프라인 (카드 생성 + DB 저장)
+
+src/components/husband-match/
+├── ReportCard.tsx               # 카드 렌더링 (육각형 차트, 스크롤, 볼드 처리)
+├── CardCarousel.tsx             # 카드 캐러셀 (스와이프, 애니메이션)
+└── PaymentGate.tsx              # 결제 유도 카드
+
+src/app/husband-match/report/[phase1_id]/
+├── page.tsx                     # 리포트 페이지 (서버 컴포넌트)
+└── Phase1ReportClient.tsx       # 클라이언트 렌더링 (hexagonData 전달)
+```
+
+### 11장 카드 구조
+
+| # | 카드명 | subtitle | title | 특징 |
+|---|--------|----------|-------|------|
+| 1 | 커버 | INTRO | 고정 | 인트로 텍스트 (고정, LLM 미사용) |
+| 2 | 구독 데이터 개요 | 구독 데이터 개요 | LLM 생성 | 육각형 TCI 차트 표시 |
+| 3 | 카테고리 랭킹 | Your Subscription DNA | LLM 생성 (상위 N%) | 바 차트, 희소성 |
+| 4 | 희귀 취향 | Hidden Gem in Your List | 고정 | 희소 카테고리, 시그니처 카피 |
+| 5 | 통합 유형 분석 | LLM 생성 (영어) | LLM 생성 (한국어 타입명) | MBTI/애니어그램 명칭 금지 |
+| 6 | 감성 | 감정 스타일 | 고정 | 감정 처리 방식, 힐링 패턴 |
+| 7 | 미래 | 미래상 | 고정 | 3축 분석, 장면 묘사 |
+| 8 | 단점 | 관계 인사이트 | 고정 | 힘든 상황 예시, 리프레이밍 |
+| 9 | 왕자님 | 매칭 결과 | 고정 | 남편 타입 비유, 첫 만남 |
+| 10 | 상세 프로필 | 파트너 프로필 | 고정 | 3개 장면 묘사 |
+| 11 | 결제 유도 | Phase 2 안내 | 고정 | CTA ₩4,900 |
+
+### 카드 콘텐츠 규격
+- **모든 카드: 1,500-2,000자**
+- 볼드 섹션 헤더: `**키워드: 요약 한 줄**`
+- 볼드 전 줄바꿈 2회 (문단 여백)
+- MBTI 4글자, 애니어그램 번호, TCI 척도명 직접 명시 금지
+
+### YouTube 카테고리 시스템 (16개)
+
+```typescript
+// src/lib/husband-match/data/youtube-categories.ts
+entertainment, vlog, music, gaming, food, beauty,
+education, news, tech, sports, pets, kids,
+asmr, finance, travel, other
+```
+
+### TCI 6축 가중치 매트릭스
+
+각 카테고리가 6축(자기초월/자율성/자극추구/위험회피/인내력/연대감)에 기여:
+- 주축: +3, 부축: +2, 보조축: +1
+- 예: `entertainment: { NS: 3, CO: 2, SD: 1 }`
+
+### 희소성 계산 (코사인 유사도)
+
+```typescript
+// 사용자 비율 벡터 vs 한국 평균 비율 벡터
+similarity >= 0.95 → 상위 50%
+similarity 0.85~0.95 → 상위 20~50%
+similarity 0.70~0.85 → 상위 5~20%
+similarity < 0.70 → 상위 5% 이하
+```
+
+### 육각형 스탯 정규화
+
+```typescript
+// Step 1-2: 가중 합산
+rawScore[axis] = Σ(채널수 × 가중치)
+
+// Step 3: 정규화 (최대 100, 최소 10)
+normalized = max(10, (raw / maxRaw) × 100)
+
+// Step 4: 분포 보정
+- 한 축 80 이상 돌출 시 → 나머지 +7
+- 두 축 이상 15 미만 시 → 해당 축 +5
+```
+
+### 분석 파이프라인 흐름
+
+```
+1. 채널 데이터 입력 (ChannelData[])
+   ↓
+2. YouTube 카테고리 분류 (LLM) → YouTubeCategoryResult[]
+   ↓
+3. 희소성 계산 (코사인 유사도) → RarityAnalysis
+   ↓
+4. TCI 6축 계산 (가중치 매트릭스) → YouTubeTCIScores
+   ↓
+5. 기존 분석 (categorize → TCI → Enneagram → MBTI → Vector)
+   ↓
+6. 남편 타입 매칭 (코사인 유사도)
+   ↓
+7. 11장 카드 생성 (LLM 또는 폴백)
+   ↓
+8. DB 저장 (phase1_results)
+```
+
+### 정책 (2026-02-06 확정)
+
+| 항목 | 정책 |
+|------|------|
+| 테스트 횟수 | 1인 1회 (재분석 불가) |
+| 리포트 보관 | 1년 (무료/유료 동일) |
+| 환불 | 서베이 제출 전: 전액 / 제출 후: 불가 |
+| 환불 신청 | 카카오톡 `gibun_studio` |
+| 입금 확인 SLA | 24시간 이내 |
+| 리포트 공개 SLA | 24시간 이내 |
+
+### 주요 타입 정의
+
+```typescript
+// Phase1Result (DB 저장 구조)
+interface Phase1Result {
+  id: string;
+  user_id: string;
+  channel_categories: ChannelCategories;
+  tci_scores: TCIScores;           // { NS, HA, RD, P, SD, CO, ST }
+  enneagram_center: EnneagramCenter; // { head, heart, body }
+  enneagram_type: number | null;   // 1-9
+  mbti_scores: MBTIScores;
+  mbti_type: string | null;        // "INFP" 등
+  user_vector: number[];           // 18차원
+  matched_husband_type: string;
+  match_score: number;             // 0-1
+  cards: ReportCard[];             // 11장
+  created_at: string;
+}
+
+// ReportCard (카드 구조)
+interface ReportCard {
+  card_number: number;
+  title: string;
+  subtitle?: string;
+  content: string;
+  card_type: 'intro' | 'personality' | 'values' | 'matching' | 'result';
+}
+```
+
+### 개발 시 주의사항
+
+1. **카드 내용 수정**: `run-from-channels.ts`의 `generateFallbackCards()` + LLM 프롬프트 동시 수정
+2. **카테고리 추가**: `youtube-categories.ts`의 `CATEGORY_TCI_WEIGHTS` 가중치 설정 필수
+3. **새 분석 테스트**: 기존 `phase1_results` 삭제 후 재분석 필요 (기존 결과는 이전 형식)
+4. **육각형 차트**: `Phase1ReportClient.tsx`에서 `hexagonData` prop으로 전달
+5. **LLM 응답 형식**: JSON 필드명 (`2_title`, `3_title`, `5_subtitle` 등) 정확히 매칭
