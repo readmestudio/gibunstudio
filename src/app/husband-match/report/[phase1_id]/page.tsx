@@ -5,8 +5,9 @@ import { Phase1ReportClient } from './Phase1ReportClient';
 export default async function Phase1ReportPage({
   params,
 }: {
-  params: { phase1_id: string };
+  params: Promise<{ phase1_id: string }>;
 }) {
+  const { phase1_id } = await params;
   const supabase = await createClient();
 
   // Get current user
@@ -22,7 +23,7 @@ export default async function Phase1ReportPage({
   const { data: result, error } = await supabase
     .from('phase1_results')
     .select('*')
-    .eq('id', params.phase1_id)
+    .eq('id', phase1_id)
     .single();
 
   if (error || !result) {
