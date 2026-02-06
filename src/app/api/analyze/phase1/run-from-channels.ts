@@ -20,9 +20,20 @@ import {
 } from '@/lib/husband-match/prompts/card-prompts';
 import type { ReportCard, ChannelData, ChannelCategories, TCIScores } from '@/lib/husband-match/types';
 
+// 카드 1 고정 텍스트 (항상 동일한 내용)
+const CARD_1_FIXED_CONTENT = `새벽 두 시, 아무도 모르게 재생한 그 영상. 습관처럼 누른 구독 버튼, 알고리즘이 슬쩍 건넨 추천 한 줄.
+
+거기엔 당신도 의식하지 못한 욕구와 결핍, 끌림의 방향이 고스란히 기록되어 있습니다.
+
+유튜브는 생각보다 사적인 공간입니다. 타인 앞에서는 쉽게 포장하지만, 혼자 보는 화면 앞에서만큼은 누구나 꽤 정직해지니까요.
+
+지금부터 당신의 구독 채널과 시청 패턴을 찬찬히 들여다보겠습니다. 그 안에서 당신의 성격 구조와 관계 욕구를 읽어내고, 평생의 동반자가 될 사람의 유형과 구체적인 프로필, 그리고 절대 참을 수 없는 상대의 단점까지 짚어드리겠습니다.
+
+준비되셨다면, 시작합니다.`;
+
 // 9장 카드 타이틀 (2026-02-06 개선: 카드 통합)
 const CARD_TITLES: Record<number, { title: string; subtitle?: string; card_type: ReportCard['card_type'] }> = {
-  1: { title: '당신의 YouTube, 당신의 마음', subtitle: '커버', card_type: 'intro' },
+  1: { title: '당신이 몰래 본 영상이, 당신을 말하고 있다', subtitle: 'INTRO', card_type: 'intro' },
   2: { title: '구독 데이터 개요', subtitle: '분석 시작', card_type: 'intro' },
   3: { title: '당신은 ___ 타입', subtitle: '통합 유형 분석', card_type: 'personality' },
   4: { title: '당신의 감성', subtitle: '감정 스타일', card_type: 'values' },
@@ -223,19 +234,7 @@ function generateFallbackCards(data: Phase1CardData): Record<string, string> {
   const hexData = getHexagonChartData(t, data.channel_categories);
 
   return {
-    "1": `YouTube 구독 기반 성격 & 남편상 분석 리포트
-
-"${characteristics[0] || '다양한 관심사를 가진'} 당신만의 이야기"
-
-안녕하세요! 당신의 구독 채널 ${data.channelCount}개를 분석해 숨겨진 마음의 지도를 그려보았어요.
-
-구독 리스트는 단순한 채널 목록이 아니에요. 그 안에는 당신의 관심사, 가치관, 그리고 무의식적인 욕구가 담겨 있죠. 오늘 저희가 그 데이터를 통해 당신의 내면을 들여다보았어요.
-
-분석 결과, 당신은 ${sortedCats[0]?.name || '다양한'} 분야에 ${sortedCats[0]?.percent || 0}%의 높은 관심을 보이고 있어요. 이는 ${characteristics[0] || '성장을 추구하는'} 성향과 깊이 연결되어 있답니다.
-
-지금부터 9장의 카드로 당신의 내면을 탐색해볼게요. 각 카드에는 구체적인 데이터와 그 의미가 담겨 있으니, 천천히 읽어보시면서 자신을 발견하는 시간이 되셨으면 해요.
-
-자, 이제 시작해볼까요?`,
+    "1": CARD_1_FIXED_CONTENT,
 
     "2": `${characteristics[0] || '다양한 감각으로 세상을 탐험하는 사람'}
 
@@ -672,7 +671,10 @@ export async function runPhase1FromPrecomputed(
   for (let cardNumber = 1; cardNumber <= 9; cardNumber++) {
     const meta = CARD_TITLES[cardNumber];
     const cardKey = String(cardNumber);
-    const content = cardContents[cardKey] || '분석 결과를 불러오는 중 문제가 발생했습니다.';
+    // 카드 1은 항상 고정 텍스트 사용
+    const content = cardNumber === 1
+      ? CARD_1_FIXED_CONTENT
+      : (cardContents[cardKey] || '분석 결과를 불러오는 중 문제가 발생했습니다.');
     cards.push({
       card_number: cardNumber,
       title: meta.title,
