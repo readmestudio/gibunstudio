@@ -1,26 +1,29 @@
 import { chatCompletion } from '@/lib/openai-client';
 import { ChannelData, ChannelCategories } from '../types';
-import { getAllCategories } from '../data/categories';
+import { getAllCategories, CategoryId } from '../data/categories';
 
 /**
  * Categorize YouTube channels into 10 predefined categories using LLM
+ * 문서 명세 기준 10대 카테고리 분류
  */
 export async function categorizeChannels(
   channels: ChannelData[]
 ): Promise<ChannelCategories> {
+  const emptyCategories: ChannelCategories = {
+    musicMood: 0,
+    readingHumanities: 0,
+    sportsOutdoor: 0,
+    entertainmentVlog: 0,
+    languageCulture: 0,
+    lifestyleSpace: 0,
+    careerBusiness: 0,
+    healingSpirituality: 0,
+    fashionBeauty: 0,
+    financeInvest: 0,
+  };
+
   if (channels.length === 0) {
-    return {
-      music: 0,
-      reading: 0,
-      sports: 0,
-      cooking: 0,
-      travel: 0,
-      gaming: 0,
-      tech: 0,
-      art: 0,
-      education: 0,
-      entertainment: 0,
-    };
+    return emptyCategories;
   }
 
   const categories = getAllCategories();
@@ -28,7 +31,7 @@ export async function categorizeChannels(
   const prompt = `다음 YouTube 채널들을 10개 카테고리로 분류해주세요.
 
 카테고리 정의:
-${categories.map(c => `- ${c.name}: ${c.description}`).join('\n')}
+${categories.map(c => `- ${c.id} (${c.name}): ${c.description}`).join('\n')}
 
 채널 목록 (${channels.length}개):
 ${channels.slice(0, 100).map((ch, i) => `${i + 1}. ${ch.channel_title}${ch.channel_description ? `: ${ch.channel_description.slice(0, 100)}` : ''}`).join('\n')}
@@ -38,16 +41,16 @@ ${channels.slice(0, 100).map((ch, i) => `${i + 1}. ${ch.channel_title}${ch.chann
 
 응답 형식:
 {
-  "music": 5,
-  "reading": 3,
-  "sports": 2,
-  "cooking": 4,
-  "travel": 6,
-  "gaming": 1,
-  "tech": 8,
-  "art": 2,
-  "education": 7,
-  "entertainment": 12
+  "musicMood": 5,
+  "readingHumanities": 3,
+  "sportsOutdoor": 2,
+  "entertainmentVlog": 8,
+  "languageCulture": 1,
+  "lifestyleSpace": 4,
+  "careerBusiness": 6,
+  "healingSpirituality": 3,
+  "fashionBeauty": 2,
+  "financeInvest": 4
 }`;
 
   try {
@@ -70,16 +73,16 @@ ${channels.slice(0, 100).map((ch, i) => `${i + 1}. ${ch.channel_title}${ch.chann
 
     // Ensure all categories are present with default 0
     const categoryCounts: ChannelCategories = {
-      music: result.music || 0,
-      reading: result.reading || 0,
-      sports: result.sports || 0,
-      cooking: result.cooking || 0,
-      travel: result.travel || 0,
-      gaming: result.gaming || 0,
-      tech: result.tech || 0,
-      art: result.art || 0,
-      education: result.education || 0,
-      entertainment: result.entertainment || 0,
+      musicMood: result.musicMood || 0,
+      readingHumanities: result.readingHumanities || 0,
+      sportsOutdoor: result.sportsOutdoor || 0,
+      entertainmentVlog: result.entertainmentVlog || 0,
+      languageCulture: result.languageCulture || 0,
+      lifestyleSpace: result.lifestyleSpace || 0,
+      careerBusiness: result.careerBusiness || 0,
+      healingSpirituality: result.healingSpirituality || 0,
+      fashionBeauty: result.fashionBeauty || 0,
+      financeInvest: result.financeInvest || 0,
     };
 
     return categoryCounts;
@@ -95,29 +98,29 @@ ${channels.slice(0, 100).map((ch, i) => `${i + 1}. ${ch.channel_title}${ch.chann
  */
 function fallbackCategorization(channels: ChannelData[]): ChannelCategories {
   const counts: ChannelCategories = {
-    music: 0,
-    reading: 0,
-    sports: 0,
-    cooking: 0,
-    travel: 0,
-    gaming: 0,
-    tech: 0,
-    art: 0,
-    education: 0,
-    entertainment: 0,
+    musicMood: 0,
+    readingHumanities: 0,
+    sportsOutdoor: 0,
+    entertainmentVlog: 0,
+    languageCulture: 0,
+    lifestyleSpace: 0,
+    careerBusiness: 0,
+    healingSpirituality: 0,
+    fashionBeauty: 0,
+    financeInvest: 0,
   };
 
-  const keywords = {
-    music: ['music', '음악', 'song', 'singer', '노래', 'kpop', 'jazz', 'classical'],
-    reading: ['book', '책', 'reading', '독서', 'literature', '문학', 'novel', 'author'],
-    sports: ['sport', '스포츠', 'fitness', '운동', 'gym', 'soccer', 'basketball', 'baseball'],
-    cooking: ['cook', '요리', 'recipe', '레시피', 'food', '음식', 'baking', 'chef'],
-    travel: ['travel', '여행', 'tour', '관광', 'trip', 'vacation', 'world', 'explore'],
-    gaming: ['game', '게임', 'gaming', 'play', 'esports', 'stream', 'twitch'],
-    tech: ['tech', '기술', 'technology', 'coding', '코딩', 'programming', 'developer', 'ai'],
-    art: ['art', '예술', 'design', '디자인', 'drawing', '그림', 'painting', 'creative'],
-    education: ['education', '교육', 'learn', '학습', 'tutorial', '강의', 'lecture', 'course'],
-    entertainment: ['entertainment', '엔터', 'comedy', '코미디', 'variety', '예능', 'show', 'fun'],
+  const keywords: Record<CategoryId, string[]> = {
+    musicMood: ['music', '음악', 'song', 'singer', '노래', 'kpop', 'jazz', 'playlist', 'lofi', 'asmr', '감성'],
+    readingHumanities: ['book', '책', 'reading', '독서', 'literature', '문학', 'novel', 'author', '철학', '역사', '인문'],
+    sportsOutdoor: ['sport', '스포츠', 'fitness', '운동', 'gym', 'soccer', '등산', '캠핑', 'travel', '여행', '아웃도어'],
+    entertainmentVlog: ['예능', '연예인', 'entertainment', 'vlog', '브이로그', '일상', '먹방', '코미디', '버라이어티'],
+    languageCulture: ['english', '영어', '일본어', '중국어', 'language', '언어', '다문화', '해외'],
+    lifestyleSpace: ['인테리어', '집', 'home', '라이프', 'lifestyle', '미니멀', '요리', 'cook', '레시피'],
+    careerBusiness: ['취업', '이직', '창업', 'business', '커리어', '개발', 'coding', '코딩', 'IT', '스타트업'],
+    healingSpirituality: ['명상', 'meditation', '힐링', '심리', '영성', '치유', '상담', '마음', '자존감'],
+    fashionBeauty: ['패션', 'fashion', '뷰티', 'beauty', '메이크업', '화장', '스타일', '코디'],
+    financeInvest: ['경제', '재테크', '투자', '주식', '부동산', '금융', '돈', '저축', 'money', '자산'],
   };
 
   channels.forEach((channel) => {
@@ -125,15 +128,15 @@ function fallbackCategorization(channels: ChannelData[]): ChannelCategories {
     let categorized = false;
 
     for (const [category, words] of Object.entries(keywords)) {
-      if (words.some((word) => text.includes(word))) {
-        counts[category as keyof ChannelCategories]++;
+      if (words.some((word) => text.includes(word.toLowerCase()))) {
+        counts[category as CategoryId]++;
         categorized = true;
         break;
       }
     }
 
     if (!categorized) {
-      counts.entertainment++;
+      counts.entertainmentVlog++;
     }
   });
 

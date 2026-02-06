@@ -6,17 +6,18 @@ export interface ChannelData {
   channel_description: string;
 }
 
+// 문서 명세 기준 10대 카테고리
 export interface ChannelCategories {
-  music: number;
-  reading: number;
-  sports: number;
-  cooking: number;
-  travel: number;
-  gaming: number;
-  tech: number;
-  art: number;
-  education: number;
-  entertainment: number;
+  musicMood: number;           // 음악/분위기
+  readingHumanities: number;   // 독서/인문학
+  sportsOutdoor: number;       // 스포츠/아웃도어
+  entertainmentVlog: number;   // 예능/브이로그
+  languageCulture: number;     // 언어/다문화
+  lifestyleSpace: number;      // 라이프스타일/공간
+  careerBusiness: number;      // 커리어/창업
+  healingSpirituality: number; // 힐링/영성
+  fashionBeauty: number;       // 패션/뷰티
+  financeInvest: number;       // 경제/재테크
 }
 
 export interface TCIScores {
@@ -46,8 +47,9 @@ export interface MBTIScores {
   P: number; // Perceiving (0-100)
 }
 
+// 문서 명세 기준 18차원 벡터
 export interface UserVector {
-  // TCI dimensions (7)
+  // TCI dimensions (7) [0-6]
   NS: number;
   HA: number;
   RD: number;
@@ -55,19 +57,19 @@ export interface UserVector {
   SD: number;
   CO: number;
   ST: number;
-  // Enneagram centers (3)
+  // Enneagram centers (3) [7-9]
   head: number;
   heart: number;
   body: number;
-  // Content categories (8 normalized)
-  music: number;
-  intellectual: number;
-  physical: number;
-  creative: number;
-  tech: number;
-  lifestyle: number;
-  learning: number;
-  entertainment: number;
+  // Content 8차원 [10-17]
+  sensory_sensitivity: number;     // 감각적 민감성: 음악+패션뷰티
+  intellectual_curiosity: number;  // 지적 호기심: 독서+경제재테크
+  cultural_openness: number;       // 문화적 개방성: 언어다문화
+  sociability: number;             // 사회성: 예능브이로그
+  nurturing: number;               // 돌봄 관심: 힐링영성
+  adventurousness: number;         // 모험성: 스포츠아웃도어
+  stability_orientation: number;   // 안정 지향: 라이프스타일+경제재테크
+  achievement_orientation: number; // 성취 지향: 커리어창업
 }
 
 export interface HusbandType {
