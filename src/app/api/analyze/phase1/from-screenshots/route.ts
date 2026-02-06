@@ -83,11 +83,19 @@ export async function POST(request: NextRequest) {
     );
 
     // 1회의 Vision API 호출로 모든 채널 추출
-    const text = await visionCompletion(
-      imageInputs,
-      CHANNEL_EXTRACTION_PROMPT,
-      { model: 'gpt-4o-mini', max_tokens: 2048 } // gpt-4o-mini 사용으로 비용 절감
-    );
+    console.log(`[from-screenshots] Processing ${imageInputs.length} images for user ${user.id}`);
+    let text: string;
+    try {
+      text = await visionCompletion(
+        imageInputs,
+        CHANNEL_EXTRACTION_PROMPT,
+        { model: 'gpt-4o-mini', max_tokens: 2048 } // gpt-4o-mini 사용으로 비용 절감
+      );
+      console.log(`[from-screenshots] Vision API returned: ${text.slice(0, 200)}...`);
+    } catch (visionError) {
+      console.error('[from-screenshots] Vision API error:', visionError);
+      throw new Error(`Vision API 오류: ${visionError instanceof Error ? visionError.message : 'Unknown error'}`);
+    }
 
     const allChannelNames = parseChannelNamesFromText(text);
 
@@ -104,7 +112,16 @@ export async function POST(request: NextRequest) {
       channel_description: '',
     }));
 
-    const { phase1_id } = await runPhase1FromChannels(supabase, user.id, channels);
+    console.log(`[from-screenshots] Extracted ${channels.length} channels, running Phase1 analysis...`);
+    let phase1_id: string;
+    try {
+      const result = await runPhase1FromChannels(supabase, user.id, channels);
+      phase1_id = result.phase1_id;
+      console.log(`[from-screenshots] Phase1 completed with id: ${phase1_id}`);
+    } catch (phase1Error) {
+      console.error('[from-screenshots] Phase1 error:', phase1Error);
+      throw new Error(`분석 처리 오류: ${phase1Error instanceof Error ? phase1Error.message : 'Unknown error'}`);
+    }
 
     return NextResponse.json({
       success: true,
@@ -113,6 +130,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('Phase 1 from-screenshots error:', error);
+    // 상세 에러 로깅
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     const message = error instanceof Error ? error.message : 'Analysis failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
