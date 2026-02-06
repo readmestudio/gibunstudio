@@ -5,7 +5,17 @@ import { runPhase1FromChannels } from '../run-from-channels';
 import type { ChannelData } from '@/lib/husband-match/types';
 
 const MIN_IMAGES = 3;
-const CHANNEL_EXTRACTION_PROMPT = `이 이미지는 YouTube 구독 목록 화면입니다. 보이는 모든 채널 이름(채널 타이틀)만 추출해 한 줄에 하나씩 출력해 주세요. "구독", "전체", "관련성 순" 같은 UI 텍스트나 버튼 이름은 제외하고, 채널 이름만 나열해 주세요.`;
+const MAX_IMAGES = 5; // 최대 5장만 처리하여 토큰 절약
+
+// 모든 이미지를 한 번에 처리하는 프롬프트
+const CHANNEL_EXTRACTION_PROMPT = `이 이미지들은 YouTube 구독 목록 화면 캡처입니다.
+모든 이미지에서 보이는 채널 이름(채널 타이틀)을 추출해주세요.
+
+규칙:
+1. 채널 이름만 추출 (UI 텍스트 "구독", "전체", "관련성 순" 등 제외)
+2. 중복 채널은 한 번만 출력
+3. 한 줄에 채널 이름 하나씩 출력
+4. 번호나 기호 없이 채널 이름만 출력`;
 
 function parseChannelNamesFromText(text: string): string[] {
   const lines = text
@@ -15,8 +25,8 @@ function parseChannelNamesFromText(text: string): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const line of lines) {
-    const name = line.replace(/^[\d.)\s\-]+/, '').trim();
-    if (name && !seen.has(name.toLowerCase())) {
+    const name = line.replace(/^[\d.)\s\-•·]+/, '').trim();
+    if (name && name.length > 1 && !seen.has(name.toLowerCase())) {
       seen.add(name.toLowerCase());
       result.push(name);
     }
@@ -59,28 +69,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const allChannelNames: string[] = [];
-    const seen = new Set<string>();
+    // 최대 MAX_IMAGES장만 처리 (토큰 절약)
+    const filesToProcess = files.slice(0, MAX_IMAGES);
 
-    for (const file of files) {
-      const buf = await file.arrayBuffer();
-      const base64 = Buffer.from(buf).toString('base64');
-      const mediaType = file.type || 'image/png';
+    // 모든 이미지를 한 번에 Vision API로 전송
+    const imageInputs: VisionImageInput[] = await Promise.all(
+      filesToProcess.map(async (file) => {
+        const buf = await file.arrayBuffer();
+        const base64 = Buffer.from(buf).toString('base64');
+        const mediaType = file.type || 'image/png';
+        return { type: 'base64' as const, mediaType, data: base64 };
+      })
+    );
 
-      const imageInput: VisionImageInput = { type: 'base64', mediaType, data: base64 };
-      const text = await visionCompletion(
-        [imageInput],
-        CHANNEL_EXTRACTION_PROMPT,
-        { model: 'gpt-4o', max_tokens: 1024 }
-      );
-      const names = parseChannelNamesFromText(text);
-      for (const name of names) {
-        if (name && !seen.has(name.toLowerCase())) {
-          seen.add(name.toLowerCase());
-          allChannelNames.push(name);
-        }
-      }
-    }
+    // 1회의 Vision API 호출로 모든 채널 추출
+    const text = await visionCompletion(
+      imageInputs,
+      CHANNEL_EXTRACTION_PROMPT,
+      { model: 'gpt-4o-mini', max_tokens: 2048 } // gpt-4o-mini 사용으로 비용 절감
+    );
+
+    const allChannelNames = parseChannelNamesFromText(text);
 
     if (allChannelNames.length === 0) {
       return NextResponse.json(

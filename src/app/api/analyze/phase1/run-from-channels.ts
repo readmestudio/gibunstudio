@@ -7,13 +7,8 @@ import { createVector } from '@/lib/husband-match/analysis/create-vector';
 import { matchHusbandType } from '@/lib/husband-match/analysis/match-husband-type';
 import { chatCompletion } from '@/lib/openai-client';
 import { SYSTEM_PROMPT } from '@/lib/husband-match/prompts/system-prompt';
-import {
-  PHASE1_CARD_PROMPTS,
-  Phase1CardData,
-} from '@/lib/husband-match/prompts/card-prompts';
-import { generateMetaphor } from '@/lib/husband-match/prompts/metaphor-generator';
-import type { ReportCard } from '@/lib/husband-match/types';
-import type { ChannelData } from '@/lib/husband-match/types';
+import type { Phase1CardData } from '@/lib/husband-match/prompts/card-prompts';
+import type { ReportCard, ChannelData, ChannelCategories } from '@/lib/husband-match/types';
 
 const CARD_TITLES: Record<number, { title: string; subtitle?: string; card_type: ReportCard['card_type'] }> = {
   1: { title: '당신의 YouTube, 당신의 마음', subtitle: '분석을 시작합니다', card_type: 'intro' },
@@ -28,19 +23,99 @@ const CARD_TITLES: Record<number, { title: string; subtitle?: string; card_type:
   10: { title: '더 깊은 분석이 궁금하신가요?', subtitle: 'Phase 2 안내', card_type: 'result' },
 };
 
-async function generateCardContent(
-  cardKey: keyof typeof PHASE1_CARD_PROMPTS,
-  data: Phase1CardData
-): Promise<string> {
-  const prompt = PHASE1_CARD_PROMPTS[cardKey](data);
+const ENNEAGRAM_NAMES: Record<number, string> = {
+  1: '완벽주의자', 2: '조력자', 3: '성취자', 4: '개인주의자', 5: '탐구자',
+  6: '충성주의자', 7: '열정가', 8: '도전자', 9: '조정자',
+};
+
+function formatCategories(categories: ChannelCategories): string {
+  return Object.entries(categories)
+    .filter(([, v]) => v > 0)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([k, v]) => `${k}(${v}개)`)
+    .join(', ') || '없음';
+}
+
+// 한 번의 API 호출로 모든 카드 콘텐츠 생성
+async function generateAllCardsAtOnce(data: Phase1CardData): Promise<Record<string, string>> {
+  const t = data.tci_scores;
+  const ennea = data.enneagram_type ?? 9;
+  const enneaName = ENNEAGRAM_NAMES[ennea];
+  const mbti = data.mbti_type ?? 'INFP';
+  const h = data.matched_husband;
+  const scorePercent = Math.round(data.match_score * 100);
+  const categories = formatCategories(data.channel_categories);
+  const metaphor = h.variant === 'extrovert' ? h.metaphor_e : h.metaphor_i;
+
+  const prompt = `당신은 심리 분석 전문가입니다. 아래 분석 데이터를 바탕으로 10개의 리포트 카드 내용을 JSON 형식으로 생성해주세요.
+
+## 분석 데이터
+- 채널 수: ${data.channelCount}개
+- 채널 카테고리: ${categories}
+- TCI 점수: NS=${t.NS}, HA=${t.HA}, RD=${t.RD}, P=${t.P}, SD=${t.SD}, CO=${t.CO}, ST=${t.ST}
+- 애니어그램: ${ennea}번 (${enneaName})
+- MBTI: ${mbti}
+- 매칭된 남편상: ${h.name} (${h.category})
+- 매칭 점수: ${scorePercent}%
+- 비유: ${metaphor}
+
+## 카드 생성 지침
+각 카드는 2-3문단, 따뜻하고 공감적인 톤으로 작성해주세요.
+
+반드시 아래 JSON 형식으로만 응답해주세요:
+{
+  "1": "카드1 내용 (환영 메시지, YouTube 분석 시작)",
+  "2": "카드2 내용 (TCI 성격 프로필 설명)",
+  "3": "카드3 내용 (애니어그램 분석)",
+  "4": "카드4 내용 (MBTI 분석)",
+  "5": "카드5 내용 (YouTube 콘텐츠 취향 분석)",
+  "6": "카드6 내용 (추론된 가치관)",
+  "7": "카드7 내용 (연애/관계 스타일)",
+  "8": "카드8 내용 (매칭된 남편상 소개)",
+  "9": "카드9 내용 (비유와 인사이트)",
+  "10": "카드10 내용 (Phase 2 안내)"
+}`;
+
   const response = await chatCompletion(
     [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt },
     ],
-    { model: 'gpt-4-turbo', temperature: 0.7, max_tokens: 600 }
+    { model: 'gpt-4o-mini', temperature: 0.7, max_tokens: 4000, response_format: { type: 'json_object' } }
   );
-  return (response ?? '').trim().slice(0, 2000);
+
+  try {
+    const parsed = JSON.parse(response ?? '{}');
+    return parsed;
+  } catch {
+    console.error('Failed to parse card JSON:', response);
+    return {};
+  }
+}
+
+// 폴백: 템플릿 기반 카드 생성 (API 실패 시)
+function generateFallbackCards(data: Phase1CardData): Record<string, string> {
+  const t = data.tci_scores;
+  const ennea = data.enneagram_type ?? 9;
+  const enneaName = ENNEAGRAM_NAMES[ennea];
+  const mbti = data.mbti_type ?? 'INFP';
+  const h = data.matched_husband;
+  const scorePercent = Math.round(data.match_score * 100);
+  const categories = formatCategories(data.channel_categories);
+
+  return {
+    "1": `${data.channelCount}개의 YouTube 구독 채널을 분석했습니다. 당신이 선택한 콘텐츠에는 당신의 성격, 가치관, 관계 스타일이 담겨 있습니다. 지금부터 10장의 카드로 당신의 내면을 탐색해보겠습니다.`,
+    "2": `TCI 분석 결과, 새로움 추구(${t.NS}), 위험 회피(${t.HA}), 보상 의존(${t.RD}), 인내력(${t.P}), 자율성(${t.SD}), 협력성(${t.CO}), 자기초월(${t.ST}) 점수가 나왔습니다. 이 조합은 당신만의 독특한 성격 패턴을 보여줍니다.`,
+    "3": `애니어그램 ${ennea}번 유형(${enneaName})으로 분석되었습니다. 이 유형은 특유의 동기와 강점을 가지고 있으며, 관계에서도 독특한 패턴을 보입니다.`,
+    "4": `MBTI ${mbti} 유형으로 추정됩니다. 이 유형은 특유의 사고방식과 소통 스타일을 가지며, 연애와 결혼에서 특별한 강점을 발휘합니다.`,
+    "5": `주로 ${categories} 카테고리의 콘텐츠를 구독하고 계시네요. 이런 콘텐츠 취향은 당신의 관심사와 가치관을 반영합니다.`,
+    "6": `분석 결과를 종합하면, 당신은 관계에서 진정성과 깊이를 중요하게 여기는 것으로 보입니다. 표면적인 것보다 내면의 연결을 추구하는 성향이 있습니다.`,
+    "7": `${mbti} 유형과 애니어그램 ${ennea}번의 조합은 연애에서 특유의 스타일을 만들어냅니다. 당신만의 애정 표현 방식과 관계 패턴이 있습니다.`,
+    "8": `당신과 ${scorePercent}% 매칭되는 남편상은 "${h.name}"입니다. ${h.description}`,
+    "9": `당신과 파트너의 관계는 "${h.variant === 'extrovert' ? h.metaphor_e : h.metaphor_i}"에 비유할 수 있습니다. 서로의 강점이 조화를 이루며 함께 성장하는 관계가 될 수 있습니다.`,
+    "10": `지금까지의 분석은 YouTube 구독 데이터를 기반으로 했습니다. Phase 2 서베이에 참여하시면 더 정교한 교차검증을 통해 깊이 있는 인사이트를 얻으실 수 있습니다.`,
+  };
 }
 
 export interface Phase1Precomputed {
@@ -118,47 +193,30 @@ export async function runPhase1FromPrecomputed(
     match_score: matchResult.score,
   };
 
+  // 한 번의 API 호출로 모든 카드 생성 (또는 폴백 사용)
+  let cardContents: Record<string, string>;
   try {
-    cardData.metaphor = await generateMetaphor(
-      `MBTI ${mbti_type}, 애니어그램 ${enneagram_type}번, 남편상 ${matchResult.type.name}. ${matchResult.type.description}`
-    );
-  } catch {
-    cardData.metaphor = matchResult.type.variant === 'extrovert'
-      ? matchResult.type.metaphor_e
-      : matchResult.type.metaphor_i;
+    cardContents = await generateAllCardsAtOnce(cardData);
+    // 파싱 실패 또는 불완전한 응답 시 폴백
+    if (!cardContents || Object.keys(cardContents).length < 10) {
+      console.log('[Phase 1] Incomplete AI response, using fallback');
+      cardContents = generateFallbackCards(cardData);
+    }
+  } catch (err) {
+    console.error('[Phase 1] Card generation failed, using fallback:', err);
+    cardContents = generateFallbackCards(cardData);
   }
 
-  const cardKeys: (keyof typeof PHASE1_CARD_PROMPTS)[] = [
-    'card_01_intro',
-    'card_02_personality',
-    'card_03_enneagram',
-    'card_04_mbti',
-    'card_05_content',
-    'card_06_values',
-    'card_07_relationship',
-    'card_08_match_result',
-    'card_09_metaphor',
-    'card_10_cta',
-  ];
-
   const cards: ReportCard[] = [];
-
-  for (let i = 0; i < cardKeys.length; i++) {
-    const key = cardKeys[i];
-    const cardNumber = i + 1;
+  for (let cardNumber = 1; cardNumber <= 10; cardNumber++) {
     const meta = CARD_TITLES[cardNumber];
-    let content: string;
-    try {
-      content = await generateCardContent(key, cardData);
-    } catch (err) {
-      console.error(`[Phase 1] Card ${cardNumber} generation failed:`, err);
-      content = '분석 결과를 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-    }
+    const cardKey = String(cardNumber);
+    const content = cardContents[cardKey] || '분석 결과를 불러오는 중 문제가 발생했습니다.';
     cards.push({
       card_number: cardNumber,
       title: meta.title,
       subtitle: meta.subtitle,
-      content,
+      content: String(content).slice(0, 2000),
       card_type: meta.card_type,
     });
   }
