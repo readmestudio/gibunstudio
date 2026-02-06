@@ -254,7 +254,7 @@ ${hexData.labels.map((label, i) => `  · ${label}: ${hexData.values[i]}점 - ${h
 반드시 700자 이상 작성하세요.`;
   },
 
-  // 카드 3: 당신은 ___ 타입 (통합 카드 - 카드3+4+5+6 합침)
+  // 카드 3: 당신은 ___ 타입 (통합 카드 - 2500-3000자, LLM이 subtitle/title 생성)
   card_03_type_summary: (data: Phase1CardData): string => {
     const sortedCategories = getSortedCategories(data.channel_categories);
     const topTCI = getTopTCIScores(data.tci_scores, 3);
@@ -323,41 +323,35 @@ ${sortedCategories.map(c => `- ${c.name}: ${c.count}개 (${c.percent}%)`).join('
 도출된 특성 키워드: ${characteristics.join(' / ')}
 
 【당신은 ___ 타입 카드 작성 지침】
-분량: 1,500자 (다른 카드보다 긴 분량)
+분량: 2,500-3,000자 (가장 긴 카드!)
 
-⚠️ 중요: MBTI 4글자(예: ESFP), 애니어그램 번호(예: 9번), TCI 척도명(예: 자극추구)을 직접 명시하지 마세요!
-대신 그들의 특징만 서술하세요. 실제 검사 결과가 아니기 때문에 신뢰도 문제가 있습니다.
+⚠️ 응답 형식 주의: "3_subtitle", "3_title", "3"을 따로 작성하세요!
+⚠️ MBTI 4글자, 애니어그램 번호, TCI 척도명을 직접 명시하지 마세요!
 
-1. 유형명 제목 (2-4단어)
-   - 예: "감성적 탐구자", "자유로운 연결자", "조용한 성장가"
-   - 사용자의 핵심 특성을 함축하는 이름
+1. 영어 타입명 (subtitle용)
+   - 예: "Emotional Explorer Type", "Quiet Growth Seeker Type"
+   - 사용자의 핵심 특성을 영어로 표현
 
-2. 핵심 키워드 3개
-   - 해시태그 형식: #내면탐색 #깊은대화 #성장지향
+2. 한국어 타이틀
+   - "당신은 {타입이름} 타입이에요" 형식
+   - 예: "당신은 감성적 탐구자 타입이에요"
 
-3. 구독 패턴에서 발견한 특징 (400자)
-   - 상위 카테고리 ${sortedCategories[0]?.name}(${sortedCategories[0]?.percent}%)가 말해주는 것
-   - ${sortedCategories[1]?.name}(${sortedCategories[1]?.percent}%)와의 조합이 보여주는 것
-   - 이 패턴이 왜 당신의 성격을 나타내는지 근거 설명
+3. 본문 작성 규칙 (2,500-3,000자)
+   - 맥락이 바뀌는 문단마다 **키워드: 요약 한 줄**을 볼드로 먼저 작성
+   - 예) **당신의 강점: 차갑지만 부드러운 리더십**
+   - 예) **관계 패턴: 깊이보다 넓이를 택하는 사람**
+   - 예) **숨겨진 욕구: 인정받고 싶은 마음**
+   - 볼드 요약 시작 전 빈 줄 2개 삽입 (문단 여백)
+   - 각 섹션 500-600자 이상으로 상세히 작성
 
-4. 심리 특성 해석 (400자) ← MBTI/애니어그램 명칭 없이!
-   - "${mbtiTraits[0]}" 특성에 대한 설명
-   - "${mbtiTraits[1]}" 특성에 대한 설명
-   - "${enneaTrait}"에 대한 설명
-   - 이 특성들이 구독 데이터와 어떻게 연결되는지
+필수 포함 섹션:
+- **당신의 핵심 특성** - ${sortedCategories[0]?.name}(${sortedCategories[0]?.percent}%) 기반
+- **관계에서 보이는 패턴** - ${mbtiTraits[0]}, ${mbtiTraits[1]} 특성 반영
+- **숨겨진 욕구** - ${enneaTrait} 기반 무의식적 갈망
+- **강점과 매력** - ${topTCI[0].name} ${topTCI[0].score}점 중심
+- **왜 이렇게 분석했는지** - 데이터와 해석의 연결고리
 
-5. 종합 해석 (400자)
-   - 위 특성들이 조합되어 나타나는 당신만의 독특한 모습
-   - 강점과 매력 포인트
-   - 다른 사람들이 당신을 어떻게 느끼는지
-
-6. 근거 제시 (300자)
-   - "왜 이 유형으로 진단했는지" 구체적 설명
-   - ${sortedCategories[0]?.name} ${sortedCategories[0]?.percent}% → 이 특성
-   - ${topTCI[0].name} ${topTCI[0].score}점 → 이 특성
-   - 데이터와 해석의 연결고리를 명확히
-
-반드시 1,500자 이상 작성하세요.`;
+반드시 2,500자 이상 작성하세요.`;
   },
 
   // 카드 4: 당신의 감성 (기존 카드 7)
