@@ -6,8 +6,9 @@ import { Phase2ReportClient } from './Phase2ReportClient';
 export default async function Phase2ReportPage({
   params,
 }: {
-  params: { phase2_id: string };
+  params: Promise<{ phase2_id: string }>;
 }) {
+  const { phase2_id } = await params;
   const supabase = await createClient();
 
   const {
@@ -21,7 +22,7 @@ export default async function Phase2ReportPage({
   const { data: result, error } = await supabase
     .from('phase2_results')
     .select('*, phase1_results(*)')
-    .eq('id', params.phase2_id)
+    .eq('id', phase2_id)
     .single();
 
   if (error || !result) {

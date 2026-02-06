@@ -5,8 +5,9 @@ import { PaymentClient } from './PaymentClient';
 export default async function PaymentPage({
   params,
 }: {
-  params: { phase1_id: string };
+  params: Promise<{ phase1_id: string }>;
 }) {
+  const { phase1_id } = await params;
   const supabase = await createClient();
 
   // Get current user
@@ -22,7 +23,7 @@ export default async function PaymentPage({
   const { data: phase1Result, error: phase1Error } = await supabase
     .from('phase1_results')
     .select('*')
-    .eq('id', params.phase1_id)
+    .eq('id', phase1_id)
     .single();
 
   if (phase1Error || !phase1Result) {
@@ -37,14 +38,14 @@ export default async function PaymentPage({
   const { data: existingPayment } = await supabase
     .from('husband_match_payments')
     .select('*')
-    .eq('phase1_id', params.phase1_id)
+    .eq('phase1_id', phase1_id)
     .eq('status', 'confirmed')
     .single();
 
   if (existingPayment) {
     // Payment already confirmed, redirect to survey
-    redirect(`/husband-match/survey/${params.phase1_id}`);
+    redirect(`/husband-match/survey/${phase1_id}`);
   }
 
-  return <PaymentClient phase1Id={params.phase1_id} userEmail={user.email || ''} />;
+  return <PaymentClient phase1Id={phase1_id} userEmail={user.email || ''} />;
 }

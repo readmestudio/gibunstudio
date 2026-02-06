@@ -5,8 +5,9 @@ import Link from 'next/link';
 export default async function PaymentWaitingPage({
   params,
 }: {
-  params: { payment_id: string };
+  params: Promise<{ payment_id: string }>;
 }) {
+  const { payment_id } = await params;
   const supabase = await createClient();
 
   // Get current user
@@ -22,7 +23,7 @@ export default async function PaymentWaitingPage({
   const { data: payment, error } = await supabase
     .from('husband_match_payments')
     .select('*, phase1_results(id)')
-    .eq('id', params.payment_id)
+    .eq('id', payment_id)
     .single();
 
   if (error || !payment) {
