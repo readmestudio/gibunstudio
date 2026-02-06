@@ -57,28 +57,6 @@ export default function Home() {
       {/* Divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
 
-      {/* 7일 프로그램 Hero Section */}
-      <section className="relative overflow-hidden bg-[var(--surface)]">
-        <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-4xl lg:text-5xl">
-              7일간의 내면 아이 찾기
-            </h1>
-            <p className="mt-6 text-lg text-[var(--foreground)]/70 sm:text-xl">
-              매일 하나의 미션으로 당신의 내면 아이를 발견하고, 전문 심리 상담가의 1:1 피드백을 받아보세요.
-            </p>
-            <div className="mt-10">
-              <Link
-                href="/onboarding"
-                className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-8 py-3 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--accent-hover)]"
-              >
-                카카오로 시작하기
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* 프로그램 카드 3개 */}
       <ProgramCards />
 
