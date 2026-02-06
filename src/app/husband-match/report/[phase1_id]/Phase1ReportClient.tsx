@@ -14,18 +14,33 @@ interface Phase1ReportClientProps {
 export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
   const router = useRouter();
 
+  // 카드 2용 육각형 차트 데이터 생성 (TCI 6차원)
+  const hexagonData = {
+    labels: ['자기초월', '자율성', '자극추구', '위험회피', '인내력', '연대감'],
+    values: [
+      result.tci_scores.ST,
+      result.tci_scores.SD,
+      result.tci_scores.NS,
+      result.tci_scores.HA,
+      result.tci_scores.P,
+      result.tci_scores.CO,
+    ],
+  };
+
   // Create card components from result data
   const reportCards = result.cards.map((card) => (
     <ReportCard
       key={card.card_number}
       title={card.title}
       content={card.content}
+      cardNumber={card.card_number}
       cardType={card.card_type as any}
       metadata={{
         subtitle: card.subtitle,
         tags: card.tags,
         highlight: card.highlight,
       }}
+      hexagonData={card.card_number === 2 ? hexagonData : undefined}
     />
   ));
 

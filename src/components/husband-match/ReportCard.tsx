@@ -1,17 +1,133 @@
 'use client';
 
+import { useMemo } from 'react';
+
+interface HexagonChartData {
+  labels: string[];
+  values: number[];
+}
+
 interface ReportCardProps {
   title: string;
   content: string;
-  cardType?: 'intro' | 'analysis' | 'result' | 'insight';
+  cardNumber?: number;
+  cardType?: 'intro' | 'analysis' | 'result' | 'insight' | 'personality' | 'values' | 'matching';
   metadata?: {
     subtitle?: string;
     tags?: string[];
     highlight?: string;
   };
+  hexagonData?: HexagonChartData;
 }
 
-export function ReportCard({ title, content, cardType = 'analysis', metadata }: ReportCardProps) {
+// 육각형 차트 컴포넌트
+function HexagonChart({ data }: { data: HexagonChartData }) {
+  const { labels, values } = data;
+  const numPoints = 6;
+  const centerX = 150;
+  const centerY = 150;
+  const maxRadius = 100;
+
+  // 각 축의 포인트 계산
+  const getPoint = (index: number, value: number) => {
+    const angle = (Math.PI * 2 * index) / numPoints - Math.PI / 2;
+    const radius = (value / 100) * maxRadius;
+    return {
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
+    };
+  };
+
+  // 외곽선 (100% 기준)
+  const outerPoints = Array.from({ length: numPoints }, (_, i) => getPoint(i, 100));
+  const outerPath = outerPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+
+  // 중간선 (50% 기준)
+  const midPoints = Array.from({ length: numPoints }, (_, i) => getPoint(i, 50));
+  const midPath = midPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+
+  // 데이터 포인트
+  const dataPoints = values.map((v, i) => getPoint(i, v));
+  const dataPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+
+  // 라벨 위치
+  const getLabelPosition = (index: number) => {
+    const angle = (Math.PI * 2 * index) / numPoints - Math.PI / 2;
+    const radius = maxRadius + 35;
+    return {
+      x: centerX + radius * Math.cos(angle),
+      y: centerY + radius * Math.sin(angle),
+    };
+  };
+
+  return (
+    <div className="w-full flex justify-center my-6">
+      <svg viewBox="0 0 300 300" className="w-full max-w-[280px]">
+        {/* 배경 격자 */}
+        <path d={outerPath} fill="none" stroke="#e5e5e5" strokeWidth="1" />
+        <path d={midPath} fill="none" stroke="#e5e5e5" strokeWidth="1" strokeDasharray="4,4" />
+
+        {/* 축 선 */}
+        {outerPoints.map((p, i) => (
+          <line key={i} x1={centerX} y1={centerY} x2={p.x} y2={p.y} stroke="#e5e5e5" strokeWidth="1" />
+        ))}
+
+        {/* 데이터 영역 */}
+        <path d={dataPath} fill="rgba(79, 70, 229, 0.2)" stroke="#4F46E5" strokeWidth="2" />
+
+        {/* 데이터 포인트 */}
+        {dataPoints.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="5" fill="#4F46E5" />
+        ))}
+
+        {/* 라벨 */}
+        {labels.map((label, i) => {
+          const pos = getLabelPosition(i);
+          return (
+            <text
+              key={i}
+              x={pos.x}
+              y={pos.y}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="text-[10px] fill-[var(--foreground)]/70"
+            >
+              {label}
+            </text>
+          );
+        })}
+
+        {/* 점수 표시 */}
+        {dataPoints.map((p, i) => (
+          <text
+            key={`score-${i}`}
+            x={p.x}
+            y={p.y - 12}
+            textAnchor="middle"
+            className="text-[9px] font-bold fill-[#4F46E5]"
+          >
+            {values[i]}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+// 마크다운 스타일 볼드 처리
+function processContent(content: string): string {
+  // **텍스트** → <strong>텍스트</strong>
+  return content.replace(/\*\*(.+?)\*\*/g, '<strong class="text-[var(--foreground)] font-semibold">$1</strong>');
+}
+
+export function ReportCard({
+  title,
+  content,
+  cardNumber,
+  cardType = 'analysis',
+  metadata,
+  hexagonData,
+}: ReportCardProps) {
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -30,10 +146,16 @@ export function ReportCard({ title, content, cardType = 'analysis', metadata }: 
     }
   };
 
+  // 콘텐츠 처리 (볼드 등)
+  const processedContent = useMemo(() => processContent(content), [content]);
+
+  // 카드 2는 육각형 차트 표시
+  const showHexagonChart = cardNumber === 2 && hexagonData;
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden min-h-[500px] flex flex-col">
+    <div className="bg-white rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden min-h-[500px] max-h-[85vh] flex flex-col">
       {/* Header */}
-      <div className="p-8 pb-6 border-b border-[var(--border)]">
+      <div className="p-8 pb-6 border-b border-[var(--border)] flex-shrink-0">
         {metadata?.subtitle && (
           <p className="text-sm font-medium text-[var(--accent)] mb-2">
             {metadata.subtitle}
@@ -56,8 +178,15 @@ export function ReportCard({ title, content, cardType = 'analysis', metadata }: 
         )}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 p-8">
+      {/* 육각형 차트 (카드 2만) */}
+      {showHexagonChart && (
+        <div className="px-8 pt-4 flex-shrink-0">
+          <HexagonChart data={hexagonData} />
+        </div>
+      )}
+
+      {/* Content - 스크롤 가능 */}
+      <div className="flex-1 p-8 overflow-y-auto">
         {metadata?.highlight && (
           <div className="mb-6 p-4 bg-[var(--accent)]/10 border-l-4 border-[var(--accent)] rounded-r">
             <p className="text-sm font-medium text-[var(--foreground)]">
@@ -68,13 +197,13 @@ export function ReportCard({ title, content, cardType = 'analysis', metadata }: 
         <div className="prose prose-sm max-w-none">
           <div
             className="text-[var(--foreground)]/80 leading-relaxed whitespace-pre-wrap"
-            dangerouslySetInnerHTML={{ __html: content }}
+            dangerouslySetInnerHTML={{ __html: processedContent }}
           />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="p-6 border-t border-[var(--border)] bg-[var(--surface)]/30">
+      <div className="p-6 border-t border-[var(--border)] bg-[var(--surface)]/30 flex-shrink-0">
         <button
           onClick={handleShare}
           className="flex items-center gap-2 text-sm font-medium text-[var(--accent)] hover:underline"

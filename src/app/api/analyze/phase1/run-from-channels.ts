@@ -34,7 +34,7 @@ const CARD_1_FIXED_CONTENT = `새벽 두 시, 아무도 모르게 재생한 그 
 // 9장 카드 타이틀 (2026-02-06 개선: 카드 통합)
 const CARD_TITLES: Record<number, { title: string; subtitle?: string; card_type: ReportCard['card_type'] }> = {
   1: { title: '당신이 몰래 본 영상이, 당신을 말하고 있다', subtitle: 'INTRO', card_type: 'intro' },
-  2: { title: '구독 데이터 개요', subtitle: '분석 시작', card_type: 'intro' },
+  2: { title: '', subtitle: '구독 데이터 개요', card_type: 'intro' }, // title은 LLM이 생성
   3: { title: '당신은 ___ 타입', subtitle: '통합 유형 분석', card_type: 'personality' },
   4: { title: '당신의 감성', subtitle: '감정 스타일', card_type: 'values' },
   5: { title: '추구하는 미래', subtitle: '미래상', card_type: 'values' },
@@ -133,11 +133,29 @@ ${hexData.labels.map((label, i) => `- ${label}: ${hexData.values[i]}점`).join('
 - 따뜻한 환영 메시지 (3-4문장)
 - 분석 근거 요약 (2-3문장)
 
-### 카드 2: 구독 데이터 개요 (700-1000자)
-⚠️ 제목을 마케팅 카피로! (예: "다양한 감각으로 세상을 탐험하는 사람")
-- 데이터 요약 + 의미 (3-4문장)
-- 육각형 밸런스 분석 (4-5문장) - 6축 중 높은/낮은 영역 해석
-- 근거 제시 (3-4문장)
+### 카드 2: 구독 데이터 개요 (1500-2000자) ← 길게 작성!
+⚠️ 응답 형식 주의: "2_title"과 "2"를 따로 작성하세요!
+- "2_title": 타이틀 한 줄 (예: "당신은 감각을 통해 세상을 탐험하는 취향을 지니셨군요")
+- "2": 본문 내용 (1500-2000자)
+
+본문 작성 규칙:
+1. 맥락이 바뀌는 문단마다 **볼드 요약 한 줄**을 먼저 작성
+2. 볼드 요약 시작 전 빈 줄 2개 삽입 (문단 여백)
+3. 육각형 차트 6축 분석 포함 (높은 축, 낮은 축 각각 해석)
+4. 근거 제시 필수 (왜 이렇게 해석하는지)
+
+예시 형식:
+"""
+
+**당신의 구독 리스트가 말해주는 것**
+
+여기에 첫 번째 문단 내용...
+
+
+**육각형 밸런스에서 드러난 특성**
+
+여기에 두 번째 문단 내용...
+"""
 
 ### 카드 3: 당신은 ___ 타입 (1500자) ← 가장 긴 카드!
 ⚠️ MBTI/애니어그램 번호 명시 금지! 특징만 서술!
@@ -192,8 +210,9 @@ ${hexData.labels.map((label, i) => `- ${label}: ${hexData.values[i]}점`).join('
 ## 응답 형식
 반드시 아래 JSON 형식으로만 응답:
 {
-  "1": "카드1 내용 (700자 이상)",
-  "2": "카드2 내용 (700자 이상, 제목은 마케팅 카피)",
+  "1": "카드1 내용 (사용 안함, 무시됨)",
+  "2_title": "당신은 ___한 취향을 지니셨군요 (한 줄 타이틀)",
+  "2": "카드2 본문 (1500-2000자, 볼드 요약 + 빈 줄 포함)",
   "3": "카드3 내용 (1500자 이상, MBTI/애니어그램 번호 없이)",
   "4": "카드4 내용 (700자 이상)",
   "5": "카드5 내용 (700자 이상)",
@@ -233,28 +252,79 @@ function generateFallbackCards(data: Phase1CardData): Record<string, string> {
   const enneaTrait = getEnneagramTrait(data.enneagram_type ?? 9);
   const hexData = getHexagonChartData(t, data.channel_categories);
 
+  // 취향 설명 생성
+  const tasteDescription = sortedCats[0]?.id === 'healingSpirituality' ? '내면의 평화와 성찰을 추구하는'
+    : sortedCats[0]?.id === 'entertainmentVlog' ? '다양한 재미와 소통을 즐기는'
+    : sortedCats[0]?.id === 'careerBusiness' ? '성장과 성취를 향해 달려가는'
+    : sortedCats[0]?.id === 'musicMood' ? '감각적인 분위기와 음악을 사랑하는'
+    : sortedCats[0]?.id === 'readingHumanities' ? '깊은 지식과 인문학적 통찰을 탐구하는'
+    : sortedCats[0]?.id === 'sportsOutdoor' ? '활동적이고 건강한 라이프스타일을 추구하는'
+    : sortedCats[0]?.id === 'lifestyleSpace' ? '일상의 아름다움과 공간을 가꾸는'
+    : '다양한 관심사를 탐험하는';
+
+  // 가장 높은 축, 가장 낮은 축 찾기
+  const maxHexIndex = hexData.values.indexOf(Math.max(...hexData.values));
+  const minHexIndex = hexData.values.indexOf(Math.min(...hexData.values));
+  const maxHexLabel = hexData.labels[maxHexIndex];
+  const minHexLabel = hexData.labels[minHexIndex];
+  const maxHexValue = hexData.values[maxHexIndex];
+  const minHexValue = hexData.values[minHexIndex];
+
   return {
     "1": CARD_1_FIXED_CONTENT,
 
-    "2": `${characteristics[0] || '다양한 감각으로 세상을 탐험하는 사람'}
+    "2_title": `당신은 ${tasteDescription} 취향을 지니셨군요`,
 
-📊 당신의 구독 데이터를 분석했어요.
+    "2": `**당신의 구독 리스트가 말해주는 것**
 
-총 ${data.channelCount}개의 채널에서 ${sortedCats.length}개의 카테고리를 발견했어요. 가장 많은 비중을 차지하는 분야는 ${sortedCats[0]?.name || '다양함'}(${sortedCats[0]?.percent || 0}%)이에요.
+총 ${data.channelCount}개의 채널을 분석한 결과, ${sortedCats.length}개의 서로 다른 카테고리에 관심을 가지고 계신 것으로 나타났어요. 이 숫자가 의미하는 바가 있습니다.
 
-이 데이터가 말해주는 건, 당신이 ${sortedCats[0]?.id === 'healingSpirituality' ? '내면의 평화와 성장을' : sortedCats[0]?.id === 'entertainmentVlog' ? '즐거움과 소통을' : '다양한 경험을'} 중요하게 여긴다는 거예요.
+가장 많은 비중을 차지하는 분야는 "${sortedCats[0]?.name || '다양함'}"으로, 전체의 ${sortedCats[0]?.percent || 0}%를 차지하고 있어요. 두 번째는 "${sortedCats[1]?.name || '기타'}"(${sortedCats[1]?.percent || 0}%), 세 번째는 "${sortedCats[2]?.name || '기타'}"(${sortedCats[2]?.percent || 0}%)입니다.
 
-🔷 육각형 밸런스 분석
+이 조합은 단순히 "이런 영상을 좋아한다"는 것을 넘어, 당신이 무의식적으로 추구하는 가치와 욕구를 보여줍니다. 구독 버튼은 생각보다 정직하거든요.
 
-당신의 성향을 6가지 축으로 분석해보았어요:
 
-${hexData.labels.map((label, i) => `• ${label}: ${hexData.values[i]}점 - ${hexData.descriptions[i]}`).join('\n')}
+**육각형 밸런스에서 드러난 당신의 특성**
 
-가장 높은 축은 "${hexData.labels[hexData.values.indexOf(Math.max(...hexData.values))]}"이에요. 이는 ${characteristics[0] || '성장을 추구하는'} 당신의 특성과 일치해요.
+저희는 당신의 구독 데이터를 6가지 심리적 축으로 분석해보았어요:
 
-반면 상대적으로 낮은 축도 있는데, 이건 약점이 아니라 당신이 다른 가치에 더 집중하고 있다는 의미예요.
+• ${hexData.labels[0]}: ${hexData.values[0]}점 - ${hexData.descriptions[0]}
+• ${hexData.labels[1]}: ${hexData.values[1]}점 - ${hexData.descriptions[1]}
+• ${hexData.labels[2]}: ${hexData.values[2]}점 - ${hexData.descriptions[2]}
+• ${hexData.labels[3]}: ${hexData.values[3]}점 - ${hexData.descriptions[3]}
+• ${hexData.labels[4]}: ${hexData.values[4]}점 - ${hexData.descriptions[4]}
+• ${hexData.labels[5]}: ${hexData.values[5]}점 - ${hexData.descriptions[5]}
 
-이 밸런스가 만들어내는 당신만의 독특한 성격, 다음 카드에서 더 자세히 알아볼게요.`,
+
+**가장 두드러진 축: ${maxHexLabel} (${maxHexValue}점)**
+
+당신에게서 가장 강하게 나타나는 특성은 "${maxHexLabel}"이에요. 이 점수가 높다는 것은 ${maxHexLabel === '감각적 민감성' ? '음악, 분위기, 미적인 것에 대한 감수성이 뛰어나다는 의미입니다. 당신은 환경과 분위기에 민감하게 반응하고, 그것을 통해 감정을 조절하는 경향이 있어요.' :
+maxHexLabel === '지적 호기심' ? '새로운 지식과 깊이 있는 콘텐츠에 대한 갈증이 크다는 의미입니다. 당신은 피상적인 정보보다 본질을 파고드는 것을 좋아하고, 배움을 통해 성장하는 것에서 큰 만족을 느껴요.' :
+maxHexLabel === '사회적 연결' ? '타인과의 관계와 소통에서 큰 에너지를 얻는다는 의미입니다. 당신은 혼자보다 함께할 때 더 빛나고, 다른 사람들의 이야기에 진심으로 관심을 가지는 분이에요.' :
+maxHexLabel === '안정 추구' ? '예측 가능하고 안정적인 환경을 중요하게 여긴다는 의미입니다. 당신은 급격한 변화보다 점진적인 성장을 선호하고, 신뢰할 수 있는 것에 가치를 두는 분이에요.' :
+maxHexLabel === '자기 주도성' ? '스스로 결정하고 이끌어가는 것을 중요하게 여긴다는 의미입니다. 당신은 남의 방식을 따르기보다 자신만의 길을 개척하는 것에서 성취감을 느끼는 분이에요.' :
+'삶의 의미와 내면의 깊이를 추구한다는 의미입니다. 당신은 "왜?"라는 질문을 자주 하고, 표면적인 것 너머의 진실을 찾으려는 분이에요.'}
+
+이 특성이 ${sortedCats[0]?.name || '주요 카테고리'} 채널을 ${sortedCats[0]?.percent || 0}%나 구독하게 만든 이유이기도 해요.
+
+
+**상대적으로 낮은 축: ${minHexLabel} (${minHexValue}점)**
+
+반면 "${minHexLabel}" 점수는 상대적으로 낮게 나타났어요. 하지만 이건 약점이 아닙니다.
+
+낮은 점수는 "부족하다"가 아니라 "다른 곳에 에너지를 쏟고 있다"는 의미예요. 당신은 ${minHexLabel === '감각적 민감성' ? '분위기보다는 내용과 의미에 더 집중하는' :
+minHexLabel === '지적 호기심' ? '이론보다는 실제 경험과 체험을 중시하는' :
+minHexLabel === '사회적 연결' ? '넓은 관계보다 깊은 관계를 선호하는' :
+minHexLabel === '안정 추구' ? '안정보다 새로운 도전과 변화를 즐기는' :
+minHexLabel === '자기 주도성' ? '혼자 결정하기보다 협력과 조화를 중시하는' :
+'현실적이고 실용적인 가치를 추구하는'} 분이에요.
+
+
+**왜 이렇게 분석했는지**
+
+이 해석은 단순한 추측이 아닙니다. ${sortedCats[0]?.name || '주요'} 카테고리 ${sortedCats[0]?.percent || 0}%, ${sortedCats[1]?.name || '보조'} 카테고리 ${sortedCats[1]?.percent || 0}%라는 구독 비율이 ${maxHexLabel} ${maxHexValue}점이라는 심리 점수와 일관되게 연결되기 때문에 신뢰할 수 있어요.
+
+다음 카드에서는 이 데이터를 바탕으로 당신의 성격 유형을 더 깊이 분석해드릴게요.`,
 
     "3": `당신은 "${characteristics[0] || '감성적 탐구자'}" 타입이에요
 
@@ -671,13 +741,24 @@ export async function runPhase1FromPrecomputed(
   for (let cardNumber = 1; cardNumber <= 9; cardNumber++) {
     const meta = CARD_TITLES[cardNumber];
     const cardKey = String(cardNumber);
-    // 카드 1은 항상 고정 텍스트 사용
-    const content = cardNumber === 1
-      ? CARD_1_FIXED_CONTENT
-      : (cardContents[cardKey] || '분석 결과를 불러오는 중 문제가 발생했습니다.');
+
+    // 카드별 content 결정
+    let content: string;
+    if (cardNumber === 1) {
+      // 카드 1은 항상 고정 텍스트 사용
+      content = CARD_1_FIXED_CONTENT;
+    } else {
+      content = cardContents[cardKey] || '분석 결과를 불러오는 중 문제가 발생했습니다.';
+    }
+
+    // 카드 2의 title은 LLM 응답에서 가져옴
+    const title = cardNumber === 2
+      ? (cardContents['2_title'] || '당신의 취향을 분석해보았어요')
+      : meta.title;
+
     cards.push({
       card_number: cardNumber,
-      title: meta.title,
+      title,
       subtitle: meta.subtitle,
       content: String(content).slice(0, 5000), // 분량 증가로 max 5000자
       card_type: meta.card_type,
