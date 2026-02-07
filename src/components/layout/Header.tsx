@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { signOut } from "@/app/actions/auth";
 
 export function Header() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   const [user, setUser] = useState<{ email?: string } | null>(null);
 
   useEffect(() => {
@@ -19,7 +22,7 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className={isHome ? "absolute top-0 w-full z-50" : "sticky top-0 z-50 border-b border-[var(--border)] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80"}>
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <Image src="/logo.png" alt="GIBUN" width={40} height={40} className="h-10 w-10" />
