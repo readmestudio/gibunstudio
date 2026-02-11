@@ -68,6 +68,8 @@ export default function CapturePage() {
   const handleKakaoLogin = async () => {
     setError(null);
     try {
+      // OAuth 후 돌아올 경로를 쿠키에 저장 (Supabase가 query param을 유실할 수 있으므로)
+      document.cookie = `auth_redirect=/husband-match/capture; path=/; max-age=600; SameSite=Lax`;
       const supabase = createClient();
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider: "kakao",

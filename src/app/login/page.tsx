@@ -46,6 +46,10 @@ function LoginContent() {
     setLoading(true);
     setMessage(null);
     try {
+      // OAuth 후 돌아올 경로를 쿠키에 저장 (Supabase가 query param을 유실할 수 있으므로)
+      if (next && next.startsWith("/")) {
+        document.cookie = `auth_redirect=${next}; path=/; max-age=600; SameSite=Lax`;
+      }
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
