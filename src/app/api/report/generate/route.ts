@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { chatCompletion } from "@/lib/gemini-client";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.ai);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const { rawData, userName } = await request.json();
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: "OpenAI API key not configured" },
+        { error: "Gemini API key not configured" },
         { status: 500 }
       );
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    const systemContent = `당신은 1급 심리상담사입니다. 
+    const systemContent = `당신은 1급 심리상담사입니다.
 사용자의 7일 내면 아이 찾기 로우데이터를 분석하여 리포트를 작성합니다.
 리포트는 "당신은 이런 사람이다"가 아닌 "요즘의 당신은 ~" 톤으로 작성합니다.
 각 섹션을 따뜻하고 이해하기 쉬운 문체로 작성하세요.`;
@@ -37,19 +39,16 @@ ${JSON.stringify(rawData, null, 2)}
   "counselorSummary": "상담사 총평 (직접 작성할 예정이므로 빈 문자열)"
 }`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
+    const content = await chatCompletion(
+      [
         { role: "system", content: systemContent },
         { role: "user", content: userContent },
       ],
-      response_format: { type: "json_object" },
-    });
-
-    const content = completion.choices[0]?.message?.content ?? "{}";
+      { model: "gpt-4o", response_format: { type: "json_object" } }
+    );
 
     try {
-      const report = JSON.parse(content);
+      const report = JSON.parse(content ?? "{}");
       return NextResponse.json(report);
     } catch {
       return NextResponse.json(

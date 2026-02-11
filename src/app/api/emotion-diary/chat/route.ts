@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { chatCompletion } from "@/lib/gemini-client";
 import { STEP_PROMPTS } from "@/lib/emotion-diary/prompts";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.ai);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const { messages, currentStep, day } = await request.json();
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: "OpenAI API key not configured" },
+        { error: "Gemini API key not configured" },
         { status: 500 }
       );
     }
-
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const stepLimits: Record<number, number> = { 2: 9, 3: 10, 4: 12, 5: 13, 6: 15 };
     const stepLimit = day ? (stepLimits[day] ?? 15) : 15;
@@ -27,20 +29,18 @@ Warm CBT와 핵심 믿음 자각 기반 사고 탐색 프레임을 따릅니다.
 판단이나 교정이 아닌, 관찰과 자각 중심으로 탐색합니다.
 자연스럽고 따뜻한 톤으로 응답하세요.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
+    const content = await chatCompletion(
+      [
         { role: "system", content: systemContent },
         ...messages.map((m: { role: string; content: string }) => ({
           role: m.role as "user" | "assistant" | "system",
           content: m.content,
         })),
       ],
-    });
+      { model: "gpt-4o-mini" }
+    );
 
-    const content = completion.choices[0]?.message?.content ?? "";
-
-    return NextResponse.json({ content });
+    return NextResponse.json({ content: content ?? "" });
   } catch (error) {
     console.error("Emotion diary chat error:", error);
     return NextResponse.json(

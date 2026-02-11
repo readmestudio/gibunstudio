@@ -1,4 +1,4 @@
-import { chatCompletion } from '@/lib/openai-client';
+import { chatCompletion } from '@/lib/gemini-client';
 import { ChannelData, ChannelCategories } from '../types';
 import { getAllCategories, CategoryId } from '../data/categories';
 
