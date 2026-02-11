@@ -9,7 +9,7 @@ import {
   runYouTubeAnalysis,
   generateBarChart,
 } from '@/lib/husband-match/analysis/youtube-analysis';
-import { chatCompletion } from '@/lib/openai-client';
+import { chatCompletion } from '@/lib/gemini-client';
 import { SYSTEM_PROMPT } from '@/lib/husband-match/prompts/system-prompt';
 import type { Phase1CardData } from '@/lib/husband-match/prompts/card-prompts';
 import {
@@ -34,6 +34,45 @@ const CARD_1_FIXED_CONTENT = `새벽 두 시, 아무도 모르게 재생한 그 
 지금부터 당신의 구독 채널과 시청 패턴을 찬찬히 들여다보겠습니다. 그 안에서 당신의 성격 구조와 관계 욕구를 읽어내고, 평생의 동반자가 될 사람의 유형과 구체적인 프로필, 그리고 절대 참을 수 없는 상대의 단점까지 짚어드리겠습니다.
 
 준비되셨다면, 시작합니다.`;
+
+// 카드 11 고정 텍스트 (CTA — LLM이 가격/블러 힌트를 누락하므로 고정)
+function getCard11FixedContent(channelCount: number): string {
+  return `여기까지가 무료 분석이에요.
+
+당신의 구독 채널 ${channelCount}개를 분석해 11장의 카드로 당신의 내면을 들여다보았어요.
+
+
+**Phase 2에서 알 수 있는 것**
+
+더 깊은 이야기가 기다리고 있어요.
+
+✦ 애인이 생각하는 당신
+  → "조용한 바다 같은 사람 — 깊이를..." [블러 처리]
+
+✦ 당신이 결혼을 확신하게 되는 순간
+  → "당신에게 결혼의 확신은..." [블러 처리]
+
+✦ 연애에서 결혼으로 못 가는 진짜 이유
+  → "반복되는 패턴이..." [블러 처리]
+
+✦ 만약 이혼한다면, 그 이유는...
+  → "위험 요인 분석 결과..." [블러 처리]
+
+
+**Phase 2 진행 방식**
+
+1. 9개의 심층 질문에 답변
+2. YouTube 데이터와 교차 검증
+3. 8장의 심층 리포트 카드 제공
+
+
+**[ 심층 분석 시작하기 — ₩4,900 ]**
+
+
+* 분석 결과는 심리학적 연구를 기반으로 하지만,
+  실제 심리 검사를 대체하지 않습니다.
+* 재미와 자기 이해를 위한 콘텐츠로 즐겨주세요.`;
+}
 
 // 11장 카드 타이틀 (NEW: 카드 3,4 추가)
 const CARD_TITLES: Record<number, { title: string; subtitle?: string; card_type: ReportCard['card_type'] }> = {
@@ -99,127 +138,117 @@ interface ExtendedCardData extends Phase1CardData {
   };
 }
 
-// 한 번의 API 호출로 모든 카드 콘텐츠 생성 (11장)
-async function generateAllCardsAtOnce(data: ExtendedCardData): Promise<Record<string, string>> {
-  const t = data.tci_scores;
+// 공유 분석 데이터 컨텍스트 생성
+function buildAnalysisContext(data: ExtendedCardData): string {
   const ennea = data.enneagram_type ?? 9;
   const enneaName = ENNEAGRAM_NAMES[ennea];
   const h = data.matched_husband;
   const scorePercent = Math.round(data.match_score * 100);
-  const sortedCats = getSortedCategories(data.channel_categories);
-  const categories = formatCategoriesForPrompt(data.channel_categories);
-  const topTCI = getTopTCIScores(t, 3);
-  const bottomTCI = getBottomTCIScores(t, 2);
-  const characteristics = getTCICharacteristics(t);
-  const metaphor = h.variant === 'extrovert' ? h.metaphor_e : h.metaphor_i;
   const mbtiTraits = getMBTITraits(data.mbti_scores);
-  const enneaTrait = getEnneagramTrait(ennea);
-
-  // YouTube 분석 데이터
   const ytCats = data.youtubeCategories;
   const rarity = data.rarity;
   const topBottom = data.topBottom;
+  const tci = data.youtubeTCI;
 
-  // 카테고리 랭킹 바 차트 생성
-  const barChartLines = ytCats.slice(0, 5).map((cat, i) =>
-    `${i + 1}위: ${cat.name} — ${cat.count}개 (${cat.percent}%) ${generateBarChart(cat.percent)}`
-  ).join('\n');
+  return `## 분석 데이터
 
-  const prompt = `당신은 심리 분석 전문가입니다. 아래 분석 데이터를 바탕으로 11개의 리포트 카드 내용을 JSON 형식으로 생성해주세요.
-
-## ⚠️ 중요: 모든 카드는 1,500자 이상 2,000자 이하로 작성하세요!
-
-## 분석 데이터
+### 구독 채널 정보
 - 총 채널 수: ${data.channelCount}개
 - YouTube 카테고리 분포:
 ${ytCats.map(c => `  · ${c.name}: ${c.count}개 (${c.percent}%)`).join('\n')}
 
-- 희소성 분석:
-  · 상위 ${rarity.percentile}% (코사인 유사도: ${rarity.cosineSimilarity})
-  · 가장 희귀한 카테고리: ${rarity.rarestCategoryName} (${rarity.rarestCategoryPercent}%)
-  · 해당 채널: ${rarity.rarestCategoryChannels.join(', ')}
+### 희소성 분석
+- 상위 ${rarity.percentile}% (코사인 유사도: ${rarity.cosineSimilarity.toFixed(2)})
+- 가장 희귀한 카테고리: ${rarity.rarestCategoryName} (사용자 비율 ${rarity.rarestCategoryPercent}%)
+- 해당 채널: ${rarity.rarestCategoryChannels.join(', ')}
 
-- TCI 6축 (육각형 스탯):
-  · ${topBottom.top1.name}: ${topBottom.top1.score}점 (1위)
-  · ${topBottom.top2.name}: ${topBottom.top2.score}점 (2위)
-  · ${topBottom.bottom.name}: ${topBottom.bottom.score}점 (최저)
-  · 자기초월(ST): ${data.youtubeTCI.ST}, 자율성(SD): ${data.youtubeTCI.SD}
-  · 자극추구(NS): ${data.youtubeTCI.NS}, 위험회피(HA): ${data.youtubeTCI.HA}
-  · 인내력(P): ${data.youtubeTCI.P}, 연대감(CO): ${data.youtubeTCI.CO}
+### 심리 분석 6축 (정규화 0-100점)
+- 1위: ${topBottom.top1.name} ${topBottom.top1.score}점
+- 2위: ${topBottom.top2.name} ${topBottom.top2.score}점
+- 최저: ${topBottom.bottom.name} ${topBottom.bottom.score}점
+- 전체: 자기초월(ST)=${tci.ST}, 자율성(SD)=${tci.SD}, 자극추구(NS)=${tci.NS}, 위험회피(HA)=${tci.HA}, 인내력(P)=${tci.P}, 연대감(CO)=${tci.CO}
 
-- TCI 상위: ${topTCI.map(x => `${x.name}(${x.score}점)`).join(', ')}
+### 성격 유형
 - 애니어그램: ${ennea}번 (${enneaName})
 - MBTI: ${data.mbti_type}
 - MBTI 특성: ${mbtiTraits.join(', ')}
-- 매칭된 남편상: ${h.name} (${h.category} - ${h.subcategory})
-- 매칭 점수: ${scorePercent}%
 
-## 11장 카드 구조
+### 매칭된 남편 유형
+- 유형명: ${h.name}
+- 카테고리: ${h.category} > ${h.subcategory}
+- 성향: ${h.variant === 'extrovert' ? '외향형' : '내향형'}
+- 성격 설명: ${h.description}
+- 비유(외향): ${h.metaphor_e || '없음'}
+- 비유(내향): ${h.metaphor_i || '없음'}
+- 매칭 점수: ${scorePercent}%`;
+}
 
-### 카드 1: 커버 (사용 안함 - 고정 텍스트)
+// ─────────────────────────────────────────────────────────────
+// 4배치 카드 생성 (max_tokens 8192, few-shot 예시 포함)
+// ─────────────────────────────────────────────────────────────
 
-### 카드 2: 구독 데이터 개요 (1500-2000자)
-- "2_title": 마케팅 카피 타이틀 (예: "당신은 다양한 경험을 통해 세상을 탐험하는 취향을 지니셨군요")
-- "2": 본문 - 육각형 차트 해석, 상위 카테고리 의미, 볼드 섹션 헤더 사용
+const LLM_OPTIONS = { model: 'gpt-4o-mini', temperature: 0.7, max_tokens: 8192, response_format: { type: 'json_object' as const } };
 
-### 카드 3: 구독 카테고리 랭킹 (1500-2000자) ← NEW!
+// 배치 A: 카드 2, 3 (구독 데이터 개요 + 카테고리 랭킹)
+async function generateBatchA(data: ExtendedCardData, context: string): Promise<Record<string, string>> {
+  const ytCats = data.youtubeCategories;
+  const rarity = data.rarity;
+
+  const prompt = `아래 분석 데이터를 바탕으로 2개의 리포트 카드 내용을 JSON으로 생성해주세요.
+
+## ⚠️ 필수: 각 카드는 반드시 1,500자 이상 2,000자 이하로 작성하세요. 500자 이하의 짧은 응답은 절대 안 됩니다.
+
+${context}
+
+## 카드 2: 구독 데이터 개요
+- "2_title": 사용자의 구독 패턴을 한 줄로 요약하는 마케팅 카피 (예: "당신은 ${ytCats[0]?.name || '다양한 경험'}을 통해 세상을 탐험하는 취향을 지니셨군요")
+- "2": 본문 (1500-2000자) — 아래 구조를 반드시 포함:
+  1) **"당신의 구독 리스트가 말해주는 것"** — 총 채널 수, 카테고리 수, 상위 3개 카테고리 비율 분석
+  2) **"육각형 밸런스에서 드러난 당신의 특성"** — 6축 점수를 각각 한 줄씩 설명 (점수 인용 필수)
+  3) **"가장 두드러진 축: {1위 축명} ({점수}점)"** — 왜 이 축이 높은지, 구독 카테고리와 연결
+  4) **"왜 이렇게 분석했는지"** — 구독 비율 → TCI 점수 연결 근거 2-3개
+
+[예시 — 이 수준의 구체성과 분량으로 작성하세요]
+"""
+**당신의 구독 리스트가 말해주는 것**
+
+총 45개의 채널을 분석한 결과, 8개의 서로 다른 카테고리에 관심을 가지고 계신 것으로 나타났어요.
+
+가장 많은 비중을 차지하는 분야는 "교육/자기계발"으로, 전체의 28%를 차지하고 있어요. 두 번째는 "브이로그/일상"(22%), 세 번째는 "음악"(15%)입니다.
+
+이 조합은 단순히 "이런 영상을 좋아한다"는 것을 넘어, 당신이 무의식적으로 추구하는 가치와 욕구를 보여줍니다.
+
+
+**육각형 밸런스에서 드러난 당신의 특성**
+
+당신의 구독 데이터를 6가지 심리적 축으로 분석해보았어요:
+
+• 자기초월: 72점 - 삶의 의미와 깊이를 추구하는 정도
+• 자율성: 85점 - 스스로 결정하고 이끌어가려는 성향
+(... 6축 모두 점수와 함께 서술 ...)
+
+
+**가장 두드러진 축: 자율성 (85점)**
+
+당신에게서 가장 강하게 나타나는 특성은 "자율성"이에요. 이 특성이 교육/자기계발 채널을 28%나 구독하게 만든 이유이기도 해요.
+(... 이어서 2위 축과의 시너지, 근거 섹션까지 ...)
+"""
+
+## 카드 3: 구독 카테고리 랭킹
 - "3_title": "당신의 구독 취향은 상위 ${rarity.percentile}%에요"
-- "3": 본문
-  1) **"당신의 세상은 온통 ${ytCats[0]?.name || '다양함'}로 가득해요"**
-  2) 총 ${data.channelCount}개 채널 구독 중이라는 것
-  3) 카테고리 랭킹 설명 (1위~5위 각각 의미 해석)
-  4) 이 조합이 왜 희소한지 설명
+- "3": 본문 (1500-2000자) — 아래 구조를 반드시 포함:
+  1) **"당신의 세상은 온통 ${ytCats[0]?.name || '다양함'}(으)로 가득해요"** — 첫 문장
+  2) 총 ${data.channelCount}개 채널 중 카테고리 랭킹 (1위~5위), 각각 의미 해석
+  3) 1위와 2위 조합의 의미
+  4) 코사인 유사도 ${rarity.cosineSimilarity.toFixed(2)} 기반 희소성 해석
   5) Spotify Wrapped 스타일의 임팩트 있는 문체
 
-### 카드 4: 희귀 취향 분석 (1500-2000자) ← NEW!
-- "4": 본문
-  1) 가장 희귀한 카테고리: ${rarity.rarestCategoryName}
-  2) "이 카테고리를 구독하는 사용자는 전체의 ${rarity.rarestCategoryPercent}%에 불과해요"
-  3) 해당 채널 리스트: ${rarity.rarestCategoryChannels.join(', ')}
-  4) 이 취향이 심리적으로 의미하는 바 (2-3문단)
-  5) 시그니처 카피: "${data.channelCount}개 채널 중 단 ${rarity.rarestCategoryChannels.length}개. 그게 당신의 시그니처예요."
-
-### 카드 5: 통합 유형 분석 (1500-2000자)
-- "5_subtitle": 영어 타입명 (예: "Adventurous Social Explorer Type")
-- "5_title": "당신은 {타입이름} 타입이에요"
-  · ${topBottom.top1.name}(1위) + ${topBottom.top2.name}(2위) + ${topBottom.bottom.name}(최저) 조합 기반
-  · 예: 자극추구(1위) + 연대감(2위) + 위험회피(최저) → "거침없는 사교형 탐험가"
-- "5": 본문 - 볼드 섹션 헤더 사용, MBTI/애니어그램 명칭 없이 특징만 서술
-
-### 카드 6: 당신의 감성 (1500-2000자)
-- "6": 감정 처리 방식, 힐링 패턴, 근거
-
-### 카드 7: 추구하는 미래 (1500-2000자)
-- "7": 미래상 비유, 3축 분석, 구체적 장면
-
-### 카드 8: 견디기 힘든 상대방의 단점 (1500-2000자)
-- "8": 힘든 특성, 왜 힘든지, 상황 예시, 리프레이밍
-
-### 카드 9: 당신의 왕자님은 (1500-2000자)
-- "9": 대형 비유 문구, 유형 정의, 첫 만남 장면, 왜 이 유형인지
-
-### 카드 10: 왕자님 상세 프로필 (1500-2000자)
-- "10": 기본 정보, 이런 분이에요, 함께하면 이런 모습, 알아두세요
-
-### 카드 11: 결제 유도 (1500-2000자)
-- "11": 마무리, Phase 2 미리보기, CTA
-
-## 응답 형식
+## 응답 형식 (JSON만, 다른 텍스트 없이)
 {
-  "2_title": "타이틀",
-  "2": "본문 (1500-2000자)",
+  "2_title": "타이틀 문자열",
+  "2": "본문 1500자 이상",
   "3_title": "당신의 구독 취향은 상위 ${rarity.percentile}%에요",
-  "3": "본문 (1500-2000자)",
-  "4": "본문 (1500-2000자)",
-  "5_subtitle": "영어 타입명",
-  "5_title": "당신은 {타입} 타입이에요",
-  "5": "본문 (1500-2000자)",
-  "6": "본문 (1500-2000자)",
-  "7": "본문 (1500-2000자)",
-  "8": "본문 (1500-2000자)",
-  "9": "본문 (1500-2000자)",
-  "10": "본문 (1500-2000자)",
-  "11": "본문 (1500-2000자)"
+  "3": "본문 1500자 이상"
 }`;
 
   const response = await chatCompletion(
@@ -227,16 +256,194 @@ ${ytCats.map(c => `  · ${c.name}: ${c.count}개 (${c.percent}%)`).join('\n')}
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: prompt },
     ],
-    { model: 'gpt-4o-mini', temperature: 0.7, max_tokens: 16000, response_format: { type: 'json_object' } }
+    LLM_OPTIONS
   );
 
-  try {
-    const parsed = JSON.parse(response ?? '{}');
-    return parsed;
-  } catch {
-    console.error('Failed to parse card JSON:', response);
-    return {};
-  }
+  return JSON.parse(response ?? '{}');
+}
+
+// 배치 B: 카드 4, 5 (희귀 취향 + 유형 분석)
+async function generateBatchB(data: ExtendedCardData, context: string): Promise<Record<string, string>> {
+  const rarity = data.rarity;
+  const topBottom = data.topBottom;
+
+  const prompt = `아래 분석 데이터를 바탕으로 2개의 리포트 카드 내용을 JSON으로 생성해주세요.
+
+## ⚠️ 필수: 각 카드는 반드시 1,500자 이상 2,000자 이하로 작성하세요. 500자 이하의 짧은 응답은 절대 안 됩니다.
+
+${context}
+
+## 카드 4: 희귀 취향 분석
+- "4": 본문 (1500-2000자) — 아래 구조를 반드시 포함:
+  1) **"가장 희귀한 구독 카테고리: ${rarity.rarestCategoryName}"** — 도입부
+  2) "이 카테고리를 구독하는 사용자는 전체의 ${rarity.rarestCategoryPercent}%에 불과해요"
+  3) 해당 채널 리스트: ${rarity.rarestCategoryChannels.join(', ')}
+  4) **"이 취향이 말해주는 당신의 심리"** — 이 카테고리를 즐기는 사람의 심리적 특성 2-3문단
+  5) **"당신만의 시그니처"** — "${data.channelCount}개 채널 중 단 ${rarity.rarestCategoryChannels.length}개. 그게 당신의 시그니처예요."
+
+## 카드 5: 통합 유형 분석
+- "5_subtitle": 영어 타입명 3-5단어 (예: "Adventurous Social Explorer Type")
+- "5_title": "당신은 {한국어 타입 이름} 타입이에요"
+  · ${topBottom.top1.name}(1위) + ${topBottom.top2.name}(2위) + ${topBottom.bottom.name}(최저) 조합 기반
+  · 예: 자극추구(1위) + 연대감(2위) + 위험회피(최저) → "거침없는 사교형 탐험가"
+- "5": 본문 (1500-2000자) — 아래 구조를 반드시 포함:
+  1) 해시태그 3개 (예: #자극추구 #연대감 #자기이해)
+  2) **"당신의 핵심 특성: {1위}과 {2위}의 조화"** — 1위 축 점수와 의미, 2위와의 시너지
+  3) **"관계에서 보이는 패턴"** — MBTI 특성 연결 (명칭 금지, 특징만)
+  4) **"숨겨진 욕구"** — 최저 축이 의미하는 결핍/갈망
+  5) **"왜 이렇게 분석했는지"** — 카테고리 비율 → 축 점수 연결 근거
+  · ⚠️ MBTI/애니어그램 유형명(예: INFP, 4번 유형) 절대 언급 금지. 특성만 서술.
+
+## 응답 형식 (JSON만, 다른 텍스트 없이)
+{
+  "4": "본문 1500자 이상",
+  "5_subtitle": "English Type Name",
+  "5_title": "당신은 {타입} 타입이에요",
+  "5": "본문 1500자 이상"
+}`;
+
+  const response = await chatCompletion(
+    [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: prompt },
+    ],
+    LLM_OPTIONS
+  );
+
+  return JSON.parse(response ?? '{}');
+}
+
+// 배치 C: 카드 6, 7, 8 (감성, 미래, 단점)
+async function generateBatchC(data: ExtendedCardData, context: string): Promise<Record<string, string>> {
+  const tci = data.youtubeTCI;
+  const topBottom = data.topBottom;
+  const ytCats = data.youtubeCategories;
+
+  const prompt = `아래 분석 데이터를 바탕으로 3개의 리포트 카드 내용을 JSON으로 생성해주세요.
+
+## ⚠️ 필수: 각 카드는 반드시 1,500자 이상 2,000자 이하로 작성하세요. 500자 이하의 짧은 응답은 절대 안 됩니다.
+
+${context}
+
+## 카드 6: 당신의 감성 (1500-2000자)
+- "6": 아래 구조를 반드시 포함:
+  1) **감성 유형 한 줄 정의** (예: "마음을 나누며 힐링하는 사람" / "조용히 정리하며 힐링하는 사람")
+     · 연대감(CO)=${tci.CO}, 위험회피(HA)=${tci.HA} 기반 판단
+  2) **"감정 처리 방식"** — 힘들 때 어떻게 하는지, 감정 표현 경향
+  3) **"당신만의 힐링 패턴"** — 체크리스트 5개 (✓ 형식, 구독 카테고리 연결)
+     · 예: ${ytCats.find(c => c.category === 'music') ? '음악 채널 구독 → 음악으로 감정 조절' : '다양한 콘텐츠 → 기분 전환'}
+  4) **"이건 약점이 아니에요"** — 리프레이밍
+  5) **"근거"** — TCI 점수 + 구독 비율 인용
+
+## 카드 7: 추구하는 미래 (1500-2000자)
+- "7": 아래 구조를 반드시 포함:
+  1) **미래상 한 줄 정의** (예: "자유롭게 일하며 의미 있는 삶")
+     · 자율성(SD)=${tci.SD}, 자기초월(ST)=${tci.ST} 기반
+  2) **"3축 분석"** — 라이프스타일/커리어/관계 각각 5단계 시각화
+  3) **"미래의 어느 저녁"** — 구체적인 장면 묘사 (3문단)
+  4) **"심리 특성이 말해주는 욕구"** — 1위/2위 축 연결
+  5) **"근거"** — 구독 카테고리와 미래관 연결
+
+## 카드 8: 견디기 힘든 상대방의 단점 (1500-2000자)
+- "8": 아래 구조를 반드시 포함:
+  1) ⚠️ 한 줄 요약 (예: "피상적이고 깊이 없는 대화")
+     · ${topBottom.top1.name} 높음 → 반대 특성에 민감
+  2) **"왜 이것이 힘든가요?"** — 3문단 서술 + 상황 예시
+  3) **"구체적 상황 예시"** — 표 형식 2개 (힘든 상황 | 당신의 내면)
+  4) **"이건 약점이 아니에요"** — 리프레이밍 + 조언
+  5) **"근거"** — ${topBottom.top1.name} ${topBottom.top1.score}점, ${topBottom.bottom.name} ${topBottom.bottom.score}점 인용
+
+## 응답 형식 (JSON만, 다른 텍스트 없이)
+{
+  "6": "본문 1500자 이상",
+  "7": "본문 1500자 이상",
+  "8": "본문 1500자 이상"
+}`;
+
+  const response = await chatCompletion(
+    [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: prompt },
+    ],
+    LLM_OPTIONS
+  );
+
+  return JSON.parse(response ?? '{}');
+}
+
+// 배치 D: 카드 9, 10 (왕자님 + 상세 프로필 — 카드 11은 고정 텍스트)
+async function generateBatchD(data: ExtendedCardData, context: string): Promise<Record<string, string>> {
+  const h = data.matched_husband;
+  const topBottom = data.topBottom;
+  const scorePercent = Math.round(data.match_score * 100);
+
+  const prompt = `아래 분석 데이터를 바탕으로 2개의 리포트 카드 내용을 JSON으로 생성해주세요.
+
+## ⚠️ 필수: 각 카드는 반드시 1,500자 이상 2,000자 이하로 작성하세요. 500자 이하의 짧은 응답은 절대 안 됩니다.
+
+${context}
+
+## 카드 9: 당신의 왕자님은 (1500-2000자)
+- "9": 아래 구조를 반드시 포함:
+  1) **큰 비유 문구** — "${h.variant === 'extrovert' ? (h.metaphor_e || '') : (h.metaphor_i || '')}" 활용
+  2) **"${h.category} - ${h.subcategory}"** — 유형 카테고리 소개
+  3) **유형 설명** — "${h.description}" 기반으로 풍부하게 서술
+  4) **"처음 만났을 때"** — 첫 만남 장면 상상 (외향/내향에 따라 다르게)
+     · 성향: ${h.variant === 'extrovert' ? '외향형 — 따뜻하고 친근한 에너지' : '내향형 — 조용하지만 깊이 있는 인상'}
+  5) **"왜 이 유형인가요?"** — ${topBottom.top1.name} ${topBottom.top1.score}점 → 이 유형과의 상성 설명
+  6) **"근거"** — 매칭 점수 ${scorePercent}%, 핵심 축 연결
+
+## 카드 10: 왕자님 상세 프로필 (1500-2000자)
+- "10": 아래 구조를 반드시 포함:
+  1) **"기본 정보"** — 유형명: ${h.name}, 카테고리: ${h.category} > ${h.subcategory}, 성향: ${h.variant === 'extrovert' ? '외향형' : '내향형'}, 매칭 점수: ${scorePercent}%
+  2) **"이런 분이에요"** — ${h.description} 기반 2문단 확장
+  3) **"함께하면 이런 모습이에요"** — 3개 구체적 장면:
+     · 【장면 1】 주말 오후
+     · 【장면 2】 힘든 날
+     · 【장면 3】 특별한 날
+  4) **"알아두세요"** — 이 유형과 잘 지내기 위한 팁
+
+## 응답 형식 (JSON만, 다른 텍스트 없이)
+{
+  "9": "본문 1500자 이상",
+  "10": "본문 1500자 이상"
+}`;
+
+  const response = await chatCompletion(
+    [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: prompt },
+    ],
+    LLM_OPTIONS
+  );
+
+  return JSON.parse(response ?? '{}');
+}
+
+// 4배치 병렬 호출로 카드 콘텐츠 생성
+async function generateAllCardsAtOnce(data: ExtendedCardData): Promise<Record<string, string>> {
+  const context = buildAnalysisContext(data);
+
+  const [batchA, batchB, batchC, batchD] = await Promise.all([
+    generateBatchA(data, context).catch((err) => {
+      console.error('[Phase 1] Batch A (cards 2-3) failed:', err);
+      return {} as Record<string, string>;
+    }),
+    generateBatchB(data, context).catch((err) => {
+      console.error('[Phase 1] Batch B (cards 4-5) failed:', err);
+      return {} as Record<string, string>;
+    }),
+    generateBatchC(data, context).catch((err) => {
+      console.error('[Phase 1] Batch C (cards 6-8) failed:', err);
+      return {} as Record<string, string>;
+    }),
+    generateBatchD(data, context).catch((err) => {
+      console.error('[Phase 1] Batch D (cards 9-10) failed:', err);
+      return {} as Record<string, string>;
+    }),
+  ]);
+
+  return { ...batchA, ...batchB, ...batchC, ...batchD };
 }
 
 // 폴백: 템플릿 기반 카드 생성 (11장)
@@ -765,7 +972,8 @@ export async function runPhase1FromPrecomputed(
   let cardContents: Record<string, string>;
   try {
     cardContents = await generateAllCardsAtOnce(extendedCardData);
-    if (!cardContents || Object.keys(cardContents).length < 10) {
+    // LLM이 생성해야 할 카드: 2,3,4,5,6,7,8,9,10 = 9장 (+ 타이틀 키 3개 = 최소 12개 키)
+    if (!cardContents || Object.keys(cardContents).length < 8) {
       console.log('[Phase 1] Incomplete AI response, using fallback');
       cardContents = generateFallbackCards(extendedCardData);
     }
@@ -780,10 +988,12 @@ export async function runPhase1FromPrecomputed(
     const meta = CARD_TITLES[cardNumber];
     const cardKey = String(cardNumber);
 
-    // 카드별 content 결정
+    // 카드별 content 결정 (카드 1, 11은 고정 텍스트)
     let content: string;
     if (cardNumber === 1) {
       content = CARD_1_FIXED_CONTENT;
+    } else if (cardNumber === 11) {
+      content = getCard11FixedContent(channelCount);
     } else {
       content = cardContents[cardKey] || '분석 결과를 불러오는 중 문제가 발생했습니다.';
     }
