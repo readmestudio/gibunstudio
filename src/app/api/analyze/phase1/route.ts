@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { buildVectorFromSurvey } from '@/lib/husband-match/analysis/survey-to-vector';
 import { runPhase1FromChannels, runPhase1FromPrecomputed } from './run-from-channels';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import type { ChannelData } from '@/lib/husband-match/types';
 import type { Phase1SurveyAnswer } from '@/lib/husband-match/data/phase1-survey-questions';
 
@@ -12,6 +13,9 @@ import type { Phase1SurveyAnswer } from '@/lib/husband-match/data/phase1-survey-
  * - survey_answers 없음: YouTube 구독 조회 → runPhase1FromChannels
  */
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.ai);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const supabase = await createClient();
 

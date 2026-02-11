@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { visionCompletion, type VisionImageInput } from '@/lib/openai-client';
+import { visionCompletion, type VisionImageInput } from '@/lib/gemini-client';
 import { runPhase1FromChannels } from '../run-from-channels';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import type { ChannelData } from '@/lib/husband-match/types';
 
 const MIN_IMAGES = 3;
@@ -35,6 +36,9 @@ function parseChannelNamesFromText(text: string): string[] {
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.ai);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const supabase = await createClient();
 

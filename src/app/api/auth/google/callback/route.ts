@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * Google OAuth callback - YouTube 연동 전용
@@ -8,6 +9,8 @@ import { google } from 'googleapis';
  * code → access_token 교환 후 loading 페이지로 토큰 전달.
  */
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.auth);
+  if (rateLimitResponse) return rateLimitResponse;
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');

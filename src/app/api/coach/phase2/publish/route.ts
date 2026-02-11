@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isCoachEmail } from '@/lib/auth/coach';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * 코치 전용: Phase 2 결과 퍼블리시
  * POST body: { phase2_id: string }
  */
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.general);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const supabase = await createClient();
     const {

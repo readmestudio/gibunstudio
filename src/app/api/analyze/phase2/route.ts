@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { chatCompletion } from '@/lib/openai-client';
+import { chatCompletion } from '@/lib/gemini-client';
 import { SYSTEM_PROMPT } from '@/lib/husband-match/prompts/system-prompt';
 import {
   PHASE2_CARD_PROMPTS,
   Phase2CardData,
 } from '@/lib/husband-match/prompts/phase2-prompts';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import type { ReportCard } from '@/lib/husband-match/types';
 
 type Phase1Row = {
@@ -159,6 +160,9 @@ async function generatePhase2CardContent(
  * 4. Store in phase2_results
  */
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.ai);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const supabase = await createClient();
 

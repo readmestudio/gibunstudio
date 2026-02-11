@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.auth);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
