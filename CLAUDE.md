@@ -9,7 +9,7 @@
 - Next.js 16 (App Router) + React 19 + TypeScript (strict)
 - Tailwind CSS v4 + Framer Motion + Pretendard 폰트
 - Supabase (Auth + PostgreSQL)
-- OpenAI (GPT-4 Turbo, GPT-4o-mini)
+- Google Gemini (gemini-1.5-pro, gemini-2.0-flash)
 - Google APIs (YouTube), Kakao
 
 ## 언어 규칙
@@ -31,12 +31,12 @@
 src/
 ├── app/                    # 페이지 + API 라우트
 ├── components/             # layout/, missions/, husband-match/
-└── lib/                    # supabase/, husband-match/, missions/, openai-client.ts
+└── lib/                    # supabase/, husband-match/, missions/, gemini-client.ts
 ```
 
 ## 환경 변수 (.env.local)
 
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `OPENAI_API_KEY`, `COACH_EMAILS`
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `GEMINI_API_KEY`, `COACH_EMAILS`
 
 ## 디자인 (Monotone 스타일)
 
