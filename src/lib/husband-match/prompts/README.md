@@ -1,60 +1,54 @@
-# LLM Prompts - To Be Implemented in Cursor
+# LLM Prompts
 
-This directory contains all LLM prompt templates for generating report cards.
+Phase 1/Phase 2 리포트 카드 생성에 사용되는 프롬프트 및 유틸리티 모듈.
 
-## Files to Implement
+## 카드 생성 구조
+
+실제 카드 프롬프트는 `src/app/api/analyze/phase1/run-from-channels.ts`에서 **11장 카드 구조**로 직접 생성됩니다.
+
+## Files
 
 ### 1. `system-prompt.ts`
-- **Purpose**: Common system prompt for all card generation
+- **Purpose**: 카드 생성용 공통 시스템 프롬프트
 - **Export**: `SYSTEM_PROMPT` string constant
-- **Content**: See documentation section 5-2
-  - Role definition
-  - Tone and style guidelines
-  - Output format requirements
 
 ### 2. `card-prompts.ts`
-- **Purpose**: Individual prompts for each Phase 1 card (10 cards)
-- **Export**: `PHASE1_CARD_PROMPTS` object
-- **Structure**:
-  ```typescript
-  {
-    card_01_intro: (data) => string,
-    card_02_personality: (data) => string,
-    // ... up to card_10
-  }
-  ```
-- **Input**: Analysis results (TCI, MBTI, Enneagram, matched type, etc.)
-- **Output**: Formatted prompt string
+- **Purpose**: 카드 생성에 사용되는 타입 정의 및 유틸리티 함수
+- **Exports**:
+  - `Phase1CardData` — 카드 생성 입력 데이터 타입
+  - `ENNEAGRAM_NAMES` — 애니어그램 한글 이름 매핑
+  - `TCI_NAMES` — TCI 척도 한글명
+  - `TCI_CHARACTERISTICS` — TCI 척도별 high/low 특성 설명
+  - `getSortedCategories()` — 카테고리 분포를 정렬된 배열로 반환
+  - `getTopTCIScores()` — TCI 상위 척도 반환
+  - `getBottomTCIScores()` — TCI 하위 척도 반환
+  - `getTCICharacteristics()` — TCI 점수 기반 특성 문장 생성
 
 ### 3. `phase2-prompts.ts`
-- **Purpose**: Prompts for Phase 2 deep analysis cards (8 cards)
+- **Purpose**: Phase 2 심층 분석 카드 프롬프트 (8장)
 - **Export**: `PHASE2_CARD_PROMPTS` object
-- **Features**:
-  - Cross-validation insights
-  - Metaphor generation
-  - Deeper psychological analysis
-  - YouTube vs Survey discrepancies
 
 ### 4. `metaphor-generator.ts`
-- **Purpose**: Generate creative metaphors for personality insights
+- **Purpose**: 성격 인사이트에 대한 비유 생성
 - **Export**: `generateMetaphor(context: string)` async function
-- **Input**: Context about the user's personality
-- **Output**: Creative metaphor string
 
-## Card Types (Phase 1 - 10 cards)
+## Phase 1 카드 구조 (11장)
 
-1. **인트로 카드**: Welcome and overview
-2. **성격 프로필**: TCI summary
-3. **애니어그램 분석**: Enneagram type and center
-4. **MBTI 추정**: MBTI type explanation
-5. **콘텐츠 취향**: YouTube consumption patterns
-6. **가치관 분석**: Inferred values from content
-7. **관계 스타일**: Relationship tendencies
-8. **남편상 매칭 결과**: The matched husband type
-9. **비유와 인사이트**: Metaphor-based understanding
-10. **Phase 2 안내**: CTA for deep analysis
+| # | 카드명 | subtitle | title | 특징 |
+|---|--------|----------|-------|------|
+| 1 | 커버 | INTRO | 고정 | 인트로 (LLM 미사용) |
+| 2 | 구독 데이터 개요 | 구독 데이터 개요 | LLM 생성 | 육각형 TCI 차트 |
+| 3 | 카테고리 랭킹 | Your Subscription DNA | LLM 생성 (상위 N%) | 바 차트, 희소성 |
+| 4 | 희귀 취향 | Hidden Gem in Your List | 고정 | 희소 카테고리 |
+| 5 | 통합 유형 분석 | LLM 생성 (영어) | LLM 생성 (한국어) | MBTI/애니어그램 명칭 금지 |
+| 6 | 감성 | 감정 스타일 | 고정 | 감정 처리, 힐링 패턴 |
+| 7 | 미래 | 미래상 | 고정 | 3축 분석 |
+| 8 | 단점 | 관계 인사이트 | 고정 | 리프레이밍 |
+| 9 | 왕자님 | 매칭 결과 | 고정 | 남편 타입 비유 |
+| 10 | 상세 프로필 | 파트너 프로필 | 고정 | 3개 장면 묘사 |
+| 11 | 결제 유도 | Phase 2 안내 | 고정 | CTA ₩4,900 |
 
-## Card Types (Phase 2 - 8 cards)
+## Phase 2 카드 구조 (8장)
 
 1. **교차검증 서론**: Intro to cross-validation
 2. **숨겨진 욕구**: Hidden desires from discrepancies
@@ -64,36 +58,3 @@ This directory contains all LLM prompt templates for generating report cards.
 6. **성장 포인트**: Growth opportunities
 7. **최종 남편상**: Refined husband type match
 8. **액션 플랜**: Practical next steps
-
-## Implementation Guidelines
-
-- Use OpenAI GPT-4
-- Keep prompts under 1500 tokens when possible
-- Include examples in prompts for better output
-- Use structured output when needed
-- Test with real data
-- Iterate on prompt quality
-
-## Example Prompt Structure
-
-```typescript
-export function getCard01Prompt(data: {
-  userName: string;
-  totalChannels: number;
-  topCategories: string[];
-}) {
-  return `
-${SYSTEM_PROMPT}
-
-사용자 정보:
-- 이름: ${data.userName}
-- 구독 채널 수: ${data.totalChannels}개
-- 주요 관심사: ${data.topCategories.join(', ')}
-
-다음 형식으로 인트로 카드를 작성하세요:
-
-제목: [환영 메시지]
-내용: [2-3 문단으로 사용자를 환영하고, 분석 과정 소개]
-  `.trim();
-}
-```
