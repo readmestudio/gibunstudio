@@ -27,16 +27,6 @@ export default function OnboardingPage() {
           <p className="mt-4 text-center text-sm text-[var(--foreground)]/60">
             구독 목록 캡처를 3장 이상 올리면 분석해 드려요. 결과를 보려면 로그인이 필요합니다.
           </p>
-
-          {/* 나중에 YouTube 연동 (접어두기) */}
-          <div className="mt-8 pt-6 border-t border-[var(--border)]">
-            <Link
-              href="/login?next=/husband-match/onboarding"
-              className="block w-full text-center py-2 text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
-            >
-              나중에 YouTube 연동하기
-            </Link>
-          </div>
         </div>
 
         {/* Back to Home */}
