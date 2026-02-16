@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { CardPatternDecoration } from './CardPatternDecoration';
 
 interface HexagonChartData {
   labels: string[];
@@ -201,6 +202,9 @@ export function ReportCard({
           />
         </div>
       </div>
+
+      {/* 하단 장식 패턴 */}
+      <CardPatternDecoration />
 
       {/* Footer */}
       <div className="p-6 border-t border-[var(--border)] bg-[var(--surface)]/30 flex-shrink-0">

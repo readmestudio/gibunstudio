@@ -1,5 +1,7 @@
 'use client';
 
+import { CardPatternDecoration } from './CardPatternDecoration';
+
 interface PaymentGateProps {
   onProceed: () => void;
   phase1Id: string;
@@ -127,6 +129,9 @@ export function PaymentGate({ onProceed, phase1Id }: PaymentGateProps) {
           심층 분석 시작하기
         </button>
       </div>
+
+      {/* 하단 장식 패턴 */}
+      <CardPatternDecoration />
     </div>
   );
 }
