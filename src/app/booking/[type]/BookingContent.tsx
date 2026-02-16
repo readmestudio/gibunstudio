@@ -18,17 +18,22 @@ export function BookingContent({ counselingTypeId }: Props) {
   const [surveyData, setSurveyData] = useState({ concern: "", goal: "" });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
 
-  const fetchSlots = useCallback(async (month: string) => {
+  /** 해당 월 + 다음 달 슬롯을 함께 fetch (1개월 범위 커버) */
+  const fetchSlots = useCallback(async (year: number, month: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/booking/available-slots?month=${month}`);
-      const data = await res.json();
-      setAvailableSlots(data.slots || []);
+      const m1 = `${year}-${String(month + 1).padStart(2, "0")}`;
+      const nextMonth = month === 11 ? 0 : month + 1;
+      const nextYear = month === 11 ? year + 1 : year;
+      const m2 = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}`;
+
+      const [r1, r2] = await Promise.all([
+        fetch(`/api/booking/available-slots?month=${m1}`),
+        fetch(`/api/booking/available-slots?month=${m2}`),
+      ]);
+      const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+      setAvailableSlots([...(d1.slots || []), ...(d2.slots || [])]);
     } catch {
       setAvailableSlots([]);
     } finally {
@@ -37,14 +42,13 @@ export function BookingContent({ counselingTypeId }: Props) {
   }, []);
 
   useEffect(() => {
-    fetchSlots(currentMonth);
-  }, [currentMonth, fetchSlots]);
+    const now = new Date();
+    fetchSlots(now.getFullYear(), now.getMonth());
+  }, [fetchSlots]);
 
-  // 캘린더 월 변경 감지를 위한 커스텀 핸들러
-  // BookingCalendar 내부에서 월이 변하면 이쪽에서도 fetch
-  useEffect(() => {
-    // 다음달과 이전달도 미리 가져오기 (선택적 최적화)
-  }, []);
+  function handleMonthChange(year: number, month: number) {
+    fetchSlots(year, month);
+  }
 
   function handleSelectSlot(slotId: string, slotTime: string) {
     if (selectedSlots.length >= MAX_SLOT_SELECTIONS) return;
@@ -110,6 +114,7 @@ export function BookingContent({ counselingTypeId }: Props) {
             onSelectSlot={handleSelectSlot}
             onDeselectSlot={handleDeselectSlot}
             maxSelections={MAX_SLOT_SELECTIONS}
+            onMonthChange={handleMonthChange}
           />
         )}
 

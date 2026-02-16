@@ -16,9 +16,14 @@ interface BookingCalendarProps {
   onSelectSlot: (slotId: string, slotTime: string) => void;
   onDeselectSlot: (slotId: string) => void;
   maxSelections?: number;
+  /** 월 변경 시 호출 (슬롯 재조회용) */
+  onMonthChange?: (year: number, month: number) => void;
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+/** 07:00 ~ 22:00 (16개 시간대) */
+const ALL_HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -42,12 +47,20 @@ export function BookingCalendar({
   onSelectSlot,
   onDeselectSlot,
   maxSelections = 3,
+  onMonthChange,
 }: BookingCalendarProps) {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [direction, setDirection] = useState(0);
+
+  // 최대 선택 가능 날짜: 오늘 + 31일
+  const maxDate = useMemo(() => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + 31);
+    return d;
+  }, []);
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfWeek(currentYear, currentMonth);
@@ -64,38 +77,43 @@ export function BookingCalendar({
     return map;
   }, [availableSlots]);
 
-  // 선택된 날짜의 가용 슬롯
+  // 선택된 날짜의 DB 슬롯 (시간별 매칭용)
   const slotsForSelectedDate = useMemo(() => {
     if (!selectedDate) return [];
     const key = `${selectedDate.getFullYear()}-${selectedDate.getMonth()}-${selectedDate.getDate()}`;
-    return (slotsByDate.get(key) || [])
-      .filter((s) => !s.isBooked)
-      .sort(
-        (a, b) =>
-          new Date(a.slotTime).getTime() - new Date(b.slotTime).getTime()
-      );
+    return slotsByDate.get(key) || [];
   }, [selectedDate, slotsByDate]);
 
   function goToPrevMonth() {
     setDirection(-1);
+    let newYear = currentYear;
+    let newMonth = currentMonth;
     if (currentMonth === 0) {
-      setCurrentYear((y) => y - 1);
-      setCurrentMonth(11);
+      newYear = currentYear - 1;
+      newMonth = 11;
     } else {
-      setCurrentMonth((m) => m - 1);
+      newMonth = currentMonth - 1;
     }
+    setCurrentYear(newYear);
+    setCurrentMonth(newMonth);
     setSelectedDate(null);
+    onMonthChange?.(newYear, newMonth);
   }
 
   function goToNextMonth() {
     setDirection(1);
+    let newYear = currentYear;
+    let newMonth = currentMonth;
     if (currentMonth === 11) {
-      setCurrentYear((y) => y + 1);
-      setCurrentMonth(0);
+      newYear = currentYear + 1;
+      newMonth = 0;
     } else {
-      setCurrentMonth((m) => m + 1);
+      newMonth = currentMonth + 1;
     }
+    setCurrentYear(newYear);
+    setCurrentMonth(newMonth);
     setSelectedDate(null);
+    onMonthChange?.(newYear, newMonth);
   }
 
   function hasAvailableSlots(day: number) {
@@ -112,6 +130,11 @@ export function BookingCalendar({
       today.getDate()
     );
     return d < todayStart;
+  }
+
+  function isOutOfRange(day: number) {
+    const d = new Date(currentYear, currentMonth, day);
+    return d > maxDate;
   }
 
   // 달력 셀 빌드
@@ -207,6 +230,8 @@ export function BookingCalendar({
             );
             const hasSlots = hasAvailableSlots(day);
             const past = isPast(day);
+            const outOfRange = isOutOfRange(day);
+            const disabled = past || outOfRange;
             const isSelected =
               selectedDate &&
               isSameDay(
@@ -218,7 +243,7 @@ export function BookingCalendar({
               <button
                 key={day}
                 type="button"
-                disabled={past || !hasSlots}
+                disabled={disabled}
                 onClick={() =>
                   setSelectedDate(new Date(currentYear, currentMonth, day))
                 }
@@ -227,13 +252,13 @@ export function BookingCalendar({
                     ? "bg-[var(--foreground)] text-white"
                     : isToday
                     ? "bg-[var(--surface)] font-semibold text-[var(--foreground)]"
-                    : past || !hasSlots
+                    : disabled
                     ? "text-[var(--foreground)]/20 cursor-default"
                     : "text-[var(--foreground)] hover:bg-[var(--surface)]"
                 }`}
               >
                 {day}
-                {hasSlots && !past && (
+                {hasSlots && !past && !outOfRange && (
                   <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--accent)]" />
                 )}
               </button>
@@ -242,7 +267,7 @@ export function BookingCalendar({
         </motion.div>
       </AnimatePresence>
 
-      {/* 선택된 날짜의 시간대 */}
+      {/* 선택된 날짜의 시간대 (07:00 ~ 22:00) */}
       <AnimatePresence>
         {selectedDate && (
           <motion.div
@@ -253,51 +278,86 @@ export function BookingCalendar({
           >
             <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3">
               {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
-              가능한 시간
+              시간 선택
               <span className="ml-2 text-xs font-normal text-[var(--foreground)]/50">
                 (최대 {maxSelections}개 선택)
               </span>
             </h4>
 
-            {slotsForSelectedDate.length === 0 ? (
-              <p className="text-sm text-[var(--foreground)]/50">
-                해당 날짜에 가능한 시간이 없습니다.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {slotsForSelectedDate.map((slot) => {
-                  const time = new Date(slot.slotTime);
-                  const timeLabel = `${String(time.getHours()).padStart(2, "0")}:${String(time.getMinutes()).padStart(2, "0")}`;
-                  const isSelected = selectedSlotIds.includes(slot.id);
-                  const isMaxReached =
-                    selectedSlotIds.length >= maxSelections && !isSelected;
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+              {ALL_HOURS.map((hour) => {
+                const timeLabel = `${String(hour).padStart(2, "0")}:00`;
 
-                  return (
-                    <button
-                      key={slot.id}
-                      type="button"
-                      disabled={isMaxReached}
-                      onClick={() => {
-                        if (isSelected) {
-                          onDeselectSlot(slot.id);
-                        } else {
-                          onSelectSlot(slot.id, slot.slotTime);
-                        }
-                      }}
-                      className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
-                        isSelected
-                          ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
-                          : isMaxReached
-                          ? "border-[var(--border)] text-[var(--foreground)]/30 cursor-not-allowed"
-                          : "border-[var(--border)] text-[var(--foreground)] hover:border-[var(--foreground)]"
-                      }`}
-                    >
-                      {timeLabel}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                // DB에 상담사가 설정한 슬롯이 있는지 확인
+                const matchingSlot = slotsForSelectedDate.find((s) => {
+                  const d = new Date(s.slotTime);
+                  return d.getHours() === hour;
+                });
+
+                const isAvailable = matchingSlot && !matchingSlot.isBooked;
+                const isBooked = matchingSlot?.isBooked;
+                const isSelected = matchingSlot
+                  ? selectedSlotIds.includes(matchingSlot.id)
+                  : false;
+                const isMaxReached =
+                  selectedSlotIds.length >= maxSelections && !isSelected;
+
+                // 상담사가 설정하지 않은 시간 or 이미 예약된 시간 → disabled
+                const slotDisabled = !isAvailable || isMaxReached;
+
+                return (
+                  <button
+                    key={hour}
+                    type="button"
+                    disabled={slotDisabled}
+                    onClick={() => {
+                      if (!matchingSlot) return;
+                      if (isSelected) {
+                        onDeselectSlot(matchingSlot.id);
+                      } else {
+                        onSelectSlot(matchingSlot.id, matchingSlot.slotTime);
+                      }
+                    }}
+                    className={`px-2 py-2 text-sm rounded-lg border transition-colors ${
+                      isSelected
+                        ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
+                        : isAvailable && !isMaxReached
+                        ? "border-[var(--foreground)]/30 text-[var(--foreground)] hover:border-[var(--foreground)] hover:bg-[var(--surface)]"
+                        : isBooked
+                        ? "border-[var(--border)] text-[var(--foreground)]/20 cursor-not-allowed line-through"
+                        : "border-[var(--border)] text-[var(--foreground)]/20 cursor-not-allowed"
+                    }`}
+                    title={
+                      !matchingSlot
+                        ? "상담사 미설정"
+                        : isBooked
+                        ? "예약 완료"
+                        : isMaxReached
+                        ? `최대 ${maxSelections}개까지 선택 가능`
+                        : ""
+                    }
+                  >
+                    {timeLabel}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 범례 */}
+            <div className="mt-3 flex flex-wrap gap-4 text-xs text-[var(--foreground)]/50">
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-3 h-3 rounded border border-[var(--foreground)]/30" />
+                선택 가능
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-3 h-3 rounded border border-[var(--border)] bg-[var(--surface)]" />
+                상담사 미설정
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-3 h-3 rounded bg-[var(--foreground)]" />
+                선택됨
+              </span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
