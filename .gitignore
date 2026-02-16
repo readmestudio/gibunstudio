@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# test results
+/test-card-results*/
+
+# assets (임시)
+gibunnewlogo.png
+
+# external templates
+/monotone-starter-1.1.0/
