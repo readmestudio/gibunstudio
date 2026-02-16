@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ProgramCards } from "@/components/ProgramCards";
 import { FeatureTwo } from "@/components/FeatureTwo";
+import { Testimonials } from "@/components/Testimonials";
+import { PricingTable } from "@/components/PricingTable";
 
 export default function Home() {
   return (
@@ -50,6 +52,12 @@ export default function Home() {
 
       {/* 브랜드 선언문 + 폰 목업 */}
       <FeatureTwo />
+
+      {/* 유저 리뷰 */}
+      <Testimonials />
+
+      {/* 상담 프라이싱 */}
+      <PricingTable />
     </div>
   );
 }
