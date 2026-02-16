@@ -94,6 +94,18 @@ export default function CapturePage() {
     try {
       const formData = new FormData();
       files.forEach((file) => formData.append('images', file));
+
+      // 프로필 정보 (birth-info 페이지에서 localStorage에 저장됨)
+      try {
+        const birthInfoStr = localStorage.getItem('birthInfo');
+        if (birthInfoStr) {
+          const birthInfo = JSON.parse(birthInfoStr);
+          if (birthInfo.userName) formData.append('user_name', birthInfo.userName);
+          if (birthInfo.year) formData.append('birth_year', String(birthInfo.year));
+          if (birthInfo.month) formData.append('birth_month', String(birthInfo.month));
+          if (birthInfo.day) formData.append('birth_day', String(birthInfo.day));
+        }
+      } catch { /* birthInfo 파싱 실패는 무시 */ }
       const res = await fetch('/api/analyze/phase1/from-screenshots', {
         method: 'POST',
         body: formData,

@@ -73,6 +73,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 프로필 정보 (이름 + 생년월일)
+    const userName = formData.get('user_name');
+    const birthYear = formData.get('birth_year');
+    const birthMonth = formData.get('birth_month');
+    const birthDay = formData.get('birth_day');
+    const birthInfo = birthYear && birthMonth && birthDay
+      ? {
+          year: Number(birthYear),
+          month: Number(birthMonth),
+          day: Number(birthDay),
+        }
+      : undefined;
+
     // 최대 MAX_IMAGES장만 처리 (토큰 절약)
     const filesToProcess = files.slice(0, MAX_IMAGES);
 
@@ -119,7 +132,7 @@ export async function POST(request: NextRequest) {
     console.log(`[from-screenshots] Extracted ${channels.length} channels, running Phase1 analysis...`);
     let phase1_id: string;
     try {
-      const result = await runPhase1FromChannels(supabase, user.id, channels);
+      const result = await runPhase1FromChannels(supabase, user.id, channels, birthInfo, userName ? String(userName).trim() : undefined);
       phase1_id = result.phase1_id;
       console.log(`[from-screenshots] Phase1 completed with id: ${phase1_id}`);
     } catch (phase1Error) {

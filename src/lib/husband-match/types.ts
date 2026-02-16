@@ -84,6 +84,12 @@ export interface HusbandType {
   metaphor_i?: string; // Introvert variant metaphor
 }
 
+export interface BirthInfo {
+  year: number;
+  month: number;  // 1-12
+  day: number;    // 1-31
+}
+
 export interface Phase1Result {
   id: string;
   user_id: string;
@@ -98,6 +104,8 @@ export interface Phase1Result {
   match_score: number; // 0-1
   match_method: string;
   cards: ReportCard[];
+  user_name?: string;      // 사용자 이름
+  birth_date?: string;     // ISO date "1995-03-15"
   created_at: string;
 }
 

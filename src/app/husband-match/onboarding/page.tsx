@@ -19,7 +19,7 @@ export default function OnboardingPage() {
         {/* 메인 CTA */}
         <div className="bg-white rounded-2xl shadow-sm border-2 border-[var(--foreground)] p-8 mb-6">
           <Link
-            href="/husband-match/capture"
+            href="/husband-match/birth-info"
             className="block w-full text-center py-5 px-6 rounded-xl bg-white text-[var(--foreground)] font-semibold text-lg border-2 border-[var(--foreground)] hover:bg-[var(--surface)] transition-all"
           >
             테스트 시작하기
