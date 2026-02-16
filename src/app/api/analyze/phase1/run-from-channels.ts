@@ -971,13 +971,12 @@ export async function runPhase1FromPrecomputed(
     match_method: matchResult.method,
     user_name: data.userName || null,
     birth_date: data.birthInfo ? `${data.birthInfo.year}-${String(data.birthInfo.month).padStart(2,'0')}-${String(data.birthInfo.day).padStart(2,'0')}` : null,
-    birth_time: null,
     cards,
   };
 
   const { data: result, error: insertError } = await supabase
     .from('phase1_results')
-    .insert(payload)
+    .upsert(payload, { onConflict: 'user_id' })
     .select('id')
     .single();
 

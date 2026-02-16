@@ -157,6 +157,10 @@ CREATE TABLE IF NOT EXISTS public.phase1_results (
   match_score FLOAT NOT NULL, -- 0-1
   match_method TEXT, -- "hybrid", "vector", "personality"
 
+  -- 사용자 정보
+  user_name TEXT, -- 사용자 이름
+  birth_date DATE, -- 생년월일
+
   -- LLM 생성 카드 (10장)
   cards JSONB NOT NULL, -- [{title, content, card_type}, ...]
 
