@@ -175,6 +175,7 @@ export function aggregateCategoryResults(
       count: data.count,
       percent: total > 0 ? Math.round((data.count / total) * 100) : 0,
       color: CATEGORY_COLORS[cat as YouTubeCategory],
+      channels: data.channels,
     }));
 }
 

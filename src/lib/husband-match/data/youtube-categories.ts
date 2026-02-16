@@ -116,6 +116,7 @@ export interface YouTubeCategoryResult {
   count: number;
   percent: number;
   color: string;
+  channels: string[];  // 해당 카테고리 채널명 목록
 }
 
 // 희소성 분석 결과 타입
