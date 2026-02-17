@@ -6,6 +6,7 @@ import {
   getDashboardDiscoverPrograms,
   getComingSoonPrograms,
 } from "@/lib/programs/registry";
+import { DoodleDecoration } from "@/components/DoodleDecoration";
 
 /* ─── 남편상 분석 상태 판별 ─── */
 
@@ -206,7 +207,14 @@ export default async function DashboardPage() {
   const discoverAll = [...discoverActive, ...comingSoon];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12">
+    <div className="relative mx-auto max-w-6xl px-4 py-12">
+      <DoodleDecoration
+        name="star-sparkle"
+        sizeClass="w-12 h-12"
+        positionClass="top-10 right-8"
+        opacity={0.07}
+        rotate="12deg"
+      />
       <h1 className="text-2xl font-bold text-[var(--foreground)]">대시보드</h1>
       <p className="mt-2 text-[var(--foreground)]/70">
         환영합니다, {user.email}
@@ -275,7 +283,14 @@ export default async function DashboardPage() {
 
       {/* ─── 다른 프로그램 둘러보기 ─── */}
       {discoverAll.length > 0 && (
-        <section className={hasMyPrograms ? "mt-16" : "mt-12"}>
+        <section className={`relative ${hasMyPrograms ? "mt-16" : "mt-12"}`}>
+          <DoodleDecoration
+            name="plant-doodle"
+            sizeClass="w-20 h-20"
+            positionClass="bottom-0 right-4"
+            opacity={0.06}
+            rotate="-8deg"
+          />
           <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
             {hasMyPrograms ? "다른 프로그램 둘러보기" : "프로그램 둘러보기"}
           </h2>

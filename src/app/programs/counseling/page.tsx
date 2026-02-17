@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { COUNSELING_TYPES } from "@/lib/counseling/types";
+import { DoodleDecoration } from "@/components/DoodleDecoration";
 
 export default function ProgramCounselingPage() {
   return (
@@ -21,7 +22,21 @@ export default function ProgramCounselingPage() {
       </section>
 
       {/* 상담 카드 섹션 */}
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-16">
+      <div className="relative mx-auto max-w-3xl px-4 sm:px-6 py-16">
+        <DoodleDecoration
+          name="chat-bubble"
+          sizeClass="w-16 h-16"
+          positionClass="top-8 -left-4"
+          opacity={0.06}
+          rotate="-15deg"
+        />
+        <DoodleDecoration
+          name="heart-doodle"
+          sizeClass="w-14 h-14"
+          positionClass="bottom-8 -right-4"
+          opacity={0.05}
+          rotate="8deg"
+        />
         <h2 className="text-xl font-bold text-[var(--foreground)]">
           상담 종류
         </h2>

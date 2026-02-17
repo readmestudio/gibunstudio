@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { OpenNotifyModal } from "@/components/OpenNotifyModal";
+import { DoodleDecoration } from "@/components/DoodleDecoration";
 
 export default function Program7DayPage() {
   const [showOpenNotify, setShowOpenNotify] = useState(true);
@@ -25,7 +26,14 @@ export default function Program7DayPage() {
       </section>
 
       {/* 본문 */}
-      <div className="mx-auto max-w-3xl px-4 py-16">
+      <div className="relative mx-auto max-w-3xl px-4 py-16">
+        <DoodleDecoration
+          name="face-smile"
+          sizeClass="w-14 h-14"
+          positionClass="top-8 right-4"
+          opacity={0.06}
+          rotate="10deg"
+        />
         <OpenNotifyModal isOpen={showOpenNotify} onClose={() => setShowOpenNotify(false)} />
         {!showOpenNotify && (
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center">
