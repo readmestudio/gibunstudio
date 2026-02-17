@@ -20,10 +20,10 @@ export interface ProgramDefinition {
 export const PROGRAMS: ProgramDefinition[] = [
   {
     id: "husband-match",
-    title: "남편상 분석",
+    title: "내면 분석 리포트",
     description:
-      "유튜브 알고리즘으로 나의 기질·성격·감성을 분석하고, 나에게 맞는 파트너 유형을 추천해 드립니다. 무료 티저 확인 후 디테일한 리포트를 받아보세요.",
-    href: "/husband-match/onboarding",
+      "유튜브 알고리즘, 문장완성 검사 등 셀프 인풋을 분석해 나의 기질과 심리 패턴을 리포트로 제공합니다.",
+    href: "/self-hacking",
     dashboardHref: "/dashboard",
     showOnHome: true,
     showOnDashboard: true,

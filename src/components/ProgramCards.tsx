@@ -32,9 +32,9 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
     title: "내면 분석 리포트",
     description:
       "유튜브·인스타 알고리즘, 자가보고 검사 등 셀프 인풋을 분석해 리포트를 제공합니다. 남편상 테스트를 무료로 체험해 보세요.",
-    href: "/husband-match/onboarding",
+    href: "/self-hacking",
     comingSoon: false,
-    cta: "무료로 시작하기 →",
+    cta: "검사 선택하기 →",
   },
   {
     id: "self-workshop",
