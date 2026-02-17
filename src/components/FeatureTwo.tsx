@@ -123,7 +123,7 @@ export function FeatureTwo() {
         {/* 헤딩 영역 */}
         <div className="flex flex-col w-full mb-6 text-center">
           <h2
-            className="mb-6 text-4xl font-bold tracking-tighter text-[var(--foreground)] md:text-8xl lg:text-6xl"
+            className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: 'keep-all' }}
           >
             Hack yourself.

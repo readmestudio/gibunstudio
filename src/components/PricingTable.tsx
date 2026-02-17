@@ -52,7 +52,7 @@ export function PricingTable() {
     <section id="pricing">
       <div className="container px-5 pt-24 pb-32 mx-auto lg:px-24">
         <div className="flex flex-col w-full mb-12 text-left lg:text-center">
-          <h2 className="mb-6 text-4xl font-bold tracking-tighter text-[var(--foreground)] md:text-8xl lg:text-6xl">
+          <h2 className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl">
             1:1 심리 상담
           </h2>
           <p className="mx-auto text-base leading-snug text-[var(--foreground)]/70 lg:w-1/2">

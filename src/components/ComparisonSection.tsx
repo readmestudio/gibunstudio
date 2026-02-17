@@ -21,9 +21,12 @@ const NEW_WAY = [
 
 export function ComparisonSection() {
   return (
-    <section>
+    <section
+      className="relative bg-center bg-no-repeat bg-cover"
+      style={{ backgroundImage: "url('/patterns/patternBottom.svg')" }}
+    >
       <div className="container px-5 py-24 mx-auto lg:px-24">
-        <div className="flex flex-col w-full mb-16 text-center">
+        <div className="flex flex-col w-full mb-12 text-center">
           <h2
             className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: "keep-all" }}

@@ -88,7 +88,7 @@ export function ProgramCards() {
     <section id="features">
       <div className="container px-5 py-32 mx-auto lg:px-24">
         <div className="flex flex-col w-full mb-20 text-center">
-          <h2 className="mb-6 text-4xl font-bold tracking-tighter text-[var(--foreground)] md:text-8xl lg:text-6xl">
+          <h2 className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl">
             패턴을 깨는 셀프 해킹 프로그램
           </h2>
           <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70">

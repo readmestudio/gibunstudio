@@ -10,7 +10,7 @@ export function FinalCTA() {
       <div className="container px-5 py-24 mx-auto lg:px-24">
         <div className="flex flex-col items-center text-center max-w-2xl mx-auto">
           <h2
-            className="mb-6 text-3xl font-bold tracking-tighter text-[var(--foreground)] md:text-4xl lg:text-5xl"
+            className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: "keep-all" }}
           >
             아직 고민 중이라면, 무료부터 시작하세요

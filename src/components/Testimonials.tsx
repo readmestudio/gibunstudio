@@ -54,7 +54,7 @@ export function Testimonials() {
     <section>
       <div className="container px-5 py-24 mx-auto lg:px-24">
         <div className="flex flex-col w-full mb-12 text-left lg:text-center">
-          <h2 className="mb-6 text-4xl font-bold tracking-tighter text-[var(--foreground)] md:text-8xl lg:text-6xl">
+          <h2 className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl">
             패턴을 깬
             <br className="hidden lg:block" />
             사람들의 이야기
@@ -69,7 +69,7 @@ export function Testimonials() {
               {col.map((item, itemIdx) => (
                 <div
                   key={itemIdx}
-                  className={`p-6 border border-[var(--border)] shadow-xl rounded-3xl${
+                  className={`p-6 border border-[var(--border)] shadow-xl rounded-2xl${
                     itemIdx > 0 ? " mt-4" : ""
                   }`}
                 >

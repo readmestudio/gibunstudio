@@ -21,7 +21,7 @@ export default function Home() {
               YOUTUBE 알고리즘 심리 분석
             </strong>
             <h1
-              className="mb-6 font-bold tracking-tighter text-[var(--foreground)] leading-[1.15]"
+              className="mb-6 font-bold text-[var(--foreground)] leading-[1.15]"
               style={{ fontSize: 'clamp(2rem, 5vw, 3.75rem)', wordBreak: 'keep-all' }}
             >
               내가 어떤 사람인지 알면,
