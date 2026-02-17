@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, phone } = body;
+    const { name, phone, program_type } = body;
 
     if (!name || typeof name !== "string" || !phone || typeof phone !== "string") {
       return NextResponse.json(
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.from("open_notifications").insert({
       name: name.trim(),
       phone: phone.trim(),
-      program_type: "7day",
+      program_type: typeof program_type === "string" ? program_type.trim() : "7day",
     });
 
     if (error) {

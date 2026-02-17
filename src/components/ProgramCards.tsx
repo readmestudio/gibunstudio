@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { COUNSELING_TYPES } from "@/lib/counseling/types";
+import { NotifyButton } from "./NotifyButton";
 
 /* ──────────────────────────────────────────────
    프로그램 배경 이미지 (수채화 패턴 6장)
@@ -13,26 +14,19 @@ const PROGRAM_BG = [
   "/program-bg/program-bg-6.png",
 ];
 
-/** 관계 해석 상담 제외 (셀프 해킹 3 + 상담 3 정렬) */
-const FILTERED_COUNSELING = COUNSELING_TYPES.filter(
-  (t) => t.id !== "relationship"
-);
-
 /* ──────────────────────────────────────────────
-   셀프 해킹 프로그램 — 홈페이지 전용 표시 데이터
-   (registry는 대시보드 전용이므로 건드리지 않음)
+   통합 프로그램 카드 데이터
    ────────────────────────────────────────────── */
-interface SelfHackingProgram {
+interface ProgramCardData {
   id: string;
   title: string;
   description: string;
   href: string;
   comingSoon: boolean;
-  cta?: string;
-  icon: React.ReactNode;
+  cta: string;
 }
 
-const SELF_HACKING_PROGRAMS: SelfHackingProgram[] = [
+const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
   {
     id: "self-report",
     title: "셀프 검사 리포트",
@@ -41,11 +35,6 @@ const SELF_HACKING_PROGRAMS: SelfHackingProgram[] = [
     href: "/husband-match/onboarding",
     comingSoon: false,
     cta: "무료로 시작하기 →",
-    icon: (
-      <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="w-6 h-6" viewBox="0 0 24 24">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-      </svg>
-    ),
   },
   {
     id: "self-workshop",
@@ -54,11 +43,7 @@ const SELF_HACKING_PROGRAMS: SelfHackingProgram[] = [
       "가치관 월드컵, 연애 유형 검사, 천직 찾기 등 활동지를 통해 스스로 인생의 답을 찾아가요.",
     href: "#",
     comingSoon: true,
-    icon: (
-      <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="w-6 h-6" viewBox="0 0 24 24">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    ),
+    cta: "",
   },
   {
     id: "geumjjok",
@@ -67,67 +52,61 @@ const SELF_HACKING_PROGRAMS: SelfHackingProgram[] = [
       "내가 하는 사소한 고민이 내 많은 것을 설명해줘요. 현재 고민을 털어놓고 내면 분석 리포트를 받아 보세요.",
     href: "#",
     comingSoon: true,
-    icon: (
-      <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} className="w-6 h-6" viewBox="0 0 24 24">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
+    cta: "",
   },
 ];
 
-/* ──────────────────────────────────────────────
-   1:1 상담 카드용 한 줄 요약 매핑
-   (COUNSELING_TYPES.description은 길므로 짧은 요약 사용)
-   ────────────────────────────────────────────── */
-const COUNSELING_SUMMARY: Record<string, string> = {
-  "report-interpret": "리포트 결과를 전문 해석",
-  relationship: "커플/부부 관계 패턴 교차 분석",
-  "test-package": "심리검사 3종 + 해석 상담 묶음",
-  personal: "개인 고민 맞춤 심층 상담",
-};
+/** 관계 해석 상담 제외 (셀프 해킹 3 + 상담 3 정렬) */
+const COUNSELING_PROGRAMS: ProgramCardData[] = COUNSELING_TYPES.filter(
+  (t) => t.id !== "relationship"
+).map((t) => ({
+  id: t.id,
+  title: t.title,
+  description: t.description,
+  href: `/booking/${t.id}`,
+  comingSoon: false,
+  cta: "자세히 →",
+}));
 
 /* ──────────────────────────────────────────────
-   셀프 해킹 카드 컴포넌트
+   통합 프로그램 카드 컴포넌트
+   — 셀프해킹/상담 모두 동일한 크기와 레이아웃
    ────────────────────────────────────────────── */
-function SelfHackingCard({
+function ProgramCard({
   program,
   bgIndex,
 }: {
-  program: SelfHackingProgram;
+  program: ProgramCardData;
   bgIndex: number;
 }) {
   const bg = PROGRAM_BG[bgIndex % PROGRAM_BG.length];
 
-  const content = (
-    <div className="relative flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-      {/* 수채화 배경 (카드 내부에만) */}
+  const cardInner = (
+    <div
+      className={`relative flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)] ${
+        program.comingSoon ? "opacity-75" : ""
+      }`}
+    >
+      {/* 수채화 배경 */}
       <div
         className="absolute inset-0 bg-cover bg-center opacity-40"
         style={{ backgroundImage: `url('${bg}')` }}
       />
       <div className="relative z-10 flex flex-col h-full p-6">
-        {/* 아이콘 + Coming Soon 뱃지 */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/80 text-[var(--foreground)]">
-            {program.icon}
-          </div>
-          {program.comingSoon && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-[var(--foreground)]/30 bg-white/60 text-[var(--foreground)]/60">
-              Coming Soon
-            </span>
-          )}
-        </div>
-
-        {/* 제목 + 설명 */}
+        {/* 제목 */}
         <h4 className="text-lg font-semibold text-[var(--foreground)] mb-2">
           {program.title}
         </h4>
+
+        {/* 설명 */}
         <p className="text-sm leading-relaxed text-[var(--foreground)]/70 flex-grow">
           {program.description}
         </p>
 
         {/* CTA */}
-        {!program.comingSoon && program.cta && (
+        {program.comingSoon ? (
+          <NotifyButton programId={program.id} programTitle={program.title} />
+        ) : (
           <span className="mt-4 inline-flex items-center text-sm font-semibold text-[var(--foreground)]">
             {program.cta}
           </span>
@@ -137,60 +116,10 @@ function SelfHackingCard({
   );
 
   if (program.comingSoon) {
-    return <div className="opacity-60 cursor-default">{content}</div>;
+    return cardInner;
   }
 
-  return <Link href={program.href}>{content}</Link>;
-}
-
-/* ──────────────────────────────────────────────
-   1:1 상담 카드 컴포넌트
-   ────────────────────────────────────────────── */
-function CounselingCard({
-  type,
-  bgIndex,
-}: {
-  type: (typeof COUNSELING_TYPES)[number];
-  bgIndex: number;
-}) {
-  const isBest = type.id === "test-package";
-  const summary = COUNSELING_SUMMARY[type.id] ?? type.description;
-  const bg = PROGRAM_BG[bgIndex % PROGRAM_BG.length];
-
-  return (
-    <Link href={`/booking/${type.id}`}>
-      <div className="relative flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-        {/* 수채화 배경 (카드 내부에만) */}
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-40"
-          style={{ backgroundImage: `url('${bg}')` }}
-        />
-        <div className="relative z-10 flex flex-col h-full p-5">
-          {/* 제목 + BEST 뱃지 */}
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h4 className="text-base font-semibold text-[var(--foreground)] leading-snug">
-              {type.title}
-            </h4>
-            {isBest && (
-              <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--foreground)]">
-                BEST
-              </span>
-            )}
-          </div>
-
-          {/* 한 줄 요약 */}
-          <p className="text-sm leading-relaxed text-[var(--foreground)]/70 flex-grow">
-            {summary}
-          </p>
-
-          {/* CTA */}
-          <span className="mt-3 inline-flex items-center text-sm font-semibold text-[var(--foreground)]">
-            자세히 →
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
+  return <Link href={program.href}>{cardInner}</Link>;
 }
 
 /* ──────────────────────────────────────────────
@@ -223,7 +152,7 @@ export function ProgramCards() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {SELF_HACKING_PROGRAMS.map((program, index) => (
-              <SelfHackingCard key={program.id} program={program} bgIndex={index} />
+              <ProgramCard key={program.id} program={program} bgIndex={index} />
             ))}
           </div>
         </div>
@@ -239,8 +168,8 @@ export function ProgramCards() {
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FILTERED_COUNSELING.map((type, index) => (
-              <CounselingCard key={type.id} type={type} bgIndex={index + 3} />
+            {COUNSELING_PROGRAMS.map((program, index) => (
+              <ProgramCard key={program.id} program={program} bgIndex={index + 3} />
             ))}
           </div>
         </div>
