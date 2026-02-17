@@ -314,7 +314,7 @@ export default async function DashboardPage() {
                 <div
                   key={program.id}
                   className={`relative aspect-[4/5] overflow-hidden rounded-xl border-2 border-[var(--foreground)] bg-white ${
-                    isComingSoon ? "opacity-70" : ""
+                    isComingSoon ? "opacity-80" : ""
                   }`}
                 >
                   {/* 수채화 배경 */}
@@ -324,16 +324,17 @@ export default async function DashboardPage() {
                   />
                   {/* 콘텐츠 (하단 정렬) */}
                   <div className="relative z-10 flex flex-col justify-end h-full p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-base font-semibold text-[var(--foreground)]">
-                        {program.title}
-                      </h3>
-                      {isComingSoon && <StatusBadge text="Coming Soon" />}
-                    </div>
+                    <h3 className="text-base font-semibold text-[var(--foreground)] mb-2">
+                      {program.title}
+                    </h3>
                     <p className="text-sm text-[var(--foreground)]/60 mb-4">
                       {program.description}
                     </p>
-                    {!isComingSoon && (
+                    {isComingSoon ? (
+                      <span className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)]/30 bg-white/80 px-4 py-2 text-sm font-medium text-[var(--foreground)]/40 cursor-default">
+                        Coming Soon
+                      </span>
+                    ) : (
                       <Link
                         href={program.href}
                         className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)] bg-white/80 px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-white transition-colors"
