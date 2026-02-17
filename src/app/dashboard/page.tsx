@@ -125,6 +125,17 @@ function StatusBadge({ text }: { text: string }) {
   );
 }
 
+/* ─── 프로그램 배경 이미지 ─── */
+
+const PROGRAM_BG = [
+  "/program-bg/program-bg-1.png",
+  "/program-bg/program-bg-2.png",
+  "/program-bg/program-bg-3.png",
+  "/program-bg/program-bg-4.png",
+  "/program-bg/program-bg-5.png",
+  "/program-bg/program-bg-6.png",
+];
+
 /* ─── 메인 페이지 ─── */
 
 export default async function DashboardPage() {
@@ -295,33 +306,42 @@ export default async function DashboardPage() {
             {hasMyPrograms ? "다른 프로그램 둘러보기" : "프로그램 둘러보기"}
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {discoverAll.map((program) => {
+            {discoverAll.map((program, index) => {
+              const bg = PROGRAM_BG[index % PROGRAM_BG.length];
               const isComingSoon = program.comingSoon;
 
               return (
                 <div
                   key={program.id}
-                  className={`rounded-xl border-2 border-[var(--foreground)] bg-white p-6 ${
+                  className={`relative aspect-[4/5] overflow-hidden rounded-xl border-2 border-[var(--foreground)] ${
                     isComingSoon ? "opacity-70" : ""
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-semibold text-[var(--foreground)]">
-                      {program.title}
-                    </h3>
-                    {isComingSoon && <StatusBadge text="Coming Soon" />}
+                  {/* 수채화 배경 */}
+                  <div
+                    className="absolute inset-0 bg-cover bg-center opacity-30"
+                    style={{ backgroundImage: `url('${bg}')` }}
+                  />
+                  {/* 콘텐츠 (하단 정렬) */}
+                  <div className="relative z-10 flex flex-col justify-end h-full p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-base font-semibold text-[var(--foreground)]">
+                        {program.title}
+                      </h3>
+                      {isComingSoon && <StatusBadge text="Coming Soon" />}
+                    </div>
+                    <p className="text-sm text-[var(--foreground)]/60 mb-4">
+                      {program.description}
+                    </p>
+                    {!isComingSoon && (
+                      <Link
+                        href={program.href}
+                        className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)] bg-white/80 px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-white transition-colors"
+                      >
+                        시작하기
+                      </Link>
+                    )}
                   </div>
-                  <p className="text-sm text-[var(--foreground)]/60 mb-4">
-                    {program.description}
-                  </p>
-                  {!isComingSoon && (
-                    <Link
-                      href={program.href}
-                      className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
-                    >
-                      시작하기
-                    </Link>
-                  )}
                 </div>
               );
             })}

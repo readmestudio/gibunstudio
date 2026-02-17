@@ -2,6 +2,23 @@ import Link from "next/link";
 import { COUNSELING_TYPES } from "@/lib/counseling/types";
 
 /* ──────────────────────────────────────────────
+   프로그램 배경 이미지 (수채화 패턴 6장)
+   ────────────────────────────────────────────── */
+const PROGRAM_BG = [
+  "/program-bg/program-bg-1.png",
+  "/program-bg/program-bg-2.png",
+  "/program-bg/program-bg-3.png",
+  "/program-bg/program-bg-4.png",
+  "/program-bg/program-bg-5.png",
+  "/program-bg/program-bg-6.png",
+];
+
+/** 관계 해석 상담 제외 (셀프 해킹 3 + 상담 3 정렬) */
+const FILTERED_COUNSELING = COUNSELING_TYPES.filter(
+  (t) => t.id !== "relationship"
+);
+
+/* ──────────────────────────────────────────────
    셀프 해킹 프로그램 — 홈페이지 전용 표시 데이터
    (registry는 대시보드 전용이므로 건드리지 않음)
    ────────────────────────────────────────────── */
@@ -72,35 +89,50 @@ const COUNSELING_SUMMARY: Record<string, string> = {
 /* ──────────────────────────────────────────────
    셀프 해킹 카드 컴포넌트
    ────────────────────────────────────────────── */
-function SelfHackingCard({ program }: { program: SelfHackingProgram }) {
+function SelfHackingCard({
+  program,
+  bgIndex,
+}: {
+  program: SelfHackingProgram;
+  bgIndex: number;
+}) {
+  const bg = PROGRAM_BG[bgIndex % PROGRAM_BG.length];
+
   const content = (
-    <div className="flex flex-col h-full p-6 border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-      {/* 아이콘 + Coming Soon 뱃지 */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--surface)] text-[var(--foreground)]">
-          {program.icon}
+    <div className="relative flex flex-col h-full overflow-hidden border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
+      {/* 수채화 배경 */}
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-25"
+        style={{ backgroundImage: `url('${bg}')` }}
+      />
+      <div className="relative z-10 flex flex-col h-full p-6">
+        {/* 아이콘 + Coming Soon 뱃지 */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/80 text-[var(--foreground)]">
+            {program.icon}
+          </div>
+          {program.comingSoon && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-[var(--foreground)]/30 bg-white/60 text-[var(--foreground)]/60">
+              Coming Soon
+            </span>
+          )}
         </div>
-        {program.comingSoon && (
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-[var(--foreground)]/30 text-[var(--foreground)]/60">
-            Coming Soon
+
+        {/* 제목 + 설명 */}
+        <h4 className="text-lg font-semibold text-[var(--foreground)] mb-2">
+          {program.title}
+        </h4>
+        <p className="text-sm leading-relaxed text-[var(--foreground)]/70 flex-grow">
+          {program.description}
+        </p>
+
+        {/* CTA */}
+        {!program.comingSoon && program.cta && (
+          <span className="mt-4 inline-flex items-center text-sm font-semibold text-[var(--foreground)]">
+            {program.cta}
           </span>
         )}
       </div>
-
-      {/* 제목 + 설명 */}
-      <h4 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-        {program.title}
-      </h4>
-      <p className="text-sm leading-relaxed text-[var(--foreground)]/70 flex-grow">
-        {program.description}
-      </p>
-
-      {/* CTA */}
-      {!program.comingSoon && program.cta && (
-        <span className="mt-4 inline-flex items-center text-sm font-semibold text-[var(--foreground)]">
-          {program.cta}
-        </span>
-      )}
     </div>
   );
 
@@ -116,36 +148,46 @@ function SelfHackingCard({ program }: { program: SelfHackingProgram }) {
    ────────────────────────────────────────────── */
 function CounselingCard({
   type,
+  bgIndex,
 }: {
   type: (typeof COUNSELING_TYPES)[number];
+  bgIndex: number;
 }) {
   const isBest = type.id === "test-package";
   const summary = COUNSELING_SUMMARY[type.id] ?? type.description;
+  const bg = PROGRAM_BG[bgIndex % PROGRAM_BG.length];
 
   return (
     <Link href={`/booking/${type.id}`}>
-      <div className="flex flex-col h-full p-5 border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-        {/* 제목 + BEST 뱃지 */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h4 className="text-base font-semibold text-[var(--foreground)] leading-snug">
-            {type.title}
-          </h4>
-          {isBest && (
-            <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--foreground)]">
-              BEST
-            </span>
-          )}
+      <div className="relative flex flex-col h-full overflow-hidden border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
+        {/* 수채화 배경 */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-25"
+          style={{ backgroundImage: `url('${bg}')` }}
+        />
+        <div className="relative z-10 flex flex-col h-full p-5">
+          {/* 제목 + BEST 뱃지 */}
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h4 className="text-base font-semibold text-[var(--foreground)] leading-snug">
+              {type.title}
+            </h4>
+            {isBest && (
+              <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--accent)] text-[var(--foreground)]">
+                BEST
+              </span>
+            )}
+          </div>
+
+          {/* 한 줄 요약 */}
+          <p className="text-sm leading-relaxed text-[var(--foreground)]/70 flex-grow">
+            {summary}
+          </p>
+
+          {/* CTA */}
+          <span className="mt-3 inline-flex items-center text-sm font-semibold text-[var(--foreground)]">
+            자세히 →
+          </span>
         </div>
-
-        {/* 한 줄 요약 */}
-        <p className="text-sm leading-relaxed text-[var(--foreground)]/70 flex-grow">
-          {summary}
-        </p>
-
-        {/* CTA */}
-        <span className="mt-3 inline-flex items-center text-sm font-semibold text-[var(--foreground)]">
-          자세히 →
-        </span>
       </div>
     </Link>
   );
@@ -180,8 +222,8 @@ export function ProgramCards() {
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {SELF_HACKING_PROGRAMS.map((program) => (
-              <SelfHackingCard key={program.id} program={program} />
+            {SELF_HACKING_PROGRAMS.map((program, index) => (
+              <SelfHackingCard key={program.id} program={program} bgIndex={index} />
             ))}
           </div>
         </div>
@@ -196,9 +238,9 @@ export function ProgramCards() {
               1급 심리 상담사와 Zoom으로 진행하는 전문 상담
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {COUNSELING_TYPES.map((type) => (
-              <CounselingCard key={type.id} type={type} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {FILTERED_COUNSELING.map((type, index) => (
+              <CounselingCard key={type.id} type={type} bgIndex={index + 3} />
             ))}
           </div>
         </div>
