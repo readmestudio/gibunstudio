@@ -69,54 +69,47 @@ function ZoomScreen() {
   );
 }
 
-function DiaryScreen() {
+function ValueWorldcupScreen() {
   return (
     <div className="flex flex-col h-full">
-      {/* 상단 날짜 */}
+      {/* 상단 타이틀 */}
       <div className="text-center py-2 border-b border-[var(--border)]">
-        <span className="text-[8px] text-[var(--foreground)]/50">Day 3</span>
-        <p className="text-[9px] font-semibold text-[var(--foreground)]">오늘의 감정 일기</p>
+        <p className="text-[9px] font-semibold text-[var(--foreground)]">가치관 월드컵</p>
+        <span className="text-[7px] text-[var(--foreground)]/50">16강 · Round 3</span>
       </div>
-      {/* 채팅 말풍선 */}
-      <div className="flex-1 flex flex-col gap-2 py-3 px-1 overflow-hidden">
-        {/* AI 질문 (좌측) */}
-        <div className="flex gap-1 items-start">
-          <div className="w-4 h-4 rounded-full bg-[var(--foreground)] flex-shrink-0 flex items-center justify-center">
-            <span className="text-[6px] text-white font-bold">G</span>
-          </div>
-          <div className="bg-[var(--surface)] rounded-lg rounded-tl-none px-2 py-1.5 max-w-[85%]">
-            <p className="text-[7px] text-[var(--foreground)]/80 leading-tight">
-              오늘 하루 어떤 감정이 가장 크게 느껴졌나요?
-            </p>
-          </div>
+
+      {/* VS 대결 영역 */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-2 py-3 px-1">
+        {/* 카드 A */}
+        <div className="w-full rounded-lg border-2 border-[var(--foreground)] bg-white px-3 py-4 text-center">
+          <p className="text-[11px] font-bold text-[var(--foreground)]">자유</p>
+          <p className="text-[7px] text-[var(--foreground)]/60 mt-1">
+            원하는 대로 살 수 있는 삶
+          </p>
         </div>
-        {/* 사용자 답변 (우측) */}
-        <div className="flex gap-1 items-start justify-end">
-          <div className="bg-[var(--foreground)] rounded-lg rounded-tr-none px-2 py-1.5 max-w-[85%]">
-            <p className="text-[7px] text-white leading-tight">
-              회사에서 발표할 때 불안했어요. 실수할까봐 계속 긴장됐어요.
-            </p>
-          </div>
+
+        {/* VS 뱃지 */}
+        <div className="w-6 h-6 rounded-full border-2 border-[var(--foreground)] flex items-center justify-center bg-white">
+          <span className="text-[7px] font-bold text-[var(--foreground)]">VS</span>
         </div>
-        {/* AI 후속 질문 */}
-        <div className="flex gap-1 items-start">
-          <div className="w-4 h-4 rounded-full bg-[var(--foreground)] flex-shrink-0 flex items-center justify-center">
-            <span className="text-[6px] text-white font-bold">G</span>
-          </div>
-          <div className="bg-[var(--surface)] rounded-lg rounded-tl-none px-2 py-1.5 max-w-[85%]">
-            <p className="text-[7px] text-[var(--foreground)]/80 leading-tight">
-              그 불안감은 어린 시절에도 느꼈던 감정인가요?
-            </p>
-          </div>
+
+        {/* 카드 B */}
+        <div className="w-full rounded-lg border-2 border-[var(--foreground)] bg-white px-3 py-4 text-center">
+          <p className="text-[11px] font-bold text-[var(--foreground)]">안정</p>
+          <p className="text-[7px] text-[var(--foreground)]/60 mt-1">
+            흔들리지 않는 견고한 삶
+          </p>
         </div>
       </div>
-      {/* 입력 필드 */}
-      <div className="px-1 pb-2">
-        <div className="flex items-center gap-1 px-2 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)]">
-          <span className="text-[7px] text-[var(--foreground)]/40 flex-1">메시지를 입력하세요...</span>
-          <svg className="w-3 h-3 text-[var(--foreground)]/40" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-          </svg>
+
+      {/* 하단 진행 바 */}
+      <div className="px-3 pb-3">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[6px] text-[var(--foreground)]/50">진행률</span>
+          <span className="text-[6px] text-[var(--foreground)]/50">3 / 8</span>
+        </div>
+        <div className="w-full h-1.5 bg-[var(--surface)] rounded-full overflow-hidden">
+          <div className="h-full bg-[var(--foreground)] rounded-full" style={{ width: "37.5%" }} />
         </div>
       </div>
     </div>
@@ -175,8 +168,8 @@ export function FeatureTwo() {
             <PhoneMockupFrame label="Zoom 화상 상담">
               <ZoomScreen />
             </PhoneMockupFrame>
-            <PhoneMockupFrame label="7일 감정 일기">
-              <DiaryScreen />
+            <PhoneMockupFrame label="가치관 월드컵">
+              <ValueWorldcupScreen />
             </PhoneMockupFrame>
           </div>
         </div>
