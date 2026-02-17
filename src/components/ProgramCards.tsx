@@ -99,10 +99,10 @@ function SelfHackingCard({
   const bg = PROGRAM_BG[bgIndex % PROGRAM_BG.length];
 
   const content = (
-    <div className="relative flex flex-col h-full overflow-hidden border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-      {/* 수채화 배경 */}
+    <div className="relative flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
+      {/* 수채화 배경 (카드 내부에만) */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-25"
+        className="absolute inset-0 bg-cover bg-center opacity-40"
         style={{ backgroundImage: `url('${bg}')` }}
       />
       <div className="relative z-10 flex flex-col h-full p-6">
@@ -159,10 +159,10 @@ function CounselingCard({
 
   return (
     <Link href={`/booking/${type.id}`}>
-      <div className="relative flex flex-col h-full overflow-hidden border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-        {/* 수채화 배경 */}
+      <div className="relative flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
+        {/* 수채화 배경 (카드 내부에만) */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-25"
+          className="absolute inset-0 bg-cover bg-center opacity-40"
           style={{ backgroundImage: `url('${bg}')` }}
         />
         <div className="relative z-10 flex flex-col h-full p-5">

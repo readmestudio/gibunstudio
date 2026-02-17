@@ -313,13 +313,13 @@ export default async function DashboardPage() {
               return (
                 <div
                   key={program.id}
-                  className={`relative aspect-[4/5] overflow-hidden rounded-xl border-2 border-[var(--foreground)] ${
+                  className={`relative aspect-[4/5] overflow-hidden rounded-xl border-2 border-[var(--foreground)] bg-white ${
                     isComingSoon ? "opacity-70" : ""
                   }`}
                 >
                   {/* 수채화 배경 */}
                   <div
-                    className="absolute inset-0 bg-cover bg-center opacity-30"
+                    className="absolute inset-0 bg-cover bg-center opacity-45"
                     style={{ backgroundImage: `url('${bg}')` }}
                   />
                   {/* 콘텐츠 (하단 정렬) */}
