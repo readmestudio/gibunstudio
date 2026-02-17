@@ -52,7 +52,7 @@ export function SelfHackingElements() {
       <div className="container px-5 py-24 mx-auto lg:px-24">
         <div className="flex flex-col w-full mb-16 text-center">
           <h2
-            className="mb-6 text-4xl font-bold tracking-tighter text-[var(--foreground)] md:text-8xl lg:text-6xl"
+            className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: "keep-all" }}
           >
             셀프 해킹으로 만나는 진짜 나
