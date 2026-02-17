@@ -25,7 +25,10 @@ export function ComparisonSection() {
       className="relative bg-center bg-no-repeat bg-cover"
       style={{ backgroundImage: "url('/patterns/patternBottom.svg')" }}
     >
-      <div className="container px-5 py-24 mx-auto lg:px-24">
+      {/* 배경 패턴 위 반투명 오버레이 — doodle이 텍스트를 가리지 않도록 */}
+      <div className="absolute inset-0 bg-white/80" />
+
+      <div className="container relative z-10 px-5 py-24 mx-auto lg:px-24">
         <div className="flex flex-col w-full mb-12 text-center">
           <h2
             className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
