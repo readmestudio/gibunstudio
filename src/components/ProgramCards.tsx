@@ -132,7 +132,7 @@ export function ProgramCards() {
         {/* ── 섹션 타이틀 ── */}
         <div className="flex flex-col w-full mb-16 text-center">
           <h2 className="mb-4 text-3xl font-bold text-[var(--foreground)] md:text-5xl">
-            나를 해킹하면 인생이 쉬워집니다
+            셀프 해킹 프로그램을 통해 내 안에 숨겨진 진짜 나를 만나세요
           </h2>
           <p className="mx-auto text-base leading-relaxed text-[var(--foreground)]/70 lg:w-2/3">
             혼자서 또 전문 심리 상담사와 함께 &lsquo;진짜 나&rsquo;를 만나는
@@ -144,7 +144,7 @@ export function ProgramCards() {
         <div className="mb-16">
           <div className="mb-6">
             <h3 className="text-xl font-bold text-[var(--foreground)]">
-              셀프 해킹
+              셀프 해킹 리포트
             </h3>
             <p className="mt-1 text-sm text-[var(--foreground)]/60">
               나만의 속도로 나를 해독하는 검사 프로그램
