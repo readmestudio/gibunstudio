@@ -22,12 +22,12 @@ export const COUNSELING_TYPES: CounselingType[] = [
     price: 80000,
     priceLabel: "80,000",
     duration: "1시간",
-    requirement: "7일 내면 아이 찾기 프로그램 수료자",
+    requirement: "셀프 검사 리포트 보유자",
     description:
-      "7일 내면 아이 찾기 결과 리포트를 전문 상담사가 심층 해석해주는 상담입니다.",
-    recommended: "7일 프로그램을 완료하고 결과를 더 깊이 이해하고 싶은 분",
+      "셀프 해킹 리포트 결과를 1급 심리상담사가 심층 해석해 주는 상담입니다.",
+    recommended: "셀프 해킹 리포트를 받고 더 깊이 이해하고 싶은 분",
     features: [
-      { text: "7일 리포트 심층 해석", included: true },
+      { text: "셀프 해킹 리포트 심층 해석", included: true },
       { text: "핵심 신념 패턴 분석", included: true },
       { text: "맞춤 성장 방향 제시", included: true },
       { text: "Zoom 화상 상담", included: true },
@@ -42,7 +42,7 @@ export const COUNSELING_TYPES: CounselingType[] = [
     duration: "1시간",
     requirement: "2인 모두 참여 필요",
     description:
-      "커플/부부가 함께 관계 패턴을 탐색하고, 서로의 내면을 이해하는 상담입니다.",
+      "커플/부부가 함께 서로의 관계 패턴을 해독하고, 반복되는 갈등의 구조적 원인을 찾는 상담입니다.",
     recommended: "결혼을 앞둔 커플, 관계 개선을 원하는 부부",
     features: [
       { text: "2인 동시 참여 Zoom 상담", included: true },

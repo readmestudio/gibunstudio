@@ -117,7 +117,7 @@ export function PaymentGate({ onProceed, phase1Id }: PaymentGateProps) {
         <div className="text-center mb-6">
           <div className="inline-block px-6 py-3 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
             <p className="text-sm text-[var(--foreground)]/70 mb-1">심층 분석 가격</p>
-            <p className="text-3xl font-bold text-[var(--foreground)]">₩4,900</p>
+            <p className="text-3xl font-bold text-[var(--foreground)]">₩9,900</p>
           </div>
         </div>
 

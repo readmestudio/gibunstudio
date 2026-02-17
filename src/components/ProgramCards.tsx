@@ -59,7 +59,7 @@ function ProgramCard({ program }: { program: ProgramDefinition }) {
         </p>
         {!program.comingSoon && (
           <span className="mt-4 inline-flex items-center text-sm font-medium text-[var(--foreground)] hover:underline">
-            자세히 보기 →
+            {program.id === "husband-match" ? "무료로 시작하기 →" : "자세히 보기 →"}
           </span>
         )}
       </div>
@@ -89,10 +89,10 @@ export function ProgramCards() {
       <div className="container px-5 py-32 mx-auto lg:px-24">
         <div className="flex flex-col w-full mb-20 text-center">
           <h2 className="mb-6 text-4xl font-bold tracking-tighter text-[var(--foreground)] md:text-8xl lg:text-6xl">
-            당신을 위한 프로그램
+            패턴을 깨는 셀프 해킹 프로그램
           </h2>
           <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70">
-            나를 이해하고 성장하는 여정을 시작하세요.
+            반복되는 패턴 뒤에 숨겨진 진짜 나를 찾는 여정입니다.
           </p>
         </div>
         <div className="flex flex-wrap -mx-4 -mt-4 -mb-10 space-y-6 sm:-m-4 md:space-y-0">

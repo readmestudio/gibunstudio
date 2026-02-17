@@ -17,7 +17,7 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
   const BANK_NAME = '신한은행';
   const ACCOUNT_NUMBER = '110-123-456789';
   const ACCOUNT_HOLDER = '이너차일드';
-  const AMOUNT = 4900;
+  const AMOUNT = 9900;
 
   const handleCopyAccount = () => {
     navigator.clipboard.writeText(ACCOUNT_NUMBER);

@@ -22,7 +22,7 @@ export const PROGRAMS: ProgramDefinition[] = [
     id: "husband-match",
     title: "남편상 분석",
     description:
-      "YouTube 구독 기반 AI 심리 분석으로 나와 맞는 이상형을 찾아보세요",
+      "유튜브 알고리즘으로 나의 기질·성격·감성을 분석하고, 나에게 맞는 파트너 유형을 추천해 드립니다. 무료 티저 확인 후 디테일한 리포트를 받아보세요.",
     href: "/husband-match/onboarding",
     dashboardHref: "/dashboard",
     showOnHome: true,
@@ -34,7 +34,7 @@ export const PROGRAMS: ProgramDefinition[] = [
     id: "counseling",
     title: "1:1 심리 상담 (Zoom)",
     description:
-      "1급 심리 상담사와 함께 심리 검사 및 검사 해석, 내면 상담을 진행합니다.",
+      "1급 심리상담사가 당신의 리포트를 기반으로 반복되는 패턴의 근본 원인을 함께 찾아드립니다.",
     href: "/programs/counseling",
     dashboardHref: "/dashboard/counseling",
     showOnHome: true,
@@ -45,7 +45,7 @@ export const PROGRAMS: ProgramDefinition[] = [
   {
     id: "self-workshop",
     title: "셀프 워크샵",
-    description: "내 인생에 가장 중요한 가치관을 찾는 가치관 월드컵",
+    description: "가치관 월드컵, 유형 검사, 맞춤 직업 추천까지. 온라인 활동지로 진짜 내가 원하는 것을 발견하세요.",
     href: "/programs/self-workshop",
     dashboardHref: "/dashboard/self-workshop",
     showOnHome: true,
@@ -57,7 +57,7 @@ export const PROGRAMS: ProgramDefinition[] = [
     id: "geumjjok",
     title: "어른들을 위한 금쪽 상담소",
     description:
-      "고민이 생길 때마다 고민을 상담받고 분석 리포트를 받아 보세요.",
+      "어른에게도 금쪽 코끼리가 필요합니다. 고민을 털어놓으면, 그 아래 숨겨진 정서·믿음·자동 사고를 분석해 리포트로 드려요.",
     href: "#",
     dashboardHref: "#",
     showOnHome: true,

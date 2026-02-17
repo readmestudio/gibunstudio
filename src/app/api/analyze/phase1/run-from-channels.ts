@@ -67,7 +67,7 @@ function getCard9FixedContent(channelCount: number): string {
 3. 8장의 심층 리포트 카드 제공
 
 
-**[ 심층 분석 시작하기 — ₩4,900 ]**
+**[ 심층 분석 시작하기 — ₩9,900 ]**
 
 
 * 분석 결과는 심리학적 연구를 기반으로 하지만,

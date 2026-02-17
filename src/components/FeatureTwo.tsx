@@ -1,15 +1,15 @@
 const STEPS = [
   {
     number: 1,
-    text: "같은 패턴에 빠지고, 같은 상처를 받으면서도 왜 그런지 알아차리지 못했던 당신의 마음을 들여다봅니다.",
+    text: "같은 사람에게 끌리고, 같은 방식으로 상처받는 패턴. 상담을 받아봐도 뚜렷한 답을 찾지 못했다면, 아직 진짜 원인을 만나지 못한 겁니다.",
   },
   {
     number: 2,
-    text: "기분 스튜디오는 인지행동치료를 통해 무의식적으로 작동하는 자동사고를 포착하고, 당신의 행동을 지배해온 핵심 신념을 마주하게 합니다.",
+    text: "기분 스튜디오는 당신의 자동 사고, 핵심 신념, 애착 유형, 감정 패턴을 데이터로 해독합니다. 막연한 대화가 아닌, 구조화된 셀프 해킹으로 패턴의 근본 원인을 찾아냅니다.",
   },
   {
     number: 3,
-    text: "그 신념의 뿌리에는 상처받은 내면의 아이가 있습니다. 오랫동안 외면당하고, 보호받지 못했던 그 아이를 만나는 것, 그것이 우리의 여정이 향하는 곳입니다.",
+    text: "원인을 알면 패턴은 깨집니다. 반복에서 벗어나 진짜 내가 원하는 것을 알게 되고, 내가 좋아하는 일을 선택할 수 있는 자유. 그것이 셀프 해킹의 도착지입니다.",
   },
 ];
 
@@ -126,15 +126,15 @@ export function FeatureTwo() {
             className="mb-6 text-4xl font-bold tracking-tighter text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: 'keep-all' }}
           >
-            Meet your inner child.
+            Hack yourself.
             <br />
-            Healing begins.
+            Freedom begins.
           </h2>
           <p
             className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2"
             style={{ wordBreak: 'keep-all' }}
           >
-            내면 아이를 만나는 순간, 치유는 시작됩니다.
+            패턴을 해킹하는 순간, 자유는 시작됩니다.
           </p>
         </div>
 
