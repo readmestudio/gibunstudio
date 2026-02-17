@@ -29,7 +29,7 @@ interface ProgramCardData {
 const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
   {
     id: "self-report",
-    title: "셀프 검사 리포트",
+    title: "내면 분석 리포트",
     description:
       "유튜브·인스타 알고리즘, 자가보고 검사 등 셀프 인풋을 분석해 리포트를 제공합니다. 남편상 테스트를 무료로 체험해 보세요.",
     href: "/husband-match/onboarding",
@@ -38,7 +38,7 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
   },
   {
     id: "self-workshop",
-    title: "셀프 워크샵",
+    title: "내면 탐색 워크샵",
     description:
       "가치관 월드컵, 연애 유형 검사, 천직 찾기 등 활동지를 통해 스스로 인생의 답을 찾아가요.",
     href: "#",
