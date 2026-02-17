@@ -24,7 +24,7 @@ export function FinalCTA() {
             3분이면 나의 기질과 감성, 그리고 맞는 파트너를 만나볼 수 있어요.
           </p>
           <Link
-            href="/husband-match/onboarding"
+            href="/husband-match/birth-info"
             className="inline-flex items-center gap-2 px-8 py-3 text-lg font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all duration-300 hover:bg-[var(--accent-hover)]"
           >
             무료로 남편상 찾기 →

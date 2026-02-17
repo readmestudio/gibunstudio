@@ -24,7 +24,7 @@ const TEST_CARDS: TestCardData[] = [
     description:
       "유튜브 구독 목록을 AI가 분석해 나의 기질과 성격을 파악하고, 이상형 남편 유형을 매칭해 드립니다.",
     price: "무료",
-    href: "/husband-match/onboarding",
+    href: "/husband-match/birth-info",
     cta: "시작하기 →",
   },
   {
@@ -89,7 +89,7 @@ export default async function SelfHackingPage() {
             /* 완료된 검사: 결과 페이지로 분기 */
             const href = isCompleted
               ? card.id === "husband-match"
-                ? "/husband-match/onboarding"
+                ? "/husband-match/birth-info"
                 : "/self-hacking/core-belief/result"
               : card.href;
 

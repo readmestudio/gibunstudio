@@ -16,7 +16,7 @@ export default async function PaymentWaitingPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/husband-match/onboarding');
+    redirect('/husband-match/birth-info');
   }
 
   // Fetch payment record

@@ -290,7 +290,7 @@ export default function CapturePage() {
 
         <div className="mt-6 text-center">
           <Link
-            href="/husband-match/onboarding"
+            href="/self-hacking"
             className="text-sm text-[var(--foreground)]/60 hover:underline"
           >
             ← 시작 화면으로

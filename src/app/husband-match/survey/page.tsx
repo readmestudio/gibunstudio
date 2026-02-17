@@ -126,10 +126,10 @@ function Phase1SurveyClient() {
       <div className="mx-auto max-w-xl">
         <div className="mb-6 flex items-center justify-between">
           <Link
-            href="/husband-match/onboarding"
+            href="/self-hacking"
             className="text-sm text-[var(--foreground)]/60 hover:underline"
           >
-            ← 온보딩으로
+            ← 검사 목록으로
           </Link>
           <span className="text-sm text-[var(--foreground)]/60">
             {step + 1} / {PHASE1_SURVEY_QUESTIONS.length}

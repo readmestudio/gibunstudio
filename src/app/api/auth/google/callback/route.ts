@@ -19,13 +19,13 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.redirect(
-      `${baseUrl}/husband-match/onboarding?error=access_denied`
+      `${baseUrl}/husband-match/birth-info?error=access_denied`
     );
   }
 
   if (!code) {
     return NextResponse.redirect(
-      `${baseUrl}/husband-match/onboarding?error=no_code`
+      `${baseUrl}/husband-match/birth-info?error=no_code`
     );
   }
 
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('Google OAuth callback error:', err);
     return NextResponse.redirect(
-      `${baseUrl}/husband-match/onboarding?error=auth_failed`
+      `${baseUrl}/husband-match/birth-info?error=auth_failed`
     );
   }
 }

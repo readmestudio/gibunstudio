@@ -16,7 +16,7 @@ export default async function Phase2ReportPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/husband-match/onboarding');
+    redirect('/husband-match/birth-info');
   }
 
   const { data: result, error } = await supabase

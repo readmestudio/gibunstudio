@@ -16,7 +16,7 @@ export default async function SurveyPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/husband-match/onboarding');
+    redirect('/husband-match/birth-info');
   }
 
   // Verify phase1 result exists and belongs to user

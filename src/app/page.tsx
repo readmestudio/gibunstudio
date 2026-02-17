@@ -37,7 +37,7 @@ export default function Home() {
           <div className="flex w-full mt-6 justify-center">
             <div className="mt-3 rounded-lg sm:mt-0">
               <Link
-                href="/husband-match/onboarding"
+                href="/husband-match/birth-info"
                 className="inline-flex items-center gap-2 px-8 py-3 text-lg font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all duration-300 hover:bg-[var(--accent-hover)]"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">

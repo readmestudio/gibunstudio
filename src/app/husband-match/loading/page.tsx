@@ -13,7 +13,7 @@ function LoadingContent() {
     const tokens = searchParams.get('tokens');
 
     if (!tokens) {
-      router.push('/husband-match/onboarding?error=no_tokens');
+      router.push('/husband-match/birth-info?error=no_tokens');
       return;
     }
 
@@ -63,7 +63,7 @@ function LoadingContent() {
         }, 500);
       } catch (error) {
         console.error('Analysis error:', error);
-        router.push('/husband-match/onboarding?error=analysis_failed');
+        router.push('/husband-match/birth-info?error=analysis_failed');
       }
     };
 
