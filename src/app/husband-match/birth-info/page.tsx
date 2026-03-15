@@ -58,61 +58,49 @@ export default function BirthInfoPage() {
             />
           </div>
 
-          {/* 생년 */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
-              태어난 해 <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={year}
-              onChange={(e) => setYear(e.target.value ? Number(e.target.value) : '')}
-              className={selectClass}
-            >
-              <option value="">선택하세요</option>
-              {YEARS.map((y) => (
-                <option key={y} value={y}>
-                  {y}년
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 생월 */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
-              태어난 월 <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={month}
-              onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : '')}
-              className={selectClass}
-            >
-              <option value="">선택하세요</option>
-              {MONTHS.map((m) => (
-                <option key={m} value={m}>
-                  {m}월
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 생일 */}
+          {/* 생년월일 */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
-              태어난 일 <span className="text-red-500">*</span>
+              생년월일 <span className="text-red-500">*</span>
             </label>
-            <select
-              value={day}
-              onChange={(e) => setDay(e.target.value ? Number(e.target.value) : '')}
-              className={selectClass}
-            >
-              <option value="">선택하세요</option>
-              {DAYS.map((d) => (
-                <option key={d} value={d}>
-                  {d}일
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-3">
+              <select
+                value={year}
+                onChange={(e) => setYear(e.target.value ? Number(e.target.value) : '')}
+                className={`${selectClass} flex-1`}
+              >
+                <option value="">년</option>
+                {YEARS.map((y) => (
+                  <option key={y} value={y}>
+                    {y}년
+                  </option>
+                ))}
+              </select>
+              <select
+                value={month}
+                onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : '')}
+                className={`${selectClass} flex-1`}
+              >
+                <option value="">월</option>
+                {MONTHS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}월
+                  </option>
+                ))}
+              </select>
+              <select
+                value={day}
+                onChange={(e) => setDay(e.target.value ? Number(e.target.value) : '')}
+                className={`${selectClass} flex-1`}
+              >
+                <option value="">일</option>
+                {DAYS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}일
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* 제출 버튼 */}
