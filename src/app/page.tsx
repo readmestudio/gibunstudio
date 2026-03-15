@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ProgramCards } from "@/components/ProgramCards";
 import { ComparisonSection } from "@/components/ComparisonSection";
 import { FeatureTwo } from "@/components/FeatureTwo";
@@ -18,9 +17,6 @@ export default function Home() {
       >
         <div className="container relative w-full px-8 pt-32 pb-24 mx-auto lg:px-4">
           <div className="flex flex-col w-full mb-12 text-center">
-            <div className="mb-6 flex justify-center">
-              <Image src="/logo-wide.png" alt="gibun" width={180} height={60} className="h-auto w-[180px]" priority />
-            </div>
             <strong className="mb-4 text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/70">
               YOUTUBE 알고리즘 심리 분석
             </strong>

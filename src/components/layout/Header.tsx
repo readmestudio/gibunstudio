@@ -27,6 +27,9 @@ export function Header() {
         <Link href="/" className="flex items-center">
           <Image src="/logo-square.png" alt="GIBUN" width={40} height={40} className="h-10 w-10" />
         </Link>
+        <Link href="/" className="absolute left-1/2 -translate-x-1/2">
+          <Image src="/logo-wide.png" alt="gibun" width={180} height={60} className="h-12 w-auto" />
+        </Link>
         <nav className="flex items-center gap-6">
           {user ? (
             <>
