@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ProgramCards } from "@/components/ProgramCards";
 import { ComparisonSection } from "@/components/ComparisonSection";
 import { FeatureTwo } from "@/components/FeatureTwo";
@@ -17,6 +18,9 @@ export default function Home() {
       >
         <div className="container relative w-full px-8 pt-32 pb-24 mx-auto lg:px-4">
           <div className="flex flex-col w-full mb-12 text-center">
+            <div className="mb-6 flex justify-center">
+              <Image src="/logo-wide.png" alt="gibun" width={180} height={60} className="h-auto w-[180px]" priority />
+            </div>
             <strong className="mb-4 text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/70">
               YOUTUBE 알고리즘 심리 분석
             </strong>
@@ -24,14 +28,14 @@ export default function Home() {
               className="mb-6 font-bold text-[var(--foreground)] leading-[1.15]"
               style={{ fontSize: 'clamp(2rem, 5vw, 3.75rem)', wordBreak: 'keep-all' }}
             >
-              내가 어떤 사람인지 알면,
+              당신이 몰래 본 영상이,
               <br />
-              맞는 사람도 보입니다
+              당신을 말하고 있어요
             </h1>
             <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2">
-              유튜브 알고리즘 속에는 당신의 기질, 성격, 감성이 담겨 있습니다.
+              구독 목록에는 취향만 담긴 게 아니에요.
               <br />
-              AI가 이를 분석해 진짜 나를 읽어내고, 나에게 맞는 파트너 유형을 추천해 드립니다.
+              당신이 어떤 사람인지, 어떤 사람 옆에 있고 싶은지까지.
             </p>
           </div>
           <div className="flex w-full mt-6 justify-center">
