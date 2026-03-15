@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-
 interface SurveyQuestion {
   id: string;
   question: string;
-  type: 'choice' | 'text' | 'scale';
+  type: 'choice' | 'text' | 'scale' | 'sct' | 'scenario' | 'multi_sct';
   options?: string[];
   placeholder?: string;
+  sctPrompt?: string;
+  scenarioText?: string;
+  multiSctPrompts?: string[];
   min?: number;
   max?: number;
 }
@@ -86,7 +87,7 @@ export function SurveyCard({
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <span className="text-sm text-[var(--foreground)]/60">
-                {question.min}
+                {question.placeholder?.split('~')[0]?.trim() || question.min}
               </span>
               <input
                 type="range"
@@ -97,7 +98,7 @@ export function SurveyCard({
                 className="flex-1 mx-4"
               />
               <span className="text-sm text-[var(--foreground)]/60">
-                {question.max}
+                {question.placeholder?.split('~')[1]?.trim() || question.max}
               </span>
             </div>
             <div className="text-center">
@@ -105,6 +106,69 @@ export function SurveyCard({
                 {value || question.min || 1}
               </span>
             </div>
+          </div>
+        )}
+
+        {question.type === 'sct' && (
+          <div className="space-y-4">
+            <div className="p-4 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+              <p className="text-lg font-medium text-[var(--foreground)] leading-relaxed">
+                {question.sctPrompt}
+              </p>
+            </div>
+            <textarea
+              value={value || ''}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={question.placeholder}
+              rows={4}
+              className="w-full p-4 border-2 border-[var(--border)] rounded-lg focus:border-[var(--accent)] focus:outline-none resize-none"
+            />
+          </div>
+        )}
+
+        {question.type === 'scenario' && (
+          <div className="space-y-4">
+            <div className="p-5 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+              <p className="text-base italic text-[var(--foreground)]/80 leading-relaxed">
+                {question.scenarioText}
+              </p>
+            </div>
+            <textarea
+              value={value || ''}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={question.placeholder}
+              rows={4}
+              className="w-full p-4 border-2 border-[var(--border)] rounded-lg focus:border-[var(--accent)] focus:outline-none resize-none"
+            />
+          </div>
+        )}
+
+        {question.type === 'multi_sct' && question.multiSctPrompts && (
+          <div className="space-y-5">
+            {question.multiSctPrompts.map((prompt, idx) => {
+              const keys = ['rules', 'positive_assumption', 'negative_assumption'];
+              const key = keys[idx] || `sub_${idx}`;
+              const currentValue = (value && typeof value === 'object') ? (value as Record<string, string>)[key] || '' : '';
+              return (
+                <div key={idx} className="space-y-2">
+                  <div className="p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+                    <p className="text-base font-medium text-[var(--foreground)] leading-relaxed">
+                      {prompt}
+                    </p>
+                  </div>
+                  <textarea
+                    value={currentValue}
+                    onChange={(e) => {
+                      const prev = (value && typeof value === 'object') ? value as Record<string, string> : {};
+                      onChange({ ...prev, [key]: e.target.value });
+                    }}
+                    placeholder={question.placeholder}
+                    rows={2}
+                    className="w-full p-3 border-2 border-[var(--border)] rounded-lg focus:border-[var(--accent)] focus:outline-none resize-none text-sm"
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

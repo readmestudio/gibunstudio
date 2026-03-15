@@ -13,15 +13,13 @@ export function FinalCTA() {
             className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: "keep-all" }}
           >
-            아직 고민 중이라면, 무료부터 시작하세요
+            잘 모르겠으면, 일단 한번 해보세요
           </h2>
           <p
             className="mb-8 text-lg leading-relaxed text-[var(--foreground)]/70"
             style={{ wordBreak: "keep-all" }}
           >
-            유튜브 알고리즘 남편상 테스트는 무료입니다.
-            <br />
-            3분이면 나의 기질과 감성, 그리고 맞는 파트너를 만나볼 수 있어요.
+            3분이면 돼요. 무료이고, 구독 목록만 있으면 됩니다.
           </p>
           <Link
             href="/husband-match/birth-info"

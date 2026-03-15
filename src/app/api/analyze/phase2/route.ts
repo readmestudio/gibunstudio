@@ -1,163 +1,190 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { chatCompletion } from '@/lib/gemini-client';
-import { SYSTEM_PROMPT } from '@/lib/husband-match/prompts/system-prompt';
+import { chatCompletion, safeJsonParse } from '@/lib/gemini-client';
+import { PHASE2_SYSTEM_PROMPT } from '@/lib/husband-match/prompts/phase2-system-prompt';
 import {
   PHASE2_CARD_PROMPTS,
   Phase2CardData,
 } from '@/lib/husband-match/prompts/phase2-prompts';
+import { buildDeepCrossValidation } from '@/lib/husband-match/analysis/deep-cross-validation';
+import { getAllHusbandTypes } from '@/lib/husband-match/data/husband-types';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import type { ReportCard } from '@/lib/husband-match/types';
+import type {
+  ReportCard,
+  TCIScores,
+  MBTIScores,
+  ChannelCategories,
+  EnneagramCenter,
+} from '@/lib/husband-match/types';
+
+// ── Phase 1 DB 행 타입 ──
 
 type Phase1Row = {
   id: string;
-  mbti_scores: { E: number; I: number; J: number; P: number; F: number; T: number };
-  mbti_type: string | null;
+  tci_scores: TCIScores;
+  channel_categories: ChannelCategories;
+  enneagram_center: EnneagramCenter;
   enneagram_type: number | null;
+  mbti_scores: MBTIScores;
+  mbti_type: string | null;
+  user_vector: number[];
   matched_husband_type: string;
   match_score: number;
+  cards: ReportCard[];
+  user_name?: string;
 };
 
-/**
- * Build cross-validation: compare Phase 1 (YouTube) with survey responses
- */
-function buildCrossValidation(
-  phase1: Phase1Row,
-  surveyResponses: Record<string, unknown>
-): {
-  discrepancies: Array<{
-    dimension: string;
-    youtube_value: number;
-    survey_value: number;
-    interpretation: string;
-  }>;
-  hidden_desires: string[];
-  authenticity_score: number;
-} {
-  const discrepancies: Array<{
-    dimension: string;
-    youtube_value: number;
-    survey_value: number;
-    interpretation: string;
-  }> = [];
-  const mbti = phase1.mbti_scores ?? { E: 50, I: 50, J: 50, P: 50, F: 50, T: 50 };
-
-  const q1 = surveyResponses['q1_relationship_style'];
-  const q3 = surveyResponses['q3_ideal_weekend'];
-  const q5 = surveyResponses['q5_future_planning'];
-
-  const youtubeE = mbti.E ?? 50;
-  let surveyE = 50;
-  if (typeof q1 === 'string') {
-    if (q1.includes('매일 연락') || q1.includes('자주 만나')) surveyE = 75;
-    else if (q1.includes('각자의 시간') || q1.includes('존중')) surveyE = 30;
-    else surveyE = 50;
-  }
-  if (typeof q3 === 'string') {
-    if (q3.includes('친구들과') || q3.includes('활동적')) surveyE = Math.max(surveyE, 80);
-    else if (q3.includes('집에서') || q3.includes('혼자만')) surveyE = Math.min(surveyE, 35);
-  }
-  const eDiff = Math.abs(youtubeE - surveyE);
-  if (eDiff >= 20) {
-    discrepancies.push({
-      dimension: 'E/I (외향성)',
-      youtube_value: Math.round(youtubeE),
-      survey_value: Math.round(surveyE),
-      interpretation:
-        youtubeE > surveyE
-          ? 'YouTube 시청 패턴은 외향적 성향을 보이지만, 설문에서는 내향적 선호를 선택하셨습니다. 실제 행동과 이상적 자아의 차이를 보여줍니다.'
-          : 'YouTube에서는 내향적 성향이 보이지만, 설문에서는 외향적 관계를 원하신다고 답하셨습니다. 숨겨진 친밀감에 대한 욕구를 나타낼 수 있습니다.',
-    });
-  }
-
-  const youtubeJ = mbti.J ?? 50;
-  let surveyJ = 50;
-  if (typeof q5 === 'string') {
-    if (q5.includes('구체적') || q5.includes('계획')) surveyJ = 80;
-    else if (q5.includes('현재에 집중')) surveyJ = 25;
-    else surveyJ = 50;
-  }
-  const jDiff = Math.abs(youtubeJ - surveyJ);
-  if (jDiff >= 20) {
-    discrepancies.push({
-      dimension: 'J/P (계획성)',
-      youtube_value: Math.round(youtubeJ),
-      survey_value: Math.round(surveyJ),
-      interpretation:
-        '콘텐츠 선호와 설문에서 말한 계획 스타일이 다르게 나타났습니다. 일상에서는 유연하게 지내고 싶지만, 관계에서는 계획을 원하시는 등 상황에 따른 선호가 있을 수 있습니다.',
-    });
-  }
-
-  const hidden_desires: string[] = [];
-  if (eDiff >= 20 && surveyE > youtubeE) {
-    hidden_desires.push('겉으로는 독립적이지만 내면에선 깊은 유대감을 갈망');
-  }
-  if (eDiff >= 20 && youtubeE > surveyE) {
-    hidden_desires.push('혼자만의 시간을 소중히 하면서도 타인의 인정을 원함');
-  }
-  if (jDiff >= 20) {
-    hidden_desires.push('논리적 계획과 감성적 유연함 사이에서 균형을 추구');
-  }
-  if (hidden_desires.length === 0) {
-    hidden_desires.push('YouTube와 설문 응답이 대체로 일치하여, 자기 인식이 높은 편으로 보입니다.');
-  }
-
-  const authenticity_score = Math.max(
-    0,
-    Math.min(1, 1 - discrepancies.length * 0.15 - (eDiff + jDiff) / 200)
-  );
-
-  return {
-    discrepancies,
-    hidden_desires,
-    authenticity_score,
-  };
-}
+// ── 카드 키 & 메타데이터 (새 8장 구조) ──
 
 const PHASE2_CARD_KEYS: (keyof typeof PHASE2_CARD_PROMPTS)[] = [
-  'card_01_cross_validation',
+  'card_01_two_mirrors',
   'card_02_hidden_desires',
-  'card_03_real_vs_ideal',
-  'card_04_deep_values',
-  'card_05_patterns',
-  'card_06_growth',
-  'card_07_final_match',
-  'card_08_action_plan',
+  'card_03_chain_reaction',
+  'card_04_relationship_map',
+  'card_05_invisible_rules',
+  'card_06_growth_threshold',
+  'card_07_deep_match',
+  'card_08_mind_manual',
+  'card_09_letter',
 ];
 
 const PHASE2_CARD_META: Record<number, { title: string; subtitle?: string; card_type: ReportCard['card_type'] }> = {
-  1: { title: '진짜 당신 vs 설문 속 당신', subtitle: '교차 검증', card_type: 'personality' },
-  2: { title: '숨겨진 욕구', subtitle: '교차검증 인사이트', card_type: 'values' },
-  3: { title: 'YouTube vs 설문 차이', subtitle: '진짜 나와 이상적 나', card_type: 'personality' },
-  4: { title: '심층 가치관', subtitle: '결혼·연애에서 소중한 것', card_type: 'values' },
-  5: { title: '관계 패턴', subtitle: '당신의 관계 스타일', card_type: 'values' },
-  6: { title: '성장 포인트', subtitle: '관계에서 성장하기', card_type: 'result' },
-  7: { title: '최종 남편상', subtitle: 'Phase 1+2 종합', card_type: 'matching' },
-  8: { title: '당신을 위한 액션 플랜', subtitle: '다음 단계', card_type: 'result' },
+  1: { title: '두 개의 거울', subtitle: '교차 검증', card_type: 'personality' },
+  2: { title: '말하지 않은 욕구', subtitle: '숨겨진 욕구', card_type: 'values' },
+  3: { title: '마음의 연쇄 반응', subtitle: '감정 도미노', card_type: 'personality' },
+  4: { title: '관계의 지도', subtitle: '관계 패턴', card_type: 'values' },
+  5: { title: '보이지 않는 규칙', subtitle: '관계 규칙', card_type: 'values' },
+  6: { title: '성장의 문턱', subtitle: '성장 포인트', card_type: 'result' },
+  7: { title: '당신에게 맞는 사람, 다시 한번', subtitle: '심층 매칭', card_type: 'matching' },
+  8: { title: '당신의 마음 사용 설명서', subtitle: '실천 도구', card_type: 'result' },
+  9: { title: '당신에게 보내는 편지', subtitle: '마무리 편지', card_type: 'result' },
 };
 
-async function generatePhase2CardContent(
+// ── LLM 호출 설정 ──
+
+const LLM_OPTIONS = {
+  model: 'gpt-4o-mini' as const, // gemini-client에서 gemini-2.5-flash로 매핑
+  temperature: 0.75,
+  max_tokens: 16384,
+};
+
+// ── 재시도 래퍼 ──
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  label: string,
+  maxRetries = 2
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await fn();
+      if (attempt > 0) console.log(`[Phase 2] ${label} 재시도 ${attempt}회 만에 성공`);
+      return result;
+    } catch (err) {
+      lastError = err as Error;
+      if (attempt < maxRetries) {
+        console.warn(`[Phase 2] ${label} 실패 (시도 ${attempt + 1}/${maxRetries + 1}): ${lastError.message} → 재시도...`);
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+  }
+  console.error(`[Phase 2] ${label} 최종 실패:`, lastError?.message);
+  throw lastError ?? new Error(`${label} 최종 실패`);
+}
+
+// ── 카드 콘텐츠 생성 ──
+
+async function generateCardContent(
   cardKey: keyof typeof PHASE2_CARD_PROMPTS,
   data: Phase2CardData
 ): Promise<string> {
   const prompt = PHASE2_CARD_PROMPTS[cardKey](data);
+
+  // JSON 형식으로 응답받아 안정적으로 파싱
+  const wrappedPrompt = `${prompt}\n\n위 지침에 따라 카드 본문을 작성하세요. JSON 형식으로 응답하세요: {"content": "카드 본문 전체 텍스트"}`;
+
   const response = await chatCompletion(
     [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: prompt },
+      { role: 'system', content: PHASE2_SYSTEM_PROMPT },
+      { role: 'user', content: wrappedPrompt },
     ],
-    { model: 'gpt-4-turbo', temperature: 0.7, max_tokens: 600 }
+    {
+      ...LLM_OPTIONS,
+      response_format: { type: 'json_object' as const },
+    }
   );
-  return (response ?? '').trim().slice(0, 2000);
+
+  const raw = response ?? '';
+
+  // JSON 파싱 시도
+  try {
+    const parsed = safeJsonParse<{ content?: string }>(raw);
+    if (parsed.content) {
+      return parsed.content.trim().slice(0, 5000);
+    }
+  } catch {
+    // JSON 파싱 실패 시 원본 텍스트 사용
+  }
+
+  // fallback: 원본 텍스트에서 content 추출 또는 그대로 사용
+  return raw.trim().slice(0, 5000);
+}
+
+// ── 3배치 병렬 생성 ──
+
+async function generateAllCardsInBatches(data: Phase2CardData): Promise<Map<number, string>> {
+  const results = new Map<number, string>();
+
+  // 배치 A: 카드 1-3 (도입부 — 거울 + 숨겨진 욕구 + 연쇄 반응)
+  const batchA = async () => {
+    const [c1, c2, c3] = await Promise.all([
+      withRetry(() => generateCardContent('card_01_two_mirrors', data), '카드 1 (두 개의 거울)'),
+      withRetry(() => generateCardContent('card_02_hidden_desires', data), '카드 2 (말하지 않은 욕구)'),
+      withRetry(() => generateCardContent('card_03_chain_reaction', data), '카드 3 (마음의 연쇄 반응)'),
+    ]);
+    results.set(1, c1);
+    results.set(2, c2);
+    results.set(3, c3);
+  };
+
+  // 배치 B: 카드 4-6 (분석 — 관계/규칙/성장)
+  const batchB = async () => {
+    const [c4, c5, c6] = await Promise.all([
+      withRetry(() => generateCardContent('card_04_relationship_map', data), '카드 4 (관계의 지도)'),
+      withRetry(() => generateCardContent('card_05_invisible_rules', data), '카드 5 (보이지 않는 규칙)'),
+      withRetry(() => generateCardContent('card_06_growth_threshold', data), '카드 6 (성장의 문턱)'),
+    ]);
+    results.set(4, c4);
+    results.set(5, c5);
+    results.set(6, c6);
+  };
+
+  // 배치 C: 카드 7-9 (마무리 — 매칭/실천도구/편지)
+  const batchC = async () => {
+    const [c7, c8, c9] = await Promise.all([
+      withRetry(() => generateCardContent('card_07_deep_match', data), '카드 7 (심층 매칭)'),
+      withRetry(() => generateCardContent('card_08_mind_manual', data), '카드 8 (마음 사용 설명서)'),
+      withRetry(() => generateCardContent('card_09_letter', data), '카드 9 (편지)'),
+    ]);
+    results.set(7, c7);
+    results.set(8, c8);
+    results.set(9, c9);
+  };
+
+  // 3배치 병렬 실행
+  await Promise.all([batchA(), batchB(), batchC()]);
+
+  return results;
 }
 
 /**
  * Phase 2 Analysis API
  *
- * 1. Load Phase 1 results + survey
- * 2. Cross-validate YouTube vs survey
- * 3. Generate 8 deep cards (LLM)
- * 4. Store in phase2_results
+ * 1. Phase 1 전체 데이터 + 서베이 로드
+ * 2. 8차원 심층 교차검증 + CBT 분석 (HA/SD 직접 측정 + SCT + Hot Thought/중간신념/핵심신념)
+ * 3. 3배치 병렬로 9장 카드 생성 (LLM)
+ * 4. phase2_results에 저장
  */
 export async function POST(request: NextRequest) {
   const rateLimitResponse = checkRateLimit(request, RATE_LIMITS.ai);
@@ -185,6 +212,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 기존 결과 확인
     const { data: existing } = await supabase
       .from('phase2_results')
       .select('id')
@@ -198,9 +226,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // ── Phase 1 전체 데이터 fetch (확장) ──
     const { data: phase1, error: phase1Error } = await supabase
       .from('phase1_results')
-      .select('id, mbti_scores, mbti_type, enneagram_type, matched_husband_type, match_score')
+      .select('id, tci_scores, channel_categories, enneagram_center, enneagram_type, mbti_scores, mbti_type, user_vector, matched_husband_type, match_score, cards, user_name')
       .eq('id', phase1_id)
       .single();
 
@@ -211,6 +240,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 서베이 로드
     const { data: survey, error: surveyError } = await supabase
       .from('phase2_surveys')
       .select('*')
@@ -225,54 +255,140 @@ export async function POST(request: NextRequest) {
     }
 
     const surveyResponses = (survey.survey_responses ?? {}) as Record<string, unknown>;
-    const cross_validation = buildCrossValidation(
-      phase1 as Phase1Row,
-      surveyResponses
-    );
 
-    const phase2CardData: Phase2CardData = {
-      phase1_summary: {
-        mbti_type: phase1.mbti_type,
-        enneagram_type: phase1.enneagram_type,
-        matched_husband_name: phase1.matched_husband_type,
-        match_score: phase1.match_score,
-      },
-      survey_responses: surveyResponses,
-      cross_validation,
-      final_match: {
-        name: phase1.matched_husband_type,
-        description: 'Phase 1 YouTube 분석과 Phase 2 설문을 종합한 최종 남편상입니다.',
-      },
+    // ── 남편 타입 전체 데이터 조회 ──
+    const allHusbandTypes = getAllHusbandTypes();
+    const husbandType = allHusbandTypes.find(t => t.id === phase1.matched_husband_type);
+    const husbandTypeData = husbandType
+      ? {
+          id: husbandType.id,
+          name: husbandType.name,
+          category: husbandType.category,
+          subcategory: husbandType.subcategory,
+          description: husbandType.description,
+          metaphor: husbandType.variant === 'extrovert'
+            ? husbandType.metaphor_e
+            : husbandType.metaphor_i,
+        }
+      : {
+          id: phase1.matched_husband_type,
+          name: phase1.matched_husband_type,
+          category: '',
+          subcategory: '',
+          description: 'Phase 1에서 매칭된 파트너 유형입니다.',
+          metaphor: undefined,
+        };
+
+    // ── 8차원 심층 교차검증 ──
+    const phase1Data = phase1 as unknown as Phase1Row;
+
+    // 설문 응답 매핑 (q1-q5: number, q6-q15: string)
+    const mappedSurvey = {
+      q1_together_time: surveyResponses['q1_together_time'] as number | undefined,
+      q2_anxiety_influence: surveyResponses['q2_anxiety_influence'] as number | undefined,
+      q3_logic_vs_emotion: surveyResponses['q3_logic_vs_emotion'] as number | undefined,
+      q4_independence: surveyResponses['q4_independence'] as number | undefined,
+      q5_emotional_expression: surveyResponses['q5_emotional_expression'] as number | undefined,
+      q6_conflict_pattern: surveyResponses['q6_conflict_pattern'] as string | undefined,
+      q7_partner_distance: surveyResponses['q7_partner_distance'] as string | undefined,
+      q8_recurring_issue: surveyResponses['q8_recurring_issue'] as string | undefined,
+      q9_stress_response: surveyResponses['q9_stress_response'] as string | undefined,
+      q10_body_signal: surveyResponses['q10_body_signal'] as string | undefined,
+      q11_comfort_source: surveyResponses['q11_comfort_source'] as string | undefined,
+      q12_deepest_fear: surveyResponses['q12_deepest_fear'] as string | undefined,
+      q13_want_to_change: surveyResponses['q13_want_to_change'] as string | undefined,
+      q14_ideal_day: surveyResponses['q14_ideal_day'] as string | undefined,
+      q15_core_desire: surveyResponses['q15_core_desire'] as string | undefined,
+      q16_hot_scenario: surveyResponses['q16_hot_scenario'] as string | undefined,
+      q17_relationship_rules: surveyResponses['q17_relationship_rules'] as { rules: string; positive_assumption: string; negative_assumption: string } | undefined,
+      q18_core_belief_choice: surveyResponses['q18_core_belief_choice'] as string | undefined,
     };
 
-    const deep_cards: ReportCard[] = [];
+    const deepCrossValidation = buildDeepCrossValidation(
+      {
+        tci_scores: phase1Data.tci_scores,
+        mbti_scores: phase1Data.mbti_scores,
+        mbti_type: phase1Data.mbti_type,
+        enneagram_type: phase1Data.enneagram_type,
+        enneagram_center: phase1Data.enneagram_center,
+        channel_categories: phase1Data.channel_categories,
+        matched_husband_type: phase1Data.matched_husband_type,
+        match_score: phase1Data.match_score,
+        cards: phase1Data.cards,
+        user_name: phase1Data.user_name,
+      },
+      mappedSurvey
+    );
 
-    for (let i = 0; i < PHASE2_CARD_KEYS.length; i++) {
-      const key = PHASE2_CARD_KEYS[i];
+    // ── Phase2CardData 조립 ──
+    const phase2CardData: Phase2CardData = {
+      phase1: {
+        tci_scores: phase1Data.tci_scores,
+        channel_categories: phase1Data.channel_categories,
+        enneagram_center: phase1Data.enneagram_center,
+        enneagram_type: phase1Data.enneagram_type,
+        mbti_scores: phase1Data.mbti_scores,
+        mbti_type: phase1Data.mbti_type,
+        matched_husband_type: phase1Data.matched_husband_type,
+        match_score: phase1Data.match_score,
+        cards: phase1Data.cards,
+        user_name: phase1Data.user_name,
+      },
+      survey: mappedSurvey,
+      deepCrossValidation,
+      husbandType: husbandTypeData,
+    };
+
+    // ── 3배치 병렬로 9장 카드 생성 ──
+    console.log('[Phase 2] 카드 생성 시작 (3배치 × 3장 병렬)...');
+    const startTime = Date.now();
+
+    let contentMap: Map<number, string>;
+    try {
+      contentMap = await generateAllCardsInBatches(phase2CardData);
+    } catch (err) {
+      console.error('[Phase 2] 카드 생성 실패:', err);
+      return NextResponse.json(
+        { error: '심층 분석 카드 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' },
+        { status: 500 }
+      );
+    }
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[Phase 2] 카드 생성 완료 (${elapsed}ms)`);
+
+    // 카드 조립
+    const deep_cards: ReportCard[] = PHASE2_CARD_KEYS.map((_, i) => {
       const cardNumber = i + 1;
       const meta = PHASE2_CARD_META[cardNumber];
-      let content: string;
-      try {
-        content = await generatePhase2CardContent(key, phase2CardData);
-      } catch (err) {
-        console.error(`[Phase 2] Card ${cardNumber} generation failed:`, err);
-        content = '심층 분석 생성 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-      }
-      deep_cards.push({
+      const content = contentMap.get(cardNumber) ?? '심층 분석 생성 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+      return {
         card_number: cardNumber,
         title: meta.title,
         subtitle: meta.subtitle,
         content,
         card_type: meta.card_type,
-      });
-    }
+      };
+    });
+
+    // ── cross_validation_insights 호환 형식으로 변환 (DB 저장용) ──
+    const cross_validation_insights = {
+      discrepancies: deepCrossValidation.dimensions.map(d => ({
+        dimension: d.dimension,
+        youtube_value: d.youtube_value,
+        survey_value: d.survey_value,
+        interpretation: d.interpretation,
+      })),
+      hidden_desires: deepCrossValidation.hiddenDesires.map(d => d.label),
+      authenticity_score: deepCrossValidation.authenticityScore,
+    };
 
     const payload = {
       user_id: user.id,
       phase1_id,
       survey_id,
       payment_id,
-      cross_validation_insights: cross_validation,
+      cross_validation_insights,
       deep_cards,
     };
 

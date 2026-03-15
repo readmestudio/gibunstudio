@@ -55,12 +55,10 @@ export function Testimonials() {
       <div className="container px-5 py-24 mx-auto lg:px-24">
         <div className="flex flex-col w-full mb-12 text-left lg:text-center">
           <h2 className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl">
-            반복되는 패턴을 깨고
-            <br className="hidden lg:block" />
-            나아간 사람들의 이야기
+            &ldquo;이제 알겠다&rdquo;가 된 순간들
           </h2>
           <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2">
-            &ldquo;또 같은 패턴이네&rdquo;에서 &ldquo;이제 알겠다&rdquo;로 바뀐 순간들
+            같은 자리에서 맴돌다가, 한 걸음 나아간 사람들의 이야기예요.
           </p>
         </div>
         <div className="flex flex-wrap -m-4">

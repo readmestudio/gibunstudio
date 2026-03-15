@@ -26,9 +26,17 @@ export function SurveyClient({ phase1Id, paymentId }: SurveyClientProps) {
 
   const handleSubmit = async () => {
     // Validate all questions answered
-    const unanswered = SURVEY_QUESTIONS.filter(
-      (q) => !responses[q.id] || (typeof responses[q.id] === 'string' && !responses[q.id].trim())
-    );
+    const unanswered = SURVEY_QUESTIONS.filter((q) => {
+      const r = responses[q.id];
+      if (!r) return true;
+      if (typeof r === 'string') return !r.trim();
+      // multi_sct 타입: 객체의 모든 값이 입력되었는지 확인
+      if (q.type === 'multi_sct' && typeof r === 'object') {
+        const vals = Object.values(r as Record<string, string>);
+        return vals.length === 0 || vals.some((v) => !v || !v.trim());
+      }
+      return false;
+    });
 
     if (unanswered.length > 0) {
       alert(`${unanswered.length}개의 질문에 답변해주세요.`);
@@ -132,7 +140,7 @@ export function SurveyClient({ phase1Id, paymentId }: SurveyClientProps) {
             심층 분석 서베이
           </h1>
           <p className="text-[var(--foreground)]/70">
-            9가지 질문에 솔직하게 답변해주세요
+            18가지 질문에 솔직하게 답변해주세요
           </p>
           <div className="mt-4 flex items-center justify-center gap-2">
             {SURVEY_QUESTIONS.map((_, index) => (

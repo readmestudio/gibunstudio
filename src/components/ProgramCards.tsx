@@ -31,7 +31,7 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
     id: "self-report",
     title: "내면 분석 리포트",
     description:
-      "유튜브·인스타 알고리즘, 자가보고 검사 등 셀프 인풋을 분석해 리포트를 제공합니다. 남편상 테스트를 무료로 체험해 보세요.",
+      "유튜브 구독 목록, 자가보고 검사 등을 분석해 리포트를 만들어요. 남편상 테스트는 무료예요.",
     href: "/self-hacking",
     comingSoon: false,
     cta: "검사 선택하기 →",
@@ -40,7 +40,7 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
     id: "self-workshop",
     title: "내면 탐색 워크샵",
     description:
-      "가치관 월드컵, 연애 유형 검사, 천직 찾기 등 활동지를 통해 스스로 인생의 답을 찾아가요.",
+      "가치관 월드컵, 연애 유형 검사 같은 활동지로 직접 답을 찾아가요. 내 속도대로.",
     href: "#",
     comingSoon: true,
     cta: "",
@@ -49,7 +49,7 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
     id: "geumjjok",
     title: "금쪽 상담소",
     description:
-      "내가 하는 사소한 고민이 내 많은 것을 설명해줘요. 현재 고민을 털어놓고 내면 분석 리포트를 받아 보세요.",
+      "사소한 고민이 많은 걸 설명해줘요. 고민을 털어놓으면 내면 분석 리포트가 나와요.",
     href: "#",
     comingSoon: true,
     cta: "",
@@ -83,7 +83,7 @@ function ProgramCard({
 
   const cardInner = (
     <div
-      className={`relative flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)] ${
+      className={`relative flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)] aspect-[1080/1350] ${
         program.comingSoon ? "opacity-75" : ""
       }`}
     >
@@ -132,11 +132,10 @@ export function ProgramCards() {
         {/* ── 섹션 타이틀 ── */}
         <div className="flex flex-col w-full mb-16 text-center">
           <h2 className="mb-4 text-3xl font-bold text-[var(--foreground)] md:text-5xl">
-            셀프 해킹 프로그램을 통해 내 안에 숨겨진 진짜 나를 만나세요
+            나를 읽는 프로그램
           </h2>
           <p className="mx-auto text-base leading-relaxed text-[var(--foreground)]/70 lg:w-2/3">
-            혼자서 또 전문 심리 상담사와 함께 &lsquo;진짜 나&rsquo;를 만나는
-            셀프 해킹 프로그램
+            혼자서, 또는 상담사와 함께. 내 안의 패턴을 읽어가는 과정이에요.
           </p>
         </div>
 
@@ -147,7 +146,7 @@ export function ProgramCards() {
               셀프 해킹 리포트
             </h3>
             <p className="mt-1 text-sm text-[var(--foreground)]/60">
-              나만의 속도로 나를 해독하는 검사 프로그램
+              내 속도로 나를 읽는 검사
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
