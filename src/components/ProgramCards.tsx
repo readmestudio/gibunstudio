@@ -64,8 +64,8 @@ const COUNSELING_PROGRAMS: ProgramCardData[] = COUNSELING_TYPES.filter(
   title: t.title,
   description: t.description,
   href: `/booking/${t.id}`,
-  comingSoon: false,
-  cta: "자세히 →",
+  comingSoon: t.notifyOnly,
+  cta: t.notifyOnly ? "" : "자세히 →",
 }));
 
 /* ──────────────────────────────────────────────

@@ -326,6 +326,7 @@ async function main() {
       mbti_type: mbti.type,
       user_vector,
       channelCount: CHANNELS.length,
+      birthInfo: { year: 1991, month: 2, day: 18 },
     },
     youtubeAnalysis
   );
@@ -712,7 +713,65 @@ async function main() {
   const outputPath = resolve(process.cwd(), 'phase2-test-output.md');
   writeFileSync(outputPath, o.join('\n'), 'utf-8');
 
+  // JSON 미리보기 데이터 저장 (dev preview 페이지용)
+  const phase2Cards: ReportCard[] = [];
+  for (let i = 1; i <= 9; i++) {
+    const meta = PHASE2_CARD_META[i];
+    phase2Cards.push({
+      card_number: i,
+      title: meta.title,
+      subtitle: meta.subtitle,
+      content: phase2ContentMap.get(i) ?? '(생성 실패)',
+      card_type: meta.card_type,
+    });
+  }
+
+  const previewData = {
+    phase1: {
+      id: 'test-phase1-id',
+      user_id: 'test-user-id',
+      channel_categories,
+      tci_scores,
+      enneagram_center: enneagram.center,
+      enneagram_type: enneagram.type,
+      mbti_scores: mbti.scores,
+      mbti_type: mbti.type,
+      user_vector,
+      matched_husband_type: matchedHusbandTypeId,
+      match_score: matchScore,
+      match_method: 'vector',
+      cards: phase1Cards,
+      user_name: null,
+      birth_date: '1991-02-18',
+      created_at: new Date().toISOString(),
+    },
+    phase2: {
+      id: 'test-phase2-id',
+      user_id: 'test-user-id',
+      phase1_id: 'test-phase1-id',
+      survey_id: 'test-survey-id',
+      payment_id: 'test-payment-id',
+      cross_validation_insights: {
+        discrepancies: deepCrossValidation.dimensions.map((d) => ({
+          dimension: d.dimension,
+          youtube_value: d.youtube_value,
+          survey_value: d.survey_value,
+          interpretation: d.interpretation,
+        })),
+        hidden_desires: deepCrossValidation.hiddenDesires.map((d) => d.description),
+        authenticity_score: deepCrossValidation.authenticityScore,
+      },
+      deep_cards: phase2Cards,
+      created_at: new Date().toISOString(),
+      published_at: new Date().toISOString(),
+    },
+  };
+
+  const previewPath = resolve(process.cwd(), 'test-data', 'preview-data.json');
+  writeFileSync(previewPath, JSON.stringify(previewData, null, 2), 'utf-8');
+
   console.log(`\n\u2713 결과 저장: ${outputPath}`);
+  console.log(`\u2713 미리보기 데이터: ${previewPath}`);
   console.log(`\n총 소요 시간: ${totalTime}초`);
 
   // 콘솔 검증 요약

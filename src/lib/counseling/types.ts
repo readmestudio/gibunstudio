@@ -13,6 +13,8 @@ export interface CounselingType {
   description: string;
   recommended: string;
   features: { text: string; included: boolean }[];
+  /** true면 아직 판매하지 않고 알림신청만 받는 상담 */
+  notifyOnly: boolean;
 }
 
 export const COUNSELING_TYPES: CounselingType[] = [
@@ -33,6 +35,7 @@ export const COUNSELING_TYPES: CounselingType[] = [
       { text: "Zoom 화상 상담", included: true },
       { text: "심리검사 포함", included: false },
     ],
+    notifyOnly: true,
   },
   {
     id: "relationship",
@@ -51,6 +54,7 @@ export const COUNSELING_TYPES: CounselingType[] = [
       { text: "커뮤니케이션 가이드", included: true },
       { text: "심리검사 포함", included: false },
     ],
+    notifyOnly: true,
   },
   {
     id: "test-package",
@@ -69,6 +73,7 @@ export const COUNSELING_TYPES: CounselingType[] = [
       { text: "Zoom 화상 상담", included: true },
       { text: "후속 관리 안내", included: true },
     ],
+    notifyOnly: false,
   },
   {
     id: "personal",
@@ -87,6 +92,7 @@ export const COUNSELING_TYPES: CounselingType[] = [
       { text: "심리검사 포함", included: false },
       { text: "관계 패턴 분석", included: false },
     ],
+    notifyOnly: false,
   },
 ];
 

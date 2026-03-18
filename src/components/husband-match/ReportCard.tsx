@@ -115,6 +115,45 @@ function HexagonChart({ data }: { data: HexagonChartData }) {
   );
 }
 
+// "→ " 로 시작하는 줄을 최대 3개 추출 (요약 불렛용)
+function extractBullets(content: string): string[] {
+  return content
+    .split('\n')
+    .filter((line) => line.trimStart().startsWith('→ '))
+    .slice(0, 3)
+    .map((line) => line.trimStart().replace(/^→\s*/, ''));
+}
+
+// 본문에서 "→ " 줄을 제거하여 불렛과 중복 방지
+function stripBulletLines(content: string): string {
+  return content
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('→ '))
+    .join('\n');
+}
+
+// 콘텐츠를 인트로(첫 섹션 타이틀 이전)와 본문(섹션 타이틀 이후)으로 분리
+// 첫 번째 "→ " 줄 바로 위의 **타이틀** 줄을 찾아 그 직전까지가 인트로
+function splitIntroAndBody(content: string): { intro: string; body: string } {
+  const lines = content.split('\n');
+  const firstBulletIdx = lines.findIndex((l) => l.trimStart().startsWith('→ '));
+  if (firstBulletIdx <= 0) return { intro: content, body: '' };
+
+  // 첫 번째 → 줄 위쪽으로 올라가며 **타이틀** 줄 찾기
+  let splitIdx = firstBulletIdx;
+  for (let i = firstBulletIdx - 1; i >= 0; i--) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
+      splitIdx = i;
+      break;
+    }
+  }
+
+  const intro = lines.slice(0, splitIdx).join('\n').trim();
+  const body = lines.slice(splitIdx).join('\n').trim();
+  return { intro, body };
+}
+
 // 마크다운 스타일 볼드 처리
 function processContent(content: string): string {
   // **텍스트** → <strong>텍스트</strong>
@@ -147,14 +186,30 @@ export function ReportCard({
     }
   };
 
-  // 콘텐츠 처리 (볼드 등)
-  const processedContent = useMemo(() => processContent(content), [content]);
+  // 요약 불렛 추출 (카드 2~8만)
+  const showBullets = cardNumber !== undefined && cardNumber >= 2 && cardNumber <= 8;
+  const bullets = useMemo(
+    () => (showBullets ? extractBullets(content) : []),
+    [content, showBullets]
+  );
+
+  // 인트로/본문 분리 + 콘텐츠 처리
+  const { processedIntro, processedBody } = useMemo(() => {
+    if (!showBullets || bullets.length === 0) {
+      return { processedIntro: '', processedBody: processContent(content) };
+    }
+    const { intro, body } = splitIntroAndBody(content);
+    return {
+      processedIntro: intro ? processContent(intro) : '',
+      processedBody: processContent(stripBulletLines(body)),
+    };
+  }, [content, showBullets, bullets.length]);
 
   // 카드 2는 육각형 차트 표시
   const showHexagonChart = cardNumber === 2 && hexagonData;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border-2 border-[var(--foreground)] overflow-hidden min-h-[500px] max-h-[85vh] flex flex-col">
+    <div className="bg-white rounded-2xl shadow-sm border-2 border-[var(--foreground)] overflow-hidden min-h-[500px] flex flex-col">
       {/* Header */}
       <div className="p-8 pb-6 border-b border-[var(--border)] flex-shrink-0">
         {metadata?.subtitle && (
@@ -186,8 +241,8 @@ export function ReportCard({
         </div>
       )}
 
-      {/* Content - 스크롤 가능 */}
-      <div className="flex-1 p-8 overflow-y-auto">
+      {/* Content: 인트로 → 불렛 → 본문 */}
+      <div className="flex-1 p-8">
         {metadata?.highlight && (
           <div className="mb-6 p-4 bg-[var(--surface)] border-l-4 border-[var(--foreground)] rounded-r">
             <p className="text-sm font-medium text-[var(--foreground)]">
@@ -195,10 +250,34 @@ export function ReportCard({
             </p>
           </div>
         )}
+
+        {/* 인트로 영역 (불렛이 있을 때만 분리 표시) */}
+        {processedIntro && (
+          <div className="prose prose-sm max-w-none mb-4">
+            <div
+              className="text-[var(--foreground)]/80 leading-relaxed whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ __html: processedIntro }}
+            />
+          </div>
+        )}
+
+        {/* 요약 불렛 (인트로 아래, 본문 위) */}
+        {bullets.length > 0 && (
+          <div className="mb-5 space-y-1.5">
+            {bullets.map((bullet, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[var(--foreground)]/40 flex-shrink-0" />
+                <span className="text-sm text-[var(--foreground)]/70">{bullet}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 본문 영역 */}
         <div className="prose prose-sm max-w-none">
           <div
             className="text-[var(--foreground)]/80 leading-relaxed whitespace-pre-wrap"
-            dangerouslySetInnerHTML={{ __html: processedContent }}
+            dangerouslySetInnerHTML={{ __html: processedBody }}
           />
         </div>
       </div>

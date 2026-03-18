@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { COUNSELING_TYPES } from "@/lib/counseling/types";
 import { DoodleDecoration } from "@/components/DoodleDecoration";
+import { NotifyButton } from "@/components/NotifyButton";
 
 export default function ProgramCounselingPage() {
   return (
@@ -66,12 +67,18 @@ export default function ProgramCounselingPage() {
               <p className="mt-2 text-sm text-[var(--foreground)]/70">
                 추천: {item.recommended}
               </p>
-              <Link
-                href={`/booking/${item.id}`}
-                className="mt-4 inline-flex items-center px-6 py-2.5 text-sm font-medium text-white bg-[var(--foreground)] border-2 border-[var(--foreground)] rounded-lg hover:bg-[var(--gray-500)] transition-colors"
-              >
-                예약하기
-              </Link>
+              {item.notifyOnly ? (
+                <div className="mt-4">
+                  <NotifyButton programId={item.id} programTitle={item.title} />
+                </div>
+              ) : (
+                <Link
+                  href={`/booking/${item.id}`}
+                  className="mt-4 inline-flex items-center px-6 py-2.5 text-sm font-medium text-white bg-[var(--foreground)] border-2 border-[var(--foreground)] rounded-lg hover:bg-[var(--gray-500)] transition-colors"
+                >
+                  예약하기
+                </Link>
+              )}
             </div>
           ))}
         </div>

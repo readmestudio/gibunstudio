@@ -11,7 +11,7 @@ export default async function BookingPage({ params }: Props) {
   const { type } = await params;
   const counselingType = getCounselingType(type);
 
-  if (!counselingType) {
+  if (!counselingType || counselingType.notifyOnly) {
     redirect("/programs/counseling");
   }
 

@@ -18,6 +18,7 @@ export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
     if (currentIndex < cards.length - 1) {
       setDirection(1);
       setCurrentIndex((prev) => prev + 1);
+      window.scrollTo(0, 0);
     }
   };
 
@@ -25,6 +26,7 @@ export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
     if (currentIndex > 0) {
       setDirection(-1);
       setCurrentIndex((prev) => prev - 1);
+      window.scrollTo(0, 0);
     }
   };
 
@@ -63,7 +65,7 @@ export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
       </div>
 
       {/* Card Container */}
-      <div className="relative overflow-hidden min-h-[500px]">
+      <div className="relative overflow-x-hidden min-h-[500px]">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentIndex}
@@ -80,7 +82,7 @@ export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
             onDragEnd={handleDragEnd}
-            className="absolute w-full"
+            className="w-full"
           >
             {cards[currentIndex]}
           </motion.div>
@@ -123,6 +125,7 @@ export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
                 if (index < cards.length) {
                   setDirection(index > currentIndex ? 1 : -1);
                   setCurrentIndex(index);
+                  window.scrollTo(0, 0);
                 }
               }}
               disabled={index >= cards.length}
