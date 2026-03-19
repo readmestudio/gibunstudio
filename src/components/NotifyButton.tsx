@@ -70,11 +70,11 @@ export function NotifyButton({ programId, programTitle }: NotifyButtonProps) {
       {/* 모달 */}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-sm mx-4 rounded-2xl border-2 border-[var(--foreground)] bg-white p-6"
+            className="w-full max-w-sm mx-4 rounded-2xl border-2 border-[var(--foreground)] bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-[var(--foreground)] mb-1">
