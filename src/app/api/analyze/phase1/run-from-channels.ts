@@ -1134,7 +1134,7 @@ export async function runPhase1FromPrecomputed(
   const adminClient = createAdminClient();
   const { data: result, error: insertError } = await adminClient
     .from('phase1_results')
-    .upsert(payload, { onConflict: 'user_id' })
+    .insert(payload)
     .select('id')
     .single();
 
