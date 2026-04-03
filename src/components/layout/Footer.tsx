@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function Footer() {
   return (
     <footer className="bg-[var(--foreground)]">
@@ -19,6 +21,14 @@ export function Footer() {
             <p>NETWORK NO. 2025-서울마포-0668</p>
             <p>COMPANY NO. 143-88-03414</p>
             <p>ADD 서울특별시 마포구 마포대로 12 (마포동) 1606-씨13호</p>
+            <div className="flex gap-3 mt-3">
+              <Link href="/privacy" className="underline hover:text-white/60">
+                개인정보 처리방침
+              </Link>
+              <Link href="/terms" className="underline hover:text-white/60">
+                이용약관
+              </Link>
+            </div>
           </div>
         </div>
       </div>
