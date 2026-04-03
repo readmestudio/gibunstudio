@@ -14,7 +14,7 @@ export default function HeroSection() {
         {"결혼은 하고 싶은데\n어떤 사람과 해야할지 모르겠어요"}
       </h1>
 
-      {/* 샘플 카드 슬라이드 */}
+      {/* 샘플 카드 슬라이드 — 히어로 중앙 */}
       <SampleCardSlider />
 
       <p
@@ -25,7 +25,7 @@ export default function HeroSection() {
       </p>
       <Link
         href="/husband-match/birth-info"
-        className="mt-10 inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
+        className="mt-8 inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
       >
         무료 리포트 받아보기 →
       </Link>
