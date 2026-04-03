@@ -16,7 +16,7 @@ export default function HeroSection() {
         className="mt-6 text-base sm:text-lg leading-relaxed text-[var(--foreground)]/60 max-w-md whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"연애할 때엔 보이지 않던 것들이\n결혼이라는 환경에서 반응하기 시작합니다.\n당신의 유튜브 구독 목록이 그 답을 알고 있습니다."}
+        {"유튜브 구독 리스트만 넣어보세요\n당신의 결혼 적합성부터 배우자 타입까지\n모두 분석해드려요"}
       </p>
       <Link
         href="/husband-match/birth-info"
