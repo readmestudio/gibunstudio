@@ -7,7 +7,7 @@ const ELEMENTS = [
   {
     title: "핵심 신념",
     description:
-      "\"나는 사랑받을 자격이 없어.\" 어디서 배운 적 없는데 믿고 있는 것. 패턴의 뿌리는 여기에 있어요.",
+      "\"나는 충분하지 않아.\" 어디서 배운 적 없는데 믿고 있는 것. 삶의 선택 대부분이 여기서 시작돼요.",
     icon: (
       <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
@@ -17,7 +17,7 @@ const ELEMENTS = [
   {
     title: "자동 사고",
     description:
-      "\"또 내 탓이겠지.\" 생각하기도 전에 떠오르는 문장. 감정과 행동을 순식간에 바꿔놔요.",
+      "\"또 내 탓이겠지.\" 생각하기도 전에 떠오르는 문장. 기분을 순식간에 바꿔놔요.",
     icon: (
       <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
@@ -27,7 +27,7 @@ const ELEMENTS = [
   {
     title: "감정 패턴",
     description:
-      "같은 상황에서 같은 감정이 올라와요. 매번. 왜 그런지 아는 게 바꾸는 첫걸음이에요.",
+      "같은 상황에서 같은 감정이 올라와요. 매번. 왜 그런지 아는 게 자유의 시작이에요.",
     icon: (
       <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
@@ -37,7 +37,7 @@ const ELEMENTS = [
   {
     title: "애착 유형",
     description:
-      "가까워지고 싶으면서 도망치고 싶어지는 마음. 왜 같은 유형에게 끌리는지, 여기에 답이 있어요.",
+      "가까워지고 싶으면서 밀어내는 마음. 관계에서 반복되는 패턴의 열쇠가 여기 있어요.",
     icon: (
       <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0z" />
@@ -55,10 +55,10 @@ export function SelfHackingElements() {
             className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: "keep-all" }}
           >
-            반복되는 패턴 뒤에 숨어 있는 것들
+            진짜 나를 구성하는 것들
           </h2>
           <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2">
-            이걸 알아채면, 같은 자리에서 맴도는 일이 줄어들어요.
+            이걸 이해하면, 내가 왜 이렇게 느끼고 행동하는지 보여요.
           </p>
         </div>
 

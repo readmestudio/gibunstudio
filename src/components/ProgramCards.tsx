@@ -31,7 +31,7 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
     id: "self-report",
     title: "내면 분석 리포트",
     description:
-      "유튜브 구독 목록, 자가보고 검사 등을 분석해 리포트를 만들어요. 남편상 테스트는 무료예요.",
+      "가치관, 사고 패턴, 감정 반응을 분석해 리포트를 만들어요. 셀프 해킹 테스트는 무료예요.",
     href: "/self-hacking",
     comingSoon: false,
     cta: "검사 선택하기 →",
@@ -40,7 +40,7 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
     id: "self-workshop",
     title: "내면 탐색 워크샵",
     description:
-      "가치관 월드컵, 연애 유형 검사 같은 활동지로 직접 답을 찾아가요. 내 속도대로.",
+      "가치관 월드컵, 삶의 의미 탐색 같은 활동지로 직접 답을 찾아가요. 내 속도대로.",
     href: "#",
     comingSoon: true,
     cta: "",
@@ -132,10 +132,10 @@ export function ProgramCards() {
         {/* ── 섹션 타이틀 ── */}
         <div className="flex flex-col w-full mb-16 text-center">
           <h2 className="mb-4 text-3xl font-bold text-[var(--foreground)] md:text-5xl">
-            나를 읽는 프로그램
+            나를 해킹하는 프로그램
           </h2>
           <p className="mx-auto text-base leading-relaxed text-[var(--foreground)]/70 lg:w-2/3">
-            혼자서, 또는 상담사와 함께. 내 안의 패턴을 읽어가는 과정이에요.
+            혼자서, 또는 상담사와 함께. 진짜 나를 이해해 가는 과정이에요.
           </p>
         </div>
 
@@ -146,7 +146,7 @@ export function ProgramCards() {
               셀프 해킹 리포트
             </h3>
             <p className="mt-1 text-sm text-[var(--foreground)]/60">
-              내 속도로 나를 읽는 검사
+              내 속도로 나를 이해하는 검사
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

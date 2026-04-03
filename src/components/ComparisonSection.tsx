@@ -4,19 +4,19 @@
  */
 
 const OLD_WAY = [
-  "매번 처음부터 내 이야기를 설명해야 해요",
-  "상담사에 따라 방향이 달라져요",
-  "대화 중심, 구조 없이 흘러가요",
-  "끝나도 남는 게 뚜렷하지 않아요",
-  "앉아서 듣는 시간이 길어요",
+  "막연하게 '나를 알아야 한다'고 느끼기만 해요",
+  "자기계발 콘텐츠를 봐도 와닿지 않아요",
+  "혼자 생각만 하다가 같은 자리로 돌아와요",
+  "뭘 원하는지 몰라서 결정을 못 내려요",
+  "관계에서 같은 패턴이 반복돼요",
 ];
 
 const NEW_WAY = [
-  "리포트가 먼저. 대화는 그다음",
-  "데이터 기반. 주관이 아니라 구조",
+  "리포트가 먼저. 내 패턴을 데이터로 봐요",
+  "가치관, 핵심 신념, 감정 패턴을 구조적으로 분석해요",
   "단계가 있어요. 어디까지 왔는지 보여요",
-  "패턴의 원인까지 도달해요",
-  "직접 해킹해요. 능동적으로",
+  "반복되는 패턴의 원인까지 도달해요",
+  "진짜 내가 원하는 걸 알게 돼요",
 ];
 
 export function ComparisonSection() {
@@ -34,9 +34,9 @@ export function ComparisonSection() {
             className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: "keep-all" }}
           >
-            상담을 받아봤는데,
+            나를 알고 싶은데,
             <br className="hidden lg:block" />
-            달라진 게 없다면
+            어디서부터 시작해야 할지 모르겠다면
           </h2>
           <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2">
             출발점이 달라요.
@@ -47,7 +47,7 @@ export function ComparisonSection() {
           {/* 왼쪽: 기존 상담 (뮤트 톤) */}
           <div className="p-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
             <h3 className="mb-6 text-lg font-semibold text-[var(--foreground)]/50">
-              기존 심리 상담
+              혼자서 고민할 때
             </h3>
             <ul className="space-y-4">
               {OLD_WAY.map((item, i) => (

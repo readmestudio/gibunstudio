@@ -13,19 +13,19 @@ export function FinalCTA() {
             className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: "keep-all" }}
           >
-            잘 모르겠으면, 일단 한번 해보세요
+            진짜 나를 만나는 건, 여기서부터예요
           </h2>
           <p
             className="mb-8 text-lg leading-relaxed text-[var(--foreground)]/70"
             style={{ wordBreak: "keep-all" }}
           >
-            3분이면 돼요. 무료이고, 구독 목록만 있으면 됩니다.
+            3분이면 돼요. 무료 셀프 해킹 테스트로 시작해 보세요.
           </p>
           <Link
             href="/husband-match/birth-info"
             className="inline-flex items-center gap-2 px-8 py-3 text-lg font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all duration-300 hover:bg-[var(--accent-hover)]"
           >
-            무료로 남편상 찾기 →
+            무료로 나를 알아보기 →
           </Link>
         </div>
       </div>

@@ -18,20 +18,20 @@ export default function Home() {
         <div className="container relative w-full px-8 pt-32 pb-24 mx-auto lg:px-4">
           <div className="flex flex-col w-full mb-12 text-center">
             <strong className="mb-4 text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/70">
-              YOUTUBE 알고리즘 심리 분석
+              YOUTUBE 구독 채널 기반 배우자 매칭
             </strong>
             <h1
               className="mb-6 font-bold text-[var(--foreground)] leading-[1.15]"
               style={{ fontSize: 'clamp(2rem, 5vw, 3.75rem)', wordBreak: 'keep-all' }}
             >
-              당신이 몰래 본 영상이,
+              나를 알아야,
               <br />
-              당신을 말하고 있어요
+              나에게 맞는 사람도 보여요
             </h1>
             <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2">
-              구독 목록에는 취향만 담긴 게 아니에요.
+              유튜브 구독 목록으로 나의 성격, 가치관, 관계 패턴을 분석하고
               <br />
-              당신이 어떤 사람인지, 어떤 사람 옆에 있고 싶은지까지.
+              나에게 맞는 배우자 유형까지 알려드려요.
             </p>
           </div>
           <div className="flex w-full mt-6 justify-center">
@@ -43,7 +43,7 @@ export default function Home() {
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 3C6.477 3 2 6.463 2 10.691c0 2.724 1.8 5.117 4.508 6.467-.199.747-.721 2.707-.826 3.127-.13.524.192.517.404.376.166-.11 2.641-1.792 3.712-2.52.714.099 1.447.15 2.202.15 5.523 0 10-3.463 10-7.691C22 6.463 17.523 3 12 3z"/>
                 </svg>
-                무료로 내 남편상 찾기
+                무료로 내 배우자상 찾기
               </Link>
             </div>
           </div>

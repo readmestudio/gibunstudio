@@ -4,8 +4,8 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "GIBUN | 유튜브 알고리즘으로 미래의 남편상 찾기",
-  description: "유튜브는 당신의 모든 것을 알고 있다! 유튜브 로그인만하면 나의 결혼 가치관부터 미래의 남편상까지 모두 알 수 있어요",
+  title: "GIBUN | 셀프 해킹으로 진짜 나를 만나는 곳",
+  description: "반복되는 패턴의 원인을 찾고, 진짜 내가 원하는 삶을 설계하는 심리 기반 셀프 해킹 프로그램",
 };
 
 export default function RootLayout({
