@@ -50,7 +50,7 @@ export default function ChemistrySection() {
         <p className="text-base sm:text-lg font-semibold leading-relaxed">
           유튜브 알고리즘으로 6가지 항목을 분석한
           <br />
-          결혼 적합성 리포트를 받아보세요
+          나에게 맞는 배우자 분석 리포트를 받아보세요
         </p>
       </div>
     </section>

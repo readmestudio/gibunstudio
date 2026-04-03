@@ -5,7 +5,7 @@ export default function HeroSection() {
   return (
     <section className="py-24 text-center">
       <p className="mb-6 text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/50">
-        YouTube × TCI × 결혼 적합성 분석
+        나에게 맞는 배우자 분석
       </p>
       <h1
         className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] leading-snug whitespace-pre-line"

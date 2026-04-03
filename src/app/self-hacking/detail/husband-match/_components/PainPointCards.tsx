@@ -51,7 +51,7 @@ export default function PainPointCards() {
           className="text-lg font-semibold text-[var(--foreground)] mb-8"
           style={{ wordBreak: "keep-all" }}
         >
-          배우자 찾기 검사를 통해 이런 것들을 알 수 있어요
+          이 분석을 통해 이런 것들을 알 수 있어요
         </p>
         <ol className="inline-block text-left space-y-2">
           <li className="text-base text-[var(--foreground)]/70" style={{ wordBreak: "keep-all" }}>
