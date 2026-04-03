@@ -1,10 +1,8 @@
 import Link from "next/link";
 import HeroSection from "./_components/HeroSection";
-import SampleCardSlider from "./_components/SampleCardSlider";
 import PainPointCards from "./_components/PainPointCards";
 import ChemistrySection from "./_components/ChemistrySection";
-import YoutubeAnalysis from "./_components/YoutubeAnalysis";
-import TciIntroSection from "./_components/TciIntroSection";
+import HowItWorks from "./_components/HowItWorks";
 import TestimonialSection from "./_components/TestimonialSection";
 import FinalCtaSection from "./_components/FinalCtaSection";
 import CtaButton from "../[testId]/CtaButton";
@@ -24,20 +22,14 @@ export default function HusbandMatchLandingPage() {
         {/* 섹션 1 — 히어로 */}
         <HeroSection />
 
-        {/* 샘플 카드 슬라이드 */}
-        <SampleCardSlider />
-
         {/* 섹션 2-3 — 고민 카드 */}
         <PainPointCards />
 
         {/* 섹션 4 — 연애 vs 결혼 */}
         <ChemistrySection />
 
-        {/* 섹션 5 — YouTube 분석 */}
-        <YoutubeAnalysis />
-
-        {/* 섹션 6 — TCI 소개 + Phase 1 미리보기 */}
-        <TciIntroSection />
+        {/* 분석 원리 3단계 */}
+        <HowItWorks />
 
         {/* 섹션 11 — 유저 후기 */}
         <TestimonialSection />

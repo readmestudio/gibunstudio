@@ -1,8 +1,9 @@
 import Link from "next/link";
+import SampleCardSlider from "./SampleCardSlider";
 
 export default function HeroSection() {
   return (
-    <section className="flex flex-col items-center justify-center min-h-[80vh] py-24 text-center">
+    <section className="py-24 text-center">
       <p className="mb-6 text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/50">
         YouTube × TCI × 결혼 적합성 분석
       </p>
@@ -12,8 +13,12 @@ export default function HeroSection() {
       >
         {"결혼은 하고 싶은데\n어떤 사람과 해야할지 모르겠어요"}
       </h1>
+
+      {/* 샘플 카드 슬라이드 */}
+      <SampleCardSlider />
+
       <p
-        className="mt-6 text-base sm:text-lg leading-relaxed text-[var(--foreground)]/60 max-w-md whitespace-pre-line"
+        className="text-base sm:text-lg leading-relaxed text-[var(--foreground)]/60 max-w-md mx-auto whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
         {"유튜브 구독 리스트만 넣어보세요\n당신의 결혼 적합성부터 배우자 타입까지\n모두 분석해드려요"}
