@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { categorizeChannels } from '@/lib/husband-match/analysis/categorize-channels';
 import { calculateTCI } from '@/lib/husband-match/analysis/calculate-tci';
 import { estimateEnneagram } from '@/lib/husband-match/analysis/estimate-enneagram';
@@ -1129,7 +1130,9 @@ export async function runPhase1FromPrecomputed(
     cards,
   };
 
-  const { data: result, error: insertError } = await supabase
+  // RLS를 우회하기 위해 service role client 사용
+  const adminClient = createAdminClient();
+  const { data: result, error: insertError } = await adminClient
     .from('phase1_results')
     .upsert(payload, { onConflict: 'user_id' })
     .select('id')
