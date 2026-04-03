@@ -17,7 +17,7 @@ export default function ChemistrySection() {
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] text-center mb-4"
         style={{ wordBreak: "keep-all" }}
       >
-        결혼은 화학 반응입니다
+        결혼은 연애와 다릅니다
       </h2>
       <p
         className="text-base text-[var(--foreground)]/60 text-center max-w-lg mx-auto mb-12 leading-relaxed"
@@ -103,9 +103,9 @@ export default function ChemistrySection() {
         style={{ wordBreak: "keep-all" }}
       >
         <p className="text-base sm:text-lg font-semibold leading-relaxed">
-          결혼이라는 환경에서 내가 어떤 반응을 일으키는 분자인지 알기 위해,
+          결혼 앞에서 흔들리지 않으려면,
           <br />
-          먼저 그 분자의 구조를 파악해야 합니다.
+          먼저 나를 정확히 알아야 합니다.
         </p>
       </div>
     </section>
