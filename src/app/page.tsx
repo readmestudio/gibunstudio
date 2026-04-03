@@ -26,7 +26,7 @@ export default function Home() {
             >
               인생은 결국 기분 관리,
               <br />
-              나를 이해하는 순간 모든 게 시작됩니다
+              나를 아는 순간 시작됩니다
             </h1>
             <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2" style={{ wordBreak: 'keep-all' }}>
               심리학 기반 분석으로 나의 기질, 감정, 관계 패턴을 탐색하고
