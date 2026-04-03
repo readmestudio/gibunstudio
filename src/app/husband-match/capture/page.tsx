@@ -1,12 +1,23 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 const MIN_IMAGES = 3;
+
+const LOADING_MESSAGES = [
+  '유튜브 구독 리스트를 확인하고 있습니다',
+  '재밌는 패턴을 발견했어요!',
+  '당신의 취향 밸런스를 분석하고 있습니다',
+  '구독 채널에서 기질 신호를 읽고 있어요',
+  '당신만의 고유한 성격 프로필을 그리는 중입니다',
+  '당신의 배우자가 될만한 사람의 알고리즘을 분석하고 있어요',
+  '48개 유형 중 가장 잘 맞는 타입을 찾고 있습니다',
+  '거의 다 됐어요! 리포트를 만들고 있습니다',
+];
 
 export default function CapturePage() {
   const router = useRouter();
@@ -16,7 +27,22 @@ export default function CapturePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 분석 중 메시지 롤링 (3초 간격)
+  useEffect(() => {
+    if (!submitLoading) {
+      setLoadingMsgIndex(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setLoadingMsgIndex((prev) =>
+        prev < LOADING_MESSAGES.length - 1 ? prev + 1 : prev
+      );
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [submitLoading]);
 
   useEffect(() => {
     createClient()
@@ -107,6 +133,60 @@ export default function CapturePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-[var(--foreground)]/60">로딩 중...</p>
+      </div>
+    );
+  }
+
+  // 분석 중 전체 화면 로딩
+  if (submitLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
+        {/* 펄스 애니메이션 원 */}
+        <div className="relative mb-10">
+          <div className="w-20 h-20 rounded-full border-2 border-[var(--foreground)] animate-ping opacity-20" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full border-2 border-[var(--foreground)] animate-pulse" />
+          </div>
+        </div>
+
+        {/* 롤링 텍스트 */}
+        <div className="h-16 flex items-center overflow-hidden px-6">
+          <p
+            key={loadingMsgIndex}
+            className="text-lg font-semibold text-[var(--foreground)] text-center animate-fade-in"
+          >
+            {LOADING_MESSAGES[loadingMsgIndex]}
+          </p>
+        </div>
+
+        {/* 프로그레스 도트 */}
+        <div className="flex gap-2 mt-8">
+          {LOADING_MESSAGES.map((_, i) => (
+            <div
+              key={i}
+              className={`w-2 h-2 rounded-full transition-colors duration-500 ${
+                i <= loadingMsgIndex
+                  ? 'bg-[var(--foreground)]'
+                  : 'bg-[var(--foreground)]/20'
+              }`}
+            />
+          ))}
+        </div>
+
+        <p className="mt-6 text-sm text-[var(--foreground)]/50">
+          약 30초~1분 소요됩니다
+        </p>
+
+        {/* fade-in 애니메이션 */}
+        <style jsx>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+          }
+        `}</style>
       </div>
     );
   }
