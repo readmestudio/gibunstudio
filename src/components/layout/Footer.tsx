@@ -8,6 +8,9 @@ export function Footer() {
           <div>
             <p className="font-semibold text-white/60 mb-2">고객센터</p>
             <p className="mt-1">
+              카카오톡 채널 gibun_studio 로 문의해주세요
+            </p>
+            <p className="mt-2">
               월-금 10:00 - 18:00<br />
               lunch 12:00 - 13:00<br />
               토,일요일 및 공휴일 OFF
