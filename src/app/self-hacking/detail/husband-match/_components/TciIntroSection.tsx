@@ -44,7 +44,7 @@ export default function TciIntroSection() {
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] text-center mb-4 leading-snug"
         style={{ wordBreak: "keep-all" }}
       >
-        TCI — 타고난 기질과 발전하는 성격을 함께 봅니다
+        유튜브 구독 리스트만으로 당신의 기질까지 알아맞춰요
       </h2>
       <p
         className="text-base text-[var(--foreground)]/60 text-center max-w-lg mx-auto mb-6 leading-relaxed"
