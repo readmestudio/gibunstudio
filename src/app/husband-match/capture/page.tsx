@@ -187,34 +187,49 @@ export default function CapturePage() {
           </p>
           <div className="grid grid-cols-3 gap-3">
             {/* 가이드 카드 1 */}
-            <div className="aspect-square rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)] flex items-center justify-center">
-              <Image
-                src="/images/guide-step1.png"
-                alt="1단계: 유튜브 앱에서 구독 탭 열기"
-                width={200}
-                height={200}
-                className="w-full h-full object-cover"
-              />
+            <div className="rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)]">
+              <div className="aspect-square">
+                <Image
+                  src="/images/guide-step1.png"
+                  alt="1단계: 구독 탭 클릭"
+                  width={400}
+                  height={400}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <p className="text-xs text-center text-[var(--foreground)]/70 py-2 px-1 font-medium">
+                1. 구독 탭 클릭
+              </p>
             </div>
             {/* 가이드 카드 2 */}
-            <div className="aspect-square rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)] flex items-center justify-center">
-              <Image
-                src="/images/guide-step2.png"
-                alt="2단계: 전체 > 관련성 순 설정"
-                width={200}
-                height={200}
-                className="w-full h-full object-cover"
-              />
+            <div className="rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)]">
+              <div className="aspect-square">
+                <Image
+                  src="/images/guide-step2.png"
+                  alt="2단계: 전체 버튼 클릭"
+                  width={400}
+                  height={400}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <p className="text-xs text-center text-[var(--foreground)]/70 py-2 px-1 font-medium">
+                2. 전체 버튼 클릭
+              </p>
             </div>
             {/* 가이드 카드 3 */}
-            <div className="aspect-square rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)] flex items-center justify-center">
-              <Image
-                src="/images/guide-step3.png"
-                alt="3단계: 구독 목록 캡처하기"
-                width={200}
-                height={200}
-                className="w-full h-full object-cover"
-              />
+            <div className="rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)]">
+              <div className="aspect-square">
+                <Image
+                  src="/images/guide-step3.png"
+                  alt="3단계: 관련성 순으로 3장 캡처"
+                  width={400}
+                  height={400}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <p className="text-xs text-center text-[var(--foreground)]/70 py-2 px-1 font-medium">
+                3. 관련성 순 3장 캡처
+              </p>
             </div>
           </div>
         </div>
