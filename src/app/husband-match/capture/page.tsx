@@ -3,20 +3,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-
-const GUIDE_STEPS = [
-  { title: '1. 구독 탭 클릭', desc: '유튜브 앱/웹에서 구독 탭을 눌러주세요.', highlight: '구독' },
-  { title: '2. 전체 클릭', desc: '상단의 "전체"를 눌러주세요.', highlight: '전체' },
-  { title: '3. 관련성 순 필터', desc: '"관련성 순" 필터를 선택해 주세요.', highlight: '관련성 순' },
-];
 
 const MIN_IMAGES = 3;
 
 export default function CapturePage() {
   const router = useRouter();
-  const [guideStep, setGuideStep] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,60 +138,17 @@ export default function CapturePage() {
           유튜브에서 구독 &gt; 전체 &gt; 관련성 순으로 설정한 뒤, 보이는 구독 목록을 3장 이상 캡처해 올려주세요.
         </p>
 
-        {/* Guide carousel */}
+        {/* Guide video */}
         <div className="rounded-2xl overflow-hidden bg-white border-2 border-[var(--foreground)] mb-6">
-          <div className="relative aspect-[4/3] bg-[var(--surface)] flex items-center justify-center overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={guideStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center"
-              >
-                <div className="w-24 h-24 rounded-2xl bg-white border-2 border-[var(--foreground)] flex items-center justify-center mb-4">
-                  <span className="text-3xl font-bold text-[var(--foreground)]">{guideStep + 1}</span>
-                </div>
-                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-                  {GUIDE_STEPS[guideStep].title}
-                </h2>
-                <p className="text-sm text-[var(--foreground)]/70 mb-4">
-                  {GUIDE_STEPS[guideStep].desc}
-                </p>
-                <span className="inline-block px-4 py-2 rounded-lg bg-white border-2 border-[var(--foreground)] text-[var(--foreground)] font-medium">
-                  {GUIDE_STEPS[guideStep].highlight} 클릭
-                </span>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--border)]">
-            <button
-              type="button"
-              onClick={() => setGuideStep((s) => (s > 0 ? s - 1 : 2))}
-              className="text-sm font-medium text-[var(--foreground)]/70 hover:text-[var(--foreground)]"
-            >
-              이전
-            </button>
-            <div className="flex gap-1.5">
-              {[0, 1, 2].map((i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setGuideStep(i)}
-                  className={`w-2 h-2 rounded-full transition-colors ${guideStep === i ? 'bg-[var(--foreground)]' : 'bg-[var(--border)]'}`}
-                  aria-label={`단계 ${i + 1}`}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setGuideStep((s) => (s < 2 ? s + 1 : 0))}
-              className="text-sm font-medium text-[var(--foreground)]/70 hover:text-[var(--foreground)]"
-            >
-              다음
-            </button>
-          </div>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-auto"
+          >
+            <source src="/videos/capture-guide.mov" type="video/mp4" />
+          </video>
         </div>
 
         {/* Upload area */}
