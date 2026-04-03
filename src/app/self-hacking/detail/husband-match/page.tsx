@@ -27,11 +27,11 @@ export default function HusbandMatchLandingPage() {
         {/* 6가지 분석 항목 */}
         <ChemistrySection />
 
-        {/* 검사 소개 */}
-        <TestIntroSection />
-
         {/* 고민 카드 */}
         <PainPointCards />
+
+        {/* 검사 소개 */}
+        <TestIntroSection />
 
         {/* 분석 원리 3단계 */}
         <HowItWorks />
