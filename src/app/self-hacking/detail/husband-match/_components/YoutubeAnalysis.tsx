@@ -16,10 +16,10 @@ export default function YoutubeAnalysis() {
             나를 읽는 방법
           </p>
           <h2
-            className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] mb-4 leading-snug"
+            className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] mb-4 leading-snug whitespace-pre-line"
             style={{ wordBreak: "keep-all" }}
           >
-            유튜브 구독 목록이 알고 있어요
+            {"유튜브 구독 목록을 통해\n당신에 대해 먼저 알아봅니다"}
           </h2>
           <p
             className="text-base leading-relaxed text-[var(--foreground)]/60 mb-6"
@@ -33,9 +33,9 @@ export default function YoutubeAnalysis() {
             className="text-base leading-relaxed text-[var(--foreground)]/60"
             style={{ wordBreak: "keep-all" }}
           >
-            유튜브 구독 채널을 TCI 기질 이론으로 분석해 당신의 성격 구조를
-            파악합니다. 결혼 생활에서 나는 어떤 사람인지, 그 전체 윤곽을
-            그려드립니다.
+            유튜브 구독 채널을 TCI 기질 이론으로 분석해 당신의 성격 분자 구조를
+            파악합니다. 결혼이라는 환경에서 나는 어떤 반응을 일으키는
+            분자인지, 그 전체 윤곽을 그립니다.
           </p>
         </div>
 
