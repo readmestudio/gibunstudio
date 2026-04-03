@@ -82,7 +82,7 @@ export default function TestimonialSection() {
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] text-center mb-2"
         style={{ wordBreak: "keep-all" }}
       >
-        먼저 자신의 분자를 발견한 분들
+        먼저 자신을 발견한 분들
       </h2>
       <p className="text-base text-[var(--foreground)]/60 text-center mb-10">
         꾸며지지 않은 진짜 반응들입니다

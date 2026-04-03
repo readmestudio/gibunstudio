@@ -89,7 +89,7 @@ export default function PricingSection() {
             추천
           </span>
           <p className="text-xs font-semibold text-[var(--foreground)]/40 uppercase tracking-wider mb-2">
-            분자 형성 이유까지
+            내가 왜 이런 사람인지까지
           </p>
           <p className="text-3xl font-bold text-[var(--foreground)] mb-1">
             9,900원

@@ -13,7 +13,7 @@ export default function YoutubeAnalysis() {
         {/* 텍스트 */}
         <div>
           <p className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/40 mb-3">
-            분자 구조 파악
+            나를 읽는 방법
           </p>
           <h2
             className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] mb-4 leading-snug"
@@ -33,9 +33,9 @@ export default function YoutubeAnalysis() {
             className="text-base leading-relaxed text-[var(--foreground)]/60"
             style={{ wordBreak: "keep-all" }}
           >
-            유튜브 구독 채널을 TCI 기질 이론으로 분석해 당신의 성격 분자 구조를
-            파악합니다. 결혼이라는 환경에서 나는 어떤 반응을 일으키는 분자인지,
-            그 전체 윤곽을 그립니다.
+            유튜브 구독 채널을 TCI 기질 이론으로 분석해 당신의 성격 구조를
+            파악합니다. 결혼 생활에서 나는 어떤 사람인지, 그 전체 윤곽을
+            그려드립니다.
           </p>
         </div>
 

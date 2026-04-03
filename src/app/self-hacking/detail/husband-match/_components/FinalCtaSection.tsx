@@ -7,7 +7,7 @@ export default function FinalCtaSection() {
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] leading-snug mb-6 whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"결혼이라는 화학 반응 앞에서\n나라는 분자를 먼저 알아야 합니다"}
+        {"결혼이라는 결정 앞에서\n나를 먼저 알아야 합니다"}
       </h2>
       <p
         className="text-base text-[var(--foreground)]/60 max-w-md mx-auto mb-10 leading-relaxed whitespace-pre-line"

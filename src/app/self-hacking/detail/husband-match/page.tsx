@@ -28,7 +28,7 @@ export default function HusbandMatchLandingPage() {
         {/* 섹션 2-3 — 고민 카드 */}
         <PainPointCards />
 
-        {/* 섹션 4 — 화학 반응 */}
+        {/* 섹션 4 — 연애 vs 결혼 */}
         <ChemistrySection />
 
         {/* 섹션 5 — YouTube 분석 */}
