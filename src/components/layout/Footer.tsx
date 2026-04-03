@@ -16,6 +16,7 @@ export function Footer() {
           <div>
             <p className="font-semibold text-white/60 mb-2">COMPANY INFO</p>
             <p>올핸즈 라운지 (allhandslounge@gmail.com)</p>
+            <p>등록번호 : 335-25-01567</p>
             <p>ADD 서울특별시 마포구 마포대로 12 (마포동) 1606-씨13호</p>
             <div className="flex gap-3 mt-3">
               <Link href="/privacy" className="underline hover:text-white/60">
