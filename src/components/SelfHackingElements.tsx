@@ -1,13 +1,17 @@
 /**
- * 셀프 해킹으로 만나는 진짜 나 — 4개 아이콘 카드 섹션
- * 브랜드 스토리(Hack yourself) 뒤에 삽입
+ * 기분 스튜디오 커리큘럼 플로우 — 5단계 여정 도식
+ * 나에 대한 이해 → 관계 속의 나 → 실전 적용 → 완전한 얼라인 → 기분 좋은 상태
  */
 
-const ELEMENTS = [
+import { Fragment } from "react";
+
+const CURRICULUM = [
   {
-    title: "핵심 신념",
+    number: 1,
+    title: "나에 대한 이해",
     description:
-      "\"나는 충분하지 않아.\" 어디서 배운 적 없는데 믿고 있는 것. 삶의 선택 대부분이 여기서 시작돼요.",
+      "핵심 신념, 감정 패턴, 애착 유형을 데이터로 확인해요",
+    tag: "셀프 해킹 리포트",
     icon: (
       <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
@@ -15,36 +19,82 @@ const ELEMENTS = [
     ),
   },
   {
-    title: "자동 사고",
+    number: 2,
+    title: "관계 속의 나",
     description:
-      "\"또 내 탓이겠지.\" 생각하기도 전에 떠오르는 문장. 기분을 순식간에 바꿔놔요.",
-    icon: (
-      <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-      </svg>
-    ),
-  },
-  {
-    title: "감정 패턴",
-    description:
-      "같은 상황에서 같은 감정이 올라와요. 매번. 왜 그런지 아는 게 자유의 시작이에요.",
-    icon: (
-      <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-      </svg>
-    ),
-  },
-  {
-    title: "애착 유형",
-    description:
-      "가까워지고 싶으면서 밀어내는 마음. 관계에서 반복되는 패턴의 열쇠가 여기 있어요.",
+      "내가 사람과 사회에서 어떻게 작용하는지 탐색해요",
+    tag: "셀프 워크샵",
     icon: (
       <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0z" />
       </svg>
     ),
   },
+  {
+    number: 3,
+    title: "실전 적용",
+    description:
+      "상담사와 함께 원인을 찾고, 실제 삶에 적용해요",
+    tag: "1:1 Zoom 상담",
+    icon: (
+      <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+    ),
+  },
+  {
+    number: 4,
+    title: "완전한 얼라인",
+    description:
+      "인식하는 나와 살아가는 내가 일치하는 순간",
+    tag: null,
+    icon: (
+      <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+      </svg>
+    ),
+  },
+  {
+    number: 5,
+    title: "기분 좋은 상태",
+    description:
+      "선택이 달라지고, 기분 좋은 날이 많아져요",
+    tag: null,
+    icon: (
+      <svg fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+      </svg>
+    ),
+  },
 ];
+
+function ChevronRight() {
+  return (
+    <svg
+      className="hidden lg:block w-6 h-6 text-[var(--foreground)]/30 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" />
+    </svg>
+  );
+}
+
+function ChevronDown() {
+  return (
+    <svg
+      className="block lg:hidden w-6 h-6 text-[var(--foreground)]/30 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+    </svg>
+  );
+}
 
 export function SelfHackingElements() {
   return (
@@ -57,31 +107,57 @@ export function SelfHackingElements() {
           >
             진짜 나를 구성하는 것들
           </h2>
-          <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2">
-            이걸 이해하면, 내가 왜 이렇게 느끼고 행동하는지 보여요.
+          <p
+            className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2"
+            style={{ wordBreak: "keep-all" }}
+          >
+            나를 이해하고, 관계를 해독하고, 삶에 적용하는 전체 여정이에요.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto">
-          {ELEMENTS.map((el) => (
-            <div
-              key={el.title}
-              className="flex flex-col items-center p-6 text-center border border-[var(--border)] rounded-2xl"
-            >
-              <div className="flex items-center justify-center w-14 h-14 mb-4 rounded-full bg-[var(--surface)] text-[var(--foreground)]">
-                {el.icon}
-              </div>
-              <h3 className="mb-3 text-lg font-semibold text-[var(--foreground)]">
-                {el.title}
-              </h3>
-              <p
-                className="text-sm leading-relaxed text-[var(--foreground)]/70"
-                style={{ wordBreak: "keep-all" }}
-              >
-                {el.description}
-              </p>
-            </div>
-          ))}
+        {/* 커리큘럼 플로우 */}
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-3 lg:gap-2 max-w-6xl mx-auto">
+          {CURRICULUM.map((step, i) => {
+            const isLast = i === CURRICULUM.length - 1;
+            return (
+              <Fragment key={step.number}>
+                {/* 단계 카드 */}
+                <div
+                  className={`flex flex-col items-center p-6 text-center rounded-2xl w-full lg:flex-1 ${
+                    isLast
+                      ? "bg-[var(--accent-muted)] border-2 border-[var(--foreground)]"
+                      : "border border-[var(--border)]"
+                  }`}
+                >
+                  <div className="flex items-center justify-center w-14 h-14 mb-4 rounded-full bg-[var(--surface)] text-[var(--foreground)]">
+                    {step.icon}
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold text-[var(--foreground)]">
+                    {step.title}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed text-[var(--foreground)]/70"
+                    style={{ wordBreak: "keep-all" }}
+                  >
+                    {step.description}
+                  </p>
+                  {step.tag && (
+                    <span className="mt-3 inline-block text-xs text-[var(--foreground)]/50 border border-[var(--foreground)]/20 rounded-full px-3 py-0.5">
+                      {step.tag}
+                    </span>
+                  )}
+                </div>
+
+                {/* 화살표 (마지막 단계 제외) */}
+                {!isLast && (
+                  <>
+                    <ChevronRight />
+                    <ChevronDown />
+                  </>
+                )}
+              </Fragment>
+            );
+          })}
         </div>
       </div>
     </section>
