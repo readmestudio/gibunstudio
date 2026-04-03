@@ -75,7 +75,7 @@ export const TEST_CATALOG: TestInfo[] = [
     title: "나에게 맞는 배우자 검사",
     description:
       "유튜브 구독 목록으로 기질과 성격을 읽어요. 어떤 사람이 옆에 있으면 좋을지, 데이터가 말해줘요.",
-    price: "검사·리포트 무료 / 세부 리포트 ₩9,900",
+    price: "검사·리포트 무료 / 세부 리포트 ₩14,900",
     testHref: "/husband-match/birth-info",
     notifyOnly: false,
     detail: {
@@ -130,7 +130,7 @@ export const TEST_CATALOG: TestInfo[] = [
         },
         {
           q: "세부 리포트는 뭐가 다른가요?",
-          a: "무료 리포트는 11장 카드 요약이고, 세부 리포트(₩9,900)는 기질별 심층 해석과 관계 조언이 포함됩니다.",
+          a: "무료 리포트는 11장 카드 요약이고, 세부 리포트(₩14,900)는 기질별 심층 해석과 관계 조언이 포함됩니다.",
         },
         {
           q: "검사는 몇 번 할 수 있나요?",
@@ -145,7 +145,7 @@ export const TEST_CATALOG: TestInfo[] = [
     title: "핵심 신념 검사",
     description:
       "25개 문장을 완성하면 돼요. 나에 대한 믿음, 타인에 대한 믿음, 세상에 대한 믿음. 무의식에 적혀 있던 것들이 보여요.",
-    price: "검사 무료 / 세부 리포트 ₩9,900",
+    price: "검사 무료 / 세부 리포트 ₩14,900",
     testHref: "/self-hacking/core-belief",
     notifyOnly: true,
     detail: {
@@ -200,7 +200,7 @@ export const TEST_CATALOG: TestInfo[] = [
         },
         {
           q: "세부 리포트는 뭐가 다른가요?",
-          a: "무료 리포트는 핵심 신념 요약이고, 세부 리포트(₩9,900)는 신념의 형성 원인과 구체적인 변화 전략이 포함됩니다.",
+          a: "무료 리포트는 핵심 신념 요약이고, 세부 리포트(₩14,900)는 신념의 형성 원인과 구체적인 변화 전략이 포함됩니다.",
         },
       ],
     },
@@ -211,7 +211,7 @@ export const TEST_CATALOG: TestInfo[] = [
     title: "연애 애착 검사",
     description:
       "24문항이에요. 가까워지고 싶으면서 두려운 마음, 불안과 회피 두 축으로 풀어봐요.",
-    price: "검사 무료 / 세부 리포트 ₩9,900",
+    price: "검사 무료 / 세부 리포트 ₩14,900",
     testHref: "/self-hacking/attachment",
     notifyOnly: true,
     detail: {
@@ -266,7 +266,7 @@ export const TEST_CATALOG: TestInfo[] = [
         },
         {
           q: "세부 리포트는 뭐가 다른가요?",
-          a: "무료 리포트는 유형 판정과 요약이고, 세부 리포트(₩9,900)는 패턴의 형성 원인과 구체적인 관계 개선 전략이 포함됩니다.",
+          a: "무료 리포트는 유형 판정과 요약이고, 세부 리포트(₩14,900)는 패턴의 형성 원인과 구체적인 관계 개선 전략이 포함됩니다.",
         },
       ],
     },

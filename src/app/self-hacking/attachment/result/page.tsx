@@ -168,7 +168,7 @@ function ResultContent() {
           </p>
 
           <p className="text-2xl font-bold text-[var(--foreground)] mb-6">
-            ₩9,900
+            ₩14,900
           </p>
 
           <button

@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         report: reportJson,
         payment_status: "pending",
-        payment_amount: 9900,
+        payment_amount: 14900,
       })
       .select("id")
       .single();
