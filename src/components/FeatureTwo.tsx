@@ -1,3 +1,5 @@
+"use client";
+
 const STEPS = [
   {
     number: 1,
@@ -13,110 +15,33 @@ const STEPS = [
   },
 ];
 
-function PhoneMockupFrame({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col items-center">
-      <div className="relative w-[180px] h-[360px] sm:w-[200px] sm:h-[400px] bg-white rounded-[2rem] border-[4px] border-[var(--foreground)] shadow-lg overflow-hidden">
-        {/* 노치 */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-[var(--foreground)] rounded-b-xl z-10" />
-        {/* 화면 내용 */}
-        <div className="h-full flex flex-col pt-8 px-3">
-          {children}
-        </div>
-      </div>
-      <p className="mt-3 text-sm font-medium text-[var(--foreground)]/70">{label}</p>
-    </div>
-  );
-}
-
-function ZoomScreen() {
-  return (
-    <div className="flex flex-col h-full">
-      {/* 상단 바 */}
-      <div className="flex items-center justify-between px-2 py-1">
-        <span className="text-[8px] font-semibold text-[var(--foreground)]">Zoom 상담</span>
-        <div className="w-2 h-2 rounded-full bg-green-500" />
-      </div>
-      {/* 2x2 비디오 그리드 */}
-      <div className="flex-1 grid grid-cols-2 gap-1 px-1 pb-1">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="bg-[var(--surface)] rounded-md flex items-center justify-center">
-            <svg className="w-6 h-6 text-[var(--foreground)]/30" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
-            </svg>
-          </div>
-        ))}
-      </div>
-      {/* 하단 툴바 */}
-      <div className="flex items-center justify-center gap-3 py-2 border-t border-[var(--border)]">
-        <div className="w-6 h-6 rounded-full bg-[var(--surface)] flex items-center justify-center">
-          <svg className="w-3 h-3 text-[var(--foreground)]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
-          </svg>
-        </div>
-        <div className="w-6 h-6 rounded-full bg-[var(--surface)] flex items-center justify-center">
-          <svg className="w-3 h-3 text-[var(--foreground)]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-          </svg>
-        </div>
-        <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
-          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
-          </svg>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ValueWorldcupScreen() {
-  return (
-    <div className="flex flex-col h-full">
-      {/* 상단 타이틀 */}
-      <div className="text-center py-2 border-b border-[var(--border)]">
-        <p className="text-[9px] font-semibold text-[var(--foreground)]">가치관 월드컵</p>
-        <span className="text-[7px] text-[var(--foreground)]/50">16강 · Round 3</span>
-      </div>
-
-      {/* VS 대결 영역 */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 py-3 px-1">
-        {/* 카드 A */}
-        <div className="w-full rounded-lg border-2 border-[var(--foreground)] bg-white px-3 py-4 text-center">
-          <p className="text-[11px] font-bold text-[var(--foreground)]">자유</p>
-          <p className="text-[7px] text-[var(--foreground)]/60 mt-1">
-            원하는 대로 살 수 있는 삶
-          </p>
-        </div>
-
-        {/* VS 뱃지 */}
-        <div className="w-6 h-6 rounded-full border-2 border-[var(--foreground)] flex items-center justify-center bg-white">
-          <span className="text-[7px] font-bold text-[var(--foreground)]">VS</span>
-        </div>
-
-        {/* 카드 B */}
-        <div className="w-full rounded-lg border-2 border-[var(--foreground)] bg-white px-3 py-4 text-center">
-          <p className="text-[11px] font-bold text-[var(--foreground)]">안정</p>
-          <p className="text-[7px] text-[var(--foreground)]/60 mt-1">
-            흔들리지 않는 견고한 삶
-          </p>
-        </div>
-      </div>
-
-      {/* 하단 진행 바 */}
-      <div className="px-3 pb-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[6px] text-[var(--foreground)]/50">진행률</span>
-          <span className="text-[6px] text-[var(--foreground)]/50">3 / 8</span>
-        </div>
-        <div className="w-full h-1.5 bg-[var(--surface)] rounded-full overflow-hidden">
-          <div className="h-full bg-[var(--foreground)] rounded-full" style={{ width: "37.5%" }} />
-        </div>
-      </div>
-    </div>
-  );
-}
+const REPORT_CARDS = [
+  {
+    subtitle: "Type",
+    title: "당신은 고독한 지적 방랑자 타입이에요",
+    tags: ["#내면의탐험가", "#자유로운영혼"],
+    body: "남들이 가지 않는 길을 택하고, 자신만의 방식으로 삶을 꾸려갑니다. 그 독립성 안에는 보이지 않는 갈증이 있습니다.",
+  },
+  {
+    subtitle: "스트레스 반응",
+    title: "당신은 스트레스를 받으면 이렇게 행동해요",
+    body: "감정을 억누르다 결국 예상치 못한 방식으로 터뜨리는 사람. 자율성이 침해되거나, 노력이 무시될 때 한계가 옵니다.",
+  },
+  {
+    subtitle: "관계 인사이트",
+    title: "견디기 힘든 상대방의 단점",
+    body: "매일 쏟아지는 감정. 감정적 공간이 필요한 사람. 경계를 지키는 사람은, 관계를 오래 유지하는 사람이에요.",
+  },
+  {
+    subtitle: "매칭 결과",
+    title: "당신의 완벽한 파트너",
+    body: "미지의 대륙을 함께 탐험하며 당신의 세계를 넓혀줄 사람. 모험가형 — 탐험가 (외향). 매칭 점수 77%.",
+  },
+];
 
 export function FeatureTwo() {
+  const cards = [...REPORT_CARDS, ...REPORT_CARDS];
+
   return (
     <section id="howitworks">
       <div className="container items-center px-5 py-24 mx-auto lg:px-24">
@@ -124,7 +49,7 @@ export function FeatureTwo() {
         <div className="flex flex-col w-full mb-6 text-center">
           <h2
             className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
-            style={{ wordBreak: 'keep-all' }}
+            style={{ wordBreak: "keep-all" }}
           >
             Hack yourself.
             <br />
@@ -132,7 +57,7 @@ export function FeatureTwo() {
           </h2>
           <p
             className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2"
-            style={{ wordBreak: 'keep-all' }}
+            style={{ wordBreak: "keep-all" }}
           >
             나를 이해하는 순간, 선택할 수 있게 돼요.
           </p>
@@ -153,7 +78,7 @@ export function FeatureTwo() {
                     </div>
                     <p
                       className="ml-4 text-lg text-[var(--foreground)]/70 leading-relaxed"
-                      style={{ wordBreak: 'keep-all' }}
+                      style={{ wordBreak: "keep-all" }}
                     >
                       {step.text}
                     </p>
@@ -163,17 +88,73 @@ export function FeatureTwo() {
             </ol>
           </div>
 
-          {/* 오른쪽: 2개 폰 목업 */}
-          <div className="flex gap-4 justify-center">
-            <PhoneMockupFrame label="Zoom 화상 상담">
-              <ZoomScreen />
-            </PhoneMockupFrame>
-            <PhoneMockupFrame label="가치관 월드컵">
-              <ValueWorldcupScreen />
-            </PhoneMockupFrame>
+          {/* 오른쪽: 1개 폰 목업 + 리포트 카드 슬라이드 */}
+          <div className="flex flex-col items-center">
+            <div className="w-[240px] rounded-[2.5rem] border-[4px] border-[var(--foreground)] bg-white p-2 shadow-lg overflow-hidden">
+              {/* 노치 */}
+              <div className="mx-auto w-20 h-4 rounded-b-xl bg-[var(--foreground)] relative z-10" />
+              {/* 슬라이드 영역 */}
+              <div className="overflow-hidden relative" style={{ height: 380 }}>
+                <div
+                  className="flex flex-col gap-4"
+                  style={{
+                    animation: "slideReportCards 20s linear infinite",
+                  }}
+                >
+                  {cards.map((card, i) => (
+                    <div key={i} className="flex-shrink-0 px-3 py-4">
+                      <p className="text-[9px] text-[var(--foreground)]/40 mb-1">
+                        {card.subtitle}
+                      </p>
+                      <h4
+                        className="text-[11px] font-bold text-[var(--foreground)] mb-2 leading-snug"
+                        style={{ wordBreak: "keep-all" }}
+                      >
+                        {card.title}
+                      </h4>
+                      {card.tags && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {card.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-1.5 py-0.5 text-[8px] font-medium bg-[var(--surface)] text-[var(--foreground)]/60 rounded-full border border-[var(--border)]"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <p
+                        className="text-[10px] leading-[1.7] text-[var(--foreground)]/60"
+                        style={{ wordBreak: "keep-all" }}
+                      >
+                        {card.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {/* 상하 페이드 */}
+                <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent pointer-events-none z-10" />
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
+              </div>
+            </div>
+            <p className="mt-4 text-sm font-medium text-[var(--foreground)]/70">
+              나에게 맞는 배우자 분석 리포트
+            </p>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes slideReportCards {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(-50%);
+          }
+        }
+      `}</style>
     </section>
   );
 }
