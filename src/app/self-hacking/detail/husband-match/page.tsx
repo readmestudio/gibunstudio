@@ -24,14 +24,14 @@ export default function HusbandMatchLandingPage() {
         {/* 섹션 1 — 히어로 */}
         <HeroSection />
 
+        {/* 6가지 분석 항목 */}
+        <ChemistrySection />
+
         {/* 검사 소개 */}
         <TestIntroSection />
 
         {/* 고민 카드 */}
         <PainPointCards />
-
-        {/* 섹션 4 — 연애 vs 결혼 */}
-        <ChemistrySection />
 
         {/* 분석 원리 3단계 */}
         <HowItWorks />
