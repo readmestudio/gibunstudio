@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isNicepayEnabled, NICEPAY_CONFIG } from "@/lib/nicepay/config";
+import { isNicepayEnabled } from "@/lib/nicepay/config";
+import { approveNicepayPayment } from "@/lib/nicepay/approve";
 
 /**
  * POST /api/payment/nicepay/approve
- * NicePay 결제 승인 콜백 처리
  *
- * NicePay 가입 후 활성화됩니다.
- * 현재는 placeholder입니다.
+ * NicePay 결제 승인 API (JSON)
+ * 관리 도구나 수동 승인 시 사용할 수 있습니다.
+ * 일반적인 결제 흐름은 /api/payment/nicepay/return을 통해 처리됩니다.
  */
 export async function POST(request: NextRequest) {
   if (!isNicepayEnabled()) {
@@ -17,18 +18,31 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { tid, orderId, amount } = body;
+  const { tid, amount } = body;
 
-  // TODO: NicePay 가입 후 구현
-  // 1. NicePay 승인 API 호출 (NICEPAY_CONFIG.apiUrl + "/v1/payments/" + tid)
-  // 2. 승인 결과 검증 (amount 일치 확인)
-  // 3. purchases/counseling_bookings 상태 업데이트
-  // 4. 성공 시 결제 완료 페이지로 리다이렉트 URL 반환
+  if (!tid || !amount) {
+    return NextResponse.json(
+      { error: "tid와 amount가 필요합니다" },
+      { status: 400 }
+    );
+  }
 
-  console.log("NicePay approve placeholder:", { tid, orderId, amount });
-  console.log("API URL:", NICEPAY_CONFIG.apiUrl);
+  const result = await approveNicepayPayment(tid, Number(amount));
 
-  return NextResponse.json({
-    error: "NicePay 승인 API는 가입 후 활성화됩니다",
-  }, { status: 503 });
+  if (result.success) {
+    return NextResponse.json({
+      success: true,
+      tid: result.tid,
+      orderId: result.orderId,
+      amount: result.amount,
+    });
+  }
+
+  return NextResponse.json(
+    {
+      error: result.resultMsg,
+      resultCode: result.resultCode,
+    },
+    { status: 400 }
+  );
 }

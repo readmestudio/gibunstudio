@@ -22,9 +22,17 @@ export async function POST(request: NextRequest) {
 
     const { phase1_id, amount, payment_method, depositor_name } = await request.json();
 
-    if (!phase1_id || !amount || !depositor_name) {
+    if (!phase1_id || !amount) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // 무통장입금은 입금자명 필수
+    if (payment_method !== 'card' && !depositor_name) {
+      return NextResponse.json(
+        { error: 'Missing depositor name' },
         { status: 400 }
       );
     }
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
         payment_method: payment_method || 'bank_transfer',
         order_id: orderId,
         status: 'pending',
-        payment_key: depositor_name, // Store depositor name in payment_key field
+        payment_key: payment_method === 'card' ? null : depositor_name,
       })
       .select('id')
       .single();
