@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HeroSection from "./_components/HeroSection";
+import SampleCardSlider from "./_components/SampleCardSlider";
 import PainPointCards from "./_components/PainPointCards";
 import ChemistrySection from "./_components/ChemistrySection";
 import YoutubeAnalysis from "./_components/YoutubeAnalysis";
@@ -24,6 +25,9 @@ export default function HusbandMatchLandingPage() {
 
         {/* 섹션 1 — 히어로 */}
         <HeroSection />
+
+        {/* 샘플 카드 슬라이드 */}
+        <SampleCardSlider />
 
         {/* 섹션 2-3 — 고민 카드 */}
         <PainPointCards />
