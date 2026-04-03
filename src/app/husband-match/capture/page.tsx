@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
@@ -21,10 +22,14 @@ export default function CapturePage() {
     createClient()
       .auth.getUser()
       .then(({ data: { user } }) => {
-        setIsLoggedIn(!!user);
+        if (!user) {
+          router.replace('/login?next=/husband-match/birth-info');
+          return;
+        }
+        setIsLoggedIn(true);
         setLoading(false);
       });
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (files.length === 0) {
@@ -52,42 +57,19 @@ export default function CapturePage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const getRedirectTo = () => {
-    if (typeof window === "undefined") return "";
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent("/husband-match/capture")}`;
-  };
-
-  const handleKakaoLogin = async () => {
-    setError(null);
-    try {
-      // OAuth 후 돌아올 경로를 쿠키에 저장 (Supabase가 query param을 유실할 수 있으므로)
-      document.cookie = `auth_redirect=/husband-match/capture; path=/; max-age=600; SameSite=Lax`;
-      const supabase = createClient();
-      const { error: err } = await supabase.auth.signInWithOAuth({
-        provider: "kakao",
-        options: { redirectTo: getRedirectTo() },
-      });
-      if (err) setError(err.message || "카카오 로그인에 실패했습니다.");
-    } catch {
-      setError("카카오 로그인 중 오류가 발생했습니다.");
-    }
-  };
-
   const handleSubmit = async () => {
     if (files.length < MIN_IMAGES) {
       setError(`구독 목록 캡처를 ${MIN_IMAGES}장 이상 올려주세요.`);
       return;
     }
-    if (!isLoggedIn) {
-      return;
-    }
+    if (!isLoggedIn) return;
+
     setSubmitLoading(true);
     setError(null);
     try {
       const formData = new FormData();
       files.forEach((file) => formData.append('images', file));
 
-      // 프로필 정보 (birth-info 페이지에서 localStorage에 저장됨)
       try {
         const birthInfoStr = localStorage.getItem('birthInfo');
         if (birthInfoStr) {
@@ -98,6 +80,7 @@ export default function CapturePage() {
           if (birthInfo.day) formData.append('birth_day', String(birthInfo.day));
         }
       } catch { /* birthInfo 파싱 실패는 무시 */ }
+
       const res = await fetch('/api/analyze/phase1/from-screenshots', {
         method: 'POST',
         body: formData,
@@ -135,24 +118,11 @@ export default function CapturePage() {
           구독 목록 캡처하기
         </h1>
         <p className="text-sm text-[var(--foreground)]/70 text-center mb-6">
-          유튜브에서 구독 &gt; 전체 &gt; 관련성 순으로 설정한 뒤, 보이는 구독 목록을 3장 이상 캡처해 올려주세요.
+          유튜브 구독 목록을 캡처해서 올려주세요 (3장 이상)
         </p>
 
-        {/* Guide video */}
-        <div className="rounded-2xl overflow-hidden bg-white border-2 border-[var(--foreground)] mb-6">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-auto"
-          >
-            <source src="/videos/capture-guide.mov" type="video/mp4" />
-          </video>
-        </div>
-
-        {/* Upload area */}
-        <div className="rounded-2xl bg-white border-2 border-[var(--foreground)] p-4 mb-4">
+        {/* 업로드 영역 — 상단 */}
+        <div className="rounded-2xl bg-white border-2 border-[var(--foreground)] p-4 mb-6">
           <p className="text-sm font-medium text-[var(--foreground)] mb-3">
             캡처한 이미지 올리기 (3장 이상)
           </p>
@@ -195,49 +165,62 @@ export default function CapturePage() {
           )}
         </div>
 
+        {/* 에러 메시지 */}
         {error && (
           <p className="text-sm text-red-600 mb-4 text-center">{error}</p>
         )}
 
-        {isLoggedIn ? (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={files.length < MIN_IMAGES || submitLoading}
-            className="w-full py-4 rounded-xl bg-white text-[var(--foreground)] font-semibold border-2 border-[var(--foreground)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--surface)] transition-colors"
-          >
-            {submitLoading ? '분석 중...' : '분석하기'}
-          </button>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-center text-sm text-[var(--foreground)]/70">
-              분석을 하려면 로그인이 필요해요. 카카오로 시작하면 인증 후 바로 이용할 수 있어요.
-            </p>
-            <button
-              type="button"
-              onClick={handleKakaoLogin}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FEE500] px-4 py-3.5 font-semibold text-[#191919] hover:bg-[#FADA0A] transition-colors"
-            >
-              카카오로 시작하기
-            </button>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--border)]" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-[var(--foreground)]/60">또는</span>
-              </div>
-            </div>
-            <Link
-              href="/login?next=/husband-match/capture"
-              className="block w-full py-3 rounded-xl border-2 border-[var(--foreground)] text-center font-medium text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
-            >
-              이메일로 로그인
-            </Link>
-          </div>
-        )}
+        {/* 분석 버튼 */}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={files.length < MIN_IMAGES || submitLoading}
+          className="w-full py-4 rounded-xl bg-[var(--foreground)] text-white font-semibold border-2 border-[var(--foreground)] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-colors mb-8"
+        >
+          {submitLoading ? '분석 중...' : '분석하기'}
+        </button>
 
-        <div className="mt-6 text-center">
+        {/* 구독 목록 캡처 가이드 — 하단 카드 */}
+        <div className="mb-6">
+          <p className="text-sm font-medium text-[var(--foreground)] mb-3">
+            캡처 방법이 헷갈린다면?
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            {/* 가이드 카드 1 */}
+            <div className="aspect-square rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)] flex items-center justify-center">
+              <Image
+                src="/images/guide-step1.png"
+                alt="1단계: 유튜브 앱에서 구독 탭 열기"
+                width={200}
+                height={200}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {/* 가이드 카드 2 */}
+            <div className="aspect-square rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)] flex items-center justify-center">
+              <Image
+                src="/images/guide-step2.png"
+                alt="2단계: 전체 > 관련성 순 설정"
+                width={200}
+                height={200}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            {/* 가이드 카드 3 */}
+            <div className="aspect-square rounded-xl border-2 border-[var(--border)] overflow-hidden bg-[var(--surface)] flex items-center justify-center">
+              <Image
+                src="/images/guide-step3.png"
+                alt="3단계: 구독 목록 캡처하기"
+                width={200}
+                height={200}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 뒤로가기 */}
+        <div className="text-center">
           <Link
             href="/self-hacking"
             className="text-sm text-[var(--foreground)]/60 hover:underline"
