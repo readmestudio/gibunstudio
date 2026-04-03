@@ -22,10 +22,10 @@ export function FinalCTA() {
             3분이면 돼요. 무료 셀프 해킹 테스트로 시작해 보세요.
           </p>
           <Link
-            href="/husband-match/birth-info"
+            href="/self-hacking"
             className="inline-flex items-center gap-2 px-8 py-3 text-lg font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all duration-300 hover:bg-[var(--accent-hover)]"
           >
-            무료로 나를 알아보기 →
+            무료 내면 분석 리포트 받기 →
           </Link>
         </div>
       </div>
