@@ -55,6 +55,27 @@ export default function PainPointCards() {
           </div>
         ))}
       </div>
+
+      {/* 콜아웃 */}
+      <div className="mt-12 py-12 text-center border-y border-[var(--border)]">
+        <p
+          className="text-lg font-semibold text-[var(--foreground)] mb-8"
+          style={{ wordBreak: "keep-all" }}
+        >
+          배우자 찾기 검사를 통해 이런 것들을 알 수 있어요
+        </p>
+        <ol className="inline-block text-left space-y-2">
+          <li className="text-base text-[var(--foreground)]/70" style={{ wordBreak: "keep-all" }}>
+            <span className="font-semibold text-[var(--foreground)]">1.</span>{"  "}결혼을 결정짓는 나의 주요 성격 및 기질
+          </li>
+          <li className="text-base text-[var(--foreground)]/70" style={{ wordBreak: "keep-all" }}>
+            <span className="font-semibold text-[var(--foreground)]">2.</span>{"  "}나의 연애 스타일, 갈등 타입, 결혼까지 가는 조건
+          </li>
+          <li className="text-base text-[var(--foreground)]/70" style={{ wordBreak: "keep-all" }}>
+            <span className="font-semibold text-[var(--foreground)]">3.</span>{"  "}나에게 잘 맞는 배우자 타입
+          </li>
+        </ol>
+      </div>
     </section>
   );
 }
