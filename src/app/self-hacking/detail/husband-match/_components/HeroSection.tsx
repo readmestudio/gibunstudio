@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function HeroSection() {
   return (
     <section className="flex flex-col items-center justify-center min-h-[80vh] py-24 text-center">
@@ -16,6 +18,12 @@ export default function HeroSection() {
       >
         {"연애할 때엔 보이지 않던 것들이\n결혼이라는 환경에서 반응하기 시작합니다.\n당신의 유튜브 구독 목록이 그 답을 알고 있습니다."}
       </p>
+      <Link
+        href="/husband-match/birth-info"
+        className="mt-10 inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
+      >
+        무료 리포트 받아보기 →
+      </Link>
     </section>
   );
 }
