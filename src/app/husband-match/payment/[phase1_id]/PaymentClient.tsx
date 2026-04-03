@@ -55,11 +55,14 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
         }),
       });
 
+      const data = await response.json();
+      console.log('결제 생성 응답:', response.status, data);
+
       if (!response.ok) {
-        throw new Error('결제 준비에 실패했습니다');
+        throw new Error(data.error || '결제 준비에 실패했습니다');
       }
 
-      const { order_id } = await response.json();
+      const { order_id } = data;
 
       // 2. NicePay 결제창 호출
       window.AUTHNICE.requestPay({
@@ -77,7 +80,7 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
       });
     } catch (error) {
       console.error('카드 결제 오류:', error);
-      alert('결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+      alert(`결제 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
       setIsSubmitting(false);
     }
   };
