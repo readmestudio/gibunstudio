@@ -15,7 +15,7 @@ export default function ChemistrySection() {
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] text-center mb-4 whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"결혼하고 달라졌다\n왜 다들 이렇게 말할까요?"}
+        {"이 6가지를 알기 전에는\n결혼을 결정하지 마세요"}
       </h2>
       <p
         className="text-base sm:text-lg text-[var(--foreground)]/60 text-center max-w-lg mx-auto mb-12 leading-relaxed whitespace-pre-line"
