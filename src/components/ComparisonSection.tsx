@@ -34,12 +34,12 @@ export function ComparisonSection() {
             className="mb-6 text-4xl font-bold text-[var(--foreground)] md:text-8xl lg:text-6xl"
             style={{ wordBreak: "keep-all" }}
           >
-            나를 알고 싶은데,
+            AI 시대에 가장 중요한 건
             <br className="hidden lg:block" />
-            어디서부터 시작해야 할지 모르겠다면
+            나를 알아가는 것입니다
           </h2>
-          <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2">
-            출발점이 달라요.
+          <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2" style={{ wordBreak: "keep-all" }}>
+            나는 어떤 사람인지, 내 열정이 향하는 곳은 어디인지, 나는 무엇을 원하는지 기분 스튜디오와 함께 알아가요
           </p>
         </div>
 
