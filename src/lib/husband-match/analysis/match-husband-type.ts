@@ -1,5 +1,7 @@
 import { MBTIScores, HusbandType } from '../types';
 import { getAllHusbandTypes } from '../data/husband-types';
+import { CATEGORY_TCI_WEIGHTS, YOUTUBE_CATEGORIES, type YouTubeCategory, type TCIAxis } from '../data/youtube-categories';
+import { RECOMMENDED_CHANNELS, CATEGORY_DESCRIPTIONS } from '../data/recommended-channels';
 
 /**
  * Match user to husband type using hybrid algorithm
@@ -150,4 +152,80 @@ function getUserEnneagramCenter(type: number): number {
   if ([5, 6, 7].includes(type)) return 0; // Head
   if ([2, 3, 4].includes(type)) return 1; // Heart
   return 2; // Body (8, 9, 1)
+}
+
+/**
+ * 배우자 타입의 idealVector에서 TCI를 역산하여
+ * 추정 구독 카테고리 TOP 3 + 대표 채널을 반환합니다.
+ *
+ * idealVector[0:7]이 TCI 7축(NS, HA, RD, P, SD, CO, ST) 값이므로
+ * 각 카테고리의 TCI 가중치와 내적하여 "이 카테고리에 얼마나 적합한지" 점수를 계산합니다.
+ */
+export interface PartnerCategory {
+  category: YouTubeCategory;
+  categoryName: string;
+  channels: string[];
+  description: string;
+  score: number;
+}
+
+export function estimatePartnerCategories(husbandType: HusbandType): PartnerCategory[] {
+  // idealVector의 처음 7개가 TCI 7축: NS(0), HA(1), RD(2), P(3), SD(4), CO(5), ST(6)
+  // CATEGORY_TCI_WEIGHTS의 축 순서: ST, SD, NS, HA, P, CO
+  // idealVector → TCI 축 매핑
+  const tciFromVector: Record<TCIAxis, number> = {
+    NS: husbandType.idealVector[0] ?? 50,
+    HA: husbandType.idealVector[1] ?? 50,
+    P:  husbandType.idealVector[3] ?? 50,
+    SD: husbandType.idealVector[4] ?? 50,
+    CO: husbandType.idealVector[5] ?? 50,
+    ST: husbandType.idealVector[6] ?? 50,
+  };
+
+  // 각 카테고리별 적합도 점수 계산 (TCI 값 × 카테고리 가중치의 내적)
+  const categoryScores: { category: YouTubeCategory; score: number }[] = [];
+
+  for (const cat of YOUTUBE_CATEGORIES) {
+    if (cat === 'other') continue; // 기타 제외
+
+    const weights = CATEGORY_TCI_WEIGHTS[cat];
+    let score = 0;
+    for (const axis of Object.keys(weights) as TCIAxis[]) {
+      score += (tciFromVector[axis] / 100) * weights[axis];
+    }
+    categoryScores.push({ category: cat, score });
+  }
+
+  // 점수 내림차순 정렬 후 상위 3개
+  categoryScores.sort((a, b) => b.score - a.score);
+
+  return categoryScores.slice(0, 3).map(({ category, score }) => ({
+    category,
+    categoryName: getCategoryName(category),
+    channels: RECOMMENDED_CHANNELS[category] || [],
+    description: CATEGORY_DESCRIPTIONS[category] || '',
+    score,
+  }));
+}
+
+function getCategoryName(cat: YouTubeCategory): string {
+  const names: Record<YouTubeCategory, string> = {
+    entertainment: '예능/버라이어티',
+    vlog: '브이로그/일상',
+    music: '음악',
+    gaming: '게임',
+    food: '먹방/요리',
+    beauty: '뷰티/패션',
+    education: '교육/자기계발',
+    news: '시사/뉴스',
+    tech: '기술/IT',
+    sports: '스포츠/운동',
+    pets: '반려동물',
+    kids: '키즈',
+    asmr: 'ASMR',
+    finance: '투자/재테크',
+    travel: '여행',
+    other: '기타',
+  };
+  return names[cat];
 }

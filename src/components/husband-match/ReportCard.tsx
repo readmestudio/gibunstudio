@@ -8,6 +8,18 @@ interface HexagonChartData {
   values: number[];
 }
 
+interface PartnerChannelData {
+  category: string;
+  channels: string[];
+  description: string;
+}
+
+interface PartnerJobsData {
+  jobs: string[];
+  meetingPlaces: string[];
+  category: string;
+}
+
 interface ReportCardProps {
   title: string;
   content: string;
@@ -17,6 +29,9 @@ interface ReportCardProps {
     subtitle?: string;
     tags?: string[];
     highlight?: string;
+    destiny_line?: string;
+    partner_channels?: PartnerChannelData[];
+    partner_jobs?: PartnerJobsData;
   };
   hexagonData?: HexagonChartData;
 }
@@ -160,6 +175,76 @@ function processContent(content: string): string {
   return content.replace(/\*\*(.+?)\*\*/g, '<strong class="text-[var(--foreground)] font-semibold">$1</strong>');
 }
 
+// 카드 8 전용: 배우자 추정 채널 미니카드
+function PartnerChannelsCard({ channels, destinyLine }: { channels: PartnerChannelData[]; destinyLine?: string }) {
+  if (!channels || channels.length === 0) return null;
+
+  return (
+    <div className="my-6 space-y-3">
+      <div className="border-2 border-[var(--foreground)] rounded-xl p-5 bg-white">
+        <p className="text-xs font-medium text-[var(--foreground)]/50 mb-3 tracking-wider">
+          이 사람의 유튜브에는
+        </p>
+        <div className="space-y-4">
+          {channels.map((ch, i) => (
+            <div key={i} className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-[var(--foreground)] flex items-center justify-center text-xs font-bold text-[var(--foreground)]">
+                {i + 1}
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-[var(--foreground)]">{ch.category}</p>
+                <p className="text-xs text-[var(--foreground)]/60 mt-0.5">{ch.channels.join(' · ')}</p>
+                <p className="text-xs text-[var(--foreground)]/40 mt-0.5 italic">{ch.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        {destinyLine && (
+          <div className="mt-5 pt-4 border-t border-[var(--border)]">
+            <p className="text-center text-base font-semibold text-[var(--foreground)]">
+              &ldquo;{destinyLine}&rdquo;
+            </p>
+          </div>
+        )}
+      </div>
+      <p className="text-center text-xs text-[var(--foreground)]/40">
+        당신과 다른 취향이에요. 그래서 좋은 거예요.
+      </p>
+    </div>
+  );
+}
+
+// 카드 8 전용: 추천 직업군 + 만남 장소 미니카드
+function PartnerJobsCard({ data }: { data: PartnerJobsData }) {
+  return (
+    <div className="my-6 space-y-3">
+      <div className="border-2 border-[var(--foreground)] rounded-xl p-5 bg-white">
+        <p className="text-xs font-medium text-[var(--foreground)]/50 mb-3 tracking-wider">
+          당신의 배우자가 하고 있을 일
+        </p>
+        <div className="space-y-2">
+          {data.jobs.map((job, i) => (
+            <div key={i} className="flex items-center gap-2.5">
+              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--foreground)]/40" />
+              <span className="text-sm text-[var(--foreground)]">{job}</span>
+            </div>
+          ))}
+        </div>
+        {data.meetingPlaces.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-[var(--border)]">
+            <p className="text-xs font-medium text-[var(--foreground)]/50 mb-2 tracking-wider">
+              어디서 만날 수 있을까
+            </p>
+            <p className="text-sm text-[var(--foreground)]/70">
+              {data.meetingPlaces.join(' · ')}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ReportCard({
   title,
   content,
@@ -207,6 +292,10 @@ export function ReportCard({
 
   // 카드 2는 육각형 차트 표시
   const showHexagonChart = cardNumber === 2 && hexagonData;
+
+  // 카드 8: 직업군/만남장소 미니카드 + 배우자 채널 미니카드
+  const showPartnerJobs = cardNumber === 8 && metadata?.partner_jobs;
+  const showPartnerChannels = cardNumber === 8 && metadata?.partner_channels && metadata.partner_channels.length > 0;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border-2 border-[var(--foreground)] overflow-hidden min-h-[500px] flex flex-col">
@@ -271,6 +360,19 @@ export function ReportCard({
               </div>
             ))}
           </div>
+        )}
+
+        {/* 카드 8: 직업군/만남장소 미니카드 */}
+        {showPartnerJobs && (
+          <PartnerJobsCard data={metadata!.partner_jobs!} />
+        )}
+
+        {/* 카드 8: 배우자 추정 채널 미니카드 */}
+        {showPartnerChannels && (
+          <PartnerChannelsCard
+            channels={metadata!.partner_channels!}
+            destinyLine={metadata?.destiny_line}
+          />
         )}
 
         {/* 본문 영역 */}

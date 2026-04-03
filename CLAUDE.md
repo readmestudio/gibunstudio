@@ -57,7 +57,7 @@ src/
 ## 남편상 분석 (Husband Match)
 
 YouTube 구독 채널 → 심리 프로필(TCI/MBTI/Enneagram) → 이상형 남편 타입 매칭
-11장 카드 리포트 (Spotify Wrapped 스타일)
+Phase 1 (9장) + Phase 2 (10장) 리포트 (Spotify Wrapped 스타일)
 
 ### 핵심 파일
 
@@ -65,27 +65,41 @@ YouTube 구독 채널 → 심리 프로필(TCI/MBTI/Enneagram) → 이상형 남
 src/lib/husband-match/
 ├── data/           # youtube-categories.ts, husband-types.ts (48개 타입)
 ├── analysis/       # youtube-analysis.ts, calculate-tci.ts, match-husband-type.ts
-└── prompts/        # card-prompts.ts
+└── prompts/        # card-prompts.ts, phase2-prompts.ts
 
-src/app/api/analyze/phase1/run-from-channels.ts  # 메인 파이프라인
+src/app/api/analyze/phase1/run-from-channels.ts  # Phase 1 메인 파이프라인
+src/app/api/analyze/phase2/route.ts              # Phase 2 메인 파이프라인
 src/components/husband-match/                     # ReportCard, CardCarousel, PaymentGate
 ```
 
-### 11장 카드 구조
+### Phase 1: 9장 카드 구조 (무료 — "나는 어떤 사람인가")
 
 | # | 카드명 | subtitle | title | 특징 |
 |---|--------|----------|-------|------|
-| 1 | 커버 | INTRO | 고정 | 인트로 (LLM 미사용) |
+| 1 | 브릿지 인트로 | INTRO | 고정 | 화학 반응 비유, Phase 1/2 관계 설명 |
 | 2 | 구독 데이터 개요 | 구독 데이터 개요 | LLM 생성 | 육각형 TCI 차트 |
-| 3 | 카테고리 랭킹 | Your Subscription DNA | LLM 생성 (상위 N%) | 바 차트, 희소성 |
-| 4 | 희귀 취향 | Hidden Gem in Your List | 고정 | 희소 카테고리 |
-| 5 | 통합 유형 분석 | LLM 생성 (영어) | LLM 생성 (한국어) | MBTI/애니어그램 명칭 금지 |
-| 6 | 감성 | 감정 스타일 | 고정 | 감정 처리, 힐링 패턴 |
-| 7 | 미래 | 미래상 | 고정 | 3축 분석 |
-| 8 | 단점 | 관계 인사이트 | 고정 | 리프레이밍 |
-| 9 | 왕자님 | 매칭 결과 | 고정 | 남편 타입 비유 |
-| 10 | 상세 프로필 | 파트너 프로필 | 고정 | 3개 장면 묘사 |
-| 11 | 결제 유도 | Phase 2 안내 | 고정 | CTA ₩4,900 |
+| 3 | 기본 성격+기질 | LLM 생성 (영어) | LLM 생성 (한국어) | 성격, 세계관, 내면의 모순, 관계 |
+| 4 | 관계 패턴+갈등 | 관계 패턴 | 고정 | 관계 행동, 갈등 해결, 반복 사이클 |
+| 5 | 스트레스 반응 | 스트레스 반응 | 고정 | 분노 패턴, 트리거, 회복법 |
+| 6 | 딜브레이커+행복 | 관계 인사이트 | 고정 | 참을 수 없는 것 + 행복 공식 |
+| 7 | 매칭 결과 | 매칭 결과 | 고정 | 남편 타입 비유 |
+| 8 | 매칭 결론 | 매칭 결론 | 고정 | 상세 프로필, 직업, 채널 |
+| 9 | Phase 2 CTA | Phase 2 안내 | 고정 | 브릿지 카드, ₩9,900 |
+
+### Phase 2: 10장 카드 구조 (유료 — "왜 그런 반응을 일으키는가")
+
+| # | 카드명 | subtitle | title | 특징 |
+|---|--------|----------|-------|------|
+| 1 | 브릿지 교차검증 | 교차 검증 | LLM 생성 | Phase1→2 브릿지, YouTube vs 설문 |
+| 2 | 인생 가치 | 가치관 | LLM 생성 | hiddenDesires + q14/q15 |
+| 3 | 무의식 욕구 | 숨겨진 욕구 | LLM 생성 | 욕구 패턴 + q11 위안의 원천 |
+| 4 | 자동적 사고 | 감정 도미노 | LLM 생성 | 5-Part CBT, 인지 왜곡 |
+| 5 | 핵심 신념 | 관계 규칙 | LLM 생성 | q17/q18 중간신념→핵심신념 |
+| 6 | 관계 영향 | 관계 패턴 | LLM 생성 | 핵심 신념→관계 패턴 연결 |
+| 7 | 두려움 | 두려움 | LLM 생성 | q12 + coreBelief 추적 |
+| 8 | 성장 포인트 | 성장 포인트 | LLM 생성 | q13 + 실천 3개 (관계/혼자/마음) |
+| 9 | 심층 매칭 | 심층 매칭 | LLM 생성 | Phase 1 매칭 교차검증 |
+| 10 | 마무리 편지 | 마무리 편지 | LLM 생성 | 전체 여정 요약 + 편지 |
 
 ### TCI 6축 가중치
 
@@ -111,7 +125,8 @@ src/components/husband-match/                     # ReportCard, CardCarousel, Pa
 
 ```
 채널 입력 → YouTube 카테고리 분류(LLM) → 희소성 계산 → TCI 6축 계산
-→ Enneagram/MBTI 추정 → 18차원 벡터 → 남편 타입 매칭 → 11장 카드 생성 → DB 저장
+→ Enneagram/MBTI 추정 → 18차원 벡터 → 남편 타입 매칭 → 9장 카드 생성 → DB 저장
+→ (Phase 2) 설문 18문항 → 교차검증 + CBT 분석 → 10장 카드 생성 → DB 저장
 ```
 
 ### 비즈니스 정책
@@ -134,7 +149,7 @@ interface Phase1Result {
   user_vector: number[];           // 18차원
   matched_husband_type: string;
   match_score: number;             // 0-1
-  cards: ReportCard[];             // 11장
+  cards: ReportCard[];             // 9장
 }
 
 interface ReportCard {
@@ -145,7 +160,8 @@ interface ReportCard {
 
 ### 개발 주의사항
 
-1. 카드 수정: `run-from-channels.ts`의 `generateFallbackCards()` + LLM 프롬프트 동시
-2. 카테고리 추가: `youtube-categories.ts`의 `CATEGORY_TCI_WEIGHTS` 필수
-3. 새 분석 테스트: 기존 `phase1_results` 삭제 후 재분석
-4. LLM 응답 형식: JSON 필드명 (`2_title`, `3_title`, `5_subtitle`) 정확히 매칭
+1. Phase 1 카드 수정: `run-from-channels.ts`의 `generateFallbackCards()` + LLM 프롬프트 동시
+2. Phase 2 카드 수정: `phase2-prompts.ts` 프롬프트 + `phase2/route.ts` 메타데이터 동시
+3. 카테고리 추가: `youtube-categories.ts`의 `CATEGORY_TCI_WEIGHTS` 필수
+4. 새 분석 테스트: 기존 `phase1_results` 삭제 후 재분석
+5. LLM 응답 형식: JSON 필드명 (`2_title`, `3_title`, `5_subtitle`) 정확히 매칭

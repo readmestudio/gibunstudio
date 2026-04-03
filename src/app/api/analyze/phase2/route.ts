@@ -34,30 +34,32 @@ type Phase1Row = {
   user_name?: string;
 };
 
-// ── 카드 키 & 메타데이터 (새 8장 구조) ──
+// ── 카드 키 & 메타데이터 (10장 구조) ──
 
 const PHASE2_CARD_KEYS: (keyof typeof PHASE2_CARD_PROMPTS)[] = [
-  'card_01_two_mirrors',
-  'card_02_hidden_desires',
-  'card_03_chain_reaction',
-  'card_04_relationship_map',
+  'card_01_bridge',
+  'card_02_life_meaning',
+  'card_03_unconscious_desires',
+  'card_04_chain_reaction',
   'card_05_invisible_rules',
-  'card_06_growth_threshold',
-  'card_07_deep_match',
-  'card_08_mind_manual',
-  'card_09_letter',
+  'card_06_relationship_impact',
+  'card_07_deepest_fear',
+  'card_08_growth',
+  'card_09_deep_match',
+  'card_10_letter',
 ];
 
 const PHASE2_CARD_META: Record<number, { title: string; subtitle?: string; card_type: ReportCard['card_type'] }> = {
-  1: { title: '두 개의 거울', subtitle: '교차 검증', card_type: 'personality' },
-  2: { title: '말하지 않은 욕구', subtitle: '숨겨진 욕구', card_type: 'values' },
-  3: { title: '마음의 연쇄 반응', subtitle: '감정 도미노', card_type: 'personality' },
-  4: { title: '관계의 지도', subtitle: '관계 패턴', card_type: 'values' },
+  1: { title: "'어떤 사람인지' 알았으니, 이제 '왜'를 찾아갑니다", subtitle: '교차 검증', card_type: 'personality' },
+  2: { title: '당신이 삶에서 진짜 추구하는 것', subtitle: '가치관', card_type: 'values' },
+  3: { title: '말하지 않았지만, 데이터가 말하고 있는 것', subtitle: '숨겨진 욕구', card_type: 'values' },
+  4: { title: '마음의 연쇄 반응', subtitle: '감정 도미노', card_type: 'personality' },
   5: { title: '보이지 않는 규칙', subtitle: '관계 규칙', card_type: 'values' },
-  6: { title: '성장의 문턱', subtitle: '성장 포인트', card_type: 'result' },
-  7: { title: '당신에게 맞는 사람, 다시 한번', subtitle: '심층 매칭', card_type: 'matching' },
-  8: { title: '당신의 마음 사용 설명서', subtitle: '실천 도구', card_type: 'result' },
-  9: { title: '당신에게 보내는 편지', subtitle: '마무리 편지', card_type: 'result' },
+  6: { title: '핵심 신념이 만드는 관계의 모양', subtitle: '관계 패턴', card_type: 'values' },
+  7: { title: '가장 두려워하는 것', subtitle: '두려움', card_type: 'values' },
+  8: { title: '누구와도 잘 살기 위해 넘어야 할 문턱', subtitle: '성장 포인트', card_type: 'result' },
+  9: { title: '설문이 확인한 당신의 파트너', subtitle: '심층 매칭', card_type: 'matching' },
+  10: { title: 'Dear {userName},', subtitle: '마무리 편지', card_type: 'result' },
 };
 
 // ── LLM 호출 설정 ──
@@ -131,45 +133,47 @@ async function generateCardContent(
   return raw.trim().slice(0, 5000);
 }
 
-// ── 3배치 병렬 생성 ──
+// ── 3배치 병렬 생성 (3+3+4장) ──
 
 async function generateAllCardsInBatches(data: Phase2CardData): Promise<Map<number, string>> {
   const results = new Map<number, string>();
 
-  // 배치 A: 카드 1-3 (도입부 — 거울 + 숨겨진 욕구 + 연쇄 반응)
+  // 배치 A: 카드 1-3 (도입부 — 교차검증 + 가치관 + 숨겨진 욕구)
   const batchA = async () => {
     const [c1, c2, c3] = await Promise.all([
-      withRetry(() => generateCardContent('card_01_two_mirrors', data), '카드 1 (두 개의 거울)'),
-      withRetry(() => generateCardContent('card_02_hidden_desires', data), '카드 2 (말하지 않은 욕구)'),
-      withRetry(() => generateCardContent('card_03_chain_reaction', data), '카드 3 (마음의 연쇄 반응)'),
+      withRetry(() => generateCardContent('card_01_bridge', data), '카드 1 (교차 검증)'),
+      withRetry(() => generateCardContent('card_02_life_meaning', data), '카드 2 (가치관)'),
+      withRetry(() => generateCardContent('card_03_unconscious_desires', data), '카드 3 (숨겨진 욕구)'),
     ]);
     results.set(1, c1);
     results.set(2, c2);
     results.set(3, c3);
   };
 
-  // 배치 B: 카드 4-6 (분석 — 관계/규칙/성장)
+  // 배치 B: 카드 4-6 (분석 — 감정 도미노/관계 규칙/관계 패턴)
   const batchB = async () => {
     const [c4, c5, c6] = await Promise.all([
-      withRetry(() => generateCardContent('card_04_relationship_map', data), '카드 4 (관계의 지도)'),
-      withRetry(() => generateCardContent('card_05_invisible_rules', data), '카드 5 (보이지 않는 규칙)'),
-      withRetry(() => generateCardContent('card_06_growth_threshold', data), '카드 6 (성장의 문턱)'),
+      withRetry(() => generateCardContent('card_04_chain_reaction', data), '카드 4 (감정 도미노)'),
+      withRetry(() => generateCardContent('card_05_invisible_rules', data), '카드 5 (관계 규칙)'),
+      withRetry(() => generateCardContent('card_06_relationship_impact', data), '카드 6 (관계 패턴)'),
     ]);
     results.set(4, c4);
     results.set(5, c5);
     results.set(6, c6);
   };
 
-  // 배치 C: 카드 7-9 (마무리 — 매칭/실천도구/편지)
+  // 배치 C: 카드 7-10 (마무리 — 두려움/성장/심층매칭/편지)
   const batchC = async () => {
-    const [c7, c8, c9] = await Promise.all([
-      withRetry(() => generateCardContent('card_07_deep_match', data), '카드 7 (심층 매칭)'),
-      withRetry(() => generateCardContent('card_08_mind_manual', data), '카드 8 (마음 사용 설명서)'),
-      withRetry(() => generateCardContent('card_09_letter', data), '카드 9 (편지)'),
+    const [c7, c8, c9, c10] = await Promise.all([
+      withRetry(() => generateCardContent('card_07_deepest_fear', data), '카드 7 (두려움)'),
+      withRetry(() => generateCardContent('card_08_growth', data), '카드 8 (성장 포인트)'),
+      withRetry(() => generateCardContent('card_09_deep_match', data), '카드 9 (심층 매칭)'),
+      withRetry(() => generateCardContent('card_10_letter', data), '카드 10 (편지)'),
     ]);
     results.set(7, c7);
     results.set(8, c8);
     results.set(9, c9);
+    results.set(10, c10);
   };
 
   // 3배치 병렬 실행
@@ -183,7 +187,7 @@ async function generateAllCardsInBatches(data: Phase2CardData): Promise<Map<numb
  *
  * 1. Phase 1 전체 데이터 + 서베이 로드
  * 2. 8차원 심층 교차검증 + CBT 분석 (HA/SD 직접 측정 + SCT + Hot Thought/중간신념/핵심신념)
- * 3. 3배치 병렬로 9장 카드 생성 (LLM)
+ * 3. 3배치 병렬로 10장 카드 생성 (LLM)
  * 4. phase2_results에 저장
  */
 export async function POST(request: NextRequest) {
@@ -340,7 +344,7 @@ export async function POST(request: NextRequest) {
     };
 
     // ── 3배치 병렬로 9장 카드 생성 ──
-    console.log('[Phase 2] 카드 생성 시작 (3배치 × 3장 병렬)...');
+    console.log('[Phase 2] 카드 생성 시작 (3배치 × 10장 병렬)...');
     const startTime = Date.now();
 
     let contentMap: Map<number, string>;
