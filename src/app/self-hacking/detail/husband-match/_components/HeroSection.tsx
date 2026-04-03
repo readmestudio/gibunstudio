@@ -27,7 +27,7 @@ export default function HeroSection() {
         href="/husband-match/birth-info"
         className="mt-8 inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
       >
-        무료 리포트 받아보기 →
+        카카오로 무료로 시작하기 →
       </Link>
     </section>
   );
