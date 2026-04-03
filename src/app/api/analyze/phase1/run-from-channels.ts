@@ -1140,7 +1140,7 @@ export async function runPhase1FromPrecomputed(
 
   if (insertError) {
     console.error('Failed to store Phase 1 results:', insertError);
-    throw new Error('Failed to store analysis results');
+    throw new Error(`Failed to store analysis results: ${insertError.message} (code: ${insertError.code})`);
   }
 
   return { phase1_id: result.id };
