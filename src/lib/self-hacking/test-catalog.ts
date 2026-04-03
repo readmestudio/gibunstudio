@@ -281,7 +281,7 @@ export const TEST_CATALOG: TestInfo[] = [
       "타고난 기질과 발달된 성격을 과학적으로 분석합니다. 1급 심리상담사가 직접 해석 리포트를 작성해드려요.",
     price: "₩29,900",
     testHref: "/self-hacking/tci/payment",
-    notifyOnly: false,
+    notifyOnly: true,
     detail: {
       hero: {
         hook: "나는 누구지?",

@@ -73,7 +73,7 @@ export const COUNSELING_TYPES: CounselingType[] = [
       { text: "Zoom 화상 상담", included: true },
       { text: "후속 관리 안내", included: true },
     ],
-    notifyOnly: false,
+    notifyOnly: true,
   },
   {
     id: "personal",
@@ -92,7 +92,7 @@ export const COUNSELING_TYPES: CounselingType[] = [
       { text: "심리검사 포함", included: false },
       { text: "관계 패턴 분석", included: false },
     ],
-    notifyOnly: false,
+    notifyOnly: true,
   },
 ];
 
