@@ -28,6 +28,8 @@ export default function CapturePage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const [existingResult, setExistingResult] = useState<{ id: string } | null>(null);
+  const [forceReanalyze, setForceReanalyze] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 분석 중 메시지 롤링 (3초 간격)
@@ -45,16 +47,27 @@ export default function CapturePage() {
   }, [submitLoading]);
 
   useEffect(() => {
-    createClient()
-      .auth.getUser()
-      .then(({ data: { user } }) => {
-        if (!user) {
-          router.replace('/login?next=/husband-match/birth-info');
-          return;
-        }
-        setIsLoggedIn(true);
-        setLoading(false);
-      });
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        router.replace('/login?next=/husband-match/birth-info');
+        return;
+      }
+      setIsLoggedIn(true);
+
+      // 기존 분석 결과 존재 여부 확인
+      const { data: existing } = await supabase
+        .from('phase1_results')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existing) {
+        setExistingResult({ id: existing.id });
+      }
+
+      setLoading(false);
+    });
   }, [router]);
 
   useEffect(() => {
@@ -95,6 +108,9 @@ export default function CapturePage() {
     try {
       const formData = new FormData();
       files.forEach((file) => formData.append('images', file));
+      if (forceReanalyze) {
+        formData.append('force', 'true');
+      }
 
       try {
         const birthInfoStr = localStorage.getItem('birthInfo');
@@ -187,6 +203,39 @@ export default function CapturePage() {
             animation: fadeIn 0.5s ease-out;
           }
         `}</style>
+      </div>
+    );
+  }
+
+  // 기존 분석 결과가 있을 때 선택 다이얼로그
+  if (existingResult && !forceReanalyze) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <div className="max-w-sm w-full rounded-2xl border-2 border-[var(--foreground)] p-6 text-center">
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-2">
+            이전에 분석한 결과가 있어요!
+          </h2>
+          <p className="text-sm text-[var(--foreground)]/60 mb-6">
+            이전 결과를 확인하거나, 새로 분석할 수 있어요.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push(`/husband-match/report/${existingResult.id}`)}
+            className="w-full py-3 rounded-xl bg-[var(--foreground)] text-white font-semibold border-2 border-[var(--foreground)] hover:opacity-90 transition-colors mb-3"
+          >
+            이전 결과 보기
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setForceReanalyze(true);
+              setExistingResult(null);
+            }}
+            className="w-full py-3 rounded-xl bg-white text-[var(--foreground)] font-semibold border-2 border-[var(--foreground)] hover:bg-[var(--foreground)]/5 transition-colors"
+          >
+            새로 분석하기
+          </button>
+        </div>
       </div>
     );
   }

@@ -51,20 +51,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+    const formData = await request.formData();
+    const force = formData.get('force') === 'true';
+
     const { data: existing } = await supabase
       .from('phase1_results')
       .select('id')
       .eq('user_id', user.id)
       .single();
 
-    if (existing) {
+    if (existing && !force) {
       return NextResponse.json({
         phase1_id: existing.id,
         message: 'Analysis already exists',
       });
     }
 
-    const formData = await request.formData();
+    // 재분석 시 기존 결과 삭제
+    if (existing && force) {
+      const { createAdminClient } = await import('@/lib/supabase/admin');
+      const adminClient = createAdminClient();
+      await adminClient
+        .from('phase1_results')
+        .delete()
+        .eq('user_id', user.id);
+    }
     const files = formData.getAll('images').filter((f): f is File => f instanceof File);
     if (files.length < MIN_IMAGES) {
       return NextResponse.json(
