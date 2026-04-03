@@ -12,16 +12,16 @@ export default function ChemistrySection() {
     <section className="py-20">
       {/* 섹션 제목 */}
       <h2
-        className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] text-center mb-4"
+        className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] text-center mb-4 whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        이 검사가 분석하는 6가지
+        {"결혼하고 달라졌다\n왜 다들 이렇게 말할까요?"}
       </h2>
       <p
-        className="text-base text-[var(--foreground)]/60 text-center max-w-lg mx-auto mb-12 leading-relaxed"
+        className="text-base sm:text-lg text-[var(--foreground)]/60 text-center max-w-lg mx-auto mb-12 leading-relaxed whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        유튜브 구독 채널에서 읽어내는 당신의 성격 구조입니다.
+        {"아래의 6가지에 대해 충분히\n알고 선택하지 않았기 때문이에요"}
       </p>
 
       {/* 6축 카드 그리드 */}
@@ -48,9 +48,9 @@ export default function ChemistrySection() {
         style={{ wordBreak: "keep-all" }}
       >
         <p className="text-base sm:text-lg font-semibold leading-relaxed">
-          결혼 앞에서 흔들리지 않으려면,
+          이 여섯가지의 항목에 따라 내가 결혼이라는 환경에서
           <br />
-          먼저 나를 정확히 알아야 합니다.
+          어떻게 사는지가 결정됩니다
         </p>
       </div>
     </section>
