@@ -5,8 +5,6 @@ import PainPointCards from "./_components/PainPointCards";
 import ChemistrySection from "./_components/ChemistrySection";
 import YoutubeAnalysis from "./_components/YoutubeAnalysis";
 import TciIntroSection from "./_components/TciIntroSection";
-import Phase2Detail from "./_components/Phase2Detail";
-import PricingSection from "./_components/PricingSection";
 import TestimonialSection from "./_components/TestimonialSection";
 import FinalCtaSection from "./_components/FinalCtaSection";
 import CtaButton from "../[testId]/CtaButton";
@@ -40,12 +38,6 @@ export default function HusbandMatchLandingPage() {
 
         {/* 섹션 6 — TCI 소개 + Phase 1 미리보기 */}
         <TciIntroSection />
-
-        {/* 섹션 8 — Phase 2 유료 리포트 */}
-        <Phase2Detail />
-
-        {/* 섹션 9 — 요금 비교 */}
-        <PricingSection />
 
         {/* 섹션 11 — 유저 후기 */}
         <TestimonialSection />
