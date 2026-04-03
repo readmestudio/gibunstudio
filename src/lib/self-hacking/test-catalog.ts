@@ -72,7 +72,7 @@ export const TEST_CATALOG: TestInfo[] = [
   {
     id: "husband-match",
     category: "free",
-    title: "나에게 맞는 배우자 검사",
+    title: "배우자 기질 적합성 검사",
     description:
       "유튜브 구독 목록으로 기질과 성격을 읽어요. 어떤 사람이 옆에 있으면 좋을지, 데이터가 말해줘요.",
     price: "검사·리포트 무료 / 세부 리포트 ₩14,900",
@@ -116,7 +116,7 @@ export const TEST_CATALOG: TestInfo[] = [
       deliverables: [
         "TCI 6축 기질 분석 그래프",
         "11장 카드 리포트 (Spotify Wrapped 스타일)",
-        "나에게 맞는 배우자 유형 매칭 결과",
+        "배우자 기질 적합성 매칭 결과",
       ],
       steps: [
         "유튜브 계정 연동 및 생년월일 입력",

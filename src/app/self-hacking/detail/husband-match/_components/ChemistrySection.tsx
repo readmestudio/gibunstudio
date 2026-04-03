@@ -21,7 +21,7 @@ export default function ChemistrySection() {
         className="text-base sm:text-lg text-[var(--foreground)]/60 text-center max-w-lg mx-auto mb-12 leading-relaxed whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"이 여섯가지의 항목에 따라 내가 결혼이라는 환경에서\n어떻게 사는지가 결정됩니다"}
+        {"행복한 결혼 생활을 결정짓는 여섯가지 퍼즐을\n단 한 번에 풀어드려요"}
       </p>
 
       {/* 6축 카드 그리드 */}
@@ -50,7 +50,7 @@ export default function ChemistrySection() {
         <p className="text-base sm:text-lg font-semibold leading-relaxed">
           유튜브 알고리즘으로 6가지 항목을 분석한
           <br />
-          나에게 맞는 배우자 분석 리포트를 받아보세요
+          배우자 기질 적합성 검사 리포트를 받아보세요
         </p>
       </div>
     </section>

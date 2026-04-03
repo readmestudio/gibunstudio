@@ -20,7 +20,7 @@ export default function PainPointCards() {
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] mb-10"
         style={{ wordBreak: "keep-all" }}
       >
-        나에게 맞는 배우자 분석 이런 분께 추천해요
+        배우자 기질 적합성 검사, 이런 분께 추천해요
       </h2>
 
       <div className="grid gap-4 sm:grid-cols-3">

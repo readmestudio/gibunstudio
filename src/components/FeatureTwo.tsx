@@ -139,7 +139,7 @@ export function FeatureTwo() {
               </div>
             </div>
             <p className="mt-4 text-sm font-medium text-[var(--foreground)]/70">
-              나에게 맞는 배우자 분석 리포트
+              배우자 기질 적합성 검사 리포트
             </p>
           </div>
         </div>
