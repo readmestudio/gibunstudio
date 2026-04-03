@@ -76,7 +76,7 @@ export default function SampleCardSlider() {
   const cards = [...SAMPLE_CARDS, ...SAMPLE_CARDS];
 
   return (
-    <section className="py-12 -mx-4 overflow-hidden">
+    <div className="py-12 -mx-4 overflow-hidden">
       <div
         className="flex gap-5 hover:[animation-play-state:paused]"
         style={{
@@ -139,6 +139,6 @@ export default function SampleCardSlider() {
           }
         }
       `}</style>
-    </section>
+    </div>
   );
 }
