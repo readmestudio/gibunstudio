@@ -293,9 +293,9 @@ export function ReportCard({
   // 카드 2는 육각형 차트 표시
   const showHexagonChart = cardNumber === 2 && hexagonData;
 
-  // 카드 8: 직업군/만남장소 미니카드 + 배우자 채널 미니카드
-  const showPartnerJobs = cardNumber === 8 && metadata?.partner_jobs;
-  const showPartnerChannels = cardNumber === 8 && metadata?.partner_channels && metadata.partner_channels.length > 0;
+  // 카드 6 (구 8): 직업군/만남장소 미니카드 + 배우자 채널 미니카드
+  const showPartnerJobs = cardNumber === 6 && metadata?.partner_jobs;
+  const showPartnerChannels = cardNumber === 6 && metadata?.partner_channels && metadata.partner_channels.length > 0;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border-2 border-[var(--foreground)] overflow-hidden min-h-[500px] flex flex-col">

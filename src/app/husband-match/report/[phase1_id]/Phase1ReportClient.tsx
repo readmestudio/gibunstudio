@@ -38,12 +38,12 @@ export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
         <ReportCardPage
           key={card.card_number}
           chapterRoman={toRoman(1)}
-          subtitle={`${result.user_name || '당신'}의 관계 화학 리포트`}
+          subtitle={`${result.user_name || '당신'}의 배우자 기질 리포트`}
           title={card.title}
           body={card.content}
           pageNumber={1}
           totalPages={totalCards}
-          illustration="/doodles/star-sparkle.svg"
+          illustration="/doodles/mystic-eye.svg"
         />
       );
     }

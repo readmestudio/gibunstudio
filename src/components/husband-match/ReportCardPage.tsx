@@ -89,7 +89,7 @@ export function ReportCardPage({
         </p>
         <div className="w-12 h-[2px] bg-[var(--foreground)]/20 mx-auto mb-4" />
         <h2
-          className="text-xl font-bold text-[var(--foreground)] leading-snug"
+          className="text-xl font-bold text-[var(--foreground)] leading-snug whitespace-pre-wrap"
           style={{ wordBreak: 'keep-all' }}
         >
           {title}
@@ -98,7 +98,7 @@ export function ReportCardPage({
 
       {/* 본문 — blockquote 스타일 */}
       <div className="flex-1 px-8 py-4 overflow-hidden">
-        <div className="border-l-2 border-[var(--foreground)]/20 pl-4 h-full">
+        <div className="h-full">
           <p
             className="text-sm leading-relaxed text-[var(--foreground)]/70 whitespace-pre-wrap"
             style={{ wordBreak: 'keep-all' }}
