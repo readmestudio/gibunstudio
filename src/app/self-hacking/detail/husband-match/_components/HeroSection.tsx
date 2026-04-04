@@ -11,7 +11,7 @@ export default function HeroSection() {
         className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] leading-snug whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"유튜브 구독 리스트만 넣으면\n나의 결혼 적합성과 배우자 타입을 분석해드려요"}
+        {"유튜브 구독 리스트만 넣으면\n운명의 배우자 타입을 분석해드려요"}
       </h1>
 
       {/* 샘플 카드 슬라이드 — 히어로 중앙 */}
@@ -21,7 +21,7 @@ export default function HeroSection() {
         className="text-base sm:text-lg leading-relaxed text-[var(--foreground)]/60 max-w-md mx-auto whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"결혼은 하고 싶은데\n어떤 사람과 해야할지 모르겠다면 지금 리포트를 받아가세요"}
+        {"결혼은 하고 싶은데\n어떤 사람과 해야할지 모르겠다면 지금 리포트를 받아보세요"}
       </p>
       <Link
         href="/husband-match/birth-info"

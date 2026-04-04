@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CardCarousel } from '@/components/husband-match/CardCarousel';
 import { ReportCard } from '@/components/husband-match/ReportCard';
+import { ReportCardPage, toRoman } from '@/components/husband-match/ReportCardPage';
 import { PaymentGate } from '@/components/husband-match/PaymentGate';
 import { Phase1Result } from '@/lib/husband-match/types';
 
@@ -27,22 +28,43 @@ export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
     ],
   };
 
+  const totalCards = result.cards.length + 1; // +1 for PaymentGate
+
   // Create card components from result data
-  const reportCards = result.cards.map((card) => (
-    <ReportCard
-      key={card.card_number}
-      title={card.title}
-      content={card.content}
-      cardNumber={card.card_number}
-      cardType={card.card_type as any}
-      metadata={{
-        subtitle: card.subtitle,
-        tags: card.tags,
-        highlight: card.highlight,
-      }}
-      hexagonData={card.card_number === 2 ? hexagonData : undefined}
-    />
-  ));
+  const reportCards = result.cards.map((card) => {
+    // 카드 1: 새 한 화면 완성형 디자인
+    if (card.card_number === 1) {
+      return (
+        <ReportCardPage
+          key={card.card_number}
+          chapterRoman={toRoman(1)}
+          subtitle={`${result.user_name || '당신'}의 관계 화학 리포트`}
+          title={card.title}
+          body={card.content}
+          pageNumber={1}
+          totalPages={totalCards}
+          illustration="/doodles/star-sparkle.svg"
+        />
+      );
+    }
+
+    // 카드 2~9: 기존 ReportCard
+    return (
+      <ReportCard
+        key={card.card_number}
+        title={card.title}
+        content={card.content}
+        cardNumber={card.card_number}
+        cardType={card.card_type as any}
+        metadata={{
+          subtitle: card.subtitle,
+          tags: card.tags,
+          highlight: card.highlight,
+        }}
+        hexagonData={card.card_number === 2 ? hexagonData : undefined}
+      />
+    );
+  });
 
   // Add payment gate as the last card
   const paymentGateCard = (
