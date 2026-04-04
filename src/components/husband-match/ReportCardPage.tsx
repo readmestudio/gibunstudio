@@ -17,6 +17,8 @@ interface ReportCardPageProps {
   title: string;
   /** 본문 텍스트 (줄바꿈 포함 plain text) */
   body: string;
+  /** → 요약 한 줄 */
+  arrowSummary?: string;
   /** 현재 페이지 번호 (1-based) */
   pageNumber: number;
   /** 전체 페이지 수 */
@@ -40,6 +42,7 @@ export function ReportCardPage({
   subtitle,
   title,
   body,
+  arrowSummary,
   pageNumber,
   totalPages,
   illustration,
@@ -96,9 +99,17 @@ export function ReportCardPage({
         </h2>
       </div>
 
-      {/* 본문 — blockquote 스타일 */}
+      {/* 본문 */}
       <div className="flex-1 px-8 py-4 overflow-hidden">
         <div className="h-full">
+          {arrowSummary && (
+            <p
+              className="text-xs font-medium text-[var(--foreground)]/50 mb-3 italic"
+              style={{ wordBreak: 'keep-all' }}
+            >
+              → {arrowSummary}
+            </p>
+          )}
           <p
             className="text-sm leading-relaxed text-[var(--foreground)]/70 whitespace-pre-wrap"
             style={{ wordBreak: 'keep-all' }}

@@ -5,10 +5,12 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 
 interface CardCarouselProps {
   cards: React.ReactNode[];
-  totalCards?: number; // For custom display if needed
+  totalCards?: number;
+  /** 챕터별 시작 페이지 인덱스 배열 (예: [0, 1, 4, 9, ...]) */
+  chapterBreaks?: number[];
 }
 
-export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
+export function CardCarousel({ cards, totalCards, chapterBreaks }: CardCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
 
@@ -57,13 +59,6 @@ export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
 
   return (
     <div className="relative w-full max-w-2xl mx-auto">
-      {/* Progress Indicator */}
-      <div className="mb-6 text-center">
-        <span className="text-sm font-medium text-[var(--foreground)]/60">
-          {currentIndex + 1} / {total}
-        </span>
-      </div>
-
       {/* Card Container */}
       <div className="relative overflow-x-hidden min-h-[500px]">
         <AnimatePresence initial={false} custom={direction} mode="wait">
@@ -116,29 +111,54 @@ export function CardCarousel({ cards, totalCards }: CardCarouselProps) {
           </svg>
         </button>
 
-        {/* Progress Dots */}
+        {/* Chapter Indicators */}
         <div className="flex gap-2">
-          {Array.from({ length: total }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                if (index < cards.length) {
-                  setDirection(index > currentIndex ? 1 : -1);
-                  setCurrentIndex(index);
-                  window.scrollTo(0, 0);
-                }
-              }}
-              disabled={index >= cards.length}
-              className={`h-2 rounded-full transition-all ${
-                index === currentIndex
-                  ? 'w-8 bg-[var(--foreground)]'
-                  : index < cards.length
-                  ? 'w-2 bg-[var(--foreground)]/20 hover:bg-[var(--foreground)]/40'
-                  : 'w-2 bg-[var(--foreground)]/10 cursor-not-allowed'
-              }`}
-              aria-label={`Go to card ${index + 1}`}
-            />
-          ))}
+          {chapterBreaks && chapterBreaks.length > 0 ? (
+            // 챕터 모드: 챕터별 도트
+            chapterBreaks.map((startIdx, chapterIdx) => {
+              const nextStart = chapterBreaks[chapterIdx + 1] ?? cards.length;
+              const isCurrent = currentIndex >= startIdx && currentIndex < nextStart;
+              return (
+                <button
+                  key={chapterIdx}
+                  onClick={() => {
+                    setDirection(startIdx > currentIndex ? 1 : -1);
+                    setCurrentIndex(startIdx);
+                    window.scrollTo(0, 0);
+                  }}
+                  className={`h-2 rounded-full transition-all ${
+                    isCurrent
+                      ? 'w-6 bg-[var(--foreground)]'
+                      : 'w-2 bg-[var(--foreground)]/20 hover:bg-[var(--foreground)]/40'
+                  }`}
+                  aria-label={`챕터 ${chapterIdx + 1}`}
+                />
+              );
+            })
+          ) : (
+            // 레거시 모드: 개별 도트
+            Array.from({ length: total }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  if (index < cards.length) {
+                    setDirection(index > currentIndex ? 1 : -1);
+                    setCurrentIndex(index);
+                    window.scrollTo(0, 0);
+                  }
+                }}
+                disabled={index >= cards.length}
+                className={`h-2 rounded-full transition-all ${
+                  index === currentIndex
+                    ? 'w-8 bg-[var(--foreground)]'
+                    : index < cards.length
+                    ? 'w-2 bg-[var(--foreground)]/20 hover:bg-[var(--foreground)]/40'
+                    : 'w-2 bg-[var(--foreground)]/10 cursor-not-allowed'
+                }`}
+                aria-label={`Go to card ${index + 1}`}
+              />
+            ))
+          )}
         </div>
 
         <button

@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CardCarousel } from '@/components/husband-match/CardCarousel';
-import { ReportCard } from '@/components/husband-match/ReportCard';
-import { ReportCardPage, toRoman } from '@/components/husband-match/ReportCardPage';
+import { ReportCardPage } from '@/components/husband-match/ReportCardPage';
 import { LockedCard } from '@/components/husband-match/LockedCard';
 import { PaymentGate } from '@/components/husband-match/PaymentGate';
 import { Phase1Result } from '@/lib/husband-match/types';
+import { splitCardsIntoPages } from '@/lib/husband-match/split-cards-into-pages';
 
 interface Phase1ReportClientProps {
   result: Phase1Result;
@@ -16,73 +15,10 @@ interface Phase1ReportClientProps {
 export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
   const router = useRouter();
 
-  // 카드 2용 육각형 차트 데이터 생성 (TCI 6차원)
-  const hexagonData = {
-    labels: ['자기초월', '자율성', '자극추구', '위험회피', '인내력', '연대감'],
-    values: [
-      result.tci_scores.ST,
-      result.tci_scores.SD,
-      result.tci_scores.NS,
-      result.tci_scores.HA,
-      result.tci_scores.P,
-      result.tci_scores.CO,
-    ],
-  };
+  // 8장 카드 → 페이지 분할
+  const pages = splitCardsIntoPages(result.cards, result.user_name);
 
-  const totalCards = result.cards.length + 1; // +1 for PaymentGate
-
-  // Create card components from result data
-  const reportCards = result.cards.map((card) => {
-    // 카드 1: 새 한 화면 완성형 디자인
-    if (card.card_number === 1) {
-      return (
-        <ReportCardPage
-          key={card.card_number}
-          chapterRoman={toRoman(1)}
-          subtitle={`${result.user_name || '당신'}의 배우자 기질 리포트`}
-          title={card.title}
-          body={card.content}
-          pageNumber={1}
-          totalPages={totalCards}
-          illustration="/doodles/mystic-eye.svg"
-        />
-      );
-    }
-
-    // 카드 7 (딜브레이커): 잠긴 카드
-    if (card.card_number === 7) {
-      return (
-        <LockedCard
-          key={card.card_number}
-          title={card.title}
-          subtitle={card.subtitle}
-          previewText={card.content}
-          onUnlock={() => {
-            router.push(`/husband-match/payment/${result.id}`);
-          }}
-        />
-      );
-    }
-
-    // 카드 2~8: 기존 ReportCard
-    return (
-      <ReportCard
-        key={card.card_number}
-        title={card.title}
-        content={card.content}
-        cardNumber={card.card_number}
-        cardType={card.card_type as any}
-        metadata={{
-          subtitle: card.subtitle,
-          tags: card.tags,
-          highlight: card.highlight,
-        }}
-        hexagonData={card.card_number === 2 ? hexagonData : undefined}
-      />
-    );
-  });
-
-  // Add payment gate as the last card
+  // PaymentGate 추가 (마지막 페이지)
   const paymentGateCard = (
     <PaymentGate
       phase1Id={result.id}
@@ -92,42 +28,61 @@ export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
     />
   );
 
-  const allCards = [...reportCards, paymentGateCard];
+  // 챕터별 시작 인덱스 계산
+  const chapterBreaks: number[] = [];
+  let lastChapter = -1;
+  pages.forEach((page, idx) => {
+    if (page.chapterNumber !== lastChapter) {
+      chapterBreaks.push(idx);
+      lastChapter = page.chapterNumber;
+    }
+  });
+  // PaymentGate도 하나의 챕터로
+  chapterBreaks.push(pages.length);
+
+  // 페이지 → 컴포넌트 변환
+  const pageComponents = pages.map((page, idx) => {
+    // 잠긴 카드 (딜브레이커)
+    if (page.isLocked) {
+      return (
+        <LockedCard
+          key={`locked-${idx}`}
+          title={page.title}
+          subtitle={page.subtitle}
+          previewText={page.body}
+          onUnlock={() => {
+            router.push(`/husband-match/payment/${result.id}`);
+          }}
+        />
+      );
+    }
+
+    // 일반 페이지
+    return (
+      <ReportCardPage
+        key={`page-${idx}`}
+        chapterRoman={page.chapterRoman}
+        subtitle={page.subtitle}
+        title={page.title}
+        body={page.body}
+        arrowSummary={page.arrowSummary}
+        pageNumber={page.pageNumber}
+        totalPages={page.totalPages + 1} // +1 for PaymentGate
+        illustration={page.illustration}
+      />
+    );
+  });
+
+  const allCards = [...pageComponents, paymentGateCard];
 
   return (
     <div className="min-h-screen bg-white py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-[var(--foreground)] mb-3">
-            당신의 남편상 분석 리포트
-          </h1>
-          <p className="text-[var(--foreground)]/70">
-            YouTube 구독 채널 기반 성격 및 이상형 분석
-          </p>
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full border-2 border-[var(--foreground)]">
-            <span className="text-sm font-medium text-[var(--foreground)]/60">
-              매칭 타입:
-            </span>
-            <span className="text-sm font-bold text-[var(--foreground)]">
-              {result.matched_husband_type}
-            </span>
-            <span className="text-sm text-[var(--foreground)]/60">
-              (매칭도: {(result.match_score * 100).toFixed(0)}%)
-            </span>
-          </div>
-        </div>
-
+      <div className="max-w-2xl mx-auto">
         {/* Card Carousel */}
-        <CardCarousel cards={allCards} totalCards={result.cards.length + 1} />
-
-        {/* Footer Info */}
-        <div className="mt-12 text-center">
-          <p className="text-sm text-[var(--foreground)]/60">
-            이 분석은 YouTube 구독 채널을 기반으로 생성되었습니다.
-            <br />더 정확한 분석을 원하시면 심층 분석을 진행해주세요.
-          </p>
-        </div>
+        <CardCarousel
+          cards={allCards}
+          chapterBreaks={chapterBreaks}
+        />
       </div>
     </div>
   );
