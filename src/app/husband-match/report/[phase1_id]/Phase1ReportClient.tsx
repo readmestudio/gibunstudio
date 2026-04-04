@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CardCarousel } from '@/components/husband-match/CardCarousel';
 import { ReportCard } from '@/components/husband-match/ReportCard';
 import { ReportCardPage, toRoman } from '@/components/husband-match/ReportCardPage';
+import { LockedCard } from '@/components/husband-match/LockedCard';
 import { PaymentGate } from '@/components/husband-match/PaymentGate';
 import { Phase1Result } from '@/lib/husband-match/types';
 
@@ -48,7 +49,22 @@ export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
       );
     }
 
-    // 카드 2~9: 기존 ReportCard
+    // 카드 7 (딜브레이커): 잠긴 카드
+    if (card.card_number === 7) {
+      return (
+        <LockedCard
+          key={card.card_number}
+          title={card.title}
+          subtitle={card.subtitle}
+          previewText={card.content}
+          onUnlock={() => {
+            router.push(`/husband-match/payment/${result.id}`);
+          }}
+        />
+      );
+    }
+
+    // 카드 2~8: 기존 ReportCard
     return (
       <ReportCard
         key={card.card_number}
