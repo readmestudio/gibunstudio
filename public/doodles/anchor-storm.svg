@@ -1,0 +1,54 @@
+<svg viewBox="0 0 200 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 폭풍 속 닻을 내리는 배 — 손그림 스타일 -->
+
+  <!-- 물결 (바다) -->
+  <path stroke="#191919" stroke-width="1.5" stroke-linecap="round"
+    d="M10 185c15-8 30 8 45 0s30 8 45 0 30 8 45 0 30 8 45 0"/>
+  <path stroke="#191919" stroke-width="1.2" stroke-linecap="round" opacity="0.5"
+    d="M20 195c12-6 24 6 36 0s24 6 36 0 24 6 36 0 24 6 36 0"/>
+
+  <!-- 작은 배 -->
+  <path stroke="#191919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    d="M65 175c0 0 5 12 35 12s35-12 35-12"/>
+  <!-- 배 몸체 -->
+  <path stroke="#191919" stroke-width="2" stroke-linecap="round"
+    d="M72 175h56"/>
+  <!-- 돛대 -->
+  <line x1="100" y1="175" x2="100" y2="120" stroke="#191919" stroke-width="2" stroke-linecap="round"/>
+  <!-- 돛 (바람에 날리는) -->
+  <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+    d="M100 125c-5 5-25 12-30 20h30"/>
+  <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+    d="M100 140c-4 4-18 8-22 14h22"/>
+
+  <!-- 닻 (배 아래로 내려가는) -->
+  <line x1="100" y1="187" x2="100" y2="225" stroke="#191919" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4 3"/>
+  <!-- 닻 몸체 -->
+  <circle cx="100" cy="225" r="3" fill="#191919"/>
+  <path stroke="#191919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    d="M88 220c0 8 12 12 12 12s12-4 12-12"/>
+  <line x1="100" y1="218" x2="100" y2="237" stroke="#191919" stroke-width="2" stroke-linecap="round"/>
+  <!-- 닻 가로줄 -->
+  <line x1="92" y1="225" x2="108" y2="225" stroke="#191919" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 폭풍 바람 선 -->
+  <path stroke="#191919" stroke-width="1.2" stroke-linecap="round" opacity="0.6"
+    d="M30 130c20-3 40-3 55 0"/>
+  <path stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"
+    d="M25 145c18-2 35-2 48 0"/>
+  <path stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"
+    d="M130 125c15-2 30-2 40 0"/>
+
+  <!-- 빗방울 -->
+  <line x1="45" y1="100" x2="42" y2="112" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <line x1="60" y1="95" x2="57" y2="107" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <line x1="140" y1="98" x2="137" y2="110" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <line x1="155" y1="105" x2="152" y2="117" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <line x1="120" y1="92" x2="117" y2="104" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- 구름 -->
+  <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" opacity="0.5"
+    d="M30 90c0-10 10-18 22-18 3-8 12-14 23-14 14 0 25 10 25 22h5c8 0 14 5 14 12"/>
+  <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" opacity="0.5"
+    d="M120 85c0-8 8-15 18-15 2-6 10-11 19-11 11 0 20 8 20 18h4c6 0 11 4 11 10"/>
+</svg>

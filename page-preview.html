@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>페이지 미리보기 — 챕터 IV</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #f5f5f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .card {
+    background: white;
+    border: 2px solid #191919;
+    border-radius: 16px;
+    width: 375px;
+    height: 720px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 24px 32px 0;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .page-number {
+    position: absolute; top: 24px; right: 32px;
+    font-size: 11px; font-weight: 500;
+    color: rgba(25,25,25,0.4); letter-spacing: 0.1em;
+  }
+
+  .illustration-wrap {
+    display: flex; justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .illustration { width: 120px; height: 140px; opacity: 0.8; }
+
+  .card-meta {
+    text-align: center;
+    padding: 0 32px 12px;
+    flex-shrink: 0;
+  }
+
+  .roman {
+    font-size: 22px; font-weight: 700;
+    color: #191919; letter-spacing: 0.15em; margin-bottom: 3px;
+  }
+
+  .subtitle {
+    font-size: 11px; font-weight: 500;
+    color: rgba(25,25,25,0.5); letter-spacing: 0.2em;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+
+  .divider {
+    width: 48px; height: 2px;
+    background: rgba(25,25,25,0.2);
+    margin: 0 auto 12px;
+  }
+
+  .title {
+    font-size: 19px; font-weight: 700;
+    color: #191919; line-height: 1.4;
+    word-break: keep-all;
+  }
+
+  .card-body {
+    flex: 1;
+    padding: 8px 32px;
+    overflow: hidden;
+  }
+
+  .blockquote {
+    height: 100%;
+  }
+
+  .arrow-summary {
+    font-size: 12px; font-weight: 500;
+    color: rgba(25,25,25,0.5);
+    font-style: italic;
+    margin-bottom: 10px;
+    word-break: keep-all;
+  }
+
+  .body-text {
+    font-size: 13px; line-height: 1.85;
+    color: rgba(25,25,25,0.7);
+    white-space: pre-wrap;
+    word-break: keep-all;
+  }
+
+  .card-footer {
+    flex-shrink: 0;
+    padding: 6px 32px 20px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+  }
+
+  .share-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 24px; background: #191919; color: white;
+    font-size: 14px; font-weight: 500;
+    border: none; border-radius: 999px; cursor: pointer;
+  }
+
+  .watermark {
+    font-size: 10px; color: rgba(25,25,25,0.3);
+    letter-spacing: 0.1em;
+  }
+
+  .nav-bar {
+    display: flex; justify-content: center;
+    align-items: center; gap: 6px;
+    margin-top: 16px;
+  }
+  .dot {
+    height: 8px; border-radius: 999px;
+    background: rgba(25,25,25,0.15);
+  }
+  .dot.active { width: 24px; background: #191919; }
+  .dot:not(.active) { width: 8px; }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="card">
+    <div class="card-header">
+      <span class="page-number">12 / 28</span>
+      <div class="illustration-wrap">
+        <!-- anchor-storm doodle -->
+        <svg class="illustration" viewBox="0 0 200 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" d="M10 185c15-8 30 8 45 0s30 8 45 0 30 8 45 0 30 8 45 0"/>
+          <path stroke="#191919" stroke-width="1.2" stroke-linecap="round" opacity="0.5" d="M20 195c12-6 24 6 36 0s24 6 36 0 24 6 36 0 24 6 36 0"/>
+          <path stroke="#191919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M65 175c0 0 5 12 35 12s35-12 35-12"/>
+          <path stroke="#191919" stroke-width="2" stroke-linecap="round" d="M72 175h56"/>
+          <line x1="100" y1="175" x2="100" y2="120" stroke="#191919" stroke-width="2" stroke-linecap="round"/>
+          <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M100 125c-5 5-25 12-30 20h30"/>
+          <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M100 140c-4 4-18 8-22 14h22"/>
+          <line x1="100" y1="187" x2="100" y2="225" stroke="#191919" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4 3"/>
+          <circle cx="100" cy="225" r="3" fill="#191919"/>
+          <path stroke="#191919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M88 220c0 8 12 12 12 12s12-4 12-12"/>
+          <line x1="100" y1="218" x2="100" y2="237" stroke="#191919" stroke-width="2" stroke-linecap="round"/>
+          <line x1="92" y1="225" x2="108" y2="225" stroke="#191919" stroke-width="2" stroke-linecap="round"/>
+          <path stroke="#191919" stroke-width="1.2" stroke-linecap="round" opacity="0.6" d="M30 130c20-3 40-3 55 0"/>
+          <path stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4" d="M25 145c18-2 35-2 48 0"/>
+          <path stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4" d="M130 125c15-2 30-2 40 0"/>
+          <line x1="45" y1="100" x2="42" y2="112" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+          <line x1="60" y1="95" x2="57" y2="107" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+          <line x1="140" y1="98" x2="137" y2="110" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+          <line x1="155" y1="105" x2="152" y2="117" stroke="#191919" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+          <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" opacity="0.5" d="M30 90c0-10 10-18 22-18 3-8 12-14 23-14 14 0 25 10 25 22h5c8 0 14 5 14 12"/>
+          <path stroke="#191919" stroke-width="1.5" stroke-linecap="round" opacity="0.5" d="M120 85c0-8 8-15 18-15 2-6 10-11 19-11 11 0 20 8 20 18h4c6 0 11 4 11 10"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card-meta">
+      <div class="roman">IV</div>
+      <div class="subtitle">지안의 관계 패턴</div>
+      <div class="divider"></div>
+      <h2 class="title">갈등이 오면</h2>
+    </div>
+
+    <div class="card-body">
+      <div class="blockquote">
+        <p class="arrow-summary">→ 폭풍이 오면 먼저 닻을 내리는 배. 흔들리는 채로는 항해할 수 없는 사람.</p>
+        <p class="body-text">갈등이 오면 먼저 물러나요. 도망치는 게 아니에요. 감정이 정리되지 않은 상태에서 말하면 후회할 걸 아니까요. 경험으로 배운 거예요.
+
+충분히 정리된 다음에 꺼내는 거예요. 다만 상대 입장에서는 "왜 말을 안 해?"로 보일 수 있어요. 그 시간이 당신에게는 준비인데, 상대에게는 침묵으로 느껴지는 거예요.
+
+갈등을 피하지는 않아요. 다만 자기 방식대로 풀고 싶은 마음이 강해요. 상대가 "일단 사과해"라고 하면 반발이 올라와요. 납득이 되어야 움직이는 사람이에요. 이건 고집이 아니에요. 자기 기준 없이 움직이면 오히려 더 혼란스러워지는 사람이에요.</p>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <button class="share-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+        </svg>
+        공유하기
+      </button>
+      <span class="watermark">inga.so/gibun · 기분 분석</span>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+</div>
+
+</body>
+</html>

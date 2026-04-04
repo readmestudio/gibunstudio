@@ -7,7 +7,7 @@ import { ReportCard } from './types';
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
-// 챕터별 doodle 일러스트 매핑
+// 챕터별 기본 일러스트 (fallback)
 const CHAPTER_ILLUSTRATIONS: Record<number, string> = {
   1: '/doodles/mystic-eye.svg',
   2: '/doodles/arrow-squiggle.svg',
@@ -18,6 +18,7 @@ const CHAPTER_ILLUSTRATIONS: Record<number, string> = {
   7: '/doodles/star-sparkle.svg',
   8: '/doodles/underline-wave.svg',
 };
+
 
 // 챕터별 subtitle 템플릿
 const CHAPTER_SUBTITLES: Record<number, string> = {
@@ -101,7 +102,7 @@ function splitByBoldSections(content: string): Array<{ title: string; arrowSumma
 /**
  * 긴 본문을 ~400자 기준으로 문단 분할
  */
-function splitLongBody(body: string, maxChars: number = 400): string[] {
+function splitLongBody(body: string, maxChars: number = 600): string[] {
   if (body.length <= maxChars) return [body];
 
   const paragraphs = body.split(/\n\n+/);

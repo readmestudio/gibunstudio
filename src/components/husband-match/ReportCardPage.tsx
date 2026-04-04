@@ -66,24 +66,24 @@ export function ReportCardPage({
 
   return (
     <div className="bg-white rounded-2xl border-2 border-[var(--foreground)] overflow-hidden flex flex-col h-[calc(100dvh-160px)] max-h-[750px] min-h-[500px]">
-      {/* 일러스트 + 페이지 번호 */}
-      <div className="flex-shrink-0 pt-8 pb-2 px-8 flex items-start justify-between">
-        <div className="w-24 h-24 flex items-center justify-center">
+      {/* 일러스트 (중앙) + 페이지 번호 */}
+      <div className="flex-shrink-0 pt-6 px-8 relative">
+        <span className="absolute top-6 right-8 text-xs font-medium text-[var(--foreground)]/40 tracking-wider">
+          {pageNumber} / {totalPages}
+        </span>
+        <div className="flex justify-center mb-2">
           <Image
             src={illustration}
             alt=""
-            width={80}
-            height={80}
+            width={120}
+            height={120}
             className="opacity-80"
           />
         </div>
-        <span className="text-xs font-medium text-[var(--foreground)]/40 tracking-wider">
-          {pageNumber} / {totalPages}
-        </span>
       </div>
 
       {/* 로마숫자 + subtitle + 구분선 + title */}
-      <div className="flex-shrink-0 px-8 pb-4 text-center">
+      <div className="flex-shrink-0 px-8 pb-3 text-center">
         <p className="text-2xl font-bold text-[var(--foreground)] tracking-widest mb-1">
           {chapterRoman}
         </p>
@@ -99,8 +99,8 @@ export function ReportCardPage({
         </h2>
       </div>
 
-      {/* 본문 */}
-      <div className="flex-1 px-8 py-4 overflow-hidden">
+      {/* 본문 — blockquote 스타일 */}
+      <div className="flex-1 px-8 py-3 overflow-hidden">
         <div className="h-full">
           {arrowSummary && (
             <p
@@ -111,7 +111,7 @@ export function ReportCardPage({
             </p>
           )}
           <p
-            className="text-sm leading-relaxed text-[var(--foreground)]/70 whitespace-pre-wrap"
+            className="text-[13px] leading-[1.85] text-[var(--foreground)]/70 whitespace-pre-wrap"
             style={{ wordBreak: 'keep-all' }}
           >
             {body}
