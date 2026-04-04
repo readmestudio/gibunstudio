@@ -79,15 +79,16 @@ function getCard9FixedContent(channelCount: number): string {
 * 자기 이해를 위한 콘텐츠로 즐겨주세요.`;
 }
 
-// 7장 카드 타이틀 (구 4+5 통합, 구 7+8 통합)
+// 8장 카드 타이틀
 const CARD_TITLES: Record<number, { title: string; subtitle?: string; card_type: ReportCard['card_type'] }> = {
   1: { title: '당신이 몰래 본 유튜브가\n당신을 알고 있다', subtitle: 'INTRO', card_type: 'intro' },
   2: { title: '', subtitle: '구독 데이터 개요', card_type: 'intro' },
   3: { title: '', subtitle: '', card_type: 'personality' },
   4: { title: '같은 상황, 같은 반응 — 이유가 있어요', subtitle: '관계 패턴과 스트레스', card_type: 'personality' },
-  5: { title: '견디기 힘든 것, 그리고 행복하게 만드는 것', subtitle: '관계 인사이트', card_type: 'values' },
-  6: { title: '당신의 배우자는 이런 사람이에요', subtitle: '매칭 결과', card_type: 'matching' },
-  7: { title: '여기까지가 1단계였어요', subtitle: 'Phase 2 안내', card_type: 'result' },
+  5: { title: '당신의 배우자는 이런 사람이에요', subtitle: '매칭 결과', card_type: 'matching' },
+  6: { title: '이런 사람 만나면 숨이 막혀요', subtitle: '딜브레이커', card_type: 'values' },
+  7: { title: '당신을 행복하게 만드는 것', subtitle: '행복의 조건', card_type: 'values' },
+  8: { title: '여기까지가 1단계였어요', subtitle: 'Phase 2 안내', card_type: 'result' },
 };
 
 function formatCategoriesForPrompt(categories: ChannelCategories): string {
@@ -385,15 +386,15 @@ ${context}
   return safeJsonParse(response ?? '{}');
 }
 
-// 배치 C: 카드 5(참을 수 없는 것 + 행복 공식) — contextPersonality 사용
+// 배치 C: 카드 6(딜브레이커) + 카드 7(행복) — contextPersonality 사용
 async function generateBatchC(data: ExtendedCardData, context: string): Promise<Record<string, string>> {
-  const prompt = `아래 분석 데이터를 바탕으로 리포트 카드 내용을 JSON으로 생성해주세요.
+  const prompt = `아래 분석 데이터를 바탕으로 2개의 리포트 카드 내용을 JSON으로 생성해주세요.
 
 ## ⚠️ 문체: "깊은" 최대 1회. "~합니다" 금지 → "~예요". 파편 문장 8개+.
-## ⚠️ 필수: 1,500자 이상 1,750자 이하로 작성하세요. 1,500자 미만은 불합격입니다!
+## ⚠️ 필수: 각 카드는 반드시 1,500자 이상 1,750자 이하로 작성하세요. 1,500자 미만은 불합격입니다!
 ## ⚠️ 분량이 부족하면: 보편적으로 공명하는 행동 패턴 + 인사이트를 추가하세요. 틀릴 수 있는 구체적 상황(시간대, 장소, 직업 등)을 특정하지 마세요.
 ## ⚠️ 유튜브 채널명 금지. 사주 용어 금지. TCI 점수 금지.
-## ⚠️ 카드 3에서 "기본 성격/세계관/내면의 모순"을, 카드 4에서 "관계 패턴/갈등/스트레스 반응"을 이미 다뤘습니다. 같은 내용을 반복하지 마세요.
+## ⚠️ 카드 3에서 "기본 성격/세계관/내면의 모순"을, 카드 4에서 "관계 패턴/갈등/스트레스 반응"을, 카드 5에서 "매칭 결과"를 이미 다뤘습니다. 같은 내용을 반복하지 마세요.
 ## ⚠️ 행동 패턴을 보여준 뒤, "왜 이런 행동을 하는지" 인사이트 한 줄로 꿰뚫으세요.
 ## ⚠️ 각 볼드 섹션 타이틀 바로 아래에 "→ 핵심 요약 한 줄"을 넣으세요.
 
@@ -401,16 +402,22 @@ ${getWritingToneDirective('balanced')}
 
 ${context}
 
-## 카드 5: 참을 수 없는 것 + 행복 공식 — 견디기 힘든 것, 그리고 행복하게 만드는 것 (1500-1750자)
-- "5": 아래 구조를 반드시 포함:
+## 카드 6: 딜브레이커 — 이런 사람 만나면 숨이 막혀요 (1500-1750자)
+- "6": 아래 구조를 반드시 포함:
   1) **"이런 사람 만나면 숨이 막혀요"** — → 요약 한 줄 + 딜브레이커 패턴 2개 + 각각에 인사이트.
   2) **"이 패턴이 관계에서 나타나는 방식"** — → 요약 한 줄 + 1문단. 보편적 행동 패턴으로 묘사. ★ 과거 경험 추측 금지.
-  3) **"당신을 행복하게 만드는 것"** — → 요약 한 줄 + 1문단. TCI 상위 축에서 도출한 행복의 조건. "당신에게 행복이란 ___한 상태예요." 구체적 행동/감각으로 묘사.
-  4) **"강점으로 읽기"** — → 요약 한 줄(비유 사용) + 1문단. 참을 수 없는 것과 행복의 조건이 사실 같은 뿌리라는 인사이트. ("리프레이밍" 단어 사용 금지)
+  3) **"참을 수 없는 것의 뿌리"** — → 요약 한 줄(비유 사용) + 1문단. 왜 이것이 참을 수 없는지, 어떤 가치를 보호하려는 반응인지 인사이트.
+
+## 카드 7: 행복의 조건 — 당신을 행복하게 만드는 것 (1500-1750자)
+- "7": 아래 구조를 반드시 포함:
+  1) **"당신을 행복하게 만드는 것"** — → 요약 한 줄 + 1문단. TCI 상위 축에서 도출한 행복의 조건. "당신에게 행복이란 ___한 상태예요." 구체적 행동/감각으로 묘사.
+  2) **"행복의 패턴"** — → 요약 한 줄 + 1문단. 일상에서 행복을 느끼는 구체적 순간들.
+  3) **"강점으로 읽기"** — → 요약 한 줄(비유 사용) + 1문단. 참을 수 없는 것과 행복의 조건이 사실 같은 뿌리라는 인사이트. ("리프레이밍" 단어 사용 금지)
 
 ## 응답 형식 (JSON만)
 {
-  "5": "본문 1500자 이상"
+  "6": "본문 1500자 이상",
+  "7": "본문 1500자 이상"
 }`;
 
   const response = await chatCompletion(
@@ -420,7 +427,7 @@ ${context}
   return safeJsonParse(response ?? '{}');
 }
 
-// 배치 D: 카드 7 + 8 — contextPersonality 사용
+// 배치 D: 카드 5 (매칭 결과) — contextPersonality 사용
 async function generateBatchD(data: ExtendedCardData, context: string): Promise<Record<string, string>> {
   const h = data.matched_husband;
   const scorePercent = Math.round(data.match_score * 100);
@@ -454,8 +461,8 @@ ${(() => {
     return `- 추천 직업군: ${jobData.jobs.join(', ')}\n- 만남 장소: ${jobData.meetingPlaces.join(', ')}`;
   })()}
 
-## 카드 6: 당신의 배우자는 이런 사람이에요 — 매칭 결과 + 결론 통합 (1500-1750자)
-- "6": 아래 구조를 반드시 포함:
+## 카드 5: 당신의 배우자는 이런 사람이에요 — 매칭 결과 (1500-1750자)
+- "5": 아래 구조를 반드시 포함:
 
   1) **"당신의 배우자는 이런 사람이에요"**
      → 요약 한 줄
@@ -477,12 +484,12 @@ ${partnerChannelsPrompt}
      · 각 카테고리별로 대표 채널 2~3개를 소개
      · 마무리: 운명의 한 줄 (15~25자)
 
-- "6_destiny_line": 운명의 한 줄 (15~25자) — 본문에도 포함하되, 별도 JSON 필드로도 반환
+- "5_destiny_line": 운명의 한 줄 (15~25자) — 본문에도 포함하되, 별도 JSON 필드로도 반환
 
 ## 응답 형식 (JSON만)
 {
-  "6": "본문 1500자 이상",
-  "6_destiny_line": "운명의 한 줄 15~25자"
+  "5": "본문 1500자 이상",
+  "5_destiny_line": "운명의 한 줄 15~25자"
 }`;
 
   const response = await chatCompletion(
@@ -525,8 +532,8 @@ async function generateAllCardsAtOnce(data: ExtendedCardData): Promise<Record<st
     withRetry(() => generateBatchA(data, card2Ctx), 'Batch A (card 2)'),
     withRetry(() => generateBatchB1(data, personalityCtx), 'Batch B1 (card 3)'),
     withRetry(() => generateBatchB2(data, personalityCtx), 'Batch B2 (card 4)'),
-    withRetry(() => generateBatchC(data, personalityCtx), 'Batch C (card 5)'),
-    withRetry(() => generateBatchD(data, personalityCtx), 'Batch D (card 6)'),
+    withRetry(() => generateBatchC(data, personalityCtx), 'Batch C (cards 6-7)'),
+    withRetry(() => generateBatchD(data, personalityCtx), 'Batch D (card 5)'),
   ]);
 
   return { ...batchA, ...batchB1, ...batchB2, ...batchC, ...batchD };
@@ -688,44 +695,7 @@ ${t.RD >= 50
 
 이 반응도 결국 자기를 보호하는 방식이에요. 이걸 알고 있으면 달라져요.`,
 
-    "5": `**이런 사람 만나면 숨이 막혀요**
-→ ${t.ST >= 50 ? '"별일 없어"로 끝나는 대화가 반복되면 숨이 막히는 사람.' : t.HA >= 50 ? '갑자기 바뀌는 계획 앞에서 숨이 막히는 사람.' : '매일 쏟아지는 감정 앞에서 숨이 막히는 사람.'}
-
-${t.ST >= 50 ?
-`• "별일 없어"가 반복되면, 마음이 멀어지는 걸 느껴요. 대화가 단순한 정보 교환이 아니거든요. 서로의 안쪽을 꺼내는 시간이에요. 그게 안 되면 같은 공간에 있어도 혼자인 거예요.\n• "왜 그렇게까지 파고들어?"라는 반응이 오면, 더 이상 시도하지 않게 돼요. 거절당한 게 아니라 이해받지 못한 느낌.` :
-t.HA >= 50 ?
-`• 갑자기 계획이 바뀌면, 당신 안에서는 작은 지진이 일어나요. 충분히 준비해서 좋은 시간을 만들고 싶은 마음이 큰 거예요.\n• 약속을 가볍게 바꾸는 사람 앞에서 점점 기대를 줄이게 돼요. 기대를 줄이는 게 자기 보호인 거예요.` :
-`• 상대가 매일 감정을 쏟아내면, 슬쩍 뒷걸음질 치게 돼요. 냉정한 게 아니에요. 각자의 공간이 있어야 관계가 숨 쉴 수 있다는 걸 아는 거예요.\n• 상대가 힘들 때 온 신경을 쏟지만, 정작 자기가 힘들 때는 말을 못 해요. 이 불균형이 쌓이면 지쳐요.`}
-
-
-**이 패턴이 관계에서 나타나는 방식**
-→ ${t.ST >= 50 ? '상대가 깊이를 원하지 않으면, 먼저 문을 닫게 된다' : t.HA >= 50 ? '변화 앞에서 웃으면서도 속으로는 무너지는 패턴' : '돌봄을 주고도 돌봄을 못 받는 관계의 불균형'}
-
-${t.ST >= 50 ? '깊은 대화를 원하는데 상대가 거기까지 와주지 않으면, 실망이 쌓여요. 그리고 어느 순간 먼저 문을 닫게 돼요.' : t.HA >= 50 ? '계획이 바뀌어도 겉으로는 "그래, 괜찮아"라고 해요. 하지만 속으로는 허탈함이 밀려와요. 이런 일이 반복되면, 점점 기대 자체를 줄이게 돼요.' : '상대를 돌보느라 자기 감정은 후순위가 돼요. "나 지쳤어"라고 말했을 때 상대가 놀라는 이유예요.'}
-
-
-**당신을 행복하게 만드는 것**
-→ ${
-topBottom.top1.axis === 'ST' ? '의미 있는 대화가 오가는 시간. 그게 당신에게 행복이에요.' :
-topBottom.top1.axis === 'NS' ? '새로운 걸 함께 경험하는 순간. 그게 당신에게 행복이에요.' :
-topBottom.top1.axis === 'SD' ? '서로의 영역을 존중하면서도 함께 있는 감각. 그게 당신에게 행복이에요.' :
-topBottom.top1.axis === 'CO' ? '별것 아닌 일상을 나누는 시간. 그게 당신에게 행복이에요.' :
-'꾸준히 함께 쌓아가는 느낌. 그게 당신에게 행복이에요.'}
-
-${
-topBottom.top1.axis === 'ST' ? '당신에게 행복이란 의미 있는 상태예요. 대화가 깊어지는 순간, "이 사람은 나를 이해하려고 하는구나"라고 느끼는 순간. 거창한 이벤트가 아니라 진짜 대화가 오가는 시간이 당신을 충전시켜요.' :
-topBottom.top1.axis === 'NS' ? '당신에게 행복이란 새로운 상태예요. 같은 일상의 반복이 아니라, 작은 변화라도 함께 경험하는 것. 여행이 아니어도 돼요. 새로운 식당, 처음 가보는 산책길. 그 새로움을 나누는 게 행복이에요.' :
-topBottom.top1.axis === 'SD' ? '당신에게 행복이란 자유로운 상태예요. 옆에 사람이 있지만 구속받지 않는 느낌. 각자의 시간을 존중하면서도 돌아왔을 때 따뜻한 관계. 그 균형이 당신을 행복하게 해요.' :
-topBottom.top1.axis === 'CO' ? '당신에게 행복이란 연결된 상태예요. 오늘 있었던 일을 나누고, 별것 아닌 것에 함께 웃는 시간. 거창한 이벤트가 아니라 편안한 일상의 공유가 당신을 충전시켜요.' :
-'당신에게 행복이란 안정적인 상태예요. 변하지 않는 것들이 옆에 있는 느낌. 꾸준히 함께 쌓아가는 시간이 당신을 행복하게 해요.'}
-
-
-**강점으로 읽기**
-→ ${t.ST >= 50 ? '깊이를 추구하는 사람은, 진짜 관계를 만들 수 있는 사람' : t.HA >= 50 ? '안정을 만드는 사람은, 관계를 안전하게 지키는 사람' : '경계를 지키는 사람은, 관계를 오래 유지하는 사람'}
-
-${t.ST >= 50 ? '참을 수 없는 것과 행복의 조건이 사실 같은 뿌리예요. 피상적인 대화가 힘든 건, 깊이 있는 연결에서 행복을 느끼기 때문이에요. 이건 약점이 아니라 관계에 진심이라는 증거예요.' : t.HA >= 50 ? '예측 불가능한 게 힘든 건, 안정된 관계에서 행복을 느끼기 때문이에요. 이건 약점이 아니라 관계를 안전하게 지키는 능력이에요.' : '감정적 공간이 필요한 건, 균형 잡힌 관계에서 행복을 느끼기 때문이에요. 이건 약점이 아니라 관계를 오래 가게 하는 자기 인식이에요.'} 불편함을 느낀다는 것 자체가 관계에 진심이라는 뜻이에요.`,
-
-    "6": (() => {
+    "5": (() => {
       const partnerCats = data.partnerCategories || [];
       const channelSection = partnerCats.length > 0
         ? partnerCats.map(pc => `• ${pc.categoryName}: ${pc.channels.join(', ')}\n  — ${pc.description}`).join('\n\n')
@@ -798,9 +768,45 @@ ${channelSection}
 ${h.variant === 'extrovert' ? '당신의 리듬을 만들어줄 사람이에요.' : '당신의 안전장치가 될 사람이에요.'}`;
     })(),
 
-    "6_destiny_line": h.variant === 'extrovert' ? '당신의 리듬을 만들어줄 사람이에요.' : '당신의 안전장치가 될 사람이에요.',
+    "5_destiny_line": h.variant === 'extrovert' ? '당신의 리듬을 만들어줄 사람이에요.' : '당신의 안전장치가 될 사람이에요.',
 
-    "7": getCard9FixedContent(data.channelCount),
+    "6": `**이런 사람 만나면 숨이 막혀요**
+→ ${t.ST >= 50 ? '"별일 없어"로 끝나는 대화가 반복되면 숨이 막히는 사람.' : t.HA >= 50 ? '갑자기 바뀌는 계획 앞에서 숨이 막히는 사람.' : '매일 쏟아지는 감정 앞에서 숨이 막히는 사람.'}
+
+${t.ST >= 50 ?
+`• "별일 없어"가 반복되면, 마음이 멀어지는 걸 느껴요. 대화가 단순한 정보 교환이 아니거든요. 서로의 안쪽을 꺼내는 시간이에요. 그게 안 되면 같은 공간에 있어도 혼자인 거예요.\n• "왜 그렇게까지 파고들어?"라는 반응이 오면, 더 이상 시도하지 않게 돼요. 거절당한 게 아니라 이해받지 못한 느낌.` :
+t.HA >= 50 ?
+`• 갑자기 계획이 바뀌면, 당신 안에서는 작은 지진이 일어나요. 충분히 준비해서 좋은 시간을 만들고 싶은 마음이 큰 거예요.\n• 약속을 가볍게 바꾸는 사람 앞에서 점점 기대를 줄이게 돼요. 기대를 줄이는 게 자기 보호인 거예요.` :
+`• 상대가 매일 감정을 쏟아내면, 슬쩍 뒷걸음질 치게 돼요. 냉정한 게 아니에요. 각자의 공간이 있어야 관계가 숨 쉴 수 있다는 걸 아는 거예요.\n• 상대가 힘들 때 온 신경을 쏟지만, 정작 자기가 힘들 때는 말을 못 해요. 이 불균형이 쌓이면 지쳐요.`}
+
+
+**이 패턴이 관계에서 나타나는 방식**
+→ ${t.ST >= 50 ? '상대가 깊이를 원하지 않으면, 먼저 문을 닫게 된다' : t.HA >= 50 ? '변화 앞에서 웃으면서도 속으로는 무너지는 패턴' : '돌봄을 주고도 돌봄을 못 받는 관계의 불균형'}
+
+${t.ST >= 50 ? '깊은 대화를 원하는데 상대가 거기까지 와주지 않으면, 실망이 쌓여요. 그리고 어느 순간 먼저 문을 닫게 돼요.' : t.HA >= 50 ? '계획이 바뀌어도 겉으로는 "그래, 괜찮아"라고 해요. 하지만 속으로는 허탈함이 밀려와요. 이런 일이 반복되면, 점점 기대 자체를 줄이게 돼요.' : '상대를 돌보느라 자기 감정은 후순위가 돼요. "나 지쳤어"라고 말했을 때 상대가 놀라는 이유예요.'}`,
+
+    "7": `**당신을 행복하게 만드는 것**
+→ ${
+topBottom.top1.axis === 'ST' ? '의미 있는 대화가 오가는 시간. 그게 당신에게 행복이에요.' :
+topBottom.top1.axis === 'NS' ? '새로운 걸 함께 경험하는 순간. 그게 당신에게 행복이에요.' :
+topBottom.top1.axis === 'SD' ? '서로의 영역을 존중하면서도 함께 있는 감각. 그게 당신에게 행복이에요.' :
+topBottom.top1.axis === 'CO' ? '별것 아닌 일상을 나누는 시간. 그게 당신에게 행복이에요.' :
+'꾸준히 함께 쌓아가는 느낌. 그게 당신에게 행복이에요.'}
+
+${
+topBottom.top1.axis === 'ST' ? '당신에게 행복이란 의미 있는 상태예요. 대화가 깊어지는 순간, "이 사람은 나를 이해하려고 하는구나"라고 느끼는 순간. 거창한 이벤트가 아니라 진짜 대화가 오가는 시간이 당신을 충전시켜요.' :
+topBottom.top1.axis === 'NS' ? '당신에게 행복이란 새로운 상태예요. 같은 일상의 반복이 아니라, 작은 변화라도 함께 경험하는 것. 여행이 아니어도 돼요. 새로운 식당, 처음 가보는 산책길. 그 새로움을 나누는 게 행복이에요.' :
+topBottom.top1.axis === 'SD' ? '당신에게 행복이란 자유로운 상태예요. 옆에 사람이 있지만 구속받지 않는 느낌. 각자의 시간을 존중하면서도 돌아왔을 때 따뜻한 관계. 그 균형이 당신을 행복하게 해요.' :
+topBottom.top1.axis === 'CO' ? '당신에게 행복이란 연결된 상태예요. 오늘 있었던 일을 나누고, 별것 아닌 것에 함께 웃는 시간. 거창한 이벤트가 아니라 편안한 일상의 공유가 당신을 충전시켜요.' :
+'당신에게 행복이란 안정적인 상태예요. 변하지 않는 것들이 옆에 있는 느낌. 꾸준히 함께 쌓아가는 시간이 당신을 행복하게 해요.'}
+
+
+**강점으로 읽기**
+→ ${t.ST >= 50 ? '깊이를 추구하는 사람은, 진짜 관계를 만들 수 있는 사람' : t.HA >= 50 ? '안정을 만드는 사람은, 관계를 안전하게 지키는 사람' : '경계를 지키는 사람은, 관계를 오래 유지하는 사람'}
+
+${t.ST >= 50 ? '참을 수 없는 것과 행복의 조건이 사실 같은 뿌리예요. 피상적인 대화가 힘든 건, 깊이 있는 연결에서 행복을 느끼기 때문이에요. 이건 약점이 아니라 관계에 진심이라는 증거예요.' : t.HA >= 50 ? '예측 불가능한 게 힘든 건, 안정된 관계에서 행복을 느끼기 때문이에요. 이건 약점이 아니라 관계를 안전하게 지키는 능력이에요.' : '감정적 공간이 필요한 건, 균형 잡힌 관계에서 행복을 느끼기 때문이에요. 이건 약점이 아니라 관계를 오래 가게 하는 자기 인식이에요.'} 불편함을 느낀다는 것 자체가 관계에 진심이라는 뜻이에요.`,
+
+    "8": getCard9FixedContent(data.channelCount),
   };
 }
 
@@ -935,8 +941,8 @@ export async function runPhase1FromPrecomputed(
   const fallbackCards = generateFallbackCards(extendedCardData);
   try {
     cardContents = await generateAllCardsAtOnce(extendedCardData);
-    // LLM이 생성해야 할 카드: 2,3,4,5,6 = 5장 (+ 타이틀 키 2개 = 최소 7개 키)
-    if (!cardContents || Object.keys(cardContents).length < 5) {
+    // LLM이 생성해야 할 카드: 2,3,4,5,6,7 = 6장 (+ 타이틀 키 2개 = 최소 8개 키)
+    if (!cardContents || Object.keys(cardContents).length < 6) {
       console.log('[Phase 1] Incomplete AI response, using fallback');
       cardContents = fallbackCards;
     } else {
@@ -953,16 +959,16 @@ export async function runPhase1FromPrecomputed(
     cardContents = fallbackCards;
   }
 
-  // 7장 카드 생성
+  // 8장 카드 생성
   const cards: ReportCard[] = [];
-  for (let cardNumber = 1; cardNumber <= 7; cardNumber++) {
+  for (let cardNumber = 1; cardNumber <= 8; cardNumber++) {
     const meta = CARD_TITLES[cardNumber];
     const cardKey = String(cardNumber);
 
     let content: string;
     if (cardNumber === 1) {
       content = CARD_1_FIXED_CONTENT;
-    } else if (cardNumber === 7) {
+    } else if (cardNumber === 8) {
       content = getCard9FixedContent(channelCount);
     } else {
       content = cardContents[cardKey] || '분석 결과를 불러오는 중 문제가 발생했습니다.';
@@ -992,11 +998,11 @@ export async function runPhase1FromPrecomputed(
       card_type: meta.card_type,
     };
 
-    // 카드 6: 운명의 한 줄 + 배우자 추정 채널 + 직업군/만남장소 메타데이터 저장
-    if (cardNumber === 6) {
+    // 카드 5: 운명의 한 줄 + 배우자 추정 채널 + 직업군/만남장소 메타데이터 저장
+    if (cardNumber === 5) {
       const jobData = PARTNER_JOBS[matchResult.type.category];
       card.metadata = {
-        destiny_line: cardContents['6_destiny_line'] || (matchResult.type.variant === 'extrovert' ? '당신의 리듬을 만들어줄 사람이에요.' : '당신의 안전장치가 될 사람이에요.'),
+        destiny_line: cardContents['5_destiny_line'] || (matchResult.type.variant === 'extrovert' ? '당신의 리듬을 만들어줄 사람이에요.' : '당신의 안전장치가 될 사람이에요.'),
         partner_channels: partnerCategories.map(pc => ({
           category: pc.categoryName,
           channels: pc.channels,
