@@ -41,18 +41,18 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
     title: "내면 탐색 워크샵",
     description:
       "가치관 월드컵, 삶의 의미 탐색 같은 활동지로 직접 답을 찾아가요. 내 속도대로.",
-    href: "#",
-    comingSoon: true,
-    cta: "",
+    href: "/payment/self-workshop",
+    comingSoon: false,
+    cta: "구매하기 →",
   },
   {
     id: "geumjjok",
     title: "금쪽 상담소",
     description:
       "사소한 고민이 많은 걸 설명해줘요. 고민을 털어놓으면 내면 분석 리포트가 나와요.",
-    href: "#",
-    comingSoon: true,
-    cta: "",
+    href: "/payment/geumjjok",
+    comingSoon: false,
+    cta: "구매하기 →",
   },
 ];
 

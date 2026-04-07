@@ -14,7 +14,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-base font-semibold mb-3">제1조 (목적)</h2>
           <p>
-            본 약관은 주식회사 원모어스푼(이하 &ldquo;회사&rdquo;)이 운영하는
+            본 약관은 올핸즈라운지(이하 &ldquo;회사&rdquo;)이 운영하는
             기분스튜디오 서비스(이하 &ldquo;서비스&rdquo;)의 이용 조건 및 절차,
             회사와 이용자의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.
           </p>

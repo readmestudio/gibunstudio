@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2 className="text-base font-semibold mb-3">1. 총칙</h2>
           <p>
-            주식회사 원모어스푼(이하 &ldquo;회사&rdquo;)은 「개인정보 보호법」
+            올핸즈라운지(이하 &ldquo;회사&rdquo;)은 「개인정보 보호법」
             제30조에 따라 정보주체의 개인정보를 보호하고 이와 관련한 고충을
             신속하고 원활하게 처리하기 위하여 다음과 같이 개인정보 처리방침을
             수립·공개합니다.
@@ -262,8 +262,8 @@ export default function PrivacyPolicyPage() {
             11. 개인정보 보호책임자
           </h2>
           <ul className="list-none space-y-1">
-            <li>회사명: 주식회사 원모어스푼</li>
-            <li>이메일: 2morespoons@gmail.com</li>
+            <li>회사명: 올핸즈라운지 (대표 김지안)</li>
+            <li>이메일: allhandslounge@gmail.com</li>
             <li>카카오톡: gibun_studio</li>
             <li>전화: 070-7954-9188</li>
           </ul>
