@@ -99,6 +99,10 @@ export function PurchaseClient({
             ))}
           </ul>
         )}
+
+        <p className="mt-5 border-t border-[var(--border)] pt-4 text-sm text-[var(--foreground)]/70">
+          컨텐츠 조회 및 다운로드 기간은 결제 후 90일간 가능합니다.
+        </p>
       </div>
 
       {/* 카드 결제 버튼 */}
