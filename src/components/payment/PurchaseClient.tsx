@@ -5,7 +5,8 @@ import Script from "next/script";
 import Link from "next/link";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
-const NICEPAY_SDK_URL = process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "";
+const NICEPAY_SDK_URL =
+  process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
 
 interface PurchaseClientProps {
   /** 주문번호 prefix 및 returnUrl 경로에 사용할 슬러그 (예: "self-workshop") */
@@ -68,11 +69,12 @@ export function PurchaseClient({
   return (
     <div className="mx-auto max-w-xl px-4 py-16">
       {/* NicePay SDK 로드 */}
-      {NICEPAY_CLIENT_ID && NICEPAY_SDK_URL && (
+      {NICEPAY_CLIENT_ID && (
         <Script
           src={NICEPAY_SDK_URL}
           strategy="afterInteractive"
           onLoad={() => setSdkLoaded(true)}
+          onReady={() => setSdkLoaded(true)}
         />
       )}
 
