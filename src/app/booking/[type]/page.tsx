@@ -1,57 +1,22 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { getCounselingType } from "@/lib/counseling/types";
-import { BookingContent } from "./BookingContent";
 
 interface Props {
   params: Promise<{ type: string }>;
 }
 
+/**
+ * 상담 예약 페이지는 현재 카드 심사 통과 목적으로
+ * 결제 페이지(/payment/counseling/[type])로 직접 리다이렉트합니다.
+ * 시간 슬롯 예약 플로우는 추후 RLS 정책 정리 후 재활성화 예정.
+ */
 export default async function BookingPage({ params }: Props) {
   const { type } = await params;
   const counselingType = getCounselingType(type);
 
-  if (!counselingType || counselingType.notifyOnly) {
+  if (!counselingType) {
     redirect("/programs/counseling");
   }
 
-  // 인증 확인
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  return (
-    <div>
-      {/* 히어로 배경 */}
-      <section
-        className="relative bg-center bg-no-repeat bg-cover py-16"
-        style={{ backgroundImage: "url('/patterns/patternTop.svg')" }}
-      >
-        <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            {counselingType.title}
-          </h1>
-          <p className="mt-4 text-lg text-[var(--foreground)]/80">
-            {counselingType.description}
-          </p>
-          <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">
-            {counselingType.priceLabel}
-            <span className="text-sm font-normal text-[var(--foreground)]/60">
-              원 / {counselingType.duration}
-            </span>
-          </p>
-        </div>
-      </section>
-
-      {/* 예약 폼 */}
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
-        <BookingContent counselingTypeId={type} />
-      </div>
-    </div>
-  );
+  redirect(`/payment/counseling/${type}`);
 }
