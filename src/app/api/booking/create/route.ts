@@ -35,40 +35,43 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (
-    !Array.isArray(slotIds) ||
-    slotIds.length === 0 ||
-    slotIds.length > MAX_SLOT_SELECTIONS
-  ) {
+  // 슬롯 선택은 선택사항 — 0개도 허용 (결제 후 상담사와 조율 가능)
+  const normalizedSlotIds: string[] = Array.isArray(slotIds) ? slotIds : [];
+  if (normalizedSlotIds.length > MAX_SLOT_SELECTIONS) {
     return NextResponse.json(
-      { error: `1~${MAX_SLOT_SELECTIONS}개의 시간을 선택해주세요` },
+      { error: `최대 ${MAX_SLOT_SELECTIONS}개까지만 선택할 수 있습니다` },
       { status: 400 }
     );
   }
 
-  // 선택한 슬롯들이 아직 미예약인지 확인
-  const { data: slots, error: slotError } = await supabase
-    .from("coach_available_slots")
-    .select("id, slot_time, is_booked")
-    .in("id", slotIds);
+  // 선택한 슬롯이 있으면 미예약 상태인지 확인
+  let requestedSlots: string[] = [];
+  if (normalizedSlotIds.length > 0) {
+    const { data: slots, error: slotError } = await supabase
+      .from("coach_available_slots")
+      .select("id, slot_time, is_booked")
+      .in("id", normalizedSlotIds);
 
-  if (slotError) {
-    return NextResponse.json({ error: slotError.message }, { status: 500 });
-  }
+    if (slotError) {
+      return NextResponse.json({ error: slotError.message }, { status: 500 });
+    }
 
-  if (!slots || slots.length !== slotIds.length) {
-    return NextResponse.json(
-      { error: "선택한 시간 중 일부가 존재하지 않습니다" },
-      { status: 400 }
-    );
-  }
+    if (!slots || slots.length !== normalizedSlotIds.length) {
+      return NextResponse.json(
+        { error: "선택한 시간 중 일부가 존재하지 않습니다" },
+        { status: 400 }
+      );
+    }
 
-  const bookedSlot = slots.find((s) => s.is_booked);
-  if (bookedSlot) {
-    return NextResponse.json(
-      { error: "선택한 시간 중 이미 예약된 시간이 있습니다" },
-      { status: 409 }
-    );
+    const bookedSlot = slots.find((s) => s.is_booked);
+    if (bookedSlot) {
+      return NextResponse.json(
+        { error: "선택한 시간 중 이미 예약된 시간이 있습니다" },
+        { status: 409 }
+      );
+    }
+
+    requestedSlots = slots.map((s) => s.slot_time);
   }
 
   // 1. purchases 테이블에 insert (pending 상태)
@@ -92,7 +95,6 @@ export async function POST(request: NextRequest) {
   }
 
   // 2. counseling_bookings 테이블에 insert
-  const requestedSlots = slots.map((s) => s.slot_time);
   const { data: booking, error: bookingError } = await supabase
     .from("counseling_bookings")
     .insert({

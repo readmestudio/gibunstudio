@@ -61,7 +61,6 @@ export function BookingContent({ counselingTypeId }: Props) {
   }
 
   async function handleSubmit() {
-    if (selectedSlots.length === 0) return;
     setSubmitting(true);
 
     try {
@@ -100,7 +99,7 @@ export function BookingContent({ counselingTypeId }: Props) {
         </h2>
         <p className="text-sm text-[var(--foreground)]/60 mb-6">
           상담사와 시간 조율을 위해 가능한 시간을 최대 {MAX_SLOT_SELECTIONS}개
-          선택해주세요. 상담사가 그 중 하나를 확정합니다.
+          선택해주세요. (선택사항 — 결제 후 상담사와 조율도 가능합니다)
         </p>
 
         {loading ? (
@@ -154,7 +153,7 @@ export function BookingContent({ counselingTypeId }: Props) {
       {/* 서베이 섹션 */}
       <section className="rounded-xl border border-[var(--border)] bg-white p-6">
         <h2 className="text-lg font-semibold text-[var(--foreground)]">
-          사전 설문
+          사전 설문 <span className="text-sm font-normal text-[var(--foreground)]/50">(선택)</span>
         </h2>
         <div className="mt-4 space-y-4">
           <div>
@@ -193,7 +192,7 @@ export function BookingContent({ counselingTypeId }: Props) {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={selectedSlots.length === 0 || submitting}
+          disabled={submitting}
           className="rounded-lg bg-[var(--foreground)] px-8 py-3 font-semibold text-white disabled:opacity-50 hover:bg-[var(--foreground)]/80 transition-colors"
         >
           {submitting ? "처리 중..." : "결제하기"}
