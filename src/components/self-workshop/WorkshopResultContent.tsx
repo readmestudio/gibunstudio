@@ -6,6 +6,7 @@ import {
   DIMENSIONS,
   DIAGNOSIS_LEVELS,
   type DiagnosisScores,
+  type DimensionKey,
 } from "@/lib/self-workshop/diagnosis";
 
 interface Props {
@@ -16,7 +17,7 @@ interface Props {
 /* ── 시나리오 데이터 (직장인 3~15년차 페르소나) ── */
 
 const SCENARIO_CARDS: {
-  dimensionKey: string;
+  dimensionKey: DimensionKey;
   keyword: string;
   scenario: string;
 }[] = [
@@ -55,6 +56,29 @@ export function WorkshopResultContent({ scores, workshopId }: Props) {
   const maxDimKey = Object.entries(scores.dimensions).reduce((a, b) =>
     b[1] > a[1] ? b : a
   )[0];
+
+  function getSignalLevel(score: number) {
+    // 25점 만점 기준: 15+ 경고, 10~14 주의, 0~9 안전
+    if (score >= 15) {
+      return {
+        label: "주의 필요",
+        className: "bg-[var(--foreground)]/10 text-[var(--foreground)]",
+        dotClass: "bg-[var(--foreground)]",
+      };
+    }
+    if (score >= 10) {
+      return {
+        label: "주의",
+        className: "bg-[var(--foreground)]/5 text-[var(--foreground)]/70",
+        dotClass: "bg-[var(--foreground)]/50",
+      };
+    }
+    return {
+      label: "안전",
+      className: "bg-[var(--foreground)]/5 text-[var(--foreground)]/40",
+      dotClass: "bg-[var(--foreground)]/25",
+    };
+  }
 
   async function handleAdvanceToNextStep() {
     setIsAdvancing(true);
@@ -149,25 +173,27 @@ export function WorkshopResultContent({ scores, workshopId }: Props) {
         </h3>
         <div className="space-y-3">
           {SCENARIO_CARDS.map((card) => {
-            const isTopDimension = card.dimensionKey === maxDimKey;
+            const dimScore = scores.dimensions[card.dimensionKey] ?? 0;
+            const signal = getSignalLevel(dimScore);
             return (
               <div
                 key={card.dimensionKey}
-                className={`rounded-xl border-2 p-5 ${
-                  isTopDimension
-                    ? "border-[var(--foreground)] bg-white"
-                    : "border-[var(--foreground)]/15 bg-white"
-                }`}
+                className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-medium text-[var(--foreground)]/50">
-                    {card.keyword}
-                  </span>
-                  {isTopDimension && (
-                    <span className="rounded-full border border-[var(--foreground)] px-2 py-0.5 text-[10px] font-semibold text-[var(--foreground)]">
-                      나의 주요 패턴
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-[var(--foreground)]/50">
+                      {card.keyword}
                     </span>
-                  )}
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${signal.className}`}
+                  >
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${signal.dotClass}`}
+                    />
+                    {signal.label}
+                  </span>
                 </div>
                 <p className="text-sm leading-relaxed text-[var(--foreground)]/80">
                   {card.scenario}
