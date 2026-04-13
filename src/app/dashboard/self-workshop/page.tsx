@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WorkshopStepList } from "@/components/self-workshop/WorkshopStepList";
@@ -25,9 +26,10 @@ export default async function SelfWorkshopDashboardPage() {
     .eq("workshop_type", "achievement-addiction")
     .maybeSingle();
 
-  // 테스트 유저: workshop_progress 레코드가 없으면 자동 생성
+  // 테스트 유저: workshop_progress 레코드가 없으면 admin 클라이언트로 자동 생성
   if (!progress && isTestUser) {
-    const { data: created } = await supabase
+    const admin = createAdminClient();
+    const { data: created } = await admin
       .from("workshop_progress")
       .insert({
         user_id: user.id,
