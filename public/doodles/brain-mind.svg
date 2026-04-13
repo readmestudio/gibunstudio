@@ -1,0 +1,64 @@
+<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 뇌/내면 분석 — 손그림 스타일 -->
+
+  <!-- 머리 실루엣 (둥근 형태) -->
+  <path
+    stroke="#191919"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="M70 140c-5-5-25-20-25-55 0-35 25-55 55-55s55 20 55 55c0 35-20 50-25 55"
+  />
+
+  <!-- 뇌 주름 — 좌측 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M80 65c8 5 5 20-3 22"
+  />
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M75 95c10-2 15 8 8 15"
+  />
+
+  <!-- 뇌 주름 — 우측 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M120 65c-8 5-5 20 3 22"
+  />
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M125 95c-10-2-15 8-8 15"
+  />
+
+  <!-- 뇌 중앙 구분선 -->
+  <path
+    stroke="#191919"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    d="M100 38v75"
+  />
+
+  <!-- 돋보기 (분석 상징) -->
+  <circle cx="140" cy="150" r="15" stroke="#191919" stroke-width="2"/>
+  <path stroke="#191919" stroke-width="2" stroke-linecap="round" d="M151 161l12 12"/>
+
+  <!-- 돋보기 안 눈동자 -->
+  <circle cx="140" cy="150" r="5" stroke="#191919" stroke-width="1.5"/>
+
+  <!-- 작은 별 장식 -->
+  <path stroke="#191919" stroke-width="1.2" stroke-linecap="round" d="M45 45l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/>
+  <path stroke="#191919" stroke-width="1.2" stroke-linecap="round" d="M160 35l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/>
+  <path stroke="#191919" stroke-width="1.2" stroke-linecap="round" d="M55 160l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>
+
+  <!-- 작은 점 장식 -->
+  <circle cx="165" cy="80" r="2" fill="#191919"/>
+  <circle cx="35" cy="90" r="1.5" fill="#191919"/>
+</svg>

@@ -14,6 +14,7 @@ export interface WorkbookInfo {
   estimatedMinutes: string;
   comingSoon: boolean;
   order: number;
+  illustration: string;
 }
 
 export const WORKBOOK_CATALOG: WorkbookInfo[] = [
@@ -34,6 +35,7 @@ export const WORKBOOK_CATALOG: WorkbookInfo[] = [
     estimatedMinutes: "65~100분",
     comingSoon: false,
     order: 1,
+    illustration: "anchor-storm",
   },
   {
     id: "people-pleasing",
@@ -52,6 +54,7 @@ export const WORKBOOK_CATALOG: WorkbookInfo[] = [
     estimatedMinutes: "60~90분",
     comingSoon: true,
     order: 2,
+    illustration: "face-smile",
   },
   {
     id: "anxiety-loop",
@@ -70,6 +73,7 @@ export const WORKBOOK_CATALOG: WorkbookInfo[] = [
     estimatedMinutes: "60~90분",
     comingSoon: true,
     order: 3,
+    illustration: "arrow-squiggle",
   },
 ];
 
