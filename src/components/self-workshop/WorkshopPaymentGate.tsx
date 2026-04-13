@@ -277,6 +277,28 @@ export function WorkshopPaymentGate({ scores }: Props) {
               })}
             </div>
           </div>
+          {/* ── 3-1. 자주 할 생각 체크리스트 ── */}
+          <div className="space-y-3">
+            {THOUGHT_CHECKLIST.map((item) => (
+              <div key={item} className="flex items-start gap-2">
+                <span className="text-base leading-relaxed">&#x2705;</span>
+                <p className="text-sm leading-relaxed text-[var(--foreground)]/80">
+                  {item}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* ── 3-2. 콜아웃 박스 ── */}
+          <div className="rounded-xl border-2 border-[var(--foreground)] bg-[var(--surface)] p-6">
+            <p className="text-sm font-semibold text-[var(--foreground)] mb-2">
+              이런 생각이 익숙하다면
+            </p>
+            <p className="text-sm leading-relaxed text-[var(--foreground)]/70">
+              이건 당신이 게으르거나 나약해서가 아닙니다. 오랜 시간 반복된 <strong>자동적 사고 패턴</strong>이에요.
+              문제는 이 패턴을 인식하지 못한 채 방치하면 점점 더 강해진다는 겁니다.
+            </p>
+          </div>
         </>
       )}
 
@@ -372,6 +394,14 @@ export function WorkshopPaymentGate({ scores }: Props) {
     </div>
   );
 }
+
+const THOUGHT_CHECKLIST = [
+  "\"이 정도면 됐다\"라고 스스로를 인정하지 못한다",
+  "쉬는 날에도 \"뭐라도 해야 하는데\" 하는 불안이 있다",
+  "성과가 없으면 하루가 낭비된 것 같다",
+  "남들은 나보다 더 잘하고 있는 것 같다",
+  "잘했다는 말을 들어도 \"다음엔 더 잘해야지\"가 먼저 떠오른다",
+];
 
 const FEATURES = [
   "나의 순환 메커니즘 직접 추적",
