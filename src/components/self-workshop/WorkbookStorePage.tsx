@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import Script from "next/script";
-import Image from "next/image";
 import Link from "next/link";
 import { WORKBOOK_CATALOG, type WorkbookInfo } from "@/lib/self-workshop/workbook-catalog";
 import { NotifyButton } from "@/components/NotifyButton";
@@ -12,48 +11,69 @@ const NICEPAY_SDK_URL =
   process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
 
 /* ──────────────────────────────────────────────
+   수채화 배경 이미지
+   ────────────────────────────────────────────── */
+const WORKBOOK_BG = [
+  "/program-bg/program-bg-1.png",
+  "/program-bg/program-bg-2.png",
+  "/program-bg/program-bg-3.png",
+];
+
+/* ──────────────────────────────────────────────
    갤러리 카드 컴포넌트
    ────────────────────────────────────────────── */
 function WorkbookGalleryCard({
   workbook,
+  bgIndex,
   isActive,
   onClick,
 }: {
   workbook: WorkbookInfo;
+  bgIndex: number;
   isActive: boolean;
   onClick: () => void;
 }) {
+  const bg = WORKBOOK_BG[bgIndex % WORKBOOK_BG.length];
+
   return (
     <button
       onClick={onClick}
-      className={`flex-shrink-0 w-[200px] md:w-[240px] snap-start rounded-2xl border-2 p-5 text-left transition-all ${
+      className={`flex-shrink-0 w-[280px] md:w-[320px] snap-start rounded-2xl border-2 overflow-hidden text-left transition-all ${
         isActive
           ? "border-[var(--foreground)] shadow-[4px_4px_0_var(--foreground)]"
           : "border-[var(--foreground)]/30 hover:border-[var(--foreground)]"
-      } ${workbook.comingSoon ? "opacity-60" : ""}`}
+      } ${workbook.comingSoon ? "opacity-75" : ""}`}
     >
-      {/* 일러스트 */}
-      <div className="flex items-center justify-center h-32 mb-4">
-        <Image
-          src={`/doodles/${workbook.illustration}.svg`}
-          alt={workbook.title}
-          width={80}
-          height={80}
-          className="w-20 h-20 opacity-70"
-        />
+      {/* 수채화 배경 이미지 영역 */}
+      <div
+        className="relative h-44 bg-cover bg-center"
+        style={{ backgroundImage: `url('${bg}')` }}
+      >
+        <div className="absolute inset-0 bg-white/30" />
       </div>
-      {/* 제목 + 부제 */}
-      <h3 className="text-base font-bold text-[var(--foreground)]">
-        {workbook.title}
-      </h3>
-      <p className="mt-1 text-sm text-[var(--foreground)]/60">
-        {workbook.subtitle}
-      </p>
-      {workbook.comingSoon && (
-        <span className="mt-2 inline-block text-xs text-[var(--foreground)]/40">
-          coming soon
-        </span>
-      )}
+
+      {/* 텍스트 + 버튼 영역 */}
+      <div className="p-5 bg-white">
+        <h3 className="text-base font-bold text-[var(--foreground)]">
+          {workbook.title}
+        </h3>
+        <p className="mt-1 text-sm text-[var(--foreground)]/60 line-clamp-2">
+          {workbook.subtitle}
+        </p>
+
+        {/* CTA 버튼 */}
+        <div className="mt-4">
+          {workbook.comingSoon ? (
+            <span className="inline-block w-full text-center px-4 py-2.5 rounded-lg border border-[var(--foreground)]/20 text-sm text-[var(--foreground)]/40">
+              Coming Soon
+            </span>
+          ) : (
+            <span className="inline-block w-full text-center px-4 py-2.5 rounded-lg border-2 border-[var(--foreground)] text-sm font-semibold text-[var(--foreground)]">
+              시작하기
+            </span>
+          )}
+        </div>
+      </div>
     </button>
   );
 }
@@ -70,10 +90,10 @@ export function WorkbookStorePage() {
   const active = WORKBOOK_CATALOG.find((w) => w.id === activeId)!;
 
   function scrollLeft() {
-    scrollRef.current?.scrollBy({ left: -260, behavior: "smooth" });
+    scrollRef.current?.scrollBy({ left: -340, behavior: "smooth" });
   }
   function scrollRight() {
-    scrollRef.current?.scrollBy({ left: 260, behavior: "smooth" });
+    scrollRef.current?.scrollBy({ left: 340, behavior: "smooth" });
   }
 
   function handleCardPayment(workbook: WorkbookInfo) {
@@ -159,10 +179,11 @@ export function WorkbookStorePage() {
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
         >
-          {WORKBOOK_CATALOG.map((wb) => (
+          {WORKBOOK_CATALOG.map((wb, i) => (
             <WorkbookGalleryCard
               key={wb.id}
               workbook={wb}
+              bgIndex={i}
               isActive={activeId === wb.id}
               onClick={() => setActiveId(wb.id)}
             />
