@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
@@ -178,7 +179,24 @@ export default async function DashboardPage() {
   const phase1Result = phase1Res.data;
   const counselingBookings = counselingRes.data;
   const phase2Result = phase2Res.data;
-  const workshopProgress = workshopRes.data;
+  let workshopProgress = workshopRes.data;
+
+  // 테스트 유저: workshop_progress 레코드 없으면 자동 생성
+  const TEST_EMAILS = ["mingle22@hanmail.net"];
+  if (!workshopProgress && TEST_EMAILS.includes(user.email ?? "")) {
+    const admin = createAdminClient();
+    const { data: created } = await admin
+      .from("workshop_progress")
+      .insert({
+        user_id: user.id,
+        workshop_type: "achievement-addiction",
+        current_step: 1,
+        status: "in_progress",
+      })
+      .select("id, current_step, status, workshop_type")
+      .single();
+    workshopProgress = created;
+  }
 
   // 2차 병렬 쿼리: phase1 의존
   let paymentData: { id: string; status: string } | null = null;
