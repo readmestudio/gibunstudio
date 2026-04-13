@@ -59,8 +59,8 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
         throw new Error(data.error || "점수 계산에 실패했습니다.");
       }
 
-      // Step 3 (진단 결과)으로 이동
-      router.push("/dashboard/self-workshop/step/3");
+      // Step 2 (진단 결과)로 이동
+      router.push("/dashboard/self-workshop/step/2");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
       setSubmitting(false);

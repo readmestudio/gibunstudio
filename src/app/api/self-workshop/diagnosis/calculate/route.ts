@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     .update({
       diagnosis_answers: answers,
       diagnosis_scores: scores,
-      current_step: 3,
+      current_step: 2,
     })
     .eq("id", workshopId);
 

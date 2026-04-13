@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
-import { WorkshopReadStep1 } from "@/components/self-workshop/WorkshopReadStep1";
 import { WorkshopDiagnosisContent } from "@/components/self-workshop/WorkshopDiagnosisContent";
 import { WorkshopResultContent } from "@/components/self-workshop/WorkshopResultContent";
 import { WorkshopExerciseStep4 } from "@/components/self-workshop/WorkshopExerciseStep4";
@@ -73,42 +72,43 @@ export default async function WorkshopStepPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Step별 콘텐츠 렌더링 */}
-      {stepNumber === 1 && <WorkshopReadStep1 />}
-
-      {stepNumber === 2 && (
+      {/* Step별 콘텐츠 렌더링 (8단계) */}
+      {stepNumber === 1 && (
         <WorkshopDiagnosisContent
           workshopId={workshopId}
           savedAnswers={progress.diagnosis_answers ?? undefined}
         />
       )}
 
-      {stepNumber === 3 && progress.diagnosis_scores && (
-        <WorkshopResultContent scores={progress.diagnosis_scores} />
+      {stepNumber === 2 && progress.diagnosis_scores && (
+        <WorkshopResultContent
+          scores={progress.diagnosis_scores}
+          workshopId={workshopId}
+        />
       )}
 
-      {stepNumber === 4 && (
+      {stepNumber === 3 && (
         <WorkshopExerciseStep4
           workshopId={workshopId}
           savedData={progress.mechanism_analysis ?? undefined}
         />
       )}
 
-      {stepNumber === 5 && (
+      {stepNumber === 4 && (
         <WorkshopAIAnalysis
           workshopId={workshopId}
-          step={5}
+          step={4}
           savedCards={progress.mechanism_insights ?? undefined}
         />
       )}
 
-      {stepNumber === 6 && (
+      {stepNumber === 5 && (
         <WorkshopReadStep6
           highlightedErrors={extractCognitiveErrors(progress.mechanism_insights)}
         />
       )}
 
-      {stepNumber === 7 && (
+      {stepNumber === 6 && (
         <WorkshopExerciseStep7
           workshopId={workshopId}
           savedData={progress.coping_plan ?? undefined}
@@ -117,15 +117,15 @@ export default async function WorkshopStepPage({ params }: Props) {
         />
       )}
 
-      {stepNumber === 8 && (
+      {stepNumber === 7 && (
         <WorkshopAIAnalysis
           workshopId={workshopId}
-          step={8}
+          step={7}
           savedCards={progress.summary_cards ?? undefined}
         />
       )}
 
-      {stepNumber === 9 && (
+      {stepNumber === 8 && (
         <WorkshopReflectionContent
           workshopId={workshopId}
           savedData={progress.reflections ?? undefined}

@@ -305,7 +305,7 @@ export default async function DashboardPage() {
                     text={
                       workshopProgress.status === "completed"
                         ? "완료"
-                        : `${workshopProgress.current_step}/9 진행 중`
+                        : `${workshopProgress.current_step}/8 진행 중`
                     }
                   />
                 </div>

@@ -141,13 +141,13 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
           workshopId,
           field: "mechanism_analysis",
           data,
-          advanceStep: 5,
+          advanceStep: 4,
         }),
       });
 
       if (!res.ok) throw new Error("저장에 실패했습니다.");
 
-      router.push("/dashboard/self-workshop/step/5");
+      router.push("/dashboard/self-workshop/step/4");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
       setSubmitting(false);

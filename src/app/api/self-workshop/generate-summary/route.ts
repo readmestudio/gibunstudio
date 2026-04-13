@@ -104,12 +104,12 @@ ${aiInsightSummary}
       { card_type: string; title: string; content: string }[]
     >(response);
 
-    // 결과 저장 + Step 9으로 이동
+    // 결과 저장 + Step 8으로 이동
     await supabase
       .from("workshop_progress")
       .update({
         summary_cards: cards,
-        current_step: 9,
+        current_step: 8,
       })
       .eq("id", workshopId);
 

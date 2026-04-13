@@ -11,7 +11,7 @@ interface InsightCard {
 
 interface Props {
   workshopId: string;
-  step: 5 | 8; // Step 5: 메커니즘 분석, Step 8: 통합 써머리
+  step: 4 | 7; // Step 4: 메커니즘 분석, Step 7: 통합 써머리
   savedCards?: InsightCard[];
 }
 
@@ -28,7 +28,7 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
     async function fetchAnalysis() {
       try {
         const endpoint =
-          step === 5
+          step === 4
             ? "/api/self-workshop/analyze-mechanism"
             : "/api/self-workshop/generate-summary";
 
@@ -51,8 +51,8 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
     fetchAnalysis();
   }, [workshopId, step, savedCards]);
 
-  const nextStep = step === 5 ? 6 : 9;
-  const nextLabel = step === 5 ? "대처법 알아보기 →" : "마무리 성찰 →";
+  const nextStep = step === 4 ? 5 : 8;
+  const nextLabel = step === 4 ? "대처법 알아보기 →" : "마무리 성찰 →";
 
   if (loading) {
     return (
@@ -60,7 +60,7 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[var(--foreground)] border-t-transparent" />
           <p className="text-base font-medium text-[var(--foreground)]">
-            {step === 5
+            {step === 4
               ? "당신의 패턴을 분석하고 있어요..."
               : "워크북을 정리하고 있어요..."}
           </p>

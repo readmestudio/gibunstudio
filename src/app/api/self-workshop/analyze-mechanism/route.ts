@@ -101,12 +101,12 @@ content는 각 150-300자 내외로 작성`;
       { card_type: string; title: string; content: string }[]
     >(response);
 
-    // 결과 저장 + Step 6으로 이동
+    // 결과 저장 + Step 5으로 이동
     await supabase
       .from("workshop_progress")
       .update({
         mechanism_insights: cards,
-        current_step: 6,
+        current_step: 5,
       })
       .eq("id", workshopId);
 

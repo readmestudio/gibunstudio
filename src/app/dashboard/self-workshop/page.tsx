@@ -49,7 +49,7 @@ export default async function SelfWorkshopDashboardPage() {
   const completedSteps: number[] = [];
   if (progress) {
     if (progress.status === "completed") {
-      for (let i = 1; i <= 9; i++) completedSteps.push(i);
+      for (let i = 1; i <= 8; i++) completedSteps.push(i);
     } else {
       for (let i = 1; i < currentStep; i++) completedSteps.push(i);
     }
