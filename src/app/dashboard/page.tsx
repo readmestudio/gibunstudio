@@ -149,7 +149,7 @@ export default async function DashboardPage() {
   }
 
   // 1차 병렬 쿼리: 독립적 테이블
-  const [phase1Res, counselingRes, phase2Res] = await Promise.all([
+  const [phase1Res, counselingRes, phase2Res, workshopRes] = await Promise.all([
     supabase
       .from("phase1_results")
       .select("id, matched_husband_type, created_at")
@@ -167,11 +167,18 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("workshop_progress")
+      .select("id, current_step, status, workshop_type")
+      .eq("user_id", user.id)
+      .eq("workshop_type", "achievement-addiction")
+      .maybeSingle(),
   ]);
 
   const phase1Result = phase1Res.data;
   const counselingBookings = counselingRes.data;
   const phase2Result = phase2Res.data;
+  const workshopProgress = workshopRes.data;
 
   // 2차 병렬 쿼리: phase1 의존
   let paymentData: { id: string; status: string } | null = null;
@@ -207,6 +214,7 @@ export default async function DashboardPage() {
   const participatedIds = new Set<string>();
   if (husbandMatch) participatedIds.add("husband-match");
   if (counseling) participatedIds.add("counseling");
+  if (workshopProgress) participatedIds.add("self-workshop");
 
   const hasMyPrograms = participatedIds.size > 0;
 
@@ -265,6 +273,35 @@ export default async function DashboardPage() {
                     </Link>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* 마음 챙김 워크북 */}
+            {workshopProgress && (
+              <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold text-[var(--foreground)]">
+                    마음 챙김 워크북
+                  </h3>
+                  <StatusBadge
+                    text={
+                      workshopProgress.status === "completed"
+                        ? "완료"
+                        : `${workshopProgress.current_step}/9 진행 중`
+                    }
+                  />
+                </div>
+                <p className="text-sm text-[var(--foreground)]/60 mb-4">
+                  {workshopProgress.status === "completed"
+                    ? "워크북을 완료했습니다."
+                    : "성취 중독을 위한 마음챙김 워크북을 진행 중입니다."}
+                </p>
+                <Link
+                  href="/dashboard/self-workshop"
+                  className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
+                >
+                  {workshopProgress.status === "completed" ? "다시 보기" : "이어하기"}
+                </Link>
               </div>
             )}
 
