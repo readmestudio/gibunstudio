@@ -96,7 +96,7 @@ export default async function WorkshopStepPage({ params }: Props) {
             ← 워크북 목록
           </Link>
         </div>
-        <WorkshopPaymentGate />
+        <WorkshopPaymentGate scores={progress.diagnosis_scores} />
       </div>
     );
   }
