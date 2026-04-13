@@ -79,24 +79,36 @@ const CONSEQUENCES = [
 ];
 
 function getSignalLevel(score: number) {
-  if (score >= 15) {
+  // 25점 만점 기준
+  if (score >= 18) {
     return {
-      label: "주의 필요",
-      className: "bg-[var(--foreground)]/10 text-[var(--foreground)]",
-      dotClass: "bg-[var(--foreground)]",
+      emoji: "\u{1F6A8}", // 🚨
+      label: "위험",
+      className: "bg-red-100 text-red-700",
+      dotClass: "bg-red-500",
     };
   }
-  if (score >= 10) {
+  if (score >= 13) {
     return {
+      emoji: "\u{26A0}\u{FE0F}", // ⚠️
+      label: "주의 필요",
+      className: "bg-orange-100 text-orange-700",
+      dotClass: "bg-orange-500",
+    };
+  }
+  if (score >= 8) {
+    return {
+      emoji: "\u{1F7E1}", // 🟡
       label: "주의",
-      className: "bg-[var(--foreground)]/5 text-[var(--foreground)]/70",
-      dotClass: "bg-[var(--foreground)]/50",
+      className: "bg-yellow-100 text-yellow-700",
+      dotClass: "bg-yellow-500",
     };
   }
   return {
+    emoji: "\u{1F7E2}", // 🟢
     label: "안전",
-    className: "bg-[var(--foreground)]/5 text-[var(--foreground)]/40",
-    dotClass: "bg-[var(--foreground)]/25",
+    className: "bg-green-100 text-green-700",
+    dotClass: "bg-green-500",
   };
 }
 
@@ -251,11 +263,9 @@ export function WorkshopPaymentGate({ scores }: Props) {
                         {card.keyword}
                       </span>
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${signal.className}`}
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${signal.className}`}
                       >
-                        <span
-                          className={`inline-block h-2 w-2 rounded-full ${signal.dotClass}`}
-                        />
+                        <span className="text-sm">{signal.emoji}</span>
                         {signal.label}
                       </span>
                     </div>
