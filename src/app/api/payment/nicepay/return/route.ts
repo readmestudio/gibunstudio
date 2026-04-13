@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { approveNicepayPayment } from "@/lib/nicepay/approve";
 
@@ -7,20 +8,14 @@ import { approveNicepayPayment } from "@/lib/nicepay/approve";
  * POST /api/payment/nicepay/return
  *
  * NicePay Server 승인 모델의 returnUrl 콜백입니다.
- * 고객이 결제창에서 인증을 완료하면 NicePay가 이 URL로 POST합니다.
- *
- * 흐름:
- * 1. NicePay에서 받은 resultCode 확인
- * 2. orderId로 DB에서 결제 레코드 조회
- * 3. 금액 위변조 검증
- * 4. 승인 API 호출 (tid + amount)
- * 5. DB 업데이트 (status → confirmed, payment_key → tid)
- * 6. 사용자를 결과 페이지로 리다이렉트
+ * orderId prefix로 결제 유형 분기:
+ *   HM- → husband_match_payments
+ *   WB- → workshop_purchases
  */
 export async function POST(request: NextRequest) {
   if (!isNicepayEnabled()) {
     return NextResponse.redirect(
-      new URL("/husband-match/payment/failed?message=결제가+설정되지+않았습니다", request.url)
+      new URL("/payment/failed?message=결제가+설정되지+않았습니다", request.url)
     );
   }
 
@@ -50,16 +45,135 @@ export async function POST(request: NextRequest) {
 
   const baseUrl = new URL(request.url).origin;
 
+  // orderId prefix로 결제 유형 분기
+  const isWorkshop = orderId.startsWith("WB-");
+
   // 1. 인증 실패 시 실패 페이지로 리다이렉트
   if (resultCode !== "0000") {
     console.error("NicePay 인증 실패:", { resultCode, resultMsg, orderId });
+    const failUrl = isWorkshop
+      ? `/payment/self-workshop?error=${encodeURIComponent(resultMsg)}`
+      : `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
+    return NextResponse.redirect(`${baseUrl}${failUrl}`);
+  }
+
+  const supabase = await createClient();
+
+  // ── 워크북 결제 처리 ──
+  if (isWorkshop) {
+    return handleWorkshopPayment(supabase, { tid, orderId, amount, baseUrl });
+  }
+
+  // ── 남편상 분석 결제 처리 (기존 로직) ──
+  return handleHusbandMatchPayment(supabase, {
+    tid,
+    orderId,
+    amount,
+    baseUrl,
+  });
+}
+
+/* ── 워크북 결제 처리 ── */
+
+async function handleWorkshopPayment(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: { tid: string; orderId: string; amount: number; baseUrl: string }
+) {
+  const { tid, orderId, amount, baseUrl } = params;
+  const failUrl = `${baseUrl}/payment/self-workshop?error=${encodeURIComponent("결제 처리 중 오류가 발생했습니다")}`;
+
+  // DB에서 결제 레코드 조회
+  const { data: purchase, error: queryError } = await supabase
+    .from("workshop_purchases")
+    .select("id, user_id, amount, status")
+    .eq("order_id", orderId)
+    .single();
+
+  if (queryError || !purchase) {
+    console.error("워크북 결제 레코드 조회 실패:", { orderId, queryError });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 이미 승인됨 → 완료 페이지로
+  if (purchase.status === "confirmed") {
     return NextResponse.redirect(
-      `${baseUrl}/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`
+      `${baseUrl}/payment/self-workshop/complete/${purchase.id}`
     );
   }
 
-  // 2. DB에서 결제 레코드 조회
-  const supabase = await createClient();
+  if (purchase.status !== "pending") {
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 금액 검증
+  if (purchase.amount !== amount) {
+    console.error("워크북 결제 금액 불일치:", {
+      dbAmount: purchase.amount,
+      nicepayAmount: amount,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // NicePay 승인 호출
+  const approval = await approveNicepayPayment(tid, amount);
+  if (!approval.success) {
+    console.error("워크북 NicePay 승인 실패:", {
+      resultCode: approval.resultCode,
+      resultMsg: approval.resultMsg,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 결제 상태 업데이트
+  const { error: updateError } = await supabase
+    .from("workshop_purchases")
+    .update({
+      status: "confirmed",
+      payment_key: tid,
+      paid_at: new Date().toISOString(),
+    })
+    .eq("id", purchase.id)
+    .eq("status", "pending");
+
+  if (updateError) {
+    console.error("워크북 결제 상태 업데이트 실패:", { updateError, orderId });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // workshop_progress 레코드가 없으면 자동 생성
+  const admin = createAdminClient();
+  const { data: existingProgress } = await admin
+    .from("workshop_progress")
+    .select("id")
+    .eq("user_id", purchase.user_id)
+    .eq("workshop_type", "achievement-addiction")
+    .maybeSingle();
+
+  if (!existingProgress) {
+    await admin.from("workshop_progress").insert({
+      user_id: purchase.user_id,
+      workshop_type: "achievement-addiction",
+      current_step: 1,
+      status: "in_progress",
+      purchase_id: purchase.id,
+    });
+  }
+
+  return NextResponse.redirect(
+    `${baseUrl}/payment/self-workshop/complete/${purchase.id}`
+  );
+}
+
+/* ── 남편상 분석 결제 처리 (기존 로직) ── */
+
+async function handleHusbandMatchPayment(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: { tid: string; orderId: string; amount: number; baseUrl: string }
+) {
+  const { tid, orderId, amount, baseUrl } = params;
+
   const { data: payment, error: paymentError } = await supabase
     .from("husband_match_payments")
     .select("id, phase1_id, amount, status")
@@ -73,21 +187,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 이미 승인된 결제는 성공 페이지로 바로 이동 (중복 처리 방지)
   if (payment.status === "confirmed") {
     return NextResponse.redirect(
       `${baseUrl}/husband-match/payment/complete/${payment.id}`
     );
   }
 
-  // pending 상태가 아니면 처리 불가
   if (payment.status !== "pending") {
     return NextResponse.redirect(
       `${baseUrl}/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent("처리할 수 없는 결제 상태입니다")}`
     );
   }
 
-  // 3. 금액 위변조 검증
   if (payment.amount !== amount) {
     console.error("금액 불일치:", {
       dbAmount: payment.amount,
@@ -99,7 +210,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 4. NicePay 승인 API 호출
   const approval = await approveNicepayPayment(tid, amount);
 
   if (!approval.success) {
@@ -113,7 +223,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 5. DB 업데이트 — confirmed + tid 저장
   const { error: updateError } = await supabase
     .from("husband_match_payments")
     .update({
@@ -123,7 +232,7 @@ export async function POST(request: NextRequest) {
       paid_at: new Date().toISOString(),
     })
     .eq("id", payment.id)
-    .eq("status", "pending"); // 낙관적 잠금: pending인 경우만 업데이트
+    .eq("status", "pending");
 
   if (updateError) {
     console.error("결제 상태 업데이트 실패:", { updateError, orderId });
@@ -132,7 +241,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 6. 성공 페이지로 리다이렉트
   return NextResponse.redirect(
     `${baseUrl}/husband-match/payment/complete/${payment.id}`
   );

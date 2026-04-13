@@ -96,7 +96,7 @@ export function WorkbookStorePage() {
     scrollRef.current?.scrollBy({ left: 340, behavior: "smooth" });
   }
 
-  function handleCardPayment(workbook: WorkbookInfo) {
+  async function handleCardPayment(workbook: WorkbookInfo) {
     if (workbook.comingSoon) return;
     if (!NICEPAY_CLIENT_ID) {
       alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
@@ -109,23 +109,47 @@ export function WorkbookStorePage() {
 
     setIsSubmitting(true);
 
-    const orderId = `${workbook.slug.toUpperCase()}-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 10)}`;
+    try {
+      // 1. DB에 결제 레코드 먼저 생성
+      const res = await fetch("/api/payment/workshop/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workshopType: workbook.id,
+          amount: workbook.price,
+        }),
+      });
+      const data = await res.json();
 
-    window.AUTHNICE.requestPay({
-      clientId: NICEPAY_CLIENT_ID,
-      method: "card",
-      orderId,
-      amount: workbook.price,
-      goodsName: `마음 챙김 워크북 - ${workbook.title}`,
-      returnUrl: `${window.location.origin}/payment/self-workshop/complete`,
-      fnError: (result: { errorMsg: string }) => {
-        console.error("NicePay 에러:", result);
-        alert(`결제 오류: ${result.errorMsg}`);
+      if (data.already_purchased) {
+        alert("이미 구매한 워크북입니다.");
         setIsSubmitting(false);
-      },
-    });
+        return;
+      }
+
+      if (!data.order_id) {
+        throw new Error(data.error || "결제 레코드 생성에 실패했습니다");
+      }
+
+      // 2. NicePay 결제창 호출 (returnUrl → 공통 핸들러)
+      window.AUTHNICE.requestPay({
+        clientId: NICEPAY_CLIENT_ID,
+        method: "card",
+        orderId: data.order_id,
+        amount: workbook.price,
+        goodsName: `마음 챙김 워크북 - ${workbook.title}`,
+        returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
+        fnError: (result: { errorMsg: string }) => {
+          console.error("NicePay 에러:", result);
+          alert(`결제 오류: ${result.errorMsg}`);
+          setIsSubmitting(false);
+        },
+      });
+    } catch (err) {
+      console.error("결제 시작 오류:", err);
+      alert("결제를 시작할 수 없습니다. 잠시 후 다시 시도해주세요.");
+      setIsSubmitting(false);
+    }
   }
 
   return (

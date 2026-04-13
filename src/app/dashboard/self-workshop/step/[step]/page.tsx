@@ -9,6 +9,7 @@ import { WorkshopAIAnalysis } from "@/components/self-workshop/WorkshopAIAnalysi
 import { WorkshopReadStep6 } from "@/components/self-workshop/WorkshopReadStep6";
 import { WorkshopExerciseStep7 } from "@/components/self-workshop/WorkshopExerciseStep7";
 import { WorkshopReflectionContent } from "@/components/self-workshop/WorkshopReflectionContent";
+import { WorkshopPaymentGate } from "@/components/self-workshop/WorkshopPaymentGate";
 
 interface Props {
   params: Promise<{ step: string }>;
@@ -30,12 +31,36 @@ export default async function WorkshopStepPage({ params }: Props) {
   if (!user) redirect("/login?redirect=/dashboard/self-workshop");
 
   // 워크북 진행 데이터 조회
-  const { data: progress } = await supabase
+  let { data: progress } = await supabase
     .from("workshop_progress")
     .select("*")
     .eq("user_id", user.id)
     .eq("workshop_type", "achievement-addiction")
     .maybeSingle();
+
+  // Step 1(진단)은 progress 없어도 접근 가능 → 자동 생성
+  // Step 2+는 progress + 구매 확인 필요
+  const TEST_EMAILS = ["mingle22@hanmail.net"];
+  const isTestUser = TEST_EMAILS.includes(user.email ?? "");
+
+  if (!progress && stepNumber === 1) {
+    // Step 1 접근 시 progress 없으면 자동 생성 (진단은 무료)
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: created } = await admin
+      .from("workshop_progress")
+      .insert({
+        user_id: user.id,
+        workshop_type: "achievement-addiction",
+        current_step: 1,
+        status: "in_progress",
+      })
+      .select()
+      .single();
+    if (!created) redirect("/dashboard/self-workshop");
+    // progress를 새로 할당 (재조회 대신)
+    progress = created;
+  }
 
   // 진행 데이터가 없으면 대시보드로
   if (!progress) redirect("/dashboard/self-workshop");
@@ -43,6 +68,36 @@ export default async function WorkshopStepPage({ params }: Props) {
   // 잠금 확인: 현재 step보다 앞선 step만 접근 가능
   if (stepNumber > progress.current_step) {
     redirect("/dashboard/self-workshop");
+  }
+
+  // Step 2+ 접근 시 구매 확인 (테스트 유저 제외)
+  let hasPurchase = isTestUser;
+  if (!hasPurchase && stepNumber >= 2) {
+    const { data: purchase } = await supabase
+      .from("workshop_purchases")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("workshop_type", "achievement-addiction")
+      .eq("status", "confirmed")
+      .maybeSingle();
+    hasPurchase = !!purchase;
+  }
+
+  // 미구매 + Step 2+ → 결제 게이트 표시
+  if (!hasPurchase && stepNumber >= 2) {
+    return (
+      <div className="min-h-screen bg-white px-4 py-8">
+        <div className="mx-auto max-w-lg mb-8">
+          <Link
+            href="/dashboard/self-workshop"
+            className="text-sm text-[var(--foreground)]/60 hover:underline"
+          >
+            ← 워크북 목록
+          </Link>
+        </div>
+        <WorkshopPaymentGate />
+      </div>
+    );
   }
 
   const workshopId = progress.id;
