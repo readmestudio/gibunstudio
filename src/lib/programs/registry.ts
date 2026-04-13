@@ -44,13 +44,13 @@ export const PROGRAMS: ProgramDefinition[] = [
   },
   {
     id: "self-workshop",
-    title: "셀프 워크샵",
-    description: "가치관 월드컵, 유형 검사, 맞춤 직업 추천까지. 온라인 활동지로 진짜 내가 원하는 것을 발견하세요.",
-    href: "/programs/self-workshop",
+    title: "마음 챙김 워크북",
+    description: "나의 마음 패턴을 이해하고, 스스로 대처법을 찾아가는 CBT 기반 셀프 워크북",
+    href: "/payment/self-workshop",
     dashboardHref: "/dashboard/self-workshop",
     showOnHome: true,
     showOnDashboard: true,
-    comingSoon: true,
+    comingSoon: false,
     order: 3,
   },
   {

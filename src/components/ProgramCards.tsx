@@ -38,9 +38,9 @@ const SELF_HACKING_PROGRAMS: ProgramCardData[] = [
   },
   {
     id: "self-workshop",
-    title: "내면 탐색 워크샵",
+    title: "마음 챙김 워크북",
     description:
-      "가치관 월드컵, 삶의 의미 탐색 같은 활동지로 직접 답을 찾아가요. 내 속도대로.",
+      "나의 마음 패턴을 이해하고, 스스로 대처법을 찾아가는 CBT 기반 셀프 워크북",
     href: "/payment/self-workshop",
     comingSoon: false,
     cta: "구매하기 →",
