@@ -19,6 +19,9 @@ import {
   WORKSHOP_PRICE,
   WORKBOOK_FEATURES,
 } from "@/lib/self-workshop/landing-data";
+import { SolutionStepsSection } from "@/components/self-workshop/landing/SolutionStepsSection";
+import { WorkbookPreviewSection } from "@/components/self-workshop/landing/WorkbookPreviewSection";
+import { CurriculumSection } from "@/components/self-workshop/landing/CurriculumSection";
 
 interface Props {
   scores?: DiagnosisScores;
@@ -370,17 +373,14 @@ export function WorkshopPaymentGate({ scores }: Props) {
         </div>
       </div>
 
-      {/* ── 5. 해결 가능성 + CTA ── */}
-      <div className="space-y-4">
-        <h3 className="text-base font-semibold text-[var(--foreground)]">
-          하지만, 패턴을 알면 바꿀 수 있어요
-        </h3>
-        <p className="text-sm leading-relaxed text-[var(--foreground)]/70">
-          이 워크북은 CBT(인지행동치료) 기반으로, 당신의 성취 패턴이 어디서
-          시작되고 어떻게 반복되는지를 직접 추적합니다. 패턴을 인식하는 것만으로도
-          자동적 사고에서 한 발짝 물러설 수 있어요.
-        </p>
-      </div>
+      {/* ── 5. 솔루션 로직: 이 워크북이 해결하는 방법 ── */}
+      <SolutionStepsSection />
+
+      {/* ── 6. 워크북 미리보기 ── */}
+      <WorkbookPreviewSection />
+
+      {/* ── 7. 커리큘럼 ── */}
+      <CurriculumSection />
 
       {/* 가격 + 포함 내용 */}
       <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
