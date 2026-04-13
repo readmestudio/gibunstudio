@@ -1,14 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Script from "next/script";
 import Link from "next/link";
 import { WORKBOOK_CATALOG, type WorkbookInfo } from "@/lib/self-workshop/workbook-catalog";
 import { NotifyButton } from "@/components/NotifyButton";
-
-const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
-const NICEPAY_SDK_URL =
-  process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
 
 /* ──────────────────────────────────────────────
    수채화 배경 이미지
@@ -83,8 +78,6 @@ function WorkbookGalleryCard({
    ────────────────────────────────────────────── */
 export function WorkbookStorePage() {
   const [activeId, setActiveId] = useState(WORKBOOK_CATALOG[0].id);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const active = WORKBOOK_CATALOG.find((w) => w.id === activeId)!;
@@ -96,74 +89,8 @@ export function WorkbookStorePage() {
     scrollRef.current?.scrollBy({ left: 340, behavior: "smooth" });
   }
 
-  async function handleCardPayment(workbook: WorkbookInfo) {
-    if (workbook.comingSoon) return;
-    if (!NICEPAY_CLIENT_ID) {
-      alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-    if (!window.AUTHNICE) {
-      alert("결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // 1. DB에 결제 레코드 먼저 생성
-      const res = await fetch("/api/payment/workshop/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workshopType: workbook.id,
-          amount: workbook.price,
-        }),
-      });
-      const data = await res.json();
-
-      if (data.already_purchased) {
-        alert("이미 구매한 워크북입니다.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!data.order_id) {
-        throw new Error(data.error || "결제 레코드 생성에 실패했습니다");
-      }
-
-      // 2. NicePay 결제창 호출 (returnUrl → 공통 핸들러)
-      window.AUTHNICE.requestPay({
-        clientId: NICEPAY_CLIENT_ID,
-        method: "card",
-        orderId: data.order_id,
-        amount: workbook.price,
-        goodsName: `마음 챙김 워크북 - ${workbook.title}`,
-        returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
-        fnError: (result: { errorMsg: string }) => {
-          console.error("NicePay 에러:", result);
-          alert(`결제 오류: ${result.errorMsg}`);
-          setIsSubmitting(false);
-        },
-      });
-    } catch (err) {
-      console.error("결제 시작 오류:", err);
-      alert("결제를 시작할 수 없습니다. 잠시 후 다시 시도해주세요.");
-      setIsSubmitting(false);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-white">
-      {/* NicePay SDK */}
-      {NICEPAY_CLIENT_ID && (
-        <Script
-          src={NICEPAY_SDK_URL}
-          strategy="afterInteractive"
-          onLoad={() => setSdkLoaded(true)}
-          onReady={() => setSdkLoaded(true)}
-        />
-      )}
-
       {/* 페이지 헤더 */}
       <div className="px-4 pt-16 pb-8 text-center">
         <h1 className="text-3xl font-bold text-[var(--foreground)] md:text-4xl">
@@ -267,23 +194,12 @@ export function WorkbookStorePage() {
             </p>
           </div>
         ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => handleCardPayment(active)}
-              disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
-              className="w-full rounded-xl border-2 border-[var(--foreground)] bg-white px-6 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting
-                ? "결제 진행 중..."
-                : NICEPAY_CLIENT_ID && !sdkLoaded
-                  ? "결제 모듈 로딩 중..."
-                  : "구매하기"}
-            </button>
-            <p className="mt-3 text-center text-xs text-[var(--foreground)]/50">
-              결제는 NicePay를 통해 안전하게 처리됩니다.
-            </p>
-          </>
+          <Link
+            href={`/payment/self-workshop/${active.id}`}
+            className="block w-full rounded-xl border-2 border-[var(--foreground)] bg-white px-6 py-4 text-center text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
+          >
+            자세히 보기
+          </Link>
         )}
 
         {/* 돌아가기 */}

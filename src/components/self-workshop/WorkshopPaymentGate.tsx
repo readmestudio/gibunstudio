@@ -14,7 +14,11 @@ const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
   process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
 
-const WORKSHOP_PRICE = 99000;
+import {
+  CONSEQUENCES,
+  WORKSHOP_PRICE,
+  WORKBOOK_FEATURES,
+} from "@/lib/self-workshop/landing-data";
 
 interface Props {
   scores?: DiagnosisScores;
@@ -53,30 +57,6 @@ const SCENARIO_CARDS: {
   },
 ];
 
-/* ── 방치 시 결과 경고 ── */
-
-const CONSEQUENCES = [
-  {
-    title: "만성 번아웃",
-    description:
-      "매일 최선을 다하는데 '충분하지 않다'는 느낌이 사라지지 않아요. 어느 날 갑자기 아무것도 하기 싫어지는 순간이 찾아옵니다.",
-  },
-  {
-    title: "관계 갈등",
-    description:
-      "가까운 사람에게 '왜 너는 노력을 안 해?'라는 말이 나오기 시작해요. 나의 기준을 타인에게 강요하게 되고, 관계가 멀어집니다.",
-  },
-  {
-    title: "자기 회의",
-    description:
-      "이 정도면 됐다고 스스로를 인정하지 못해요. 성과를 쌓아도 '운이 좋았을 뿐'이라는 생각이 반복됩니다.",
-  },
-  {
-    title: "신체 증상",
-    description:
-      "불면, 만성 피로, 두통, 소화 불량. 몸이 보내는 신호를 무시하다가 건강이 무너지는 경우가 많아요.",
-  },
-];
 
 function getSignalLevel(score: number) {
   // 25점 만점 기준
@@ -277,27 +257,89 @@ export function WorkshopPaymentGate({ scores }: Props) {
               })}
             </div>
           </div>
-          {/* ── 3-1. 자주 할 생각 체크리스트 ── */}
-          <div className="space-y-3">
-            {THOUGHT_CHECKLIST.map((item) => (
-              <div key={item} className="flex items-start gap-2">
-                <span className="text-base leading-relaxed">&#x2705;</span>
-                <p className="text-sm leading-relaxed text-[var(--foreground)]/80">
-                  {item}
+          {/* ── 3-1. 성취 중독 반복 순환 도식 ── */}
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold text-[var(--foreground)]">
+              이 패턴이 반복됩니다
+            </h3>
+            <p className="text-sm text-[var(--foreground)]/60">
+              성취 중독은 하나의 고정된 감정이 아니라, 끝없이 반복되는 순환 구조예요.
+            </p>
+            <div className="relative mx-auto w-full max-w-[360px] aspect-square">
+              {/* 중앙 원 */}
+              <div className="absolute inset-[25%] rounded-full border-2 border-dashed border-[var(--foreground)]/20" />
+              <div className="absolute inset-[35%] rounded-full bg-[var(--surface)] flex items-center justify-center">
+                <p className="text-xs font-semibold text-[var(--foreground)]/60 text-center leading-tight px-2">
+                  성취 중독<br />순환 패턴
                 </p>
               </div>
-            ))}
-          </div>
 
-          {/* ── 3-2. 콜아웃 박스 ── */}
-          <div className="rounded-xl border-2 border-[var(--foreground)] bg-[var(--surface)] p-6">
-            <p className="text-sm font-semibold text-[var(--foreground)] mb-2">
-              이런 생각이 익숙하다면
-            </p>
-            <p className="text-sm leading-relaxed text-[var(--foreground)]/70">
-              이건 당신이 게으르거나 나약해서가 아닙니다. 오랜 시간 반복된 <strong>자동적 사고 패턴</strong>이에요.
-              문제는 이 패턴을 인식하지 못한 채 방치하면 점점 더 강해진다는 겁니다.
-            </p>
+              {/* 순환 노드 6개 — 원형 배치 */}
+              {ADDICTION_CYCLE.map((node, i) => {
+                const angle = (i * 60 - 90) * (Math.PI / 180);
+                const radius = 44;
+                const left = 50 + radius * Math.cos(angle);
+                const top = 50 + radius * Math.sin(angle);
+                return (
+                  <div
+                    key={node.step}
+                    className="absolute flex flex-col items-center"
+                    style={{
+                      left: `${left}%`,
+                      top: `${top}%`,
+                      transform: "translate(-50%, -50%)",
+                      width: "90px",
+                    }}
+                  >
+                    <span className="flex items-center justify-center w-9 h-9 rounded-full border-2 border-[var(--foreground)] bg-white text-sm font-bold text-[var(--foreground)] mb-1">
+                      {String(node.step).padStart(2, "0")}
+                    </span>
+                    <p className="text-[11px] font-semibold text-[var(--foreground)] text-center leading-tight">
+                      {node.title}
+                    </p>
+                    <p className="text-[9px] text-[var(--foreground)]/50 text-center leading-tight mt-0.5">
+                      {node.desc}
+                    </p>
+                  </div>
+                );
+              })}
+
+              {/* 화살표 (CSS 원호 표현) */}
+              <svg
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                viewBox="0 0 100 100"
+              >
+                {ADDICTION_CYCLE.map((_, i) => {
+                  const a1 = (i * 60 - 90 + 18) * (Math.PI / 180);
+                  const a2 = ((i + 1) * 60 - 90 - 18) * (Math.PI / 180);
+                  const r = 44;
+                  const x1 = 50 + r * Math.cos(a1);
+                  const y1 = 50 + r * Math.sin(a1);
+                  const x2 = 50 + r * Math.cos(a2);
+                  const y2 = 50 + r * Math.sin(a2);
+                  return (
+                    <g key={i}>
+                      <path
+                        d={`M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`}
+                        fill="none"
+                        stroke="var(--foreground)"
+                        strokeWidth="0.4"
+                        strokeDasharray="1.2 0.8"
+                        opacity="0.3"
+                      />
+                      {/* 화살촉 */}
+                      <circle
+                        cx={x2}
+                        cy={y2}
+                        r="0.8"
+                        fill="var(--foreground)"
+                        opacity="0.4"
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
           </div>
         </>
       )}
@@ -395,17 +437,15 @@ export function WorkshopPaymentGate({ scores }: Props) {
   );
 }
 
-const THOUGHT_CHECKLIST = [
-  "\"이 정도면 됐다\"라고 스스로를 인정하지 못한다",
-  "쉬는 날에도 \"뭐라도 해야 하는데\" 하는 불안이 있다",
-  "성과가 없으면 하루가 낭비된 것 같다",
-  "남들은 나보다 더 잘하고 있는 것 같다",
-  "잘했다는 말을 들어도 \"다음엔 더 잘해야지\"가 먼저 떠오른다",
+/* ── 성취 중독 반복 순환 도식 데이터 ── */
+
+const ADDICTION_CYCLE = [
+  { step: 1, title: "성취 압박", desc: "더 잘해야 한다는 불안" },
+  { step: 2, title: "과잉 몰입", desc: "일에 과도하게 집중" },
+  { step: 3, title: "일시적 안도", desc: "성과 달성 순간의 만족" },
+  { step: 4, title: "공허감", desc: "금세 찾아오는 허무함" },
+  { step: 5, title: "자기 의심", desc: "아직 부족하다는 생각" },
+  { step: 6, title: "더 큰 목표", desc: "다시 시작되는 압박감" },
 ];
 
-const FEATURES = [
-  "나의 순환 메커니즘 직접 추적",
-  "AI 교차검증으로 숨겨진 패턴 발견",
-  "인지 재구조화 · 행동 실험 · 자기 돌봄 워크시트",
-  "전체 요약 리포트",
-];
+const FEATURES = WORKBOOK_FEATURES;
