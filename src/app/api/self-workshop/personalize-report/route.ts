@@ -67,12 +67,40 @@ export async function POST(req: Request) {
   try {
     const report = await generateWithLLM(scores, userName);
     const admin = createAdminClient();
-    await admin
+    const { error: updateError, data: updated } = await admin
       .from("workshop_progress")
       .update({ personalized_report: report })
-      .eq("id", workshopId);
+      .eq("id", workshopId)
+      .select("id, personalized_report");
 
-    return NextResponse.json({ report, source: "llm" });
+    if (updateError) {
+      console.error(
+        "[personalize-report] DB 저장 실패:",
+        updateError.message,
+        updateError
+      );
+      return NextResponse.json({
+        report,
+        source: "llm",
+        saved: false,
+        saveError: updateError.message,
+      });
+    }
+
+    if (!updated || updated.length === 0) {
+      console.error(
+        "[personalize-report] DB 저장 실패: 업데이트된 행이 없음",
+        { workshopId }
+      );
+      return NextResponse.json({
+        report,
+        source: "llm",
+        saved: false,
+        saveError: "no_rows_updated",
+      });
+    }
+
+    return NextResponse.json({ report, source: "llm", saved: true });
   } catch (err) {
     console.error("[personalize-report] LLM 실패, 폴백 사용:", err);
     const fallback = buildFallbackReport(scores, userName);
