@@ -252,7 +252,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
           disabled={!isComplete || submitting}
           className="inline-flex rounded-xl border-2 border-[var(--foreground)] px-8 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-30"
         >
-          {submitting ? "저장 중..." : "AI 분석 받기 →"}
+          {submitting ? "저장 중..." : "인지 패턴 분석 받기 →"}
         </button>
         {!isComplete && (
           <p className="mt-2 text-xs text-[var(--foreground)]/50">

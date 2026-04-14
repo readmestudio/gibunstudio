@@ -4,7 +4,7 @@ const TYPE_LABELS: Record<string, string> = {
   diagnosis: "진단",
   result: "결과",
   exercise: "실습",
-  ai_analysis: "AI 분석",
+  ai_analysis: "인지 패턴 분석",
   read: "학습",
   reflection: "성찰",
 };
