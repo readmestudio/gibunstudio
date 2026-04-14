@@ -15,12 +15,12 @@ interface Props {
 }
 
 const EMPTY_MECHANISM = {
-  my_core_belief: "",
-  my_triggers: "",
-  my_automatic_thoughts: "",
-  my_emotions_body: { text: "", emotions: [] as string[] },
-  my_behaviors: "",
-  my_cycle_insight: "",
+  recent_situation: "",
+  automatic_thought: "",
+  common_thoughts_checked: [] as string[],
+  trigger_context: "",
+  emotions_body: { emotions: [] as string[], body_text: "" },
+  core_beliefs: { about_self: "", about_others: "", about_world: "" },
 };
 
 export function WorkshopStep3Understand({

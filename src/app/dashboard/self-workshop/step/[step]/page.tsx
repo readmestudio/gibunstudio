@@ -204,7 +204,7 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
         <WorkshopExerciseStep7
           workshopId={workshopId}
           savedData={progress.coping_plan ?? undefined}
-          prefillThought={progress.mechanism_analysis?.my_automatic_thoughts}
+          prefillThought={progress.mechanism_analysis?.automatic_thought}
           aiSuggestedErrors={extractCognitiveErrors(progress.mechanism_insights)}
         />
       )}
