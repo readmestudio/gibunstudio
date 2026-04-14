@@ -1,3 +1,13 @@
+const EVERYDAY_EXAMPLES = [
+  "프로젝트가 끝나면 축하할 틈도 없이 “다음엔 뭘 해야 하지”부터 떠오른다",
+  "동기의 승진 소식에 “축하해”라고 답장하면서도 속은 조용히 무너진다",
+  "주말에 계획이 없으면 “이 시간에 자격증이라도…” 하며 불안해진다",
+  "상사의 “수고했어”조차 “진심일까, 다음엔 더 잘해야지”로 번역된다",
+  "몸이 아파 누운 날에도 머릿속으론 메일함과 할 일 목록을 스크롤한다",
+  "취미·운동·여가마저 “성과가 나오는지”로 자기도 모르게 판단하게 된다",
+  "결과가 좋아도 “운이었다” “더 잘할 수 있었다”고 먼저 깎아내린다",
+];
+
 const CYCLE_STEPS = [
   {
     label: "핵심 신념",
@@ -41,6 +51,35 @@ export function AchievementAddictionExplanation() {
             달려갑니다. 쉬는 것에 죄책감을 느끼고, 성과가 없는 자신을 가치 없다고
             느낍니다.
           </p>
+        </div>
+
+        {/* 공감 사례 불렛 */}
+        <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-[var(--surface)] p-5">
+          <p className="mb-3 text-sm font-semibold text-[var(--foreground)]">
+            이런 순간, 어딘가 익숙하지 않으세요?
+          </p>
+          <ul className="space-y-2.5">
+            {EVERYDAY_EXAMPLES.map((example) => (
+              <li
+                key={example}
+                className="flex items-start gap-2.5 text-sm leading-relaxed text-[var(--foreground)]/80"
+              >
+                <span
+                  aria-hidden
+                  className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--foreground)]"
+                />
+                <span>{example}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs leading-relaxed text-[var(--foreground)]/55">
+            하나라도 고개가 끄덕여졌다면, 당신만 겪는 일이 아닙니다.
+            직장인 대다수가 한두 번쯤은 지나가는 풍경이고, 다만 그 빈도와
+            강도가 어디쯤인지가 다를 뿐이에요.
+          </p>
+        </div>
+
+        <div className="space-y-3 text-sm leading-relaxed text-[var(--foreground)]/80">
           <p>
             이것은 의지의 문제가 아닙니다. 어린 시절부터 형성된{" "}
             <strong>핵심 신념</strong>과 그에 따른{" "}
