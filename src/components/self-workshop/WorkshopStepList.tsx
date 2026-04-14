@@ -32,7 +32,7 @@ export function WorkshopStepList({ currentStep, completedSteps }: Props) {
           />
         </div>
         <p className="mt-2 text-xs text-[var(--foreground)]/50">
-          예상 소요 시간: 65~100분
+          예상 소요 시간: 65~95분
         </p>
       </div>
 

@@ -89,6 +89,73 @@ function resolveHusbandMatchState(
   };
 }
 
+/* ─── 워크북 상태 판별 ─── */
+
+interface WorkshopState {
+  badge: string;
+  description: string;
+  ctaLabel: string;
+  ctaHref: string;
+}
+
+function resolveWorkshopState(
+  progress: { current_step: number; status: string } | null,
+  hasPurchase: boolean,
+  isTestUser: boolean
+): WorkshopState | null {
+  if (!progress) return null;
+
+  const purchased = hasPurchase || isTestUser;
+  const step = progress.current_step;
+
+  // 완료
+  if (progress.status === "completed") {
+    return {
+      badge: "완료",
+      description: "워크북을 완료했습니다. 언제든 다시 열어볼 수 있어요.",
+      ctaLabel: "다시 보기",
+      ctaHref: "/dashboard/self-workshop",
+    };
+  }
+
+  // Step 1: 진단 시작 전/진행 중 (구매 무관)
+  if (step === 1) {
+    return {
+      badge: "진단 전",
+      description: "먼저 자가 진단(20문항)을 완료해 주세요. 약 7~10분 걸려요.",
+      ctaLabel: "진단 시작하기",
+      ctaHref: "/dashboard/self-workshop/step/1",
+    };
+  }
+
+  // Step 2: 진단 완료 → 결과 대기
+  if (step === 2) {
+    if (!purchased) {
+      return {
+        badge: "결과 대기",
+        description: "진단 결과가 준비되었어요. 먼저 결과를 확인해 보세요.",
+        ctaLabel: "결과 보기",
+        ctaHref: "/dashboard/self-workshop/step/2",
+      };
+    }
+    // 구매한 유저는 이미 결제 게이트에서 결과를 봤으므로 Step 3로 바로
+    return {
+      badge: "3/8 진행 중",
+      description: "이전에 진행한 내용부터 이어갈 수 있어요.",
+      ctaLabel: "이어하기",
+      ctaHref: "/dashboard/self-workshop/step/3",
+    };
+  }
+
+  // Step 3+ : 진행 중 (이 단계까지 오면 반드시 구매 or 테스트 유저)
+  return {
+    badge: `${step}/8 진행 중`,
+    description: "이전에 진행한 내용부터 이어갈 수 있어요.",
+    ctaLabel: "이어하기",
+    ctaHref: `/dashboard/self-workshop/step/${step}`,
+  };
+}
+
 /* ─── 상담 상태 판별 ─── */
 
 interface CounselingState {
@@ -150,36 +217,45 @@ export default async function DashboardPage() {
   }
 
   // 1차 병렬 쿼리: 독립적 테이블
-  const [phase1Res, counselingRes, phase2Res, workshopRes] = await Promise.all([
-    supabase
-      .from("phase1_results")
-      .select("id, matched_husband_type, created_at")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("counseling_bookings")
-      .select("id, status, confirmed_slot")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("phase2_results")
-      .select("id, published_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("workshop_progress")
-      .select("id, current_step, status, workshop_type")
-      .eq("user_id", user.id)
-      .eq("workshop_type", "achievement-addiction")
-      .maybeSingle(),
-  ]);
+  const [phase1Res, counselingRes, phase2Res, workshopRes, workshopPurchaseRes] =
+    await Promise.all([
+      supabase
+        .from("phase1_results")
+        .select("id, matched_husband_type, created_at")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("counseling_bookings")
+        .select("id, status, confirmed_slot")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("phase2_results")
+        .select("id, published_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("workshop_progress")
+        .select("id, current_step, status, workshop_type")
+        .eq("user_id", user.id)
+        .eq("workshop_type", "achievement-addiction")
+        .maybeSingle(),
+      supabase
+        .from("workshop_purchases")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("workshop_type", "achievement-addiction")
+        .eq("status", "confirmed")
+        .maybeSingle(),
+    ]);
 
   const phase1Result = phase1Res.data;
   const counselingBookings = counselingRes.data;
   const phase2Result = phase2Res.data;
   let workshopProgress = workshopRes.data;
+  const hasWorkshopPurchase = !!workshopPurchaseRes.data;
 
   // 테스트 유저: workshop_progress 레코드 없으면 자동 생성
   const TEST_EMAILS = ["mingle22@hanmail.net"];
@@ -227,6 +303,11 @@ export default async function DashboardPage() {
     phase2Result
   );
   const counseling = resolveCounselingState(counselingBookings);
+  const workshopState = resolveWorkshopState(
+    workshopProgress,
+    hasWorkshopPurchase,
+    TEST_EMAILS.includes(user.email ?? "")
+  );
 
   // 참여 중인 프로그램 ID
   const participatedIds = new Set<string>();
@@ -295,30 +376,22 @@ export default async function DashboardPage() {
             )}
 
             {/* 마음 챙김 워크북 */}
-            {workshopProgress && (
+            {workshopState && (
               <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-base font-semibold text-[var(--foreground)]">
                     마음 챙김 워크북
                   </h3>
-                  <StatusBadge
-                    text={
-                      workshopProgress.status === "completed"
-                        ? "완료"
-                        : `${workshopProgress.current_step}/8 진행 중`
-                    }
-                  />
+                  <StatusBadge text={workshopState.badge} />
                 </div>
                 <p className="text-sm text-[var(--foreground)]/60 mb-4">
-                  {workshopProgress.status === "completed"
-                    ? "워크북을 완료했습니다."
-                    : "성취 중독을 위한 마음챙김 워크북을 진행 중입니다."}
+                  {workshopState.description}
                 </p>
                 <Link
-                  href="/dashboard/self-workshop"
+                  href={workshopState.ctaHref}
                   className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
                 >
-                  {workshopProgress.status === "completed" ? "다시 보기" : "이어하기"}
+                  {workshopState.ctaLabel}
                 </Link>
               </div>
             )}

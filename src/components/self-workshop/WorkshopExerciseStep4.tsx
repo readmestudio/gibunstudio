@@ -2,7 +2,12 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { EMOTION_CHIPS } from "@/lib/self-workshop/diagnosis";
+import {
+  EMOTION_CHIPS,
+  type DiagnosisScores,
+} from "@/lib/self-workshop/diagnosis";
+import { PersonalizedReport } from "./PersonalizedReport";
+import { AchievementAddictionExplanation } from "./AchievementAddictionExplanation";
 
 interface MechanismAnalysis {
   my_core_belief: string;
@@ -19,6 +24,9 @@ interface MechanismAnalysis {
 interface Props {
   workshopId: string;
   savedData?: Partial<MechanismAnalysis>;
+  scores: DiagnosisScores;
+  userName: string | null;
+  cachedReport: string | null;
 }
 
 const FIELDS = [
@@ -59,7 +67,13 @@ const FIELDS = [
   },
 ];
 
-export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
+export function WorkshopExerciseStep4({
+  workshopId,
+  savedData,
+  scores,
+  userName,
+  cachedReport,
+}: Props) {
   const router = useRouter();
   const [data, setData] = useState<Partial<MechanismAnalysis>>({
     my_core_belief: "",
@@ -155,12 +169,29 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
-      <div className="rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-4">
-        <p className="text-sm text-[var(--foreground)]/60">
-          앞에서 본 5단계 순환 모델을 떠올리며, 나의 경험을 적어보세요.
-          정답은 없습니다. 떠오르는 대로 솔직하게 적으면 됩니다.
-        </p>
+    <div className="mx-auto max-w-lg space-y-10 pb-16">
+      {/* (a) 진단 결과 기반 개인화 줄글 리포트 */}
+      <PersonalizedReport
+        workshopId={workshopId}
+        scores={scores}
+        userName={userName}
+        cachedReport={cachedReport}
+      />
+
+      {/* (b) 성취 중독 개념 + 5단계 순환 도식 */}
+      <AchievementAddictionExplanation />
+
+      {/* (c) 실습 안내 */}
+      <div className="space-y-2">
+        <h3 className="text-base font-semibold text-[var(--foreground)]">
+          이제, 당신의 순환을 적어볼 차례예요
+        </h3>
+        <div className="rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-4">
+          <p className="text-sm text-[var(--foreground)]/60">
+            위의 5단계 순환 모델을 떠올리며, 나의 경험을 적어보세요.
+            정답은 없습니다. 떠오르는 대로 솔직하게 적으면 됩니다.
+          </p>
+        </div>
       </div>
 
       {/* 텍스트 필드들 */}

@@ -66,11 +66,6 @@ export default async function WorkshopStepPage({ params }: Props) {
   // 진행 데이터가 없으면 대시보드로
   if (!progress) redirect("/dashboard/self-workshop");
 
-  // 잠금 확인: 현재 step보다 앞선 step만 접근 가능
-  if (stepNumber > progress.current_step) {
-    redirect("/dashboard/self-workshop");
-  }
-
   // Step 2+ 접근 시 구매 확인 (테스트 유저 제외)
   let hasPurchase = isTestUser;
   if (!hasPurchase && stepNumber >= 2) {
@@ -82,6 +77,23 @@ export default async function WorkshopStepPage({ params }: Props) {
       .eq("status", "confirmed")
       .maybeSingle();
     hasPurchase = !!purchase;
+  }
+
+  // 잠금 확인: 현재 step보다 앞선 step만 접근 가능
+  // 예외: 구매자가 Step 2를 건너뛰고 Step 3로 이어가는 경우 허용 + current_step 업그레이드
+  if (stepNumber > progress.current_step) {
+    const canBypass =
+      hasPurchase && stepNumber === 3 && progress.current_step === 2;
+    if (!canBypass) {
+      redirect("/dashboard/self-workshop");
+    }
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    await admin
+      .from("workshop_progress")
+      .update({ current_step: stepNumber })
+      .eq("id", progress.id);
+    progress.current_step = stepNumber;
   }
 
   // 미구매 + Step 2+ → 결제 게이트 표시
@@ -143,10 +155,17 @@ export default async function WorkshopStepPage({ params }: Props) {
         />
       )}
 
-      {stepNumber === 3 && (
+      {stepNumber === 3 && progress.diagnosis_scores && (
         <WorkshopExerciseStep4
           workshopId={workshopId}
           savedData={progress.mechanism_analysis ?? undefined}
+          scores={progress.diagnosis_scores}
+          userName={
+            (user.user_metadata?.name as string | undefined) ??
+            (user.user_metadata?.full_name as string | undefined) ??
+            null
+          }
+          cachedReport={progress.personalized_report ?? null}
         />
       )}
 
