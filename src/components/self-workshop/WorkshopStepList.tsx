@@ -128,6 +128,11 @@ function StepCard({
               이어하기
             </span>
           )}
+          {isCompleted && !isCurrent && (
+            <span className="rounded-lg border-2 border-[var(--foreground)]/30 px-4 py-1.5 text-sm font-medium text-[var(--foreground)]/60 hover:border-[var(--foreground)] hover:text-[var(--foreground)] transition-colors">
+              다시 보기
+            </span>
+          )}
           {isLocked && (
             <svg
               className="h-5 w-5 text-[var(--foreground)]/30"

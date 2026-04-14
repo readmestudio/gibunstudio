@@ -6,6 +6,7 @@ import { WorkshopDiagnosisContent } from "@/components/self-workshop/WorkshopDia
 import { WorkshopResultContent } from "@/components/self-workshop/WorkshopResultContent";
 import { WorkshopExerciseStep4 } from "@/components/self-workshop/WorkshopExerciseStep4";
 import { WorkshopStep3Understand } from "@/components/self-workshop/WorkshopStep3Understand";
+import { WorkshopStepNav } from "@/components/self-workshop/WorkshopStepNav";
 import { WorkshopAIAnalysis } from "@/components/self-workshop/WorkshopAIAnalysis";
 import { WorkshopReadStep6 } from "@/components/self-workshop/WorkshopReadStep6";
 import { WorkshopExerciseStep7 } from "@/components/self-workshop/WorkshopExerciseStep7";
@@ -140,6 +141,15 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
             </h1>
           </div>
         </div>
+
+        <WorkshopStepNav
+          currentStep={stepNumber}
+          maxAccessibleStep={
+            progress.status === "completed"
+              ? WORKSHOP_STEPS.length
+              : progress.current_step
+          }
+        />
       </div>
 
       {/* Step별 콘텐츠 렌더링 (8단계) */}
