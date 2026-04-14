@@ -94,11 +94,9 @@ async function handleWorkshopPayment(
     return NextResponse.redirect(failUrl);
   }
 
-  // 이미 승인됨 → 완료 페이지로
+  // 이미 승인됨 → step 3로 직행
   if (purchase.status === "confirmed") {
-    return NextResponse.redirect(
-      `${baseUrl}/payment/self-workshop/complete/${purchase.id}`
-    );
+    return NextResponse.redirect(`${baseUrl}/dashboard/self-workshop/step/3`);
   }
 
   if (purchase.status !== "pending") {
@@ -142,11 +140,11 @@ async function handleWorkshopPayment(
     return NextResponse.redirect(failUrl);
   }
 
-  // workshop_progress 레코드가 없으면 자동 생성
+  // workshop_progress 레코드가 없으면 자동 생성 (step 3부터 시작)
   const admin = createAdminClient();
   const { data: existingProgress } = await admin
     .from("workshop_progress")
-    .select("id")
+    .select("id, current_step")
     .eq("user_id", purchase.user_id)
     .eq("workshop_type", "achievement-addiction")
     .maybeSingle();
@@ -155,15 +153,18 @@ async function handleWorkshopPayment(
     await admin.from("workshop_progress").insert({
       user_id: purchase.user_id,
       workshop_type: "achievement-addiction",
-      current_step: 1,
+      current_step: 3,
       status: "in_progress",
       purchase_id: purchase.id,
     });
+  } else if ((existingProgress.current_step ?? 0) < 3) {
+    await admin
+      .from("workshop_progress")
+      .update({ current_step: 3, status: "in_progress" })
+      .eq("id", existingProgress.id);
   }
 
-  return NextResponse.redirect(
-    `${baseUrl}/payment/self-workshop/complete/${purchase.id}`
-  );
+  return NextResponse.redirect(`${baseUrl}/dashboard/self-workshop/step/3`);
 }
 
 /* ── 남편상 분석 결제 처리 (기존 로직) ── */

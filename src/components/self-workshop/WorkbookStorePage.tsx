@@ -1,96 +1,97 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { WORKBOOK_CATALOG, type WorkbookInfo } from "@/lib/self-workshop/workbook-catalog";
+import Script from "next/script";
+import { WORKBOOK_CATALOG } from "@/lib/self-workshop/workbook-catalog";
 import { NotifyButton } from "@/components/NotifyButton";
+import { DiscountPriceDisplay } from "@/components/self-workshop/landing/DiscountPriceDisplay";
 
-/* ──────────────────────────────────────────────
-   수채화 배경 이미지
-   ────────────────────────────────────────────── */
-const WORKBOOK_BG = [
-  "/program-bg/program-bg-1.png",
-  "/program-bg/program-bg-2.png",
-  "/program-bg/program-bg-3.png",
-];
-
-/* ──────────────────────────────────────────────
-   갤러리 카드 컴포넌트
-   ────────────────────────────────────────────── */
-function WorkbookGalleryCard({
-  workbook,
-  bgIndex,
-  isActive,
-  onClick,
-}: {
-  workbook: WorkbookInfo;
-  bgIndex: number;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  const bg = WORKBOOK_BG[bgIndex % WORKBOOK_BG.length];
-
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-shrink-0 w-[280px] md:w-[320px] snap-start rounded-2xl border-2 overflow-hidden text-left transition-all ${
-        isActive
-          ? "border-[var(--foreground)] shadow-[4px_4px_0_var(--foreground)]"
-          : "border-[var(--foreground)]/30 hover:border-[var(--foreground)]"
-      } ${workbook.comingSoon ? "opacity-75" : ""}`}
-    >
-      {/* 수채화 배경 이미지 영역 */}
-      <div
-        className="relative h-44 bg-cover bg-center"
-        style={{ backgroundImage: `url('${bg}')` }}
-      >
-        <div className="absolute inset-0 bg-white/30" />
-      </div>
-
-      {/* 텍스트 + 버튼 영역 */}
-      <div className="p-5 bg-white">
-        <h3 className="text-base font-bold text-[var(--foreground)]">
-          {workbook.title}
-        </h3>
-        <p className="mt-1 text-sm text-[var(--foreground)]/60 line-clamp-2">
-          {workbook.subtitle}
-        </p>
-
-        {/* CTA 버튼 */}
-        <div className="mt-4">
-          {workbook.comingSoon ? (
-            <span className="inline-block w-full text-center px-4 py-2.5 rounded-lg border border-[var(--foreground)]/20 text-sm text-[var(--foreground)]/40">
-              Coming Soon
-            </span>
-          ) : (
-            <span className="inline-block w-full text-center px-4 py-2.5 rounded-lg border-2 border-[var(--foreground)] text-sm font-semibold text-[var(--foreground)]">
-              시작하기
-            </span>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
+const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
+const NICEPAY_SDK_URL =
+  process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
 
 /* ──────────────────────────────────────────────
    메인 WorkbookStorePage
    ────────────────────────────────────────────── */
 export function WorkbookStorePage() {
   const [activeId, setActiveId] = useState(WORKBOOK_CATALOG[0].id);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
 
   const active = WORKBOOK_CATALOG.find((w) => w.id === activeId)!;
 
-  function scrollLeft() {
-    scrollRef.current?.scrollBy({ left: -340, behavior: "smooth" });
-  }
-  function scrollRight() {
-    scrollRef.current?.scrollBy({ left: 340, behavior: "smooth" });
+  async function handlePayment() {
+    if (!NICEPAY_CLIENT_ID) {
+      alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    if (!window.AUTHNICE) {
+      alert("결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch("/api/payment/workshop/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workshopType: active.id,
+          amount: active.price,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.status === 401) {
+        alert("로그인 후 결제를 진행해주세요.");
+        window.location.href = `/login?next=${encodeURIComponent("/payment/self-workshop")}`;
+        return;
+      }
+
+      if (data.already_purchased) {
+        alert("이미 구매한 워크북입니다. 대시보드에서 이어가세요.");
+        window.location.href = "/dashboard/self-workshop/step/3";
+        return;
+      }
+
+      if (!data.order_id) {
+        throw new Error(data.error || "결제 레코드 생성에 실패했습니다");
+      }
+
+      window.AUTHNICE.requestPay({
+        clientId: NICEPAY_CLIENT_ID,
+        method: "card",
+        orderId: data.order_id,
+        amount: active.price,
+        goodsName: `마음 챙김 워크북 - ${active.title}`,
+        returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
+        fnError: (result: { errorMsg: string }) => {
+          console.error("NicePay 에러:", result);
+          alert(`결제 오류: ${result.errorMsg}`);
+          setIsSubmitting(false);
+        },
+      });
+    } catch (err) {
+      console.error("결제 시작 오류:", err);
+      alert("결제를 시작할 수 없습니다. 잠시 후 다시 시도해주세요.");
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <div className="min-h-screen bg-white">
+      {/* NicePay SDK */}
+      {NICEPAY_CLIENT_ID && (
+        <Script
+          src={NICEPAY_SDK_URL}
+          strategy="afterInteractive"
+          onLoad={() => setSdkLoaded(true)}
+          onReady={() => setSdkLoaded(true)}
+        />
+      )}
+
       {/* 페이지 헤더 */}
       <div className="px-4 pt-16 pb-8 text-center">
         <h1 className="text-3xl font-bold text-[var(--foreground)] md:text-4xl">
@@ -101,44 +102,42 @@ export function WorkbookStorePage() {
         </p>
       </div>
 
-      {/* 갤러리 헤더 */}
+      {/* 워크북 탭 선택기 */}
       <div className="mx-auto max-w-2xl px-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-[var(--foreground)]">
-            워크북 둘러보기
-          </h2>
-          <div className="hidden md:flex gap-2">
-            <button
-              onClick={scrollLeft}
-              className="w-8 h-8 rounded-full border-2 border-[var(--foreground)] flex items-center justify-center text-[var(--foreground)] hover:bg-[var(--foreground)]/5 transition-colors"
-              aria-label="이전"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <button
-              onClick={scrollRight}
-              className="w-8 h-8 rounded-full border-2 border-[var(--foreground)] flex items-center justify-center text-[var(--foreground)] hover:bg-[var(--foreground)]/5 transition-colors"
-              aria-label="다음"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-          </div>
-        </div>
-
-        {/* 가로 스크롤 갤러리 */}
         <div
-          ref={scrollRef}
-          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+          role="tablist"
+          aria-label="워크북 선택"
+          className="flex flex-wrap gap-2 justify-center"
         >
-          {WORKBOOK_CATALOG.map((wb, i) => (
-            <WorkbookGalleryCard
-              key={wb.id}
-              workbook={wb}
-              bgIndex={i}
-              isActive={activeId === wb.id}
-              onClick={() => setActiveId(wb.id)}
-            />
-          ))}
+          {WORKBOOK_CATALOG.map((wb) => {
+            const isActive = activeId === wb.id;
+            return (
+              <button
+                key={wb.id}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveId(wb.id)}
+                className={
+                  isActive
+                    ? "inline-flex items-center gap-1.5 rounded-full border-2 border-[var(--foreground)] bg-[var(--foreground)] px-4 py-2 text-sm font-bold text-white"
+                    : "inline-flex items-center gap-1.5 rounded-full border-2 border-[var(--foreground)]/20 bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)]/60 hover:border-[var(--foreground)]/50 hover:text-[var(--foreground)]"
+                }
+              >
+                <span>{wb.title}</span>
+                {wb.comingSoon && (
+                  <span
+                    className={
+                      isActive
+                        ? "text-[10px] font-medium text-white/70"
+                        : "text-[10px] font-medium text-[var(--foreground)]/40"
+                    }
+                  >
+                    · Coming Soon
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -162,10 +161,21 @@ export function WorkbookStorePage() {
 
         {/* 포함 내용 카드 */}
         <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6 mb-6">
-          <p className="text-sm text-[var(--foreground)]/60 mb-1">결제 금액</p>
-          <p className="text-3xl font-bold text-[var(--foreground)]">
-            {active.price.toLocaleString()}원
-          </p>
+          <p className="text-sm text-[var(--foreground)]/60 mb-3">결제 금액</p>
+          {active.originalPrice && active.originalPrice > active.price ? (
+            <DiscountPriceDisplay
+              originalPrice={active.originalPrice}
+              price={active.price}
+              discountPercent={Math.round(
+                (1 - active.price / active.originalPrice) * 100
+              )}
+              size="lg"
+            />
+          ) : (
+            <p className="text-3xl font-bold text-[var(--foreground)]">
+              {active.price.toLocaleString()}원
+            </p>
+          )}
 
           <ul className="mt-5 space-y-2.5">
             {active.features.map((feature) => (
@@ -194,13 +204,22 @@ export function WorkbookStorePage() {
             </p>
           </div>
         ) : (
-          <Link
-            href={`/payment/self-workshop/${active.id}`}
-            className="block w-full rounded-xl border-2 border-[var(--foreground)] bg-white px-6 py-4 text-center text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
+          <button
+            type="button"
+            onClick={handlePayment}
+            disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
+            className="block w-full rounded-xl bg-[var(--foreground)] px-6 py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            자세히 보기
-          </Link>
+            {isSubmitting
+              ? "결제 진행 중..."
+              : NICEPAY_CLIENT_ID && !sdkLoaded
+                ? "결제 모듈 로딩 중..."
+                : "결제하기"}
+          </button>
         )}
+        <p className="mt-3 text-center text-xs text-[var(--foreground)]/50">
+          결제는 NicePay를 통해 안전하게 처리됩니다.
+        </p>
 
         {/* 돌아가기 */}
         <div className="mt-8 text-center">

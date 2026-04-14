@@ -112,7 +112,7 @@ export function WorkshopResultContent({ scores, workshopId }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
+    <div className="mx-auto max-w-lg space-y-8 pb-32">
       {/* 총점 + 레벨 */}
       <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-8 text-center">
         <p className="text-sm font-medium text-[var(--foreground)]/50 uppercase tracking-wider">
@@ -270,15 +270,18 @@ export function WorkshopResultContent({ scores, workshopId }: Props) {
         </div>
       </div>
 
-      {/* 다음 단계 */}
-      <div className="text-center">
-        <button
-          onClick={handleAdvanceToNextStep}
-          disabled={isAdvancing}
-          className="inline-flex rounded-xl border-2 border-[var(--foreground)] px-8 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isAdvancing ? "이동 중..." : "나의 순환 패턴 작성하기 →"}
-        </button>
+      {/* 하단 고정 CTA — 다음 단계로 넘어가기 */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-[var(--foreground)] bg-white px-4 py-4">
+        <div className="mx-auto max-w-2xl">
+          <button
+            type="button"
+            onClick={handleAdvanceToNextStep}
+            disabled={isAdvancing}
+            className="block w-full rounded-xl bg-[var(--foreground)] py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isAdvancing ? "이동 중..." : "다음 단계로 넘어가기 →"}
+          </button>
+        </div>
       </div>
     </div>
   );

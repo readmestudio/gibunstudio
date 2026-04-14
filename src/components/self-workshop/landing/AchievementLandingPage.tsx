@@ -9,10 +9,15 @@ import { WorkbookPreviewSection } from "./WorkbookPreviewSection";
 import { CurriculumSection } from "./CurriculumSection";
 import { WorkbookTestimonialSection } from "./WorkbookTestimonialSection";
 import { StickyCtaButton } from "./StickyCtaButton";
+import { DiscountPriceDisplay } from "./DiscountPriceDisplay";
 import {
   WORKSHOP_PRICE,
+  WORKSHOP_ORIGINAL_PRICE,
+  WORKSHOP_DISCOUNT_PERCENT,
   WORKBOOK_FEATURES,
 } from "@/lib/self-workshop/landing-data";
+
+const PRODUCT_NAME = "마음 챙김 워크북 · 성취 중독";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
@@ -115,11 +120,14 @@ export function AchievementLandingPage() {
             <br />
             CBT 기반으로 나만의 순환 패턴을 발견하고 대처법을 찾아보세요.
           </p>
-          <div className="inline-flex items-baseline gap-1">
-            <span className="text-3xl font-bold text-[var(--foreground)]">
-              {WORKSHOP_PRICE.toLocaleString()}
-            </span>
-            <span className="text-base text-[var(--foreground)]/50">원</span>
+          <div className="inline-flex">
+            <DiscountPriceDisplay
+              originalPrice={WORKSHOP_ORIGINAL_PRICE}
+              price={WORKSHOP_PRICE}
+              discountPercent={WORKSHOP_DISCOUNT_PERCENT}
+              size="lg"
+              align="center"
+            />
           </div>
         </section>
 
@@ -141,10 +149,13 @@ export function AchievementLandingPage() {
         {/* 가격 + 포함 내용 카드 */}
         <section className="py-16">
           <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-            <p className="text-sm text-[var(--foreground)]/60 mb-1">결제 금액</p>
-            <p className="text-3xl font-bold text-[var(--foreground)]">
-              {WORKSHOP_PRICE.toLocaleString()}원
-            </p>
+            <p className="text-sm text-[var(--foreground)]/60 mb-3">결제 금액</p>
+            <DiscountPriceDisplay
+              originalPrice={WORKSHOP_ORIGINAL_PRICE}
+              price={WORKSHOP_PRICE}
+              discountPercent={WORKSHOP_DISCOUNT_PERCENT}
+              size="lg"
+            />
 
             <ul className="mt-5 space-y-2.5">
               {WORKBOOK_FEATURES.map((feature) => (
@@ -172,10 +183,17 @@ export function AchievementLandingPage() {
 
       {/* 하단 고정 CTA */}
       <StickyCtaButton
-        label="워크북 시작하기"
+        productName={PRODUCT_NAME}
+        originalPrice={WORKSHOP_ORIGINAL_PRICE}
         price={WORKSHOP_PRICE}
-        onClick={handlePayment}
+        discountPercent={WORKSHOP_DISCOUNT_PERCENT}
+        features={WORKBOOK_FEATURES}
+        onCheckout={handlePayment}
         disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
+        disabledLabel={
+          isSubmitting ? "결제 진행 중..." : "결제 모듈 로딩 중..."
+        }
+        toggleLabel="워크북 시작하기"
       />
     </div>
   );

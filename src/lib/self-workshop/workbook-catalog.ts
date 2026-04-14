@@ -9,6 +9,7 @@ export interface WorkbookInfo {
   subtitle: string;
   description: string;
   price: number;
+  originalPrice?: number;
   slug: string;
   features: string[];
   estimatedMinutes: string;
@@ -24,7 +25,8 @@ export const WORKBOOK_CATALOG: WorkbookInfo[] = [
     subtitle: "멈출 수 없는 나를 위한 워크북",
     description:
       "멈출 수 없는 성취 욕구, 쉼에 대한 죄책감. CBT 기반 자가 진단과 실습으로 나만의 순환 패턴을 발견하고 대처법을 찾아보세요.",
-    price: 99000,
+    price: 69000,
+    originalPrice: 99000,
     slug: "workbook-achievement",
     features: [
       "성취 중독 자가 진단 (20문항)",

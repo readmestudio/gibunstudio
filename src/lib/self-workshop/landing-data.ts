@@ -51,7 +51,7 @@ export const SOLUTION_CARDS: SolutionCard[] = [
   },
   {
     step: 2,
-    title: "AI 분석",
+    title: "인지 패턴 분석",
     tag: "AI 교차검증",
     bullets: [
       "직접 쓴 상황을 AI가 심리학적으로 분석",
@@ -90,7 +90,7 @@ export const WORKBOOK_SCREENSHOTS = [
   { label: "자가 진단", description: "20문항 리커트 척도" },
   { label: "진단 결과", description: "4개 영역별 점수 분석" },
   { label: "메커니즘 실습", description: "나의 성취 순환 추적" },
-  { label: "AI 분석", description: "자동적 사고 패턴 발견" },
+  { label: "인지 패턴 분석", description: "자동적 사고 패턴 발견" },
   { label: "인지 재구조화", description: "대안 사고 훈련" },
   { label: "대처 계획", description: "행동 실험 설계" },
   { label: "요약 리포트", description: "전체 여정 AI 요약" },
@@ -127,7 +127,7 @@ export const WORKBOOK_REVIEWS: WorkbookReview[] = [
   {
     badge: "워크북 수강 후기",
     content:
-      "승진했는데 기쁘기보다 '다음엔 뭘 해야 하지'가 먼저 떠올랐어요. 워크북에서 이걸 '과잉 추동'이라고 설명하는데, 제 10년 직장생활이 한 문장으로 요약되는 느낌이었습니다. AI 분석에서 제가 쓴 일상 패턴을 분석해주는데, 진짜 상담받는 것 같았어요.",
+      "승진했는데 기쁘기보다 '다음엔 뭘 해야 하지'가 먼저 떠올랐어요. 워크북에서 이걸 '과잉 추동'이라고 설명하는데, 제 10년 직장생활이 한 문장으로 요약되는 느낌이었습니다. 인지 패턴 분석에서 제가 쓴 일상 패턴을 짚어주는데, 진짜 상담받는 것 같았어요.",
     highlight: "상담 예약 3개월 대기보다 이 워크북이 훨씬 빨랐어요.",
     name: "지현",
     age: "34세",
@@ -171,4 +171,8 @@ export const WORKBOOK_FEATURES = [
   "전체 요약 리포트",
 ];
 
-export const WORKSHOP_PRICE = 99000;
+export const WORKSHOP_ORIGINAL_PRICE = 99000;
+export const WORKSHOP_PRICE = 69000;
+export const WORKSHOP_DISCOUNT_PERCENT = Math.round(
+  (1 - WORKSHOP_PRICE / WORKSHOP_ORIGINAL_PRICE) * 100
+);

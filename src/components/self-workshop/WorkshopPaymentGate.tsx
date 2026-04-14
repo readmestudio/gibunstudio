@@ -17,11 +17,17 @@ const NICEPAY_SDK_URL =
 import {
   CONSEQUENCES,
   WORKSHOP_PRICE,
+  WORKSHOP_ORIGINAL_PRICE,
+  WORKSHOP_DISCOUNT_PERCENT,
   WORKBOOK_FEATURES,
 } from "@/lib/self-workshop/landing-data";
 import { SolutionStepsSection } from "@/components/self-workshop/landing/SolutionStepsSection";
 import { WorkbookPreviewSection } from "@/components/self-workshop/landing/WorkbookPreviewSection";
 import { CurriculumSection } from "@/components/self-workshop/landing/CurriculumSection";
+import { StickyCtaButton } from "@/components/self-workshop/landing/StickyCtaButton";
+import { DiscountPriceDisplay } from "@/components/self-workshop/landing/DiscountPriceDisplay";
+
+const PRODUCT_NAME = "마음 챙김 워크북 · 성취 중독";
 
 interface Props {
   scores?: DiagnosisScores;
@@ -153,7 +159,7 @@ export function WorkshopPaymentGate({ scores }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
+    <div className="mx-auto max-w-lg space-y-8 pb-40">
       {/* NicePay SDK */}
       {NICEPAY_CLIENT_ID && (
         <Script
@@ -384,10 +390,13 @@ export function WorkshopPaymentGate({ scores }: Props) {
 
       {/* 가격 + 포함 내용 */}
       <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-        <p className="text-sm text-[var(--foreground)]/60 mb-1">결제 금액</p>
-        <p className="text-3xl font-bold text-[var(--foreground)]">
-          {WORKSHOP_PRICE.toLocaleString()}원
-        </p>
+        <p className="text-sm text-[var(--foreground)]/60 mb-3">결제 금액</p>
+        <DiscountPriceDisplay
+          originalPrice={WORKSHOP_ORIGINAL_PRICE}
+          price={WORKSHOP_PRICE}
+          discountPercent={WORKSHOP_DISCOUNT_PERCENT}
+          size="lg"
+        />
 
         <ul className="mt-5 space-y-2.5">
           {FEATURES.map((feature) => (
@@ -407,23 +416,6 @@ export function WorkshopPaymentGate({ scores }: Props) {
         </div>
       </div>
 
-      {/* 결제 버튼 */}
-      <button
-        type="button"
-        onClick={handlePayment}
-        disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
-        className="w-full rounded-xl border-2 border-[var(--foreground)] bg-white px-6 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isSubmitting
-          ? "결제 진행 중..."
-          : NICEPAY_CLIENT_ID && !sdkLoaded
-            ? "결제 모듈 로딩 중..."
-            : "워크북 구매하기"}
-      </button>
-      <p className="text-center text-xs text-[var(--foreground)]/50">
-        결제는 NicePay를 통해 안전하게 처리됩니다.
-      </p>
-
       {/* 돌아가기 */}
       <div className="text-center">
         <Link
@@ -433,6 +425,20 @@ export function WorkshopPaymentGate({ scores }: Props) {
           대시보드로 돌아가기
         </Link>
       </div>
+
+      {/* 하단 고정 구매 바 */}
+      <StickyCtaButton
+        productName={PRODUCT_NAME}
+        originalPrice={WORKSHOP_ORIGINAL_PRICE}
+        price={WORKSHOP_PRICE}
+        discountPercent={WORKSHOP_DISCOUNT_PERCENT}
+        features={FEATURES}
+        onCheckout={handlePayment}
+        disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
+        disabledLabel={
+          isSubmitting ? "결제 진행 중..." : "결제 모듈 로딩 중..."
+        }
+      />
     </div>
   );
 }
