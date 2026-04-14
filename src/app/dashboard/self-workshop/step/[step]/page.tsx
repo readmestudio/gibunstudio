@@ -157,13 +157,21 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
         />
       )}
 
-      {stepNumber === 3 && progress.diagnosis_scores && (
-        phase === "exercise" ? (
-          <WorkshopExerciseStep4
-            workshopId={workshopId}
-            savedData={progress.mechanism_analysis ?? undefined}
-          />
-        ) : (
+      {stepNumber === 3 && progress.diagnosis_scores && (() => {
+        const cachedReport = progress.personalized_report ?? null;
+        console.log("[step/3 SSR] progress.id:", progress.id,
+          "personalized_report length:",
+          progress.personalized_report?.length ?? "NULL",
+          "keys:", Object.keys(progress));
+        if (phase === "exercise") {
+          return (
+            <WorkshopExerciseStep4
+              workshopId={workshopId}
+              savedData={progress.mechanism_analysis ?? undefined}
+            />
+          );
+        }
+        return (
           <WorkshopStep3Understand
             workshopId={workshopId}
             scores={progress.diagnosis_scores}
@@ -172,11 +180,11 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
               (user.user_metadata?.full_name as string | undefined) ??
               null
             }
-            cachedReport={progress.personalized_report ?? null}
+            cachedReport={cachedReport}
             mechanismAlreadySaved={progress.mechanism_analysis !== null}
           />
-        )
-      )}
+        );
+      })()}
 
       {stepNumber === 4 && (
         <WorkshopAIAnalysis

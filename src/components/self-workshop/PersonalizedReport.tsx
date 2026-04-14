@@ -21,6 +21,10 @@ export function PersonalizedReport({
   const [loading, setLoading] = useState(!cachedReport);
 
   useEffect(() => {
+    console.log(
+      "[PersonalizedReport] mount — cachedReport:",
+      cachedReport ? `"${cachedReport.slice(0, 40)}..." (len=${cachedReport.length})` : "NULL"
+    );
     if (cachedReport) return;
 
     let cancelled = false;
