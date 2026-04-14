@@ -40,8 +40,7 @@ export default async function WorkshopStepPage({ params }: Props) {
 
   // Step 1(진단)은 progress 없어도 접근 가능 → 자동 생성
   // Step 2+는 progress + 구매 확인 필요
-  // 결제 테스트를 위해 임시로 빈 배열 (원복 시 ["mingle22@hanmail.net"])
-  const TEST_EMAILS: string[] = [];
+  const TEST_EMAILS: string[] = ["mingle22@hanmail.net"];
   const isTestUser = TEST_EMAILS.includes(user.email ?? "");
 
   if (!progress && stepNumber === 1) {
