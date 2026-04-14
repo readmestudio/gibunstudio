@@ -200,7 +200,13 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
         <WorkshopAIAnalysis
           workshopId={workshopId}
           step={4}
-          savedCards={progress.mechanism_insights ?? undefined}
+          savedReport={progress.mechanism_insights ?? null}
+          diagnosisScores={progress.diagnosis_scores ?? undefined}
+          userName={
+            (user.user_metadata?.name as string | undefined) ??
+            (user.user_metadata?.full_name as string | undefined) ??
+            null
+          }
         />
       )}
 
@@ -237,32 +243,37 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
   );
 }
 
-/**
- * AI 분석 카드에서 인지적 오류 id 추출
- * Step 5 결과의 cross_validation/hidden_pattern 카드에서 오류 키워드 매칭
- */
-function extractCognitiveErrors(
-  insights: { card_type: string; content: string }[] | null
-): string[] | undefined {
+function extractCognitiveErrors(insights: unknown): string[] | undefined {
   if (!insights) return undefined;
 
-  const errorKeywords: Record<string, string> = {
-    "이분법": "dichotomous",
-    "과잉 일반화": "overgeneralization",
-    "당위": "should_statements",
-    "감정적 추론": "emotional_reasoning",
-    "독심술": "mind_reading",
-    "파국화": "catastrophizing",
-  };
-
-  const found: string[] = [];
-  const allContent = insights.map((c) => c.content).join(" ");
-
-  for (const [keyword, id] of Object.entries(errorKeywords)) {
-    if (allContent.includes(keyword)) {
-      found.push(id);
-    }
+  if (typeof insights === "object" && !Array.isArray(insights)) {
+    const r = insights as {
+      hidden_patterns?: { errors?: Array<{ id?: string }> };
+    };
+    const ids = r.hidden_patterns?.errors
+      ?.map((e) => e.id)
+      .filter((id): id is string => typeof id === "string");
+    return ids && ids.length ? ids : undefined;
   }
 
-  return found.length > 0 ? found : undefined;
+  if (Array.isArray(insights)) {
+    const errorKeywords: Record<string, string> = {
+      이분법: "dichotomous",
+      "과잉 일반화": "overgeneralization",
+      당위: "should_statements",
+      "감정적 추론": "emotional_reasoning",
+      독심술: "mind_reading",
+      파국화: "catastrophizing",
+    };
+    const found: string[] = [];
+    const allContent = insights
+      .map((c: { content?: string }) => c.content ?? "")
+      .join(" ");
+    for (const [keyword, id] of Object.entries(errorKeywords)) {
+      if (allContent.includes(keyword)) found.push(id);
+    }
+    return found.length > 0 ? found : undefined;
+  }
+
+  return undefined;
 }

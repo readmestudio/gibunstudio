@@ -8,6 +8,7 @@ import {
   type DiagnosisScores,
   type DimensionKey,
 } from "@/lib/self-workshop/diagnosis";
+import { getSignalLevel } from "@/lib/self-workshop/signal";
 
 interface Props {
   scores: DiagnosisScores;
@@ -51,35 +52,6 @@ export function WorkshopResultContent({ scores, workshopId }: Props) {
   const router = useRouter();
   const [isAdvancing, setIsAdvancing] = useState(false);
   const level = DIAGNOSIS_LEVELS.find((l) => l.level === scores.level)!;
-
-  function getSignalLevel(score: number) {
-    if (score >= 18) {
-      return {
-        emoji: "\u{1F6A8}",
-        label: "위험",
-        className: "bg-red-100 text-red-700",
-      };
-    }
-    if (score >= 13) {
-      return {
-        emoji: "\u{26A0}\u{FE0F}",
-        label: "주의 필요",
-        className: "bg-orange-100 text-orange-700",
-      };
-    }
-    if (score >= 8) {
-      return {
-        emoji: "\u{1F7E1}",
-        label: "주의",
-        className: "bg-yellow-100 text-yellow-700",
-      };
-    }
-    return {
-      emoji: "\u{1F7E2}",
-      label: "안전",
-      className: "bg-green-100 text-green-700",
-    };
-  }
 
   async function handleAdvanceToNextStep() {
     setIsAdvancing(true);

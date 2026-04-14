@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { WorkshopCognitiveReport } from "./WorkshopCognitiveReport";
+import type { DiagnosisScores } from "@/lib/self-workshop/diagnosis";
 
 interface InsightCard {
   card_type: string;
@@ -11,11 +13,44 @@ interface InsightCard {
 
 interface Props {
   workshopId: string;
-  step: 4 | 7; // Step 4: 메커니즘 분석, Step 7: 통합 써머리
+  step: 4 | 7;
   savedCards?: InsightCard[];
+  savedReport?: unknown;
+  diagnosisScores?: DiagnosisScores;
+  userName?: string | null;
 }
 
-export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
+export function WorkshopAIAnalysis({
+  workshopId,
+  step,
+  savedCards,
+  savedReport,
+  diagnosisScores,
+  userName,
+}: Props) {
+  if (step === 4) {
+    return (
+      <WorkshopCognitiveReport
+        workshopId={workshopId}
+        savedReport={savedReport ?? null}
+        diagnosisScores={diagnosisScores}
+        userName={userName}
+      />
+    );
+  }
+
+  return (
+    <SummaryCarousel workshopId={workshopId} savedCards={savedCards} />
+  );
+}
+
+function SummaryCarousel({
+  workshopId,
+  savedCards,
+}: {
+  workshopId: string;
+  savedCards?: InsightCard[];
+}) {
   const router = useRouter();
   const [cards, setCards] = useState<InsightCard[]>(savedCards ?? []);
   const [loading, setLoading] = useState(!savedCards?.length);
@@ -27,12 +62,7 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
 
     async function fetchAnalysis() {
       try {
-        const endpoint =
-          step === 4
-            ? "/api/self-workshop/analyze-mechanism"
-            : "/api/self-workshop/generate-summary";
-
-        const res = await fetch(endpoint, {
+        const res = await fetch("/api/self-workshop/generate-summary", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ workshopId }),
@@ -49,10 +79,7 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
     }
 
     fetchAnalysis();
-  }, [workshopId, step, savedCards]);
-
-  const nextStep = step === 4 ? 5 : 8;
-  const nextLabel = step === 4 ? "대처법 알아보기 →" : "마무리 성찰 →";
+  }, [workshopId, savedCards]);
 
   if (loading) {
     return (
@@ -60,9 +87,7 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[var(--foreground)] border-t-transparent" />
           <p className="text-base font-medium text-[var(--foreground)]">
-            {step === 4
-              ? "당신의 패턴을 분석하고 있어요..."
-              : "워크북을 정리하고 있어요..."}
+            워크북을 정리하고 있어요...
           </p>
           <p className="mt-2 text-sm text-[var(--foreground)]/50">
             잠시만 기다려 주세요
@@ -90,14 +115,9 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      {/* 카드 */}
       {card && (
         <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-8">
           <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--foreground)]/50">
-            {card.card_type === "pattern_summary" && "패턴 요약"}
-            {card.card_type === "cross_validation" && "진단 교차검증"}
-            {card.card_type === "hidden_pattern" && "숨겨진 패턴"}
-            {card.card_type === "key_question" && "핵심 질문"}
             {card.card_type === "summary" && "전체 요약"}
           </p>
           <h3 className="mb-4 text-xl font-bold text-[var(--foreground)]">
@@ -109,7 +129,6 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
         </div>
       )}
 
-      {/* 카드 네비게이션 */}
       {cards.length > 1 && (
         <div className="flex items-center justify-center gap-4">
           <button
@@ -134,7 +153,6 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
         </div>
       )}
 
-      {/* 도트 인디케이터 */}
       {cards.length > 1 && (
         <div className="flex justify-center gap-2">
           {cards.map((_, i) => (
@@ -151,15 +169,12 @@ export function WorkshopAIAnalysis({ workshopId, step, savedCards }: Props) {
         </div>
       )}
 
-      {/* 다음 단계 */}
       <div className="text-center pt-4">
         <button
-          onClick={() =>
-            router.push(`/dashboard/self-workshop/step/${nextStep}`)
-          }
+          onClick={() => router.push("/dashboard/self-workshop/step/8")}
           className="inline-flex rounded-xl border-2 border-[var(--foreground)] px-8 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
         >
-          {nextLabel}
+          마무리 성찰 →
         </button>
       </div>
     </div>
