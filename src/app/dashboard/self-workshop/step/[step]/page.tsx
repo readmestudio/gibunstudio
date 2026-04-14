@@ -5,6 +5,7 @@ import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
 import { WorkshopDiagnosisContent } from "@/components/self-workshop/WorkshopDiagnosisContent";
 import { WorkshopResultContent } from "@/components/self-workshop/WorkshopResultContent";
 import { WorkshopExerciseStep4 } from "@/components/self-workshop/WorkshopExerciseStep4";
+import { WorkshopStep3Understand } from "@/components/self-workshop/WorkshopStep3Understand";
 import { WorkshopAIAnalysis } from "@/components/self-workshop/WorkshopAIAnalysis";
 import { WorkshopReadStep6 } from "@/components/self-workshop/WorkshopReadStep6";
 import { WorkshopExerciseStep7 } from "@/components/self-workshop/WorkshopExerciseStep7";
@@ -13,10 +14,12 @@ import { WorkshopPaymentGate } from "@/components/self-workshop/WorkshopPaymentG
 
 interface Props {
   params: Promise<{ step: string }>;
+  searchParams: Promise<{ phase?: string }>;
 }
 
-export default async function WorkshopStepPage({ params }: Props) {
+export default async function WorkshopStepPage({ params, searchParams }: Props) {
   const { step: stepParam } = await params;
+  const { phase } = await searchParams;
   const stepNumber = parseInt(stepParam, 10);
 
   // 유효한 step 번호 확인
@@ -155,17 +158,24 @@ export default async function WorkshopStepPage({ params }: Props) {
       )}
 
       {stepNumber === 3 && progress.diagnosis_scores && (
-        <WorkshopExerciseStep4
-          workshopId={workshopId}
-          savedData={progress.mechanism_analysis ?? undefined}
-          scores={progress.diagnosis_scores}
-          userName={
-            (user.user_metadata?.name as string | undefined) ??
-            (user.user_metadata?.full_name as string | undefined) ??
-            null
-          }
-          cachedReport={progress.personalized_report ?? null}
-        />
+        phase === "exercise" ? (
+          <WorkshopExerciseStep4
+            workshopId={workshopId}
+            savedData={progress.mechanism_analysis ?? undefined}
+          />
+        ) : (
+          <WorkshopStep3Understand
+            workshopId={workshopId}
+            scores={progress.diagnosis_scores}
+            userName={
+              (user.user_metadata?.name as string | undefined) ??
+              (user.user_metadata?.full_name as string | undefined) ??
+              null
+            }
+            cachedReport={progress.personalized_report ?? null}
+            mechanismAlreadySaved={progress.mechanism_analysis !== null}
+          />
+        )
       )}
 
       {stepNumber === 4 && (

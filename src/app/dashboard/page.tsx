@@ -99,7 +99,11 @@ interface WorkshopState {
 }
 
 function resolveWorkshopState(
-  progress: { current_step: number; status: string } | null,
+  progress: {
+    current_step: number;
+    status: string;
+    mechanism_analysis: unknown;
+  } | null,
   hasPurchase: boolean,
   isTestUser: boolean
 ): WorkshopState | null {
@@ -107,6 +111,7 @@ function resolveWorkshopState(
 
   const purchased = hasPurchase || isTestUser;
   const step = progress.current_step;
+  const exerciseStarted = progress.mechanism_analysis !== null;
 
   // 완료
   if (progress.status === "completed") {
@@ -138,7 +143,7 @@ function resolveWorkshopState(
         ctaHref: "/dashboard/self-workshop/step/2",
       };
     }
-    // 구매한 유저는 이미 결제 게이트에서 결과를 봤으므로 Step 3로 바로
+    // 구매자: Step 3 이해 페이지부터
     return {
       badge: "3/8 진행 중",
       description: "이전에 진행한 내용부터 이어갈 수 있어요.",
@@ -147,7 +152,22 @@ function resolveWorkshopState(
     };
   }
 
-  // Step 3+ : 진행 중 (이 단계까지 오면 반드시 구매 or 테스트 유저)
+  // Step 3: 이해/실습 페이지 분기
+  if (step === 3) {
+    const href = exerciseStarted
+      ? "/dashboard/self-workshop/step/3?phase=exercise"
+      : "/dashboard/self-workshop/step/3";
+    return {
+      badge: "3/8 진행 중",
+      description: exerciseStarted
+        ? "작성하던 실습을 이어갈 수 있어요."
+        : "이전에 진행한 내용부터 이어갈 수 있어요.",
+      ctaLabel: "이어하기",
+      ctaHref: href,
+    };
+  }
+
+  // Step 4+ : 진행 중
   return {
     badge: `${step}/8 진행 중`,
     description: "이전에 진행한 내용부터 이어갈 수 있어요.",
@@ -238,7 +258,7 @@ export default async function DashboardPage() {
         .maybeSingle(),
       supabase
         .from("workshop_progress")
-        .select("id, current_step, status, workshop_type")
+        .select("id, current_step, status, workshop_type, mechanism_analysis")
         .eq("user_id", user.id)
         .eq("workshop_type", "achievement-addiction")
         .maybeSingle(),
@@ -269,7 +289,7 @@ export default async function DashboardPage() {
         current_step: 1,
         status: "in_progress",
       })
-      .select("id, current_step, status, workshop_type")
+      .select("id, current_step, status, workshop_type, mechanism_analysis")
       .single();
     workshopProgress = created;
   }
