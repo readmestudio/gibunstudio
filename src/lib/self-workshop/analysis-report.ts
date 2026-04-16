@@ -33,19 +33,6 @@ export interface AnalysisReport {
       description: string;
     }>;
   };
-  cross_validation: {
-    summary: string;
-    rows: Array<{
-      dimension_key:
-        | "conditional_self_worth"
-        | "compulsive_striving"
-        | "fear_of_failure"
-        | "emotional_avoidance";
-      score: number;
-      evidence_quote: string;
-      interpretation: string;
-    }>;
-  };
   hidden_patterns: {
     summary: string;
     errors: Array<{
@@ -102,8 +89,6 @@ export function isAnalysisReport(v: unknown): v is AnalysisReport {
   }
 
   return (
-    !!r.cross_validation &&
-    Array.isArray(r.cross_validation.rows) &&
     !!r.hidden_patterns &&
     Array.isArray(r.hidden_patterns.errors) &&
     !!r.key_question

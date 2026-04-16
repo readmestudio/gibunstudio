@@ -72,20 +72,6 @@ export async function POST(req: Request) {
       { "stage": "behavior", "label": "예: '주말 과몰두', '새 목표'",    "description": "행동 + 일시적 안도 후 1단계로 복귀되는 강화 고리까지 포함." }
     ]
   },
-  "cross_validation": {
-    "summary": "점수의 근거를 전체적으로 짚는 1~2문장. '교차검증' 같은 전문 용어 금지. '당신이 설문에서 답한 것 + 실습에서 쓴 말이 이 점수에 이렇게 이어져요' 톤으로.",
-    "rows": [
-      {
-        "dimension_key": "conditional_self_worth",
-        "score": 0,
-        "evidence_quote": "이 영역과 관련된 **유저의 실습 발화** 1문장 원문 그대로 발췌 (따옴표 없이). 유저가 쓴 recent_situation/automatic_thought/common_thoughts_checked/trigger_context/emotions_body.body_text/core_beliefs 중 가장 관련 깊은 1문장.",
-        "interpretation": "이 점수가 왜 나왔는지 유저 맥락을 반영한 1~2문장 해석. 유저 표현을 다시 언급하면서 이 차원이 유저 삶에서 어떻게 작동하는지 설명."
-      },
-      { "dimension_key": "compulsive_striving", ... },
-      { "dimension_key": "fear_of_failure", ... },
-      { "dimension_key": "emotional_avoidance", ... }
-    ]
-  },
   "hidden_patterns": {
     "summary": "유저가 인식하지 못했을 생각의 함정에 대한 1~2문장 소개. '인지적 오류'라는 단어 대신 '생각의 함정'이라는 표현을 사용.",
     "errors": [
@@ -109,7 +95,6 @@ export async function POST(req: Request) {
 - pattern_cycle.nodes 는 **정확히 5개** (stage 순서: trigger → thought → emotion → body → behavior). 더 많거나 적으면 안 됩니다.
 - **nodes[].label 은 반드시 6글자(한글 기준) 이내**. stage 이름(촉발 상황/자동 사고/감정/신체 반응/행동)을 label 앞에 붙이지 마세요. 콜론(:)도 금지. 핵심 키워드만.
 - **headline 은 35자 이내 한 문장**, '패턴이에요'로 끝남. 화살표(→)나 단계 나열 금지.
-- cross_validation.rows 는 정확히 4개 (차원 4개 모두 포함, 위 순서 유지).
 - hidden_patterns.errors 는 1~3개. 유저 자료에 실제로 드러난 것만.
 - 모든 description/interpretation/evidence는 150자 이내로 간결하게.
 - **전문 용어 금지**: "과잉 추동", "정서적 회피", "자기 가치의 조건화", "인지적 오류", "자동적 사고", "촉발 자극" 등 임상 용어를 텍스트에 그대로 쓰지 마세요. 일상 언어로 풀어쓰기.
@@ -204,17 +189,6 @@ export async function POST(req: Request) {
       const trimmed = Array.from(stripped).slice(0, 8).join("");
       return { ...n, label: trimmed };
     });
-    if (report.cross_validation.rows.length !== 4) {
-      console.error(
-        "analyze-mechanism: rows 개수 이상",
-        report.cross_validation.rows.length
-      );
-      return NextResponse.json(
-        { error: "분석 결과 형식이 올바르지 않습니다. 다시 시도해 주세요." },
-        { status: 500 }
-      );
-    }
-
     await supabase
       .from("workshop_progress")
       .update({

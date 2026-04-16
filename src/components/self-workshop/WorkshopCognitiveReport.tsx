@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   DIMENSIONS,
   DIAGNOSIS_LEVELS,
-  DIAGNOSIS_QUESTIONS,
   COGNITIVE_ERRORS,
   type DiagnosisScores,
   type DimensionKey,
@@ -119,7 +118,6 @@ export function WorkshopCognitiveReport({
         <DiagnosisSnapshot
           scores={diagnosisScores}
           levelName={levelMeta?.name ?? ""}
-          crossValidation={report.cross_validation}
           finalProfile={report.final_profile}
         />
       )}
@@ -199,18 +197,12 @@ const LIFE_IMPACT_AREAS: Array<{
 function DiagnosisSnapshot({
   scores,
   levelName,
-  crossValidation,
   finalProfile,
 }: {
   scores: DiagnosisScores;
   levelName: string;
-  crossValidation: AnalysisReport["cross_validation"];
   finalProfile: AnalysisReport["final_profile"];
 }) {
-  const rowByKey = new Map(
-    crossValidation.rows.map((r) => [r.dimension_key, r])
-  );
-
   return (
     <section>
       <SectionTitle num="01" title="당신의 진단 점수를 먼저 볼게요" />
@@ -235,7 +227,7 @@ function DiagnosisSnapshot({
         </div>
       </div>
 
-      {/* 통합 프로필 + 일상 영향 (신규) */}
+      {/* 통합 프로필: 캐릭터 + 차원 바 + 일상 영향 */}
       <div className="mt-4 rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50 text-center">
           Your Final Profile
@@ -247,6 +239,45 @@ function DiagnosisSnapshot({
           {finalProfile.character_description}
         </p>
 
+        {/* 4차원 콤팩트 바 모음 */}
+        <div className="mt-6 space-y-4">
+          {DIMENSIONS.map((dim) => {
+            const score = scores.dimensions[dim.key as DimensionKey];
+            const percent = (score / 25) * 100;
+            const signal = getSignalLevel(score);
+            return (
+              <div key={dim.key}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 flex-1 text-sm font-semibold text-[var(--foreground)]">
+                    {dim.jargonLabel}
+                    <span className="ml-1 text-xs font-normal text-[var(--foreground)]/55">
+                      ({dim.label})
+                    </span>
+                  </p>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${signal.className}`}
+                    >
+                      <span>{signal.emoji}</span>
+                      {signal.label}
+                    </span>
+                    <span className="text-sm font-bold tabular-nums text-[var(--foreground)]">
+                      {score}/25
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--foreground)]/10">
+                  <div
+                    className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 일상 영향 4영역 */}
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {LIFE_IMPACT_AREAS.map((area) => (
             <div
@@ -261,102 +292,6 @@ function DiagnosisSnapshot({
               </p>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* 4개 차원 카드 */}
-      <div className="mt-4 rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
-        {crossValidation.summary && (
-          <p className="mb-5 rounded-lg border-l-2 border-[var(--foreground)]/40 bg-[var(--surface)]/40 p-3 text-sm leading-relaxed text-[var(--foreground)]/75">
-            {crossValidation.summary}
-          </p>
-        )}
-
-        <div className="space-y-7">
-          {DIMENSIONS.map((dim) => {
-            const score = scores.dimensions[dim.key as DimensionKey];
-            const percent = (score / 25) * 100;
-            const signal = getSignalLevel(score);
-            const examples = DIAGNOSIS_QUESTIONS.filter(
-              (q) => q.dimension === dim.key
-            ).slice(0, 3);
-            const row = rowByKey.get(dim.key);
-            return (
-              <div key={dim.key}>
-                {/* 라벨 줄 */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[var(--foreground)]">
-                      {dim.jargonLabel}
-                      <span className="ml-1 text-xs font-normal text-[var(--foreground)]/55">
-                        ({dim.label})
-                      </span>
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${signal.className}`}
-                    >
-                      <span>{signal.emoji}</span>
-                      {signal.label}
-                    </span>
-                    <span className="text-sm font-bold tabular-nums text-[var(--foreground)]">
-                      {score}/25
-                    </span>
-                  </div>
-                </div>
-
-                {/* 한 줄 해석 (라벨 밑 + 바 위) */}
-                {row?.interpretation && (
-                  <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/70">
-                    {row.interpretation}
-                  </p>
-                )}
-
-                {/* 블루 점수 바 */}
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--foreground)]/10">
-                  <div
-                    className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                    style={{ width: `${percent}%` }}
-                  />
-                </div>
-
-                {/* 설문·실습 근거 카드 */}
-                <div className="mt-3 space-y-3 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-4">
-                  <div>
-                    <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-                      설문에서 답한 문항
-                    </p>
-                    <ul className="mt-2 space-y-1.5">
-                      {examples.map((q) => (
-                        <li
-                          key={q.id}
-                          className="flex items-start gap-2 text-xs leading-relaxed text-[var(--foreground)]/70"
-                        >
-                          <span
-                            aria-hidden
-                            className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-[var(--foreground)]/50"
-                          />
-                          <span>{q.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {row?.evidence_quote && (
-                    <div className="border-t border-[var(--foreground)]/10 pt-3">
-                      <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-                        실습에서 쓴 당신의 말
-                      </p>
-                      <blockquote className="mt-2 border-l-2 border-[var(--foreground)]/30 pl-3 text-xs italic leading-relaxed text-[var(--foreground)]/75">
-                        “{row.evidence_quote}”
-                      </blockquote>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
         </div>
       </div>
     </section>
