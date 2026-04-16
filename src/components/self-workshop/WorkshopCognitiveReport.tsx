@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DIMENSIONS,
@@ -356,29 +356,48 @@ function CyclePatternSection({
             </h3>
           </div>
 
-          <ol className="space-y-3">
+          <ol className="space-y-0">
             {nodes.map((node, i) => (
-              <li
-                key={i}
-                className="flex gap-4 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-4"
-              >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
-                  {i + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
-                      {STAGE_LABEL[node.stage]}
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--foreground)]">
-                      {node.label}
-                    </span>
+              <Fragment key={i}>
+                <li className="flex gap-4 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-4">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
+                        {STAGE_LABEL[node.stage]}
+                      </span>
+                      <span className="text-sm font-semibold text-[var(--foreground)]">
+                        {node.label}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/75">
+                      {node.description}
+                    </p>
                   </div>
-                  <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/75">
-                    {node.description}
-                  </p>
-                </div>
-              </li>
+                </li>
+                {i < nodes.length - 1 && (
+                  <div
+                    aria-hidden
+                    className="flex justify-center py-2 text-[var(--foreground)]/30"
+                  >
+                    <svg
+                      width="16"
+                      height="20"
+                      viewBox="0 0 16 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M8 2v14" />
+                      <path d="M3 12l5 5 5-5" />
+                    </svg>
+                  </div>
+                )}
+              </Fragment>
             ))}
           </ol>
         </div>
