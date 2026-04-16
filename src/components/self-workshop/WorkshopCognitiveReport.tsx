@@ -235,9 +235,6 @@ function DiagnosisSnapshot({
         <p className="mt-3 text-center text-xl font-bold leading-snug text-[var(--foreground)]">
           {finalProfile.character_line}
         </p>
-        <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
-          {finalProfile.character_description}
-        </p>
 
         {/* 4차원 콤팩트 바 모음 */}
         <div className="mt-6 space-y-4">
@@ -276,6 +273,11 @@ function DiagnosisSnapshot({
             );
           })}
         </div>
+
+        {/* 캐릭터 설명 — 점수 바 아래, 일상 영향 박스 위 */}
+        <p className="mt-6 text-sm leading-relaxed text-[var(--foreground)]/75">
+          {finalProfile.character_description}
+        </p>
 
         {/* 일상 영향 4영역 */}
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
