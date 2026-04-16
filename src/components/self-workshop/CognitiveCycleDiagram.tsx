@@ -13,8 +13,8 @@ export function CognitiveCycleDiagram({ nodes, centerLabel }: Props) {
   const visibleNodes = nodes.slice(0, n);
   const cx = 200;
   const cy = 200;
-  const R = 138; // 배치 반지름
-  const r = 36; // 노드 반지름
+  const R = 134; // 배치 반지름
+  const r = 42; // 노드 반지름 (라벨 잘림 방지 위해 확대)
   const angleOffset = Math.asin((r + 6) / R); // 호가 노드에 파묻히지 않도록
 
   const centers = visibleNodes.map((_, i) => {
@@ -66,7 +66,7 @@ export function CognitiveCycleDiagram({ nodes, centerLabel }: Props) {
 
       {centers.map((p, i) => {
         const label = visibleNodes[i].label;
-        const lines = wrapLabel(label, 7);
+        const lines = wrapLabel(label, 5); // 줄당 5글자
         return (
           <g key={`node-${i}`}>
             <circle
@@ -124,8 +124,30 @@ export function CognitiveCycleDiagram({ nodes, centerLabel }: Props) {
 function wrapLabel(text: string, maxPerLine: number): string[] {
   const cleaned = text.trim();
   if (cleaned.length <= maxPerLine) return [cleaned];
+
+  // 공백·중점·쉼표 기준으로 우선 나눔
+  const breakRegex = /[\s·,/]/;
+  let breakIdx = -1;
+  for (let i = Math.min(maxPerLine, cleaned.length - 1); i > 0; i--) {
+    if (breakRegex.test(cleaned[i])) {
+      breakIdx = i;
+      break;
+    }
+  }
+
+  if (breakIdx > 0) {
+    const first = cleaned.slice(0, breakIdx).trim();
+    const rest = cleaned.slice(breakIdx + 1).trim();
+    if (rest.length <= maxPerLine) return [first, rest];
+    return [first, rest.slice(0, Math.max(1, maxPerLine - 1)) + "…"];
+  }
+
+  // 적절한 분리 지점이 없으면 강제 분할
+  if (cleaned.length <= maxPerLine * 2) {
+    return [cleaned.slice(0, maxPerLine), cleaned.slice(maxPerLine)];
+  }
   return [
     cleaned.slice(0, maxPerLine),
-    cleaned.slice(maxPerLine, maxPerLine * 2),
+    cleaned.slice(maxPerLine, maxPerLine * 2 - 1) + "…",
   ];
 }

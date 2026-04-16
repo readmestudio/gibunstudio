@@ -288,14 +288,14 @@ function CyclePatternSection({
         <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
           <div className="mb-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
-              Step 1
+              Scene
             </p>
             <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
-              당신이 Step 3에서 남긴 말, 5단계로 정리했어요
+              실습에서 작성한 내용을 한 편의 영화처럼 구성해볼게요
             </h3>
             <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/55">
-              성취 중독의 순환 메커니즘(상황 → 자동사고 → 감정 → 신체반응 → 행동)에
-              당신이 쓴 말을 그대로 대입해 볼게요.
+              당신이 남긴 말들을 다섯 장면의 시퀀스로 이어 봅니다.
+              오프닝부터 엔딩까지, 눈앞에 그려지듯 따라가 보세요.
             </p>
           </div>
 
@@ -335,10 +335,10 @@ function CyclePatternSection({
         <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
           <div className="mb-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
-              Step 2
+              Pattern
             </p>
             <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
-              이 5단계는 이렇게 맞물려 반복됩니다
+              전형적인 성취 중독의 패턴을 보이고 있어요
             </h3>
           </div>
 
@@ -355,7 +355,7 @@ function CyclePatternSection({
               centerLabel="성취 중독"
             />
             <p className="mt-4 text-center text-xs text-[var(--foreground)]/50">
-              한 바퀴가 다시 1단계로 이어지며 점점 강화돼요
+              한 바퀴가 다시 오프닝 장면으로 이어지며 점점 강화돼요
             </p>
           </div>
         </div>
@@ -364,10 +364,10 @@ function CyclePatternSection({
         <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
           <div className="mb-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
-              Step 3
+              Detail
             </p>
             <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
-              각 단계를 조금 더 자세히 들여다보면
+              각 장면을 조금 더 자세히 들여다보면
             </h3>
           </div>
 
