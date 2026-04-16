@@ -8,7 +8,7 @@ import { WorkshopExerciseStep4 } from "@/components/self-workshop/WorkshopExerci
 import { WorkshopStep3Understand } from "@/components/self-workshop/WorkshopStep3Understand";
 import { WorkshopStepNav } from "@/components/self-workshop/WorkshopStepNav";
 import { WorkshopAIAnalysis } from "@/components/self-workshop/WorkshopAIAnalysis";
-import { WorkshopReadStep6 } from "@/components/self-workshop/WorkshopReadStep6";
+import { WorkshopExerciseStep5CoreBelief } from "@/components/self-workshop/WorkshopExerciseStep5CoreBelief";
 import { WorkshopExerciseStep7 } from "@/components/self-workshop/WorkshopExerciseStep7";
 import { WorkshopReflectionContent } from "@/components/self-workshop/WorkshopReflectionContent";
 import { WorkshopPaymentGate } from "@/components/self-workshop/WorkshopPaymentGate";
@@ -211,8 +211,10 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
       )}
 
       {stepNumber === 5 && (
-        <WorkshopReadStep6
-          highlightedErrors={extractCognitiveErrors(progress.mechanism_insights)}
+        <WorkshopExerciseStep5CoreBelief
+          workshopId={workshopId}
+          savedData={progress.core_belief_excavation ?? undefined}
+          mechanismInsights={progress.mechanism_insights ?? null}
         />
       )}
 

@@ -33,25 +33,6 @@ export interface AnalysisReport {
       description: string;
     }>;
   };
-  hidden_patterns: {
-    summary: string;
-    errors: Array<{
-      id:
-        | "dichotomous"
-        | "overgeneralization"
-        | "should_statements"
-        | "emotional_reasoning"
-        | "mind_reading"
-        | "catastrophizing";
-      label: string;
-      evidence: string;
-    }>;
-  };
-  key_question: {
-    headline: string;
-    question: string;
-    rationale: string;
-  };
 }
 
 export function isAnalysisReport(v: unknown): v is AnalysisReport {
@@ -88,9 +69,5 @@ export function isAnalysisReport(v: unknown): v is AnalysisReport {
     if (typeof li[k] !== "string" || li[k].trim().length === 0) return false;
   }
 
-  return (
-    !!r.hidden_patterns &&
-    Array.isArray(r.hidden_patterns.errors) &&
-    !!r.key_question
-  );
+  return true;
 }

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   DIMENSIONS,
   DIAGNOSIS_LEVELS,
-  COGNITIVE_ERRORS,
   type DiagnosisScores,
   type DimensionKey,
 } from "@/lib/self-workshop/diagnosis";
@@ -128,20 +127,12 @@ export function WorkshopCognitiveReport({
         nodes={report.pattern_cycle.nodes}
       />
 
-      <HiddenPatternsSection
-        sectionNum="03"
-        summary={report.hidden_patterns.summary}
-        errors={report.hidden_patterns.errors}
-      />
-
-      <KeyQuestionSection sectionNum="04" data={report.key_question} />
-
       <div className="text-center pt-4">
         <button
           onClick={() => router.push("/dashboard/self-workshop/step/5")}
           className="inline-flex rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
         >
-          대처법 알아보기 →
+          내 안의 진실 발굴하기 →
         </button>
       </div>
     </div>
@@ -401,86 +392,6 @@ function CyclePatternSection({
             ))}
           </ol>
         </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────── 섹션 03 ─────────────────────────────── */
-
-function HiddenPatternsSection({
-  sectionNum,
-  summary,
-  errors,
-}: {
-  sectionNum: string;
-  summary: string;
-  errors: AnalysisReport["hidden_patterns"]["errors"];
-}) {
-  const exampleById: Record<string, string> = Object.fromEntries(
-    COGNITIVE_ERRORS.map((e) => [e.id, e.example])
-  );
-
-  return (
-    <section>
-      <SectionTitle num={sectionNum} title="당신도 모르게 자주 쓰는 생각의 함정" />
-      <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6 space-y-5">
-        <p className="text-sm leading-relaxed text-[var(--foreground)]/75">{summary}</p>
-
-        <div className="space-y-3">
-          {errors.map((err, i) => (
-            <div
-              key={`${err.id}-${i}`}
-              className="flex gap-4 rounded-lg border border-[var(--foreground)]/15 p-4"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-2 border-[var(--foreground)] text-xs font-bold tabular-nums">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[var(--foreground)]">
-                  {err.label}
-                </p>
-                {exampleById[err.id] && (
-                  <p className="mt-0.5 text-[11px] text-[var(--foreground)]/45">
-                    이런 생각 형태: “{exampleById[err.id]}”
-                  </p>
-                )}
-                <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/75">
-                  {err.evidence}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────── 섹션 04 ─────────────────────────────── */
-
-function KeyQuestionSection({
-  sectionNum,
-  data,
-}: {
-  sectionNum: string;
-  data: AnalysisReport["key_question"];
-}) {
-  return (
-    <section>
-      <SectionTitle num={sectionNum} title="이제 이 질문 앞에 잠시 멈춰볼 시간" />
-      <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-        <p className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
-          {data.headline}
-        </p>
-        <blockquote className="mt-4 border-l-2 border-[var(--foreground)] pl-5">
-          <p className="text-lg font-semibold leading-relaxed text-[var(--foreground)]">
-            “{data.question}”
-          </p>
-        </blockquote>
-        <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/70">
-          {data.rationale}
-        </p>
       </div>
     </section>
   );

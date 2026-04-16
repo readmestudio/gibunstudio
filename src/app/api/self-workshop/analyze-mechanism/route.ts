@@ -72,21 +72,6 @@ export async function POST(req: Request) {
       { "stage": "behavior", "label": "예: '주말 과몰두', '새 목표'",    "description": "행동 + 일시적 안도 후 1단계로 복귀되는 강화 고리까지 포함." }
     ]
   },
-  "hidden_patterns": {
-    "summary": "유저가 인식하지 못했을 생각의 함정에 대한 1~2문장 소개. '인지적 오류'라는 단어 대신 '생각의 함정'이라는 표현을 사용.",
-    "errors": [
-      {
-        "id": "dichotomous | overgeneralization | should_statements | emotional_reasoning | mind_reading | catastrophizing 중 하나",
-        "label": "해당 오류의 한국어 이름 (예: 이분법적 사고)",
-        "evidence": "유저 발화 인용 + 어떻게 드러났는지 1~2문장"
-      }
-    ]
-  },
-  "key_question": {
-    "headline": "다음 단계로 이어지는 성찰 질문의 제목",
-    "question": "열린 질문 1문장 — 따옴표로 감싸지 말고 원문 그대로",
-    "rationale": "왜 지금 이 질문이 필요한지 2문장"
-  }
 }
 
 규칙:
@@ -95,8 +80,7 @@ export async function POST(req: Request) {
 - pattern_cycle.nodes 는 **정확히 5개** (stage 순서: trigger → thought → emotion → body → behavior). 더 많거나 적으면 안 됩니다.
 - **nodes[].label 은 반드시 6글자(한글 기준) 이내**. stage 이름(촉발 상황/자동 사고/감정/신체 반응/행동)을 label 앞에 붙이지 마세요. 콜론(:)도 금지. 핵심 키워드만.
 - **headline 은 35자 이내 한 문장**, '패턴이에요'로 끝남. 화살표(→)나 단계 나열 금지.
-- hidden_patterns.errors 는 1~3개. 유저 자료에 실제로 드러난 것만.
-- 모든 description/interpretation/evidence는 150자 이내로 간결하게.
+- 모든 description은 150자 이내로 간결하게.
 - **전문 용어 금지**: "과잉 추동", "정서적 회피", "자기 가치의 조건화", "인지적 오류", "자동적 사고", "촉발 자극" 등 임상 용어를 텍스트에 그대로 쓰지 마세요. 일상 언어로 풀어쓰기.
 - 어조: 따뜻하면서도 예리함. 판단·비난 금지. 유저의 표현을 구체적으로 인용.
 - JSON 외에 다른 텍스트(설명, markdown 코드펜스) 절대 포함하지 마세요.`;
