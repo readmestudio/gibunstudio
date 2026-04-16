@@ -280,7 +280,7 @@ function DiagnosisSnapshot({
         </p>
 
         {/* 일상 영향 4영역 */}
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-3">
           {LIFE_IMPACT_AREAS.map((area) => (
             <div
               key={area.key}
