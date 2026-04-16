@@ -63,14 +63,13 @@ export async function POST(req: Request) {
     ]
   },
   "cross_validation": {
-    "summary": "진단 점수와 유저의 말이 어떻게 이어지는지 1~2문장. '교차검증' 같은 전문 용어 금지. '점수가 당신의 말에서 어떻게 드러나는지' 톤으로.",
+    "summary": "점수의 근거를 전체적으로 짚는 1~2문장. '교차검증' 같은 전문 용어 금지. '당신이 설문에서 답한 것 + 실습에서 쓴 말이 이 점수에 이렇게 이어져요' 톤으로.",
     "rows": [
       {
         "dimension_key": "conditional_self_worth",
         "score": 0,
-        "match_level": "잘 맞아요",
-        "evidence_quote": "유저가 실제 쓴 표현 1문장 발췌 (따옴표 없이, 원문 그대로)",
-        "interpretation": "이 차원이 유저의 말에서 어떻게 나타나는지 1문장 해석"
+        "evidence_quote": "이 영역과 관련된 **유저의 실습 발화** 1문장 원문 그대로 발췌 (따옴표 없이). 유저가 쓴 recent_situation/automatic_thought/common_thoughts_checked/trigger_context/emotions_body.body_text/core_beliefs 중 가장 관련 깊은 1문장.",
+        "interpretation": "이 점수가 왜 나왔는지 유저 맥락을 반영한 1~2문장 해석. 유저 표현을 다시 언급하면서 이 차원이 유저 삶에서 어떻게 작동하는지 설명."
       },
       { "dimension_key": "compulsive_striving", ... },
       { "dimension_key": "fear_of_failure", ... },

@@ -33,13 +33,6 @@ const STAGE_LABEL: Record<PatternStage, string> = {
   behavior: "행동",
 };
 
-const MATCH_CHIP: Record<string, string> = {
-  "잘 맞아요": "bg-[var(--foreground)] text-white",
-  "조금 맞아요": "bg-[var(--foreground)]/15 text-[var(--foreground)]",
-  "다르게 나타나요":
-    "border border-[var(--foreground)]/40 text-[var(--foreground)]/60",
-};
-
 export function WorkshopCognitiveReport({
   workshopId,
   savedReport,
@@ -123,7 +116,11 @@ export function WorkshopCognitiveReport({
       <ReportHeader userName={userName} today={today} />
 
       {diagnosisScores && (
-        <DiagnosisSnapshot scores={diagnosisScores} levelName={levelMeta?.name ?? ""} />
+        <DiagnosisSnapshot
+          scores={diagnosisScores}
+          levelName={levelMeta?.name ?? ""}
+          crossValidation={report.cross_validation}
+        />
       )}
 
       <CyclePatternSection
@@ -132,17 +129,13 @@ export function WorkshopCognitiveReport({
         nodes={report.pattern_cycle.nodes}
       />
 
-      <CrossValidationSection
-        summary={report.cross_validation.summary}
-        rows={report.cross_validation.rows}
-      />
-
       <HiddenPatternsSection
+        sectionNum="03"
         summary={report.hidden_patterns.summary}
         errors={report.hidden_patterns.errors}
       />
 
-      <KeyQuestionSection data={report.key_question} />
+      <KeyQuestionSection sectionNum="04" data={report.key_question} />
 
       <div className="text-center pt-4">
         <button
@@ -195,10 +188,16 @@ function ReportHeader({
 function DiagnosisSnapshot({
   scores,
   levelName,
+  crossValidation,
 }: {
   scores: DiagnosisScores;
   levelName: string;
+  crossValidation: AnalysisReport["cross_validation"];
 }) {
+  const rowByKey = new Map(
+    crossValidation.rows.map((r) => [r.dimension_key, r])
+  );
+
   return (
     <section>
       <SectionTitle num="01" title="당신의 진단 점수를 먼저 볼게요" />
@@ -220,6 +219,12 @@ function DiagnosisSnapshot({
           </span>
         </div>
 
+        {crossValidation.summary && (
+          <p className="mt-4 rounded-lg border-l-2 border-[var(--foreground)]/40 bg-[var(--surface)]/40 p-3 text-sm leading-relaxed text-[var(--foreground)]/75">
+            {crossValidation.summary}
+          </p>
+        )}
+
         <div className="mt-6 space-y-6">
           {DIMENSIONS.map((dim) => {
             const score = scores.dimensions[dim.key as DimensionKey];
@@ -228,6 +233,7 @@ function DiagnosisSnapshot({
             const examples = DIAGNOSIS_QUESTIONS.filter(
               (q) => q.dimension === dim.key
             ).slice(0, 3);
+            const row = rowByKey.get(dim.key);
             return (
               <div key={dim.key}>
                 <div className="mb-1 flex items-start justify-between gap-2">
@@ -258,24 +264,51 @@ function DiagnosisSnapshot({
                   />
                 </div>
 
-                <div className="mt-3 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-3">
-                  <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-                    이런 생각·태도가 이 점수에 반영되었어요
-                  </p>
-                  <ul className="mt-2 space-y-1.5">
-                    {examples.map((q) => (
-                      <li
-                        key={q.id}
-                        className="flex items-start gap-2 text-xs leading-relaxed text-[var(--foreground)]/70"
-                      >
-                        <span
-                          aria-hidden
-                          className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-[var(--foreground)]/50"
-                        />
-                        <span>{q.text}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className="mt-3 space-y-3 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-4">
+                  {/* 설문 근거 */}
+                  <div>
+                    <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
+                      설문에서 답한 문항
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {examples.map((q) => (
+                        <li
+                          key={q.id}
+                          className="flex items-start gap-2 text-xs leading-relaxed text-[var(--foreground)]/70"
+                        >
+                          <span
+                            aria-hidden
+                            className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-[var(--foreground)]/50"
+                          />
+                          <span>{q.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* 실습 근거 */}
+                  {row?.evidence_quote && (
+                    <div className="border-t border-[var(--foreground)]/10 pt-3">
+                      <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
+                        실습에서 쓴 당신의 말
+                      </p>
+                      <blockquote className="mt-2 border-l-2 border-[var(--foreground)]/30 pl-3 text-xs italic leading-relaxed text-[var(--foreground)]/75">
+                        “{row.evidence_quote}”
+                      </blockquote>
+                    </div>
+                  )}
+
+                  {/* 한 줄 해석 */}
+                  {row?.interpretation && (
+                    <div className="border-t border-[var(--foreground)]/10 pt-3">
+                      <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
+                        한 줄 해석
+                      </p>
+                      <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
+                        {row.interpretation}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -375,87 +408,12 @@ function CyclePatternSection({
 
 /* ─────────────────────────────── 섹션 03 ─────────────────────────────── */
 
-function CrossValidationSection({
-  summary,
-  rows,
-}: {
-  summary: string;
-  rows: AnalysisReport["cross_validation"]["rows"];
-}) {
-  const dimLabel: Record<string, string> = Object.fromEntries(
-    DIMENSIONS.map((d) => [d.key, d.label])
-  );
-
-  return (
-    <section>
-      <SectionTitle num="03" title="점수와 당신이 쓴 말이 이렇게 이어져 있어요" />
-      <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
-        <p className="text-sm leading-relaxed text-[var(--foreground)]/75 border-l-2 border-[var(--foreground)]/30 pl-4">
-          {summary}
-        </p>
-
-        <div className="mt-6 -mx-2 overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b-2 border-[var(--foreground)] text-left">
-                <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/60">
-                  영역
-                </th>
-                <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/60">
-                  점수
-                </th>
-                <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/60">
-                  일치도
-                </th>
-                <th className="py-2 pr-3 text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/60">
-                  당신의 표현
-                </th>
-                <th className="py-2 text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/60">
-                  한 줄 해석
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={row.dimension_key}
-                  className="border-b border-[var(--foreground)]/10 align-top"
-                >
-                  <td className="py-3 pr-3 font-medium text-[var(--foreground)]">
-                    {dimLabel[row.dimension_key] ?? row.dimension_key}
-                  </td>
-                  <td className="py-3 pr-3 tabular-nums text-[var(--foreground)]">
-                    {row.score}/25
-                  </td>
-                  <td className="py-3 pr-3">
-                    <span
-                      className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${MATCH_CHIP[row.match_level] ?? ""}`}
-                    >
-                      {row.match_level}
-                    </span>
-                  </td>
-                  <td className="py-3 pr-3 italic text-[var(--foreground)]/75">
-                    {row.evidence_quote ? `"${row.evidence_quote}"` : "—"}
-                  </td>
-                  <td className="py-3 leading-relaxed text-[var(--foreground)]/75">
-                    {row.interpretation}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────── 섹션 04 ─────────────────────────────── */
-
 function HiddenPatternsSection({
+  sectionNum,
   summary,
   errors,
 }: {
+  sectionNum: string;
   summary: string;
   errors: AnalysisReport["hidden_patterns"]["errors"];
 }) {
@@ -465,7 +423,7 @@ function HiddenPatternsSection({
 
   return (
     <section>
-      <SectionTitle num="04" title="당신도 모르게 자주 쓰는 생각의 함정" />
+      <SectionTitle num={sectionNum} title="당신도 모르게 자주 쓰는 생각의 함정" />
       <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6 space-y-5">
         <p className="text-sm leading-relaxed text-[var(--foreground)]/75">{summary}</p>
 
@@ -499,16 +457,18 @@ function HiddenPatternsSection({
   );
 }
 
-/* ─────────────────────────────── 섹션 05 ─────────────────────────────── */
+/* ─────────────────────────────── 섹션 04 ─────────────────────────────── */
 
 function KeyQuestionSection({
+  sectionNum,
   data,
 }: {
+  sectionNum: string;
   data: AnalysisReport["key_question"];
 }) {
   return (
     <section>
-      <SectionTitle num="05" title="이제 이 질문 앞에 잠시 멈춰볼 시간" />
+      <SectionTitle num={sectionNum} title="이제 이 질문 앞에 잠시 멈춰볼 시간" />
       <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
         <p className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
           {data.headline}

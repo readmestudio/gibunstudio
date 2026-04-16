@@ -32,7 +32,6 @@ export interface AnalysisReport {
         | "fear_of_failure"
         | "emotional_avoidance";
       score: number;
-      match_level: "잘 맞아요" | "조금 맞아요" | "다르게 나타나요";
       evidence_quote: string;
       interpretation: string;
     }>;
