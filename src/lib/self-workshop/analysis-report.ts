@@ -5,17 +5,18 @@ export type PatternStage =
   | "body"
   | "behavior";
 
+const PATTERN_STAGE_SET: ReadonlySet<string> = new Set<PatternStage>([
+  "trigger",
+  "thought",
+  "emotion",
+  "body",
+  "behavior",
+]);
+
 export interface AnalysisReport {
   pattern_cycle: {
     headline: string;
     overview: string;
-    user_summary: {
-      trigger: string;
-      thought: string;
-      emotion: string;
-      body: string;
-      behavior: string;
-    };
     nodes: Array<{
       stage: PatternStage;
       label: string;
@@ -62,17 +63,12 @@ export function isAnalysisReport(v: unknown): v is AnalysisReport {
   const r = v as Partial<AnalysisReport>;
   if (!r.pattern_cycle || !Array.isArray(r.pattern_cycle.nodes)) return false;
 
-  const us = r.pattern_cycle.user_summary;
-  if (!us || typeof us !== "object") return false;
-  const required: Array<keyof AnalysisReport["pattern_cycle"]["user_summary"]> = [
-    "trigger",
-    "thought",
-    "emotion",
-    "body",
-    "behavior",
-  ];
-  for (const k of required) {
-    if (typeof us[k] !== "string" || us[k].trim().length === 0) return false;
+  // 5단계 고정 + stage 집합 엄격 검증 (옛 6단계 캐시 자동 무효화)
+  if (r.pattern_cycle.nodes.length !== 5) return false;
+  for (const n of r.pattern_cycle.nodes) {
+    if (!n || typeof n.stage !== "string" || !PATTERN_STAGE_SET.has(n.stage)) {
+      return false;
+    }
   }
 
   return (

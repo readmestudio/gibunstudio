@@ -32,14 +32,6 @@ const STAGE_LABEL: Record<PatternStage, string> = {
   behavior: "행동",
 };
 
-const STAGE_ORDER: PatternStage[] = [
-  "trigger",
-  "thought",
-  "emotion",
-  "body",
-  "behavior",
-];
-
 const MATCH_CHIP: Record<string, string> = {
   "잘 맞아요": "bg-[var(--foreground)] text-white",
   "조금 맞아요": "bg-[var(--foreground)]/15 text-[var(--foreground)]",
@@ -136,7 +128,6 @@ export function WorkshopCognitiveReport({
       <CyclePatternSection
         headline={report.pattern_cycle.headline}
         overview={report.pattern_cycle.overview}
-        userSummary={report.pattern_cycle.user_summary}
         nodes={report.pattern_cycle.nodes}
       />
 
@@ -271,12 +262,10 @@ function DiagnosisSnapshot({
 function CyclePatternSection({
   headline,
   overview,
-  userSummary,
   nodes,
 }: {
   headline: string;
   overview: string;
-  userSummary: AnalysisReport["pattern_cycle"]["user_summary"];
   nodes: AnalysisReport["pattern_cycle"]["nodes"];
 }) {
   return (
@@ -284,61 +273,14 @@ function CyclePatternSection({
       <SectionTitle num="02" title="당신에게 반복되고 있는 흐름은 이렇습니다" />
 
       <div className="space-y-6">
-        {/* ── Block A: 유저 실습 원본 요약 ── */}
+        {/* ── Step 1: 패턴 발견 + 반복 일러스트 ── */}
         <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
           <div className="mb-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
-              Scene
+              Step 1
             </p>
             <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
-              실습에서 작성한 내용을 한 편의 영화처럼 구성해볼게요
-            </h3>
-            <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/55">
-              당신이 남긴 말들을 다섯 장면의 시퀀스로 이어 봅니다.
-              오프닝부터 엔딩까지, 눈앞에 그려지듯 따라가 보세요.
-            </p>
-          </div>
-
-          <div className="space-y-0">
-            {STAGE_ORDER.map((stage, i) => {
-              const isLast = i === STAGE_ORDER.length - 1;
-              return (
-                <div key={stage} className="flex items-start gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
-                      {i + 1}
-                    </div>
-                    {!isLast && (
-                      <div className="h-10 w-0.5 bg-[var(--foreground)]/20" />
-                    )}
-                    {isLast && (
-                      <div className="mt-1 text-xs text-[var(--foreground)]/40">
-                        ↻
-                      </div>
-                    )}
-                  </div>
-                  <div className="pb-5 min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[var(--foreground)]">
-                      {STAGE_LABEL[stage]}
-                    </p>
-                    <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/75">
-                      {userSummary[stage]}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Block B: 반복 패턴 일러스트 ── */}
-        <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
-          <div className="mb-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
-              Pattern
-            </p>
-            <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
-              전형적인 성취 중독의 패턴을 보이고 있어요
+              실습 내용을 바탕으로 당신의 성취 중독 패턴을 발견했어요
             </h3>
           </div>
 
@@ -355,19 +297,19 @@ function CyclePatternSection({
               centerLabel="성취 중독"
             />
             <p className="mt-4 text-center text-xs text-[var(--foreground)]/50">
-              한 바퀴가 다시 오프닝 장면으로 이어지며 점점 강화돼요
+              한 바퀴가 다시 첫 단계로 이어지며 점점 강화돼요
             </p>
           </div>
         </div>
 
-        {/* ── Block C: 각 단계 상세 해석 ── */}
+        {/* ── Step 2: 각 단계 상세 해석 ── */}
         <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
           <div className="mb-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
-              Detail
+              Step 2
             </p>
             <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
-              각 장면을 조금 더 자세히 들여다보면
+              각 단계를 조금 더 자세히 들여다보면
             </h3>
           </div>
 
@@ -383,7 +325,7 @@ function CyclePatternSection({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
-                      {STAGE_LABEL[node.stage] ?? node.stage}
+                      {STAGE_LABEL[node.stage]}
                     </span>
                     <span className="text-sm font-semibold text-[var(--foreground)]">
                       {node.label}
