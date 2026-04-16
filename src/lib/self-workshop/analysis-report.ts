@@ -14,6 +14,16 @@ const PATTERN_STAGE_SET: ReadonlySet<string> = new Set<PatternStage>([
 ]);
 
 export interface AnalysisReport {
+  final_profile: {
+    character_line: string;
+    character_description: string;
+    life_impact: {
+      work: string;
+      relationship: string;
+      rest: string;
+      body: string;
+    };
+  };
   pattern_cycle: {
     headline: string;
     overview: string;
@@ -68,6 +78,27 @@ export function isAnalysisReport(v: unknown): v is AnalysisReport {
     if (!n || typeof n.stage !== "string" || !PATTERN_STAGE_SET.has(n.stage)) {
       return false;
     }
+  }
+
+  // final_profile 필수 5필드 검증 (신규 — 옛 캐시 자동 무효화)
+  const fp = r.final_profile;
+  if (!fp || typeof fp !== "object") return false;
+  if (
+    typeof fp.character_line !== "string" ||
+    fp.character_line.trim().length === 0
+  ) {
+    return false;
+  }
+  if (
+    typeof fp.character_description !== "string" ||
+    fp.character_description.trim().length === 0
+  ) {
+    return false;
+  }
+  const li = fp.life_impact;
+  if (!li || typeof li !== "object") return false;
+  for (const k of ["work", "relationship", "rest", "body"] as const) {
+    if (typeof li[k] !== "string" || li[k].trim().length === 0) return false;
   }
 
   return (

@@ -120,6 +120,7 @@ export function WorkshopCognitiveReport({
           scores={diagnosisScores}
           levelName={levelMeta?.name ?? ""}
           crossValidation={report.cross_validation}
+          finalProfile={report.final_profile}
         />
       )}
 
@@ -185,14 +186,26 @@ function ReportHeader({
 
 /* ─────────────────────────────── 섹션 01 ─────────────────────────────── */
 
+const LIFE_IMPACT_AREAS: Array<{
+  key: keyof AnalysisReport["final_profile"]["life_impact"];
+  label: string;
+}> = [
+  { key: "work", label: "일" },
+  { key: "relationship", label: "관계" },
+  { key: "rest", label: "쉼" },
+  { key: "body", label: "몸" },
+];
+
 function DiagnosisSnapshot({
   scores,
   levelName,
   crossValidation,
+  finalProfile,
 }: {
   scores: DiagnosisScores;
   levelName: string;
   crossValidation: AnalysisReport["cross_validation"];
+  finalProfile: AnalysisReport["final_profile"];
 }) {
   const rowByKey = new Map(
     crossValidation.rows.map((r) => [r.dimension_key, r])
@@ -201,6 +214,8 @@ function DiagnosisSnapshot({
   return (
     <section>
       <SectionTitle num="01" title="당신의 진단 점수를 먼저 볼게요" />
+
+      {/* 총점·레벨 카드 */}
       <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
         <div className="flex items-baseline justify-between">
           <div>
@@ -218,14 +233,46 @@ function DiagnosisSnapshot({
             Level {scores.level} · {levelName}
           </span>
         </div>
+      </div>
 
+      {/* 통합 프로필 + 일상 영향 (신규) */}
+      <div className="mt-4 rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50 text-center">
+          Your Final Profile
+        </p>
+        <p className="mt-3 text-center text-xl font-bold leading-snug text-[var(--foreground)]">
+          {finalProfile.character_line}
+        </p>
+        <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
+          {finalProfile.character_description}
+        </p>
+
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {LIFE_IMPACT_AREAS.map((area) => (
+            <div
+              key={area.key}
+              className="rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-4"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--foreground)]/50">
+                {area.label}
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-[var(--foreground)]/80">
+                {finalProfile.life_impact[area.key]}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 4개 차원 카드 */}
+      <div className="mt-4 rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
         {crossValidation.summary && (
-          <p className="mt-4 rounded-lg border-l-2 border-[var(--foreground)]/40 bg-[var(--surface)]/40 p-3 text-sm leading-relaxed text-[var(--foreground)]/75">
+          <p className="mb-5 rounded-lg border-l-2 border-[var(--foreground)]/40 bg-[var(--surface)]/40 p-3 text-sm leading-relaxed text-[var(--foreground)]/75">
             {crossValidation.summary}
           </p>
         )}
 
-        <div className="mt-6 space-y-6">
+        <div className="space-y-7">
           {DIMENSIONS.map((dim) => {
             const score = scores.dimensions[dim.key as DimensionKey];
             const percent = (score / 25) * 100;
@@ -236,14 +283,15 @@ function DiagnosisSnapshot({
             const row = rowByKey.get(dim.key);
             return (
               <div key={dim.key}>
-                <div className="mb-1 flex items-start justify-between gap-2">
+                {/* 라벨 줄 */}
+                <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <span className="text-sm font-semibold text-[var(--foreground)]">
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
                       {dim.jargonLabel}
-                    </span>
-                    <span className="text-xs text-[var(--foreground)]/55">
-                      {" "}({dim.label})
-                    </span>
+                      <span className="ml-1 text-xs font-normal text-[var(--foreground)]/55">
+                        ({dim.label})
+                      </span>
+                    </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <span
@@ -257,15 +305,24 @@ function DiagnosisSnapshot({
                     </span>
                   </div>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[var(--foreground)]/10">
+
+                {/* 한 줄 해석 (라벨 밑 + 바 위) */}
+                {row?.interpretation && (
+                  <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/70">
+                    {row.interpretation}
+                  </p>
+                )}
+
+                {/* 블루 점수 바 */}
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--foreground)]/10">
                   <div
-                    className="h-full rounded-full bg-[var(--foreground)] transition-all duration-500"
+                    className="h-full rounded-full bg-blue-500 transition-all duration-500"
                     style={{ width: `${percent}%` }}
                   />
                 </div>
 
+                {/* 설문·실습 근거 카드 */}
                 <div className="mt-3 space-y-3 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-4">
-                  {/* 설문 근거 */}
                   <div>
                     <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
                       설문에서 답한 문항
@@ -286,7 +343,6 @@ function DiagnosisSnapshot({
                     </ul>
                   </div>
 
-                  {/* 실습 근거 */}
                   {row?.evidence_quote && (
                     <div className="border-t border-[var(--foreground)]/10 pt-3">
                       <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
@@ -295,18 +351,6 @@ function DiagnosisSnapshot({
                       <blockquote className="mt-2 border-l-2 border-[var(--foreground)]/30 pl-3 text-xs italic leading-relaxed text-[var(--foreground)]/75">
                         “{row.evidence_quote}”
                       </blockquote>
-                    </div>
-                  )}
-
-                  {/* 한 줄 해석 */}
-                  {row?.interpretation && (
-                    <div className="border-t border-[var(--foreground)]/10 pt-3">
-                      <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-                        한 줄 해석
-                      </p>
-                      <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/80">
-                        {row.interpretation}
-                      </p>
                     </div>
                   )}
                 </div>
