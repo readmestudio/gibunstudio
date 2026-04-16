@@ -14,6 +14,7 @@ import { CognitiveCycleDiagram } from "./CognitiveCycleDiagram";
 import {
   isAnalysisReport,
   type AnalysisReport,
+  type PatternStage,
 } from "@/lib/self-workshop/analysis-report";
 
 interface Props {
@@ -23,14 +24,21 @@ interface Props {
   userName?: string | null;
 }
 
-const STAGE_LABEL: Record<string, string> = {
+const STAGE_LABEL: Record<PatternStage, string> = {
   trigger: "상황",
   thought: "자동 사고",
   emotion: "감정",
   body: "신체 반응",
   behavior: "행동",
-  reinforcement: "강화",
 };
+
+const STAGE_ORDER: PatternStage[] = [
+  "trigger",
+  "thought",
+  "emotion",
+  "body",
+  "behavior",
+];
 
 const MATCH_CHIP: Record<string, string> = {
   "잘 맞아요": "bg-[var(--foreground)] text-white",
@@ -128,6 +136,7 @@ export function WorkshopCognitiveReport({
       <CyclePatternSection
         headline={report.pattern_cycle.headline}
         overview={report.pattern_cycle.overview}
+        userSummary={report.pattern_cycle.user_summary}
         nodes={report.pattern_cycle.nodes}
       />
 
@@ -262,57 +271,132 @@ function DiagnosisSnapshot({
 function CyclePatternSection({
   headline,
   overview,
+  userSummary,
   nodes,
 }: {
   headline: string;
   overview: string;
+  userSummary: AnalysisReport["pattern_cycle"]["user_summary"];
   nodes: AnalysisReport["pattern_cycle"]["nodes"];
 }) {
   return (
     <section>
       <SectionTitle num="02" title="당신에게 반복되고 있는 흐름은 이렇습니다" />
-      <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6 space-y-6">
-        <div>
+
+      <div className="space-y-6">
+        {/* ── Block A: 유저 실습 원본 요약 ── */}
+        <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
+          <div className="mb-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+              Step 1
+            </p>
+            <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
+              당신이 Step 3에서 남긴 말, 5단계로 정리했어요
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-[var(--foreground)]/55">
+              성취 중독의 순환 메커니즘(상황 → 자동사고 → 감정 → 신체반응 → 행동)에
+              당신이 쓴 말을 그대로 대입해 볼게요.
+            </p>
+          </div>
+
+          <div className="space-y-0">
+            {STAGE_ORDER.map((stage, i) => {
+              const isLast = i === STAGE_ORDER.length - 1;
+              return (
+                <div key={stage} className="flex items-start gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
+                      {i + 1}
+                    </div>
+                    {!isLast && (
+                      <div className="h-10 w-0.5 bg-[var(--foreground)]/20" />
+                    )}
+                    {isLast && (
+                      <div className="mt-1 text-xs text-[var(--foreground)]/40">
+                        ↻
+                      </div>
+                    )}
+                  </div>
+                  <div className="pb-5 min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {STAGE_LABEL[stage]}
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/75">
+                      {userSummary[stage]}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Block B: 반복 패턴 일러스트 ── */}
+        <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
+          <div className="mb-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+              Step 2
+            </p>
+            <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
+              이 5단계는 이렇게 맞물려 반복됩니다
+            </h3>
+          </div>
+
           <p className="text-lg font-bold leading-snug text-[var(--foreground)]">
             {headline}
           </p>
           <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
             {overview}
           </p>
+
+          <div className="mt-6 border-t border-[var(--foreground)]/10 pt-6">
+            <CognitiveCycleDiagram
+              nodes={nodes.map((n) => ({ stage: n.stage, label: n.label }))}
+              centerLabel="성취 중독"
+            />
+            <p className="mt-4 text-center text-xs text-[var(--foreground)]/50">
+              한 바퀴가 다시 1단계로 이어지며 점점 강화돼요
+            </p>
+          </div>
         </div>
 
-        <div className="border-t border-[var(--foreground)]/10 pt-6 hidden md:block">
-          <CognitiveCycleDiagram
-            nodes={nodes.map((n) => ({ stage: n.stage, label: n.label }))}
-            centerLabel="성취 중독"
-          />
-        </div>
+        {/* ── Block C: 각 단계 상세 해석 ── */}
+        <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
+          <div className="mb-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+              Step 3
+            </p>
+            <h3 className="mt-1 text-base font-semibold text-[var(--foreground)]">
+              각 단계를 조금 더 자세히 들여다보면
+            </h3>
+          </div>
 
-        <ol className="space-y-3">
-          {nodes.map((node, i) => (
-            <li
-              key={i}
-              className="flex gap-4 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-4"
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
-                {i + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
-                    {STAGE_LABEL[node.stage] ?? node.stage}
-                  </span>
-                  <span className="text-sm font-semibold text-[var(--foreground)]">
-                    {node.label}
-                  </span>
+          <ol className="space-y-3">
+            {nodes.map((node, i) => (
+              <li
+                key={i}
+                className="flex gap-4 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-4"
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
+                      {STAGE_LABEL[node.stage] ?? node.stage}
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--foreground)]">
+                      {node.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/75">
+                    {node.description}
+                  </p>
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/75">
-                  {node.description}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </section>
   );

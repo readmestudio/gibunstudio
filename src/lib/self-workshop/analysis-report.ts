@@ -1,15 +1,23 @@
+export type PatternStage =
+  | "trigger"
+  | "thought"
+  | "emotion"
+  | "body"
+  | "behavior";
+
 export interface AnalysisReport {
   pattern_cycle: {
     headline: string;
     overview: string;
+    user_summary: {
+      trigger: string;
+      thought: string;
+      emotion: string;
+      body: string;
+      behavior: string;
+    };
     nodes: Array<{
-      stage:
-        | "trigger"
-        | "thought"
-        | "emotion"
-        | "body"
-        | "behavior"
-        | "reinforcement";
+      stage: PatternStage;
       label: string;
       description: string;
     }>;
@@ -52,9 +60,22 @@ export interface AnalysisReport {
 export function isAnalysisReport(v: unknown): v is AnalysisReport {
   if (!v || typeof v !== "object" || Array.isArray(v)) return false;
   const r = v as Partial<AnalysisReport>;
+  if (!r.pattern_cycle || !Array.isArray(r.pattern_cycle.nodes)) return false;
+
+  const us = r.pattern_cycle.user_summary;
+  if (!us || typeof us !== "object") return false;
+  const required: Array<keyof AnalysisReport["pattern_cycle"]["user_summary"]> = [
+    "trigger",
+    "thought",
+    "emotion",
+    "body",
+    "behavior",
+  ];
+  for (const k of required) {
+    if (typeof us[k] !== "string" || us[k].trim().length === 0) return false;
+  }
+
   return (
-    !!r.pattern_cycle &&
-    Array.isArray(r.pattern_cycle.nodes) &&
     !!r.cross_validation &&
     Array.isArray(r.cross_validation.rows) &&
     !!r.hidden_patterns &&
