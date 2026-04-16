@@ -15,7 +15,8 @@ export type DimensionKey =
 
 export interface Dimension {
   key: DimensionKey;
-  label: string;
+  label: string;         // 유저 노출용 풀어쓴 표현 (예: "성과로 나를 증명하려는 마음")
+  jargonLabel: string;   // 임상 용어 표기 (Section 01 전용). 예: "자기 가치의 조건화"
   description: string;
   questionIds: number[];
 }
@@ -24,24 +25,28 @@ export const DIMENSIONS: Dimension[] = [
   {
     key: "conditional_self_worth",
     label: "성과로 나를 증명하려는 마음",
+    jargonLabel: "자기 가치의 조건화",
     description: "성취가 있어야만 내가 괜찮다고 느껴지는 정도",
     questionIds: [1, 2, 3, 4, 5],
   },
   {
     key: "compulsive_striving",
     label: "멈추지 못하고 계속 달리는 습관",
+    jargonLabel: "과잉 추동",
     description: "쉬거나 멈추는 순간 불편해지는 강도",
     questionIds: [6, 7, 8, 9, 10],
   },
   {
     key: "fear_of_failure",
     label: "실패가 두려워 완벽을 고집하는 마음",
+    jargonLabel: "실패 공포 / 완벽주의",
     description: "실수·실패에 대한 과도한 두려움과 완벽주의 성향",
     questionIds: [11, 12, 13, 14, 15],
   },
   {
     key: "emotional_avoidance",
     label: "불편한 감정을 일로 덮는 패턴",
+    jargonLabel: "정서적 회피",
     description: "마음이 불편할 때 감정을 직면하지 않고 성취·일로 회피하는 경향",
     questionIds: [16, 17, 18, 19, 20],
   },

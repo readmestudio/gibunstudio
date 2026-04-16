@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   DIMENSIONS,
   DIAGNOSIS_LEVELS,
+  DIAGNOSIS_QUESTIONS,
   COGNITIVE_ERRORS,
   type DiagnosisScores,
   type DimensionKey,
@@ -219,18 +220,26 @@ function DiagnosisSnapshot({
           </span>
         </div>
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 space-y-6">
           {DIMENSIONS.map((dim) => {
             const score = scores.dimensions[dim.key as DimensionKey];
             const percent = (score / 25) * 100;
             const signal = getSignalLevel(score);
+            const examples = DIAGNOSIS_QUESTIONS.filter(
+              (q) => q.dimension === dim.key
+            ).slice(0, 3);
             return (
               <div key={dim.key}>
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-[var(--foreground)]">
-                    {dim.label}
-                  </span>
-                  <div className="flex items-center gap-2">
+                <div className="mb-1 flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm font-semibold text-[var(--foreground)]">
+                      {dim.jargonLabel}
+                    </span>
+                    <span className="text-xs text-[var(--foreground)]/55">
+                      {" "}({dim.label})
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${signal.className}`}
                     >
@@ -247,6 +256,26 @@ function DiagnosisSnapshot({
                     className="h-full rounded-full bg-[var(--foreground)] transition-all duration-500"
                     style={{ width: `${percent}%` }}
                   />
+                </div>
+
+                <div className="mt-3 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-3">
+                  <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
+                    이런 생각·태도가 이 점수에 반영되었어요
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {examples.map((q) => (
+                      <li
+                        key={q.id}
+                        className="flex items-start gap-2 text-xs leading-relaxed text-[var(--foreground)]/70"
+                      >
+                        <span
+                          aria-hidden
+                          className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-[var(--foreground)]/50"
+                        />
+                        <span>{q.text}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             );
