@@ -297,24 +297,27 @@ export function WorkshopExerciseStep5CoreBelief({
               Step 5 시작하기
             </p>
             <p className="mt-3 text-base font-bold leading-snug text-[var(--foreground)]">
-              그 생각은 어디서 오는 걸까요?
+              성취 중독을 해결하는 첫 번째 열쇠
             </p>
 
             <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
               Step 4에서 우리는 성취 중독이 작동하는 순간을 살펴봤어요.
               어떤 상황이 불안을 촉발하고, 그때 어떤 감정이 올라오며,
-              <strong>&ldquo;나만 뒤처졌어&rdquo;</strong>, <strong>&ldquo;더 해야 해&rdquo;</strong> 같은
+              &ldquo;나만 뒤처졌어&rdquo;, &ldquo;더 해야 해&rdquo; 같은
               생각이 자동으로 떠오르는 것까지요.
             </p>
 
             <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
-              그런데 이 자동적 사고는 <strong>혼자서 갑자기 생겨난 게 아니에요.</strong>{" "}
+              그런데 이 자동적 사고는 혼자서 갑자기 생겨난 게 아니에요.
               그 밑에는 오랜 시간에 걸쳐 형성된, 나 자신에 대한
               깊은 믿음이 있어요. 심리학에서는 이것을 <strong>핵심 신념</strong>이라고 불러요.
             </p>
 
             {/* 도식 */}
             <div className="mt-5 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-4">
+              <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/40">
+                예시
+              </p>
               <div className="flex flex-col items-center gap-1">
                 <div className="w-full rounded-lg border-2 border-[var(--foreground)] bg-white px-4 py-2.5 text-center">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
@@ -359,10 +362,10 @@ export function WorkshopExerciseStep5CoreBelief({
               </p>
             </div>
 
-            <div className="mt-5 space-y-3">
+            <div className="mt-5 space-y-4">
               <p className="text-sm leading-relaxed text-[var(--foreground)]/75">
                 핵심 신념은 보통 어린 시절이나 중요한 관계에서 만들어져요.
-                그리고 <strong>안경처럼</strong> 세상을 바라보는 방식 전체에 영향을 줘요.
+                그리고 안경처럼 세상을 바라보는 방식 전체에 영향을 줘요.
                 같은 상황에서도 누군가는 &ldquo;괜찮아, 다음에 하면 되지&rdquo;라고 생각하고,
                 누군가는 &ldquo;역시 나는 안 돼&rdquo;라고 느끼는 이유가 바로 이 핵심 신념의 차이예요.
               </p>
@@ -370,23 +373,43 @@ export function WorkshopExerciseStep5CoreBelief({
               <p className="text-sm font-semibold leading-relaxed text-[var(--foreground)]">
                 핵심 신념을 발견하면 무엇이 달라질까요?
               </p>
-              <ul className="space-y-2 pl-1">
-                <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
-                  <span className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--foreground)]/40" />
-                  반복되는 감정과 행동 패턴의 <strong>진짜 원인</strong>을 알게 돼요.
-                  &ldquo;왜 나는 항상 이럴까&rdquo;의 답이 보이기 시작해요.
-                </li>
-                <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
-                  <span className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--foreground)]/40" />
-                  자동적 사고가 떠올라도 <strong>&ldquo;아, 또 그 믿음이 작동하고 있구나&rdquo;</strong>라고
-                  한 발짝 물러서서 바라볼 수 있어요.
-                </li>
-                <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
-                  <span className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--foreground)]/40" />
-                  믿음이 <strong>사실이 아니라 학습된 것</strong>임을 알면,
-                  다르게 생각하고 행동할 여지가 생겨요.
-                </li>
-              </ul>
+
+              {/* Before / After */}
+              <div className="space-y-3">
+                <div className="rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/40">
+                    Before — 핵심 신념을 모를 때
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    <li className="text-sm leading-relaxed text-[var(--foreground)]/60">
+                      &ldquo;왜 나는 항상 이럴까&rdquo; — 원인을 모른 채 같은 패턴 반복
+                    </li>
+                    <li className="text-sm leading-relaxed text-[var(--foreground)]/60">
+                      자동적 사고에 그대로 휩쓸려 감정과 행동이 연쇄 반응
+                    </li>
+                    <li className="text-sm leading-relaxed text-[var(--foreground)]/60">
+                      &ldquo;나는 원래 이런 사람이야&rdquo; — 바꿀 수 없다고 느낌
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="rounded-lg border-2 border-[var(--foreground)] bg-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
+                    After — 핵심 신념을 발견한 뒤
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    <li className="text-sm leading-relaxed text-[var(--foreground)]">
+                      반복되는 감정과 행동의 진짜 원인이 보이기 시작해요
+                    </li>
+                    <li className="text-sm leading-relaxed text-[var(--foreground)]">
+                      &ldquo;아, 또 그 믿음이 작동하고 있구나&rdquo; — 한 발짝 물러서서 바라볼 수 있어요
+                    </li>
+                    <li className="text-sm leading-relaxed text-[var(--foreground)]">
+                      사실이 아니라 학습된 것임을 알면, 다르게 생각하고 행동할 여지가 생겨요
+                    </li>
+                  </ul>
+                </div>
+              </div>
 
               <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/75">
                 지금부터 Step 4에서 발견한 자동적 사고 하나를 골라,
@@ -395,18 +418,24 @@ export function WorkshopExerciseStep5CoreBelief({
             </div>
           </div>
 
-          {/* 후보 선택 */}
+          {/* 뜨거운 생각 고르기 */}
+          <PartHeader num="Step 5-1" title="뜨거운 생각 고르기" />
+
           <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5">
-            <p className="text-sm font-semibold text-[var(--foreground)]">
-              Step 4에서 나왔던 생각들이에요.
-              <br />
-              이 중에서 <strong>가장 마음이 불편해지는 생각</strong>을 골라주세요.
+            <p className="text-sm leading-relaxed text-[var(--foreground)]/75">
+              <strong className="text-[var(--foreground)]">뜨거운 생각</strong>이란,
+              스트레스 상황에서 순간적으로 떠오르면서 감정을 가장 강하게 흔드는 생각이에요.
+              여러 생각 중 하나를 골라 깊이 따라가 보면, 그 밑에 있는 핵심 신념에 닿을 수 있어요.
+            </p>
+
+            <p className="mt-4 text-sm font-semibold text-[var(--foreground)]">
+              아래 중 <strong>가장 마음이 불편해지는 생각</strong>을 골라주세요.
             </p>
 
             {candidatesLoading ? (
               <div className="mt-4 flex items-center gap-2 text-sm text-[var(--foreground)]/50">
                 <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--foreground)]/30 border-t-transparent" />
-                후보를 준비하고 있어요…
+                Step 4의 생각들을 정리하고 있어요…
               </div>
             ) : (
               <div className="mt-4 space-y-2">
@@ -439,13 +468,13 @@ export function WorkshopExerciseStep5CoreBelief({
                         )}
                       </span>
                       <span
-                        className={`leading-relaxed ${
+                        className={`min-w-0 break-words leading-relaxed ${
                           selected
                             ? "font-semibold text-[var(--foreground)]"
                             : "text-[var(--foreground)]/80"
                         }`}
                       >
-                        &ldquo;{thought}&rdquo;
+                        {thought}
                       </span>
                     </button>
                   );
