@@ -7,9 +7,10 @@ import {
 } from "@/lib/self-workshop/analysis-report";
 
 interface Answers {
-  q1_meaning: string;
-  q2_about_self: string;
-  q3_core_sentence: string;
+  selected_hot_thought: string;
+  q1_consequence: string;
+  q2_fear: string;
+  q3_identity: string;
   q4_origin: string;
   q5_compassion: string;
 }
@@ -22,6 +23,15 @@ interface SynthesizeResult {
   belief_line: string;
   how_it_works: string;
   reframe_invitation: string;
+}
+
+interface CandidatesResult {
+  candidates: string[];
+}
+
+interface MechanismAnalysis {
+  automatic_thought?: string;
+  common_thoughts_checked?: string[];
 }
 
 export async function POST(req: Request) {
@@ -37,11 +47,11 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { workshopId, phase, answers } = body as {
     workshopId: string;
-    phase: "hypothesize" | "synthesize";
-    answers: Answers;
+    phase: "generate-candidates" | "hypothesize" | "synthesize";
+    answers?: Answers;
   };
 
-  if (!workshopId || !phase || !answers) {
+  if (!workshopId || !phase) {
     return NextResponse.json(
       { error: "요청 파라미터가 부족합니다" },
       { status: 400 }
@@ -71,9 +81,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const hotThought =
+  const aiThoughtLabel =
     insights.pattern_cycle.nodes.find((n) => n.stage === "thought")?.label ??
-    "자동적으로 떠오르는 생각";
+    "";
 
   const existing =
     (progress.core_belief_excavation as {
@@ -87,6 +97,26 @@ export async function POST(req: Request) {
     } | null) ?? null;
 
   try {
+    if (phase === "generate-candidates") {
+      const mechanism = (progress.mechanism_analysis ?? {}) as MechanismAnalysis;
+      const result = await runGenerateCandidates(
+        mechanism.automatic_thought ?? "",
+        mechanism.common_thoughts_checked ?? [],
+        aiThoughtLabel,
+        insights.pattern_cycle.headline
+      );
+      return NextResponse.json({ candidates: result.candidates });
+    }
+
+    if (!answers) {
+      return NextResponse.json(
+        { error: "answers가 필요합니다" },
+        { status: 400 }
+      );
+    }
+
+    const hotThought = answers.selected_hot_thought || aiThoughtLabel;
+
     if (phase === "hypothesize") {
       const result = await runHypothesize(hotThought, answers);
       const mid_hypothesis = {
@@ -143,13 +173,71 @@ export async function POST(req: Request) {
   }
 }
 
+/* ─────────────── Phase 0: Generate Candidates ─────────────── */
+
+async function runGenerateCandidates(
+  automaticThought: string,
+  commonThoughtsChecked: string[],
+  aiThoughtLabel: string,
+  patternHeadline: string
+): Promise<CandidatesResult> {
+  const existingThoughts = [
+    automaticThought,
+    aiThoughtLabel,
+    ...commonThoughtsChecked.slice(0, 2),
+  ].filter((t) => t.trim().length > 0);
+
+  const unique = [...new Set(existingThoughts)];
+
+  const systemPrompt = `당신은 CBT 전문 심리학자입니다. 유저의 자동적 사고 목록을 보고, 같은 맥락에서 나올 수 있는 변형 생각 1~2개를 추가로 만들어주세요.
+
+규칙:
+- 결과는 반드시 아래 JSON 단일 객체로 응답하세요.
+{
+  "extra_thoughts": ["변형 생각 1", "변형 생각 2"]
+}
+- 기존 목록과 중복되지 않으면서, 같은 패턴에서 파생되는 자연스러운 생각.
+- 각 생각은 15자 이내, 1인칭 내면의 목소리 톤.
+- 기존 목록에 이미 3개 이상 있으면 1개만, 2개 이하면 2개 생성.
+- JSON 외 텍스트 절대 포함 금지.`;
+
+  const userMessage = `## 패턴 맥락
+${patternHeadline}
+
+## 기존 자동적 사고 목록
+${unique.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
+
+위 맥락에서 자연스럽게 파생되는 변형 생각을 추가로 만들어 주세요.`;
+
+  const response = await chatCompletion(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userMessage },
+    ],
+    {
+      model: "gemini-2.5-flash",
+      temperature: 0.7,
+      max_tokens: 256,
+      response_format: { type: "json_object" },
+    }
+  );
+
+  const parsed = safeJsonParse<{ extra_thoughts: string[] }>(response);
+  const extras = (parsed?.extra_thoughts ?? []).filter(
+    (t) => typeof t === "string" && t.trim().length > 0
+  );
+
+  const all = [...unique, ...extras].slice(0, 5);
+  return { candidates: all };
+}
+
 /* ─────────────── Phase 1: Hypothesize ─────────────── */
 
 async function runHypothesize(
   hotThought: string,
   answers: Answers
 ): Promise<HypothesizeResult> {
-  const systemPrompt = `당신은 CBT 전문 심리학자입니다. 유저가 Downward Arrow 기법으로 적은 Q1~Q3 답변을 바탕으로, 그 사람이 믿고 있는 **핵심 믿음 한 줄**을 정제해 제시합니다.
+  const systemPrompt = `당신은 CBT 전문 심리학자입니다. 유저가 Downward Arrow 기법(결과→두려움→정체성)으로 적은 Q1~Q3 답변을 바탕으로, 그 사람이 믿고 있는 **핵심 믿음 한 줄**을 정제해 제시합니다.
 
 규칙:
 - 결과는 반드시 아래 JSON 단일 객체로 응답하세요. 배열로 감싸지 마세요.
@@ -158,23 +246,23 @@ async function runHypothesize(
   "core_belief": "유저가 자기 자신에 대해 믿고 있는 핵심 명제 1문장. 반드시 '나는 ~한 사람이다' 또는 '나의 가치는 ~에 달려 있다' 같은 **완성형 문장** 1줄. 60자 이내."
 }
 
-- 유저 원문(Q3)을 기반으로 하되, 심리학적 언어로 조금 다듬어도 좋음.
+- 유저의 Q3(정체성 언명)을 기반으로 하되, Q1(예상 결과)과 Q2(핵심 두려움)의 맥락을 반영해 다듬을 것.
 - '나는 성과가 없으면 가치 없는 사람이다' 같은 **자기 정체성 언명** 톤.
 - 판단·비난 금지. '(인지적 오류)' 같은 임상 용어 금지.
 - JSON 외 텍스트 절대 포함 금지.`;
 
-  const userMessage = `## 유저의 뜨거운 생각 (Step 4에서 발견)
+  const userMessage = `## 유저가 선택한 뜨거운 생각
 "${hotThought}"
 
 ## 유저의 Downward Arrow 답변
-Q1. 그 생각이 사실이라면 나에게 무엇을 의미하나요?
-→ ${answers.q1_meaning}
+Q1. 이 생각이 사실이라면, 어떤 일이 벌어지나요? (예상 결과)
+→ ${answers.q1_consequence}
 
-Q2. 그게 진짜라면 '나'에 대해 뭐라고 말하나요?
-→ ${answers.q2_about_self}
+Q2. 그게 진짜 일어난다면, 가장 두려운 건 뭔가요? (핵심 두려움)
+→ ${answers.q2_fear}
 
-Q3. 그렇다면 나는 어떤 사람인가요? (나는 ___한 사람이다)
-→ 나는 ${answers.q3_core_sentence} 한 사람이다.
+Q3. 그 두려움은 결국, 당신이 어떤 사람이라고 말하고 있나요? (자기 정체성)
+→ 나는 ${answers.q3_identity}
 
 위 세 답변을 종합해서, 유저가 자신에 대해 믿고 있는 핵심 믿음 1줄을 JSON으로 응답하세요.`;
 
@@ -217,28 +305,28 @@ async function runSynthesize(
 {
   "belief_line": "유저가 최종적으로 마주한 핵심 믿음 1줄. Q3과 중간 가설을 통합해 완성형 문장으로 60자 이내. 예: '나는 쉬면 뒤쳐지는 사람이다.'",
   "how_it_works": "이 믿음이 유저 삶에서 어떻게 작동하는지 2~3문장. 유저의 뜨거운 생각과 Q4(뿌리) 내용을 녹여 서술. 전문 용어 금지.",
-  "reframe_invitation": "재해석의 초대 1~2문장. '이것은 진실이 아니라 ___에서 배운 오래된 믿음일 수 있어요' 형식을 기본으로 하되, Q5(친구에게 해줄 말)을 참고해 **친구처럼 따뜻한 어조**로. 유저가 스스로에게 할 말이 되도록."
+  "reframe_invitation": "다시 바라보기 1~2문장. '이것은 진실이 아니라 ___에서 배운 오래된 믿음일 수 있어요' 형식을 기본으로 하되, Q5(친구에게 해줄 말)을 참고해 **친구처럼 따뜻한 어조**로. 유저가 스스로에게 할 말이 되도록."
 }
 
 - 전문 용어(인지적 오류, 자동적 사고 등) 금지, 일상 언어.
 - 판단·비난 금지.
 - JSON 외 텍스트 절대 포함 금지.`;
 
-  const userMessage = `## 유저의 뜨거운 생각
+  const userMessage = `## 유저가 선택한 뜨거운 생각
 "${hotThought}"
 
 ## 중간 가설 핵심 믿음 (Part 1 후 AI가 제안)
 ${midBelief ? `"${midBelief}"` : "(없음)"}
 
 ## 유저 답변 전체
-Q1. 그 생각이 사실이라면 나에게 의미하는 것:
-→ ${answers.q1_meaning}
+Q1. 이 생각이 사실이라면, 어떤 일이 벌어지나요? (예상 결과):
+→ ${answers.q1_consequence}
 
-Q2. 그게 진짜라면 '나'에 대해:
-→ ${answers.q2_about_self}
+Q2. 그게 진짜 일어난다면, 가장 두려운 건? (핵심 두려움):
+→ ${answers.q2_fear}
 
-Q3. 나는 어떤 사람인가:
-→ 나는 ${answers.q3_core_sentence} 한 사람이다.
+Q3. 그 두려움이 말하는 나는 어떤 사람? (자기 정체성):
+→ 나는 ${answers.q3_identity}
 
 Q4. 이 믿음의 뿌리 (언제/어디서 배웠는지):
 → ${answers.q4_origin}

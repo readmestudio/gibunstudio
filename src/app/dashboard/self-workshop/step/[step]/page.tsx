@@ -215,6 +215,7 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
           workshopId={workshopId}
           savedData={progress.core_belief_excavation ?? undefined}
           mechanismInsights={progress.mechanism_insights ?? null}
+          mechanismAnalysis={progress.mechanism_analysis ?? null}
         />
       )}
 

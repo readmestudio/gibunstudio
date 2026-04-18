@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,9 +11,10 @@ import {
 /* ─────────────────────────────── 타입 ─────────────────────────────── */
 
 interface Answers {
-  q1_meaning: string;
-  q2_about_self: string;
-  q3_core_sentence: string;
+  selected_hot_thought: string;
+  q1_consequence: string;
+  q2_fear: string;
+  q3_identity: string;
   q4_origin: string;
   q5_compassion: string;
 }
@@ -36,34 +37,60 @@ export interface CoreBeliefExcavation {
   synthesis?: Synthesis;
 }
 
+interface MechanismAnalysisData {
+  automatic_thought?: string;
+  common_thoughts_checked?: string[];
+}
+
 interface Props {
   workshopId: string;
   savedData?: Partial<CoreBeliefExcavation>;
   mechanismInsights: unknown;
+  mechanismAnalysis: unknown;
 }
 
 const EMPTY_ANSWERS: Answers = {
-  q1_meaning: "",
-  q2_about_self: "",
-  q3_core_sentence: "",
+  selected_hot_thought: "",
+  q1_consequence: "",
+  q2_fear: "",
+  q3_identity: "",
   q4_origin: "",
   q5_compassion: "",
 };
 
+function migrateAnswers(
+  saved: Record<string, unknown> | undefined
+): Partial<Answers> {
+  if (!saved) return {};
+  return {
+    selected_hot_thought:
+      (saved.selected_hot_thought as string) ?? "",
+    q1_consequence:
+      (saved.q1_consequence as string) ?? (saved.q1_meaning as string) ?? "",
+    q2_fear:
+      (saved.q2_fear as string) ?? (saved.q2_about_self as string) ?? "",
+    q3_identity:
+      (saved.q3_identity as string) ?? (saved.q3_core_sentence as string) ?? "",
+    q4_origin: (saved.q4_origin as string) ?? "",
+    q5_compassion: (saved.q5_compassion as string) ?? "",
+  };
+}
+
 const Q1_EXAMPLES = [
-  "'나만 뒤쳐졌다'가 사실이라면 → 나는 능력이 부족한 사람이라는 뜻이에요",
-  "'더 해야 한다'가 사실이라면 → 지금의 나로는 부족하다는 뜻이에요",
+  "'나만 뒤처졌다'가 사실이면 → 결국 아무도 나를 필요로 하지 않게 돼요",
+  "'이 정도론 부족해'가 사실이면 → 중요한 기회를 놓치게 돼요",
 ];
 
 const Q2_EXAMPLES = [
-  "나는 사랑받을 자격이 부족한 사람이다",
-  "나는 늘 증명해야만 하는 사람이다",
+  "혼자 남겨지는 게 가장 무서워요",
+  "쓸모없는 사람이 되는 게 두려워요",
+  "아무에게도 인정받지 못할까 봐 두려워요",
 ];
 
 const Q3_EXAMPLES = [
-  "성과가 없으면 가치 없는",
-  "완벽하지 않으면 사랑받을 수 없는",
-  "쉬면 뒤쳐지는",
+  "증명하지 않으면 사랑받을 수 없는 사람이다",
+  "쉬면 뒤쳐지는 사람이다",
+  "완벽하지 않으면 가치 없는 사람이다",
 ];
 
 const Q4_EXAMPLES = [
@@ -85,6 +112,7 @@ export function WorkshopExerciseStep5CoreBelief({
   workshopId,
   savedData,
   mechanismInsights,
+  mechanismAnalysis,
 }: Props) {
   const router = useRouter();
 
@@ -92,14 +120,15 @@ export function WorkshopExerciseStep5CoreBelief({
     ? mechanismInsights
     : null;
 
-  const hotThought =
-    report?.pattern_cycle.nodes.find((n) => n.stage === "thought")?.label ??
-    "자동적으로 떠오르는 생각";
+  const mechanism = (mechanismAnalysis ?? {}) as MechanismAnalysisData;
   const patternHeadline = report?.pattern_cycle.headline ?? "";
 
+  const migrated = migrateAnswers(
+    savedData?.answers as Record<string, unknown> | undefined
+  );
   const [answers, setAnswers] = useState<Answers>({
     ...EMPTY_ANSWERS,
-    ...(savedData?.answers ?? {}),
+    ...migrated,
   });
   const [hypothesis, setHypothesis] = useState<MidHypothesis | undefined>(
     savedData?.mid_hypothesis
@@ -107,10 +136,36 @@ export function WorkshopExerciseStep5CoreBelief({
   const [synthesis, setSynthesis] = useState<Synthesis | undefined>(
     savedData?.synthesis
   );
+
+  /* ── Phase 0: 뜨거운 생각 후보 ── */
+  const [candidates, setCandidates] = useState<string[]>([]);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [hotThoughtConfirmed, setHotThoughtConfirmed] = useState(
+    !!migrated.selected_hot_thought
+  );
+  const [customThought, setCustomThought] = useState("");
+  const [useCustom, setUseCustom] = useState(false);
+
   const [hypothesizing, setHypothesizing] = useState(false);
   const [synthesizing, setSynthesizing] = useState(false);
   const [error, setError] = useState("");
   const debounceRef = useRef<NodeJS.Timeout>(undefined);
+
+  useEffect(() => {
+    if (hotThoughtConfirmed || !report) return;
+    setCandidatesLoading(true);
+    fetch("/api/self-workshop/excavate-belief", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workshopId, phase: "generate-candidates" }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.candidates?.length) setCandidates(data.candidates);
+      })
+      .catch(() => {})
+      .finally(() => setCandidatesLoading(false));
+  }, [workshopId, hotThoughtConfirmed, report]);
 
   const autoSave = useCallback(
     (updated: Answers) => {
@@ -136,10 +191,19 @@ export function WorkshopExerciseStep5CoreBelief({
     autoSave(next);
   }
 
+  function confirmHotThought() {
+    const selected = useCustom ? customThought.trim() : answers.selected_hot_thought;
+    if (!selected) return;
+    const next = { ...answers, selected_hot_thought: selected };
+    setAnswers(next);
+    autoSave(next);
+    setHotThoughtConfirmed(true);
+  }
+
   const part1Complete =
-    answers.q1_meaning.trim().length > 0 &&
-    answers.q2_about_self.trim().length > 0 &&
-    answers.q3_core_sentence.trim().length > 0;
+    answers.q1_consequence.trim().length > 0 &&
+    answers.q2_fear.trim().length > 0 &&
+    answers.q3_identity.trim().length > 0;
 
   const part2Complete =
     part1Complete &&
@@ -224,188 +288,338 @@ export function WorkshopExerciseStep5CoreBelief({
         ← Step 4 리포트 다시 보기
       </Link>
 
-      {/* 컨텍스트 */}
-      <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
-          Step 4에서 발견한 패턴
-        </p>
-        {patternHeadline && (
-          <p className="mt-2 text-base font-bold leading-snug text-[var(--foreground)]">
-            {patternHeadline}
-          </p>
-        )}
-        <div className="mt-4 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-3">
-          <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-            자동으로 떠오르는 뜨거운 생각
-          </p>
-          <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">
-            “{hotThought}”
-          </p>
-        </div>
-        <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
-          이 생각 뒤에 숨어있는 <strong>&lsquo;당신이 진실이라고 믿는 것&rsquo;</strong>을
-          같이 찾아볼게요. 정답은 없어요. 떠오르는 대로 솔직하게 적어주세요.
-        </p>
-      </div>
-
-      {/* Part 1 */}
-      <PartHeader num="Part 1" title="뜨거운 생각에서 믿음으로" />
-
-      <QuestionBlock
-        step={1}
-        label={`그 생각이 100% 사실이라면, 당신에게 무엇을 의미하나요?`}
-        examples={Q1_EXAMPLES}
-        value={answers.q1_meaning}
-        onChange={(v) => update("q1_meaning", v)}
-        placeholder="예: 그 생각이 사실이라면 나는 …"
-      />
-
-      <QuestionBlock
-        step={2}
-        label={
-          <>
-            {answers.q1_meaning.trim() ? (
-              <>
-                <span className="text-[var(--foreground)]/55">
-                  &ldquo;{truncate(answers.q1_meaning, 40)}&rdquo;
-                </span>
-                이 진짜라면,
-                <br />
-              </>
-            ) : null}
-            그건 &lsquo;당신&rsquo;이라는 사람에 대해 뭐라고 말하고 있나요?
-          </>
-        }
-        examples={Q2_EXAMPLES}
-        value={answers.q2_about_self}
-        onChange={(v) => update("q2_about_self", v)}
-        disabled={!answers.q1_meaning.trim()}
-        placeholder="예: 나는 …한 사람이다"
-      />
-
-      <QuestionBlock
-        step={3}
-        label="그렇다면 당신은 &lsquo;어떤 사람&rsquo;이라는 뜻일까요?"
-        examples={Q3_EXAMPLES}
-        disabled={!answers.q2_about_self.trim()}
-        prefix="나는 "
-        suffix="한 사람이다."
-        value={answers.q3_core_sentence}
-        onChange={(v) => update("q3_core_sentence", v)}
-        placeholder="예: 성과가 없으면 가치 없는"
-      />
-
-      {/* 가설 생성 버튼 또는 가설 카드 */}
-      {!hypothesis ? (
-        <div className="text-center">
-          <button
-            onClick={handleHypothesize}
-            disabled={!part1Complete || hypothesizing}
-            className="inline-flex items-center gap-2 rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            {hypothesizing ? (
-              <>
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                핵심 믿음을 발견하는 중…
-              </>
-            ) : (
-              "핵심 믿음 발견하기 →"
-            )}
-          </button>
-          {!part1Complete && (
-            <p className="mt-2 text-xs text-[var(--foreground)]/50">
-              Q1~Q3을 모두 채우면 활성화돼요
-            </p>
-          )}
-        </div>
-      ) : (
-        <HypothesisCard hotThought={hypothesis.hot_thought} belief={hypothesis.core_belief} />
-      )}
-
-      {/* Part 2 — 가설이 있어야만 렌더 */}
-      {hypothesis && (
+      {/* ── Phase 0: 뜨거운 생각 선택 ── */}
+      {!hotThoughtConfirmed ? (
         <>
-          <PartHeader num="Part 2" title="이 믿음의 뿌리와 재해석" />
+          {/* 설명 카드 */}
+          <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
+              Step 5 시작하기
+            </p>
+            <p className="mt-3 text-base font-bold leading-snug text-[var(--foreground)]">
+              생각 뒤에 숨은 믿음을 찾아볼 거예요.
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
+              스트레스 상황에서 자동으로 머릿속을 스치는 생각이 있죠.
+              보통 <strong>&ldquo;~해야 해&rdquo;</strong>, <strong>&ldquo;나는 ~한데&rdquo;</strong>처럼
+              짧고 강렬해요.
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/75">
+              이런 생각 하나를 골라서 깊이 따라가 보면,
+              그 밑에 숨어 있는 <strong>오래된 믿음</strong>을 만날 수 있어요.
+            </p>
+          </div>
 
-          <QuestionBlock
-            step={4}
-            label="이 믿음이 처음 생긴 순간이 떠오르세요? 어떤 경험·관계에서 배운 것 같나요?"
-            examples={Q4_EXAMPLES}
-            value={answers.q4_origin}
-            onChange={(v) => update("q4_origin", v)}
-            placeholder="예: 어릴 때 …"
-          />
+          {/* 후보 선택 */}
+          <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5">
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              Step 4에서 나왔던 생각들이에요.
+              <br />
+              이 중에서 <strong>가장 마음이 불편해지는 생각</strong>을 골라주세요.
+            </p>
 
-          <QuestionBlock
-            step={5}
-            label={
-              <>
-                사랑하는 친구가 <strong>똑같은 믿음</strong>을 갖고 있다면,
-                <br />
-                당신은 뭐라고 말해주고 싶으세요?
-              </>
-            }
-            examples={Q5_EXAMPLES}
-            value={answers.q5_compassion}
-            onChange={(v) => update("q5_compassion", v)}
-            disabled={!answers.q4_origin.trim()}
-            placeholder="친구에게 건네는 한 문장"
-            extraAbove={
-              <div className="mb-3 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/60 p-3">
-                <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-                  다시 마주하는 핵심 믿음
-                </p>
-                <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">
-                  “{hypothesis.core_belief}”
-                </p>
+            {candidatesLoading ? (
+              <div className="mt-4 flex items-center gap-2 text-sm text-[var(--foreground)]/50">
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--foreground)]/30 border-t-transparent" />
+                후보를 준비하고 있어요…
               </div>
-            }
-          />
+            ) : (
+              <div className="mt-4 space-y-2">
+                {candidates.map((thought) => {
+                  const selected =
+                    !useCustom && answers.selected_hot_thought === thought;
+                  return (
+                    <button
+                      key={thought}
+                      type="button"
+                      onClick={() => {
+                        setUseCustom(false);
+                        update("selected_hot_thought", thought);
+                      }}
+                      className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
+                        selected
+                          ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
+                          : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
+                      }`}
+                    >
+                      <span
+                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                          selected
+                            ? "border-[var(--foreground)] bg-[var(--foreground)]"
+                            : "border-[var(--foreground)]/30"
+                        }`}
+                      >
+                        {selected && (
+                          <span className="h-2 w-2 rounded-full bg-white" />
+                        )}
+                      </span>
+                      <span
+                        className={`leading-relaxed ${
+                          selected
+                            ? "font-semibold text-[var(--foreground)]"
+                            : "text-[var(--foreground)]/80"
+                        }`}
+                      >
+                        &ldquo;{thought}&rdquo;
+                      </span>
+                    </button>
+                  );
+                })}
 
-          {!synthesis ? (
-            <div className="text-center">
+                {/* 직접 쓰기 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseCustom(true);
+                    update("selected_hot_thought", "");
+                  }}
+                  className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
+                    useCustom
+                      ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
+                      : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                      useCustom
+                        ? "border-[var(--foreground)] bg-[var(--foreground)]"
+                        : "border-[var(--foreground)]/30"
+                    }`}
+                  >
+                    {useCustom && (
+                      <span className="h-2 w-2 rounded-full bg-white" />
+                    )}
+                  </span>
+                  <span
+                    className={`leading-relaxed ${
+                      useCustom
+                        ? "font-semibold text-[var(--foreground)]"
+                        : "text-[var(--foreground)]/80"
+                    }`}
+                  >
+                    직접 쓸게요
+                  </span>
+                </button>
+
+                {useCustom && (
+                  <input
+                    type="text"
+                    value={customThought}
+                    onChange={(e) => setCustomThought(e.target.value)}
+                    placeholder="떠오르는 생각을 적어주세요"
+                    className="mt-2 w-full rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors"
+                  />
+                )}
+              </div>
+            )}
+
+            <div className="mt-5 text-center">
               <button
-                onClick={handleSynthesize}
-                disabled={!part2Complete || synthesizing}
+                onClick={confirmHotThought}
+                disabled={
+                  useCustom
+                    ? customThought.trim().length === 0
+                    : answers.selected_hot_thought.trim().length === 0
+                }
                 className="inline-flex items-center gap-2 rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
               >
-                {synthesizing ? (
-                  <>
-                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    마지막 정리 중…
-                  </>
-                ) : (
-                  "마지막 정리 보기 →"
-                )}
+                이 생각으로 시작하기 →
               </button>
             </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* ── 선택된 뜨거운 생각 컨텍스트 ── */}
+          <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
+              Step 4에서 발견한 패턴
+            </p>
+            {patternHeadline && (
+              <p className="mt-2 text-base font-bold leading-snug text-[var(--foreground)]">
+                {patternHeadline}
+              </p>
+            )}
+            <div className="mt-4 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-3">
+              <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
+                내가 고른 뜨거운 생각
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">
+                &ldquo;{answers.selected_hot_thought}&rdquo;
+              </p>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
+              이 생각을 한 겹씩 따라가면서, 그 밑에 숨어 있는
+              <strong> 오래된 믿음</strong>을 찾아볼게요.
+              정답은 없어요. 떠오르는 대로 솔직하게 적어주세요.
+            </p>
+          </div>
+
+          {/* ── Part 1: 한 겹씩 따라가 보기 ── */}
+          <PartHeader num="Part 1" title="한 겹씩 따라가 보기" />
+
+          <QuestionBlock
+            step={1}
+            label="이 생각이 사실이라면, 어떤 일이 벌어지나요?"
+            guide="이 생각이 100% 맞다고 가정하고, 그 결과를 상상해 보세요."
+            examples={Q1_EXAMPLES}
+            value={answers.q1_consequence}
+            onChange={(v) => update("q1_consequence", v)}
+            placeholder="예: 결국 아무도 나를 필요로 하지 않게 돼요"
+          />
+
+          <QuestionBlock
+            step={2}
+            label={
+              <>
+                {answers.q1_consequence.trim() ? (
+                  <>
+                    <span className="text-[var(--foreground)]/55">
+                      &ldquo;{truncate(answers.q1_consequence, 40)}&rdquo;
+                    </span>
+                    {" "}— 이게 진짜 일어난다면,
+                    <br />
+                  </>
+                ) : null}
+                가장 두려운 건 뭔가요?
+              </>
+            }
+            guide="머리가 아니라 가슴으로 느껴지는 두려움을 적어보세요."
+            examples={Q2_EXAMPLES}
+            value={answers.q2_fear}
+            onChange={(v) => update("q2_fear", v)}
+            disabled={!answers.q1_consequence.trim()}
+            placeholder="예: 혼자 남겨지는 게 가장 무서워요"
+          />
+
+          <QuestionBlock
+            step={3}
+            label="그 두려움은 결국, 당신이 어떤 사람이라고 말하고 있나요?"
+            guide="두려움 뒤에 숨은 '나'에 대한 문장을 완성해 보세요."
+            examples={Q3_EXAMPLES}
+            disabled={!answers.q2_fear.trim()}
+            prefix="나는 "
+            value={answers.q3_identity}
+            onChange={(v) => update("q3_identity", v)}
+            placeholder="예: 증명하지 않으면 사랑받을 수 없는 사람이다"
+          />
+
+          {/* 가설 생성 버튼 또는 가설 카드 */}
+          {!hypothesis ? (
+            <div className="text-center">
+              <button
+                onClick={handleHypothesize}
+                disabled={!part1Complete || hypothesizing}
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                {hypothesizing ? (
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    따라간 결과를 정리하는 중…
+                  </>
+                ) : (
+                  "여기까지 정리해 볼게요 →"
+                )}
+              </button>
+              {!part1Complete && (
+                <p className="mt-2 text-xs text-[var(--foreground)]/50">
+                  세 질문을 모두 채우면 활성화돼요
+                </p>
+              )}
+            </div>
           ) : (
-            <SynthesisCard data={synthesis} />
+            <HypothesisCard
+              hotThought={hypothesis.hot_thought}
+              belief={hypothesis.core_belief}
+            />
           )}
+
+          {/* ── Part 2 — 가설이 있어야만 렌더 ── */}
+          {hypothesis && (
+            <>
+              <PartHeader num="Part 2" title="이 믿음은 어디서 왔을까" />
+
+              <QuestionBlock
+                step={4}
+                label="이 믿음이 처음 생긴 순간이 떠오르세요? 어떤 경험·관계에서 배운 것 같나요?"
+                examples={Q4_EXAMPLES}
+                value={answers.q4_origin}
+                onChange={(v) => update("q4_origin", v)}
+                placeholder="예: 어릴 때 …"
+              />
+
+              <QuestionBlock
+                step={5}
+                label={
+                  <>
+                    사랑하는 친구가 <strong>똑같은 믿음</strong>을 갖고 있다면,
+                    <br />
+                    당신은 뭐라고 말해주고 싶으세요?
+                  </>
+                }
+                examples={Q5_EXAMPLES}
+                value={answers.q5_compassion}
+                onChange={(v) => update("q5_compassion", v)}
+                disabled={!answers.q4_origin.trim()}
+                placeholder="친구에게 건네는 한 문장"
+                extraAbove={
+                  <div className="mb-3 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/60 p-3">
+                    <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
+                      다시 마주하는 핵심 믿음
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">
+                      &ldquo;{hypothesis.core_belief}&rdquo;
+                    </p>
+                  </div>
+                }
+              />
+
+              {!synthesis ? (
+                <div className="text-center">
+                  <button
+                    onClick={handleSynthesize}
+                    disabled={!part2Complete || synthesizing}
+                    className="inline-flex items-center gap-2 rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    {synthesizing ? (
+                      <>
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        마지막 정리 중…
+                      </>
+                    ) : (
+                      "마지막 정리 보기 →"
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <SynthesisCard data={synthesis} />
+              )}
+            </>
+          )}
+
+          {error && (
+            <p className="rounded-lg border border-red-300 bg-red-50 p-3 text-center text-sm text-red-700">
+              {error}
+            </p>
+          )}
+
+          {/* 다음 단계 버튼 — synthesis 완료 후에만 */}
+          {synthesis && (
+            <div className="text-center pt-4">
+              <button
+                onClick={handleNext}
+                className="inline-flex rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                다음 단계로 →
+              </button>
+            </div>
+          )}
+
+          <p className="text-center text-xs text-[var(--foreground)]/40">
+            작성 내용은 자동으로 저장됩니다
+          </p>
         </>
       )}
-
-      {error && (
-        <p className="rounded-lg border border-red-300 bg-red-50 p-3 text-center text-sm text-red-700">
-          {error}
-        </p>
-      )}
-
-      {/* 다음 단계 버튼 — synthesis 완료 후에만 */}
-      {synthesis && (
-        <div className="text-center pt-4">
-          <button
-            onClick={handleNext}
-            className="inline-flex rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            다음 단계로 →
-          </button>
-        </div>
-      )}
-
-      <p className="text-center text-xs text-[var(--foreground)]/40">
-        작성 내용은 자동으로 저장됩니다
-      </p>
     </div>
   );
 }
@@ -427,24 +641,24 @@ function PartHeader({ num, title }: { num: string; title: string }) {
 function QuestionBlock({
   step,
   label,
+  guide,
   examples,
   value,
   onChange,
   placeholder,
   disabled,
   prefix,
-  suffix,
   extraAbove,
 }: {
   step: number;
   label: ReactNode;
+  guide?: string;
   examples: string[];
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   disabled?: boolean;
   prefix?: string;
-  suffix?: string;
   extraAbove?: ReactNode;
 }) {
   return (
@@ -461,12 +675,17 @@ function QuestionBlock({
           <p className="text-sm font-semibold leading-relaxed text-[var(--foreground)]">
             {label}
           </p>
+          {guide && (
+            <p className="mt-1 text-xs leading-relaxed text-[var(--foreground)]/55">
+              {guide}
+            </p>
+          )}
         </div>
       </div>
 
       <div className="mt-4 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-3">
         <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-          💡 이렇게 적어볼 수 있어요
+          이렇게 적어볼 수 있어요
         </p>
         <ul className="mt-2 space-y-1.5">
           {examples.map((ex) => (
@@ -486,13 +705,11 @@ function QuestionBlock({
 
       {extraAbove}
 
-      {prefix || suffix ? (
+      {prefix ? (
         <div className="mt-4 flex items-baseline gap-1.5 rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-3 focus-within:border-[var(--foreground)]">
-          {prefix && (
-            <span className="text-base font-medium text-[var(--foreground)]/80">
-              {prefix}
-            </span>
-          )}
+          <span className="text-base font-medium text-[var(--foreground)]/80">
+            {prefix}
+          </span>
           <input
             type="text"
             value={value}
@@ -501,11 +718,6 @@ function QuestionBlock({
             disabled={disabled}
             className="min-w-0 flex-1 bg-transparent text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:outline-none"
           />
-          {suffix && (
-            <span className="text-base font-medium text-[var(--foreground)]/80">
-              {suffix}
-            </span>
-          )}
         </div>
       ) : (
         <textarea
@@ -529,9 +741,9 @@ function HypothesisCard({
   belief: string;
 }) {
   return (
-    <div className="rounded-xl border-2 border-blue-500 bg-blue-50/50 p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-700">
-        💎 발견된 핵심 믿음
+    <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/55">
+        지금까지 따라온 결과
       </p>
       <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
         나의 <strong className="text-[var(--foreground)]">&ldquo;{hotThought}&rdquo;</strong>
@@ -539,9 +751,9 @@ function HypothesisCard({
         <br />
         이 핵심 믿음에 기반하고 있을지도 몰라요:
       </p>
-      <blockquote className="mt-4 rounded-lg border-l-4 border-blue-500 bg-white p-4">
+      <blockquote className="mt-4 rounded-lg border-l-4 border-[var(--foreground)] bg-[var(--surface)]/40 p-4">
         <p className="text-base font-semibold leading-relaxed text-[var(--foreground)]">
-          “{belief}”
+          &ldquo;{belief}&rdquo;
         </p>
       </blockquote>
       <p className="mt-4 text-xs text-[var(--foreground)]/55">
@@ -555,11 +767,11 @@ function SynthesisCard({ data }: { data: Synthesis }) {
   return (
     <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
       <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/55 text-center">
-        🌿 당신이 발굴한 진실
+        당신이 발견한 오래된 믿음
       </p>
       <blockquote className="mt-4 border-l-2 border-[var(--foreground)] pl-5">
         <p className="text-lg font-bold leading-relaxed text-[var(--foreground)]">
-          “{data.belief_line}”
+          &ldquo;{data.belief_line}&rdquo;
         </p>
       </blockquote>
       <div className="mt-5 space-y-4">
@@ -573,7 +785,7 @@ function SynthesisCard({ data }: { data: Synthesis }) {
         </div>
         <div>
           <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-            재해석의 초대
+            다시 바라보기
           </p>
           <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/80">
             {data.reframe_invitation}
