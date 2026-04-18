@@ -181,33 +181,45 @@ async function runGenerateCandidates(
   aiThoughtLabel: string,
   patternHeadline: string
 ): Promise<CandidatesResult> {
-  const existingThoughts = [
+  const rawInputs = [
     automaticThought,
     aiThoughtLabel,
-    ...commonThoughtsChecked.slice(0, 2),
+    ...commonThoughtsChecked,
   ].filter((t) => t.trim().length > 0);
 
-  const unique = [...new Set(existingThoughts)];
+  const systemPrompt = `당신은 CBT 전문 심리학자입니다.
 
-  const systemPrompt = `당신은 CBT 전문 심리학자입니다. 유저의 자동적 사고 목록을 보고, 같은 맥락에서 나올 수 있는 변형 생각 1~2개를 추가로 만들어주세요.
+## 작업
+유저가 스트레스 상황에서 경험한 자동적 사고 원본들을 분석해서, **서로 다른 주제/각도의 핵심 생각 3~5개**를 추출해 주세요.
 
-규칙:
-- 결과는 반드시 아래 JSON 단일 객체로 응답하세요.
+## 중요 규칙
+1. **장문 분리**: 유저가 한 문장에 여러 생각을 섞어 쓴 경우(예: "나만 뒤쳐지고 있다 나 빼고 다 앞서가고 있다 애도했는데 나는 못한다 나는 할 수 없다"), 이를 의미 단위로 분리하세요.
+2. **중복 제거**: 같은 뜻의 다른 표현은 하나만 남기세요. "나만 뒤처져"와 "내가 지금 뒤쳐지고 있어"는 같은 생각입니다.
+3. **다양한 각도**: 추출된 생각들이 서로 **다른 심리적 주제**를 담아야 합니다. 예시:
+   - 비교/열등감: "남들은 다 잘하는데 나만…"
+   - 무능감/자기비하: "나는 못한다"
+   - 무력감: "나는 할 수 없다"
+   - 조바심/압박: "더 해야 해"
+   - 자기비난: "왜 나는 이것밖에 안 될까"
+   이처럼 각 생각이 **서로 다른 감정적 뿌리**를 가져야 합니다.
+4. 각 생각은 15자 이내, 1인칭 내면의 목소리 톤 ("~해", "~야", "나는 ~" 등).
+5. 원본에 없는 생각을 새로 만들지 마세요. 원본을 정리하고 분리하는 것이 핵심입니다.
+6. 단, 원본에서 3개 미만의 서로 다른 주제만 추출된 경우에 한해, 패턴 맥락에서 자연스럽게 나올 수 있는 **다른 각도의** 생각 1개를 추가할 수 있습니다.
+
+## 응답 형식
+반드시 아래 JSON 단일 객체로 응답하세요.
 {
-  "extra_thoughts": ["변형 생각 1", "변형 생각 2"]
+  "candidates": ["생각1", "생각2", "생각3"]
 }
-- 기존 목록과 중복되지 않으면서, 같은 패턴에서 파생되는 자연스러운 생각.
-- 각 생각은 15자 이내, 1인칭 내면의 목소리 톤.
-- 기존 목록에 이미 3개 이상 있으면 1개만, 2개 이하면 2개 생성.
-- JSON 외 텍스트 절대 포함 금지.`;
+- 3~5개. JSON 외 텍스트 절대 포함 금지.`;
 
   const userMessage = `## 패턴 맥락
 ${patternHeadline}
 
-## 기존 자동적 사고 목록
-${unique.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
+## 유저의 자동적 사고 원본
+${rawInputs.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
 
-위 맥락에서 자연스럽게 파생되는 변형 생각을 추가로 만들어 주세요.`;
+위 원본들을 분석해서 서로 다른 주제의 핵심 생각 3~5개를 추출해 주세요.`;
 
   const response = await chatCompletion(
     [
@@ -216,19 +228,23 @@ ${unique.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
     ],
     {
       model: "gemini-2.5-flash",
-      temperature: 0.7,
-      max_tokens: 256,
+      temperature: 0.4,
+      max_tokens: 512,
       response_format: { type: "json_object" },
     }
   );
 
-  const parsed = safeJsonParse<{ extra_thoughts: string[] }>(response);
-  const extras = (parsed?.extra_thoughts ?? []).filter(
+  const parsed = safeJsonParse<{ candidates: string[] }>(response);
+  const result = (parsed?.candidates ?? []).filter(
     (t) => typeof t === "string" && t.trim().length > 0
   );
 
-  const all = [...unique, ...extras].slice(0, 5);
-  return { candidates: all };
+  if (result.length === 0) {
+    const fallback = [...new Set(rawInputs)].slice(0, 4);
+    return { candidates: fallback.length > 0 ? fallback : ["나는 부족하다"] };
+  }
+
+  return { candidates: result.slice(0, 5) };
 }
 
 /* ─────────────── Phase 1: Hypothesize ─────────────── */
