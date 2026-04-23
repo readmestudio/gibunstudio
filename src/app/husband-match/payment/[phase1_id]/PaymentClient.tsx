@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
+import {
+  PaymentMethodSelector,
+  type PaymentMethod,
+} from '@/components/payment/PaymentMethodSelector';
 
 interface PaymentClientProps {
   phase1Id: string;
@@ -34,8 +38,8 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  /** 카드 결제 처리 */
-  const handleCardPayment = async () => {
+  /** 카드/간편결제 처리 */
+  const handleCardPayment = async (method: PaymentMethod) => {
     if (!window.AUTHNICE) {
       alert('결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
@@ -67,7 +71,7 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
       // 2. NicePay 결제창 호출
       window.AUTHNICE.requestPay({
         clientId: NICEPAY_CLIENT_ID,
-        method: 'cardAndEasyPay',
+        method,
         orderId: order_id,
         amount: AMOUNT,
         goodsName: '기분 심층 분석 리포트',
@@ -165,7 +169,7 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
                     : 'text-[var(--foreground)]/60 hover:text-[var(--foreground)]'
                 }`}
               >
-                카드 결제
+                카드·간편결제
               </button>
               <button
                 onClick={() => setPaymentMethod('bank_transfer')}
@@ -180,22 +184,21 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
             </div>
           )}
 
-          {/* Card Payment */}
+          {/* Card / Easy Pay */}
           {paymentMethod === 'card' && IS_NICEPAY_ENABLED && (
-            <div className="p-8">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-[var(--surface)] rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-[var(--foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                </div>
-                <p className="text-[var(--foreground)]/70 mb-2">
-                  신용카드 / 체크카드로 안전하게 결제합니다
-                </p>
-                <p className="text-xs text-[var(--foreground)]/50 mb-6">
-                  나이스페이 보안 결제창이 열립니다
-                </p>
-              </div>
+            <div className="p-6">
+              <p className="mb-4 text-center text-sm text-[var(--foreground)]/60">
+                원하시는 결제 수단을 선택해주세요
+              </p>
+              <PaymentMethodSelector
+                onSelect={handleCardPayment}
+                isSubmitting={isSubmitting}
+                disabled={!sdkLoaded}
+                disabledLabel="결제 모듈 로딩 중..."
+              />
+              <p className="mt-4 text-center text-xs text-[var(--foreground)]/50">
+                나이스페이 보안 결제창으로 안전하게 처리됩니다
+              </p>
             </div>
           )}
 
@@ -270,17 +273,9 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
           )}
         </div>
 
-        {/* Submit Button */}
-        <div className="mt-8">
-          {paymentMethod === 'card' ? (
-            <button
-              onClick={handleCardPayment}
-              disabled={isSubmitting || !sdkLoaded}
-              className="w-full py-4 bg-[var(--accent)] text-white font-semibold rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? '결제 진행 중...' : !sdkLoaded ? '결제 모듈 로딩 중...' : `₩${AMOUNT.toLocaleString()} 카드 결제하기`}
-            </button>
-          ) : (
+        {/* Submit Button — 무통장입금일 때만 (카드/간편결제는 선택 버튼이 곧 결제 시작) */}
+        {paymentMethod === 'bank_transfer' && (
+          <div className="mt-8">
             <button
               onClick={handleBankTransfer}
               disabled={isSubmitting || !depositorName.trim()}
@@ -288,13 +283,11 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
             >
               {isSubmitting ? '처리 중...' : '입금 완료 신청하기'}
             </button>
-          )}
-          <p className="text-center text-sm text-[var(--foreground)]/60 mt-4">
-            {paymentMethod === 'card'
-              ? '나이스페이 보안 결제로 안전하게 처리됩니다'
-              : '입금을 완료하셨다면 위 버튼을 눌러주세요'}
-          </p>
-        </div>
+            <p className="text-center text-sm text-[var(--foreground)]/60 mt-4">
+              입금을 완료하셨다면 위 버튼을 눌러주세요
+            </p>
+          </div>
+        )}
 
         {/* Back Link */}
         <div className="mt-6 text-center">

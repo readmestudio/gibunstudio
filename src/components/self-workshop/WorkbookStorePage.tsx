@@ -6,6 +6,10 @@ import Script from "next/script";
 import { WORKBOOK_CATALOG } from "@/lib/self-workshop/workbook-catalog";
 import { NotifyButton } from "@/components/NotifyButton";
 import { DiscountPriceDisplay } from "@/components/self-workshop/landing/DiscountPriceDisplay";
+import {
+  PaymentMethodSelector,
+  type PaymentMethod,
+} from "@/components/payment/PaymentMethodSelector";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
@@ -21,7 +25,7 @@ export function WorkbookStorePage() {
 
   const active = WORKBOOK_CATALOG.find((w) => w.id === activeId)!;
 
-  async function handlePayment() {
+  async function handlePayment(method: PaymentMethod) {
     if (!NICEPAY_CLIENT_ID) {
       alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
       return;
@@ -62,7 +66,7 @@ export function WorkbookStorePage() {
 
       window.AUTHNICE.requestPay({
         clientId: NICEPAY_CLIENT_ID,
-        method: "cardAndEasyPay",
+        method,
         orderId: data.order_id,
         amount: active.price,
         goodsName: `마음 챙김 워크북 - ${active.title}`,
@@ -204,20 +208,14 @@ export function WorkbookStorePage() {
             </p>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={handlePayment}
-            disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
-            className="block w-full rounded-xl bg-[var(--foreground)] px-6 py-4 text-center text-base font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting
-              ? "결제 진행 중..."
-              : NICEPAY_CLIENT_ID && !sdkLoaded
-                ? "결제 모듈 로딩 중..."
-                : "결제하기"}
-          </button>
+          <PaymentMethodSelector
+            onSelect={handlePayment}
+            isSubmitting={isSubmitting}
+            disabled={!!NICEPAY_CLIENT_ID && !sdkLoaded}
+            disabledLabel="결제 모듈 로딩 중..."
+          />
         )}
-        <p className="mt-3 text-center text-xs text-[var(--foreground)]/50">
+        <p className="mt-4 text-center text-xs text-[var(--foreground)]/50">
           결제는 NicePay를 통해 안전하게 처리됩니다.
         </p>
 

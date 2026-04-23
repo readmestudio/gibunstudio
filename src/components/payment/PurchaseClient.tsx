@@ -3,6 +3,10 @@
 import { useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
+import {
+  PaymentMethodSelector,
+  type PaymentMethod,
+} from "@/components/payment/PaymentMethodSelector";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
@@ -34,7 +38,7 @@ export function PurchaseClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  const handleCardPayment = () => {
+  const handlePayment = (method: PaymentMethod) => {
     if (!NICEPAY_CLIENT_ID) {
       alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
       return;
@@ -53,7 +57,7 @@ export function PurchaseClient({
 
     window.AUTHNICE.requestPay({
       clientId: NICEPAY_CLIENT_ID,
-      method: "cardAndEasyPay",
+      method,
       orderId,
       amount,
       goodsName,
@@ -107,21 +111,17 @@ export function PurchaseClient({
         </p>
       </div>
 
-      {/* 카드 결제 버튼 */}
-      <button
-        type="button"
-        onClick={handleCardPayment}
-        disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
-        className="mt-8 w-full rounded-lg border-2 border-[var(--foreground)] bg-white px-6 py-4 font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isSubmitting
-          ? "결제 진행 중..."
-          : NICEPAY_CLIENT_ID && !sdkLoaded
-            ? "결제 모듈 로딩 중..."
-            : "카드로 결제하기"}
-      </button>
+      {/* 결제 수단 선택 */}
+      <div className="mt-8">
+        <PaymentMethodSelector
+          onSelect={handlePayment}
+          isSubmitting={isSubmitting}
+          disabled={!!NICEPAY_CLIENT_ID && !sdkLoaded}
+          disabledLabel="결제 모듈 로딩 중..."
+        />
+      </div>
 
-      <p className="mt-3 text-center text-xs text-[var(--foreground)]/50">
+      <p className="mt-4 text-center text-xs text-[var(--foreground)]/50">
         결제는 NicePay를 통해 안전하게 처리됩니다.
       </p>
 

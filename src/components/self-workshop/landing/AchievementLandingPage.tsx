@@ -10,6 +10,7 @@ import { CurriculumSection } from "./CurriculumSection";
 import { WorkbookTestimonialSection } from "./WorkbookTestimonialSection";
 import { StickyCtaButton } from "./StickyCtaButton";
 import { DiscountPriceDisplay } from "./DiscountPriceDisplay";
+import { type PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 import {
   WORKSHOP_PRICE,
   WORKSHOP_ORIGINAL_PRICE,
@@ -27,7 +28,7 @@ export function AchievementLandingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  async function handlePayment() {
+  async function handlePayment(method: PaymentMethod) {
     if (!NICEPAY_CLIENT_ID) {
       alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
       return;
@@ -62,7 +63,7 @@ export function AchievementLandingPage() {
 
       window.AUTHNICE.requestPay({
         clientId: NICEPAY_CLIENT_ID,
-        method: "cardAndEasyPay",
+        method,
         orderId: data.order_id,
         amount: WORKSHOP_PRICE,
         goodsName: "마음 챙김 워크북 - 성취 중독",
@@ -187,13 +188,11 @@ export function AchievementLandingPage() {
         originalPrice={WORKSHOP_ORIGINAL_PRICE}
         price={WORKSHOP_PRICE}
         discountPercent={WORKSHOP_DISCOUNT_PERCENT}
-        features={WORKBOOK_FEATURES}
         onCheckout={handlePayment}
         disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
         disabledLabel={
           isSubmitting ? "결제 진행 중..." : "결제 모듈 로딩 중..."
         }
-        toggleLabel="워크북 시작하기"
       />
     </div>
   );

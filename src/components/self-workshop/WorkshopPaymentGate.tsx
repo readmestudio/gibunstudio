@@ -26,6 +26,7 @@ import { WorkbookPreviewSection } from "@/components/self-workshop/landing/Workb
 import { CurriculumSection } from "@/components/self-workshop/landing/CurriculumSection";
 import { StickyCtaButton } from "@/components/self-workshop/landing/StickyCtaButton";
 import { DiscountPriceDisplay } from "@/components/self-workshop/landing/DiscountPriceDisplay";
+import { type PaymentMethod } from "@/components/payment/PaymentMethodSelector";
 
 const PRODUCT_NAME = "마음 챙김 워크북 · 성취 중독";
 
@@ -109,7 +110,7 @@ export function WorkshopPaymentGate({ scores }: Props) {
     ? DIAGNOSIS_LEVELS.find((l) => l.level === scores.level)
     : null;
 
-  async function handlePayment() {
+  async function handlePayment(method: PaymentMethod) {
     if (!NICEPAY_CLIENT_ID || !window.AUTHNICE) {
       alert("결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
       return;
@@ -140,7 +141,7 @@ export function WorkshopPaymentGate({ scores }: Props) {
 
       window.AUTHNICE.requestPay({
         clientId: NICEPAY_CLIENT_ID,
-        method: "cardAndEasyPay",
+        method,
         orderId: data.order_id,
         amount: WORKSHOP_PRICE,
         goodsName: "마음 챙김 워크북 - 성취 중독",
@@ -432,7 +433,6 @@ export function WorkshopPaymentGate({ scores }: Props) {
         originalPrice={WORKSHOP_ORIGINAL_PRICE}
         price={WORKSHOP_PRICE}
         discountPercent={WORKSHOP_DISCOUNT_PERCENT}
-        features={FEATURES}
         onCheckout={handlePayment}
         disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
         disabledLabel={
