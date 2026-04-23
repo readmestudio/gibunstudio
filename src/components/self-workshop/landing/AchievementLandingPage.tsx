@@ -3,7 +3,10 @@
 import { useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
-import { ConsequencesSection } from "./ConsequencesSection";
+import { HeroSection } from "./HeroSection";
+import { SelfCheckSection } from "./SelfCheckSection";
+import { ProblemStatementSection } from "./ProblemStatementSection";
+import { AddictionCycleSection } from "./AddictionCycleSection";
 import { SolutionStepsSection } from "./SolutionStepsSection";
 import { WorkbookPreviewSection } from "./WorkbookPreviewSection";
 import { CurriculumSection } from "./CurriculumSection";
@@ -43,7 +46,7 @@ export function AchievementLandingPage() {
   });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pb-32">
       {/* NicePay SDK */}
       {NICEPAY_CLIENT_ID && (
         <Script
@@ -54,58 +57,33 @@ export function AchievementLandingPage() {
         />
       )}
 
-      <div className="mx-auto max-w-2xl px-4 pt-16 pb-32">
-        {/* 뒤로가기 */}
+      {/* 뒤로가기 */}
+      <div className="mx-auto max-w-5xl px-4 pt-8">
         <Link
           href="/payment/self-workshop"
-          className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] mb-8"
+          className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)]"
         >
           ← 워크북 목록
         </Link>
+      </div>
 
-        {/* Hero */}
-        <section className="text-center py-12">
-          <p className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/40 mb-4">
-            SELF WORKSHOP
-          </p>
-          <h1
-            className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] mb-3"
-            style={{ wordBreak: "keep-all" }}
-          >
-            성취 중독
-          </h1>
-          <p
-            className="text-base text-[var(--foreground)]/60 mb-6 max-w-md mx-auto"
-            style={{ wordBreak: "keep-all" }}
-          >
-            멈출 수 없는 성취 욕구, 쉼에 대한 죄책감.
-            <br />
-            CBT 기반으로 나만의 순환 패턴을 발견하고 대처법을 찾아보세요.
-          </p>
-          <div className="inline-flex">
-            <DiscountPriceDisplay
-              originalPrice={WORKSHOP_ORIGINAL_PRICE}
-              price={WORKSHOP_PRICE}
-              discountPercent={WORKSHOP_DISCOUNT_PERCENT}
-              size="lg"
-              align="center"
-            />
-          </div>
-        </section>
+      {/* [01] HERO */}
+      <HeroSection />
 
-        {/* 섹션 1: 방치 경고 → 전환 */}
-        <ConsequencesSection />
+      {/* [02] 공감 체크리스트 */}
+      <SelfCheckSection />
 
-        {/* 섹션 2: 4가지 해결 솔루션 */}
+      {/* [03] 문제 현상 */}
+      <ProblemStatementSection />
+
+      {/* [04] 악순환 메커니즘 (풀폭 배경) */}
+      <AddictionCycleSection />
+
+      {/* 기존 하단 섹션들 — 성취 중독은 이렇게 해결됩니다 부터 */}
+      <div className="mx-auto max-w-2xl px-4 pt-16">
         <SolutionStepsSection />
-
-        {/* 섹션 3: 워크북 미리보기 */}
         <WorkbookPreviewSection />
-
-        {/* 섹션 4: 커리큘럼 */}
         <CurriculumSection />
-
-        {/* 섹션 5: 유저 후기 */}
         <WorkbookTestimonialSection />
 
         {/* 가격 + 포함 내용 카드 */}
