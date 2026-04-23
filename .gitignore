@@ -48,3 +48,24 @@ gibunnewlogo.png
 
 # external templates
 /monotone-starter-1.1.0/
+
+# 로컬 테스트 결과/데이터
+/phase1-test-output.md
+/phase2-survey-input.md
+/phase2-test-output.md
+/전체-콘텐츠-테스트결과.md
+/카드8-예시-결과.md
+/새버전-카드-미리보기.md
+/test-data/
+
+# Supabase 로컬 임시/마이그레이션
+supabase/.temp/
+/supabase-create-*.sql
+
+# 로컬 기획/README 문서 (한국어)
+/기분스튜디오_*.md
+/기분스튜디오_*.html
+/기분스튜디오_*.pdf
+
+# 기타 로컬 파일
+/page
