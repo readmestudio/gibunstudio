@@ -25,9 +25,9 @@ const PROGRAMS: ProgramCardData[] = [
   },
   {
     id: "self-workshop",
-    title: "마음 챙김 워크북",
+    title: "직장인을 위한 마음 챙김 워크북",
     description:
-      "나의 마음 패턴을 이해하고, 스스로 대처법을 찾아가는 CBT 기반 셀프 워크북",
+      "재능은 충분한데 마음 때문에 성과가 안 나는 직장인을 위한 CBT 기반 셀프 워크북",
     href: "/payment/self-workshop",
     cta: "구매하기 →",
     illustration: "journal-book",

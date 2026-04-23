@@ -18,10 +18,15 @@ export function WorkbookStorePage() {
         {/* 헤더 */}
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-[var(--foreground)] md:text-4xl">
-            마음 챙김 워크북
+            직장인을 위한 마음 챙김 워크북
           </h1>
-          <p className="mt-3 text-base text-[var(--foreground)]/70">
-            나의 마음 패턴을 이해하고, 스스로 대처법을 찾아가는 셀프 워크북
+          <p className="mt-4 text-base text-[var(--foreground)]/70 max-w-lg mx-auto break-keep">
+            마음이 힘들어 회사를 그만둘까 고민이라면.
+            <br />
+            재능이 아깝기 전에, 마음부터 챙기면 성과는 따라옵니다.
+          </p>
+          <p className="mt-3 text-sm text-[var(--foreground)]/50 max-w-md mx-auto break-keep">
+            진단에서 끝나지 않고, 실습과 실전 DO&DONT'S까지. 회사를 다닐 만하게 해드려요.
           </p>
         </div>
 
