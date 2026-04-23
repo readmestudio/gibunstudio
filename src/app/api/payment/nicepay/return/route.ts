@@ -10,7 +10,8 @@ import { approveNicepayPayment } from "@/lib/nicepay/approve";
  * NicePay Server 승인 모델의 returnUrl 콜백입니다.
  * orderId prefix로 결제 유형 분기:
  *   HM- → husband_match_payments
- *   WB- → workshop_purchases
+ *   WB- → workshop_purchases (단일 워크북)
+ *   CT- → cart_orders (장바구니 통합 결제, 여러 상품)
  */
 export async function POST(request: NextRequest) {
   if (!isNicepayEnabled()) {
@@ -47,17 +48,28 @@ export async function POST(request: NextRequest) {
 
   // orderId prefix로 결제 유형 분기
   const isWorkshop = orderId.startsWith("WB-");
+  const isCart = orderId.startsWith("CT-");
 
   // 1. 인증 실패 시 실패 페이지로 리다이렉트
   if (resultCode !== "0000") {
     console.error("NicePay 인증 실패:", { resultCode, resultMsg, orderId });
-    const failUrl = isWorkshop
-      ? `/payment/self-workshop?error=${encodeURIComponent(resultMsg)}`
-      : `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
+    let failUrl: string;
+    if (isCart) {
+      failUrl = `/cart?error=${encodeURIComponent(resultMsg)}`;
+    } else if (isWorkshop) {
+      failUrl = `/payment/self-workshop?error=${encodeURIComponent(resultMsg)}`;
+    } else {
+      failUrl = `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
+    }
     return NextResponse.redirect(`${baseUrl}${failUrl}`);
   }
 
   const supabase = await createClient();
+
+  // ── 장바구니 통합 결제 처리 ──
+  if (isCart) {
+    return handleCartOrder(supabase, { tid, orderId, amount, baseUrl });
+  }
 
   // ── 워크북 결제 처리 ──
   if (isWorkshop) {
@@ -245,4 +257,167 @@ async function handleHusbandMatchPayment(
   return NextResponse.redirect(
     `${baseUrl}/husband-match/payment/complete/${payment.id}`
   );
+}
+
+/* ── 장바구니 통합결제 처리 ── */
+
+interface CartItemSnapshot {
+  product_id: string;
+  name: string;
+  category: string;
+  workshop_type: string | null;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+}
+
+async function handleCartOrder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: { tid: string; orderId: string; amount: number; baseUrl: string }
+) {
+  const { tid, orderId, amount, baseUrl } = params;
+  const failUrl = `${baseUrl}/cart?error=${encodeURIComponent("결제 처리 중 오류가 발생했습니다")}`;
+
+  const { data: cartOrder, error: queryError } = await supabase
+    .from("cart_orders")
+    .select("id, user_id, total_amount, items, status")
+    .eq("order_id", orderId)
+    .single();
+
+  if (queryError || !cartOrder) {
+    console.error("cart_orders 조회 실패:", { orderId, queryError });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 이미 승인됨 → 완료 페이지
+  if (cartOrder.status === "confirmed") {
+    return NextResponse.redirect(
+      `${baseUrl}/cart/complete/${cartOrder.id}`
+    );
+  }
+
+  if (cartOrder.status !== "pending") {
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 금액 검증
+  if (cartOrder.total_amount !== amount) {
+    console.error("cart_order 금액 불일치:", {
+      dbAmount: cartOrder.total_amount,
+      nicepayAmount: amount,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // NicePay 승인 호출
+  const approval = await approveNicepayPayment(tid, amount);
+  if (!approval.success) {
+    console.error("cart_order NicePay 승인 실패:", {
+      resultCode: approval.resultCode,
+      resultMsg: approval.resultMsg,
+      orderId,
+    });
+    await supabase
+      .from("cart_orders")
+      .update({ status: "cancelled" })
+      .eq("id", cartOrder.id)
+      .eq("status", "pending");
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 멱등성: pending일 때만 confirmed로
+  const { error: updateError } = await supabase
+    .from("cart_orders")
+    .update({
+      status: "confirmed",
+      payment_key: tid,
+      paid_at: new Date().toISOString(),
+    })
+    .eq("id", cartOrder.id)
+    .eq("status", "pending");
+
+  if (updateError) {
+    console.error("cart_orders 상태 업데이트 실패:", { updateError, orderId });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 각 상품 카테고리별 소유권 부여 (admin client 사용)
+  const admin = createAdminClient();
+  const items = (cartOrder.items as CartItemSnapshot[]) ?? [];
+
+  for (const item of items) {
+    if (item.category === "workbook" && item.workshop_type) {
+      // 이미 confirmed 건이 있는지 확인 (멱등성)
+      const { data: existingConfirmed } = await admin
+        .from("workshop_purchases")
+        .select("id")
+        .eq("user_id", cartOrder.user_id)
+        .eq("workshop_type", item.workshop_type)
+        .eq("status", "confirmed")
+        .maybeSingle();
+
+      if (existingConfirmed) {
+        continue;
+      }
+
+      const { data: insertedPurchase, error: insertError } = await admin
+        .from("workshop_purchases")
+        .insert({
+          user_id: cartOrder.user_id,
+          workshop_type: item.workshop_type,
+          amount: item.subtotal,
+          order_id: null,
+          cart_order_id: cartOrder.id,
+          payment_key: tid,
+          status: "confirmed",
+          paid_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (insertError) {
+        console.error("workshop_purchases 생성 실패:", {
+          error: insertError,
+          item,
+        });
+        continue;
+      }
+
+      // workshop_progress 부트스트랩
+      const { data: existingProgress } = await admin
+        .from("workshop_progress")
+        .select("id, current_step")
+        .eq("user_id", cartOrder.user_id)
+        .eq("workshop_type", item.workshop_type)
+        .maybeSingle();
+
+      if (!existingProgress) {
+        await admin.from("workshop_progress").insert({
+          user_id: cartOrder.user_id,
+          workshop_type: item.workshop_type,
+          current_step: 3,
+          status: "in_progress",
+          purchase_id: insertedPurchase?.id,
+        });
+      } else if ((existingProgress.current_step ?? 0) < 3) {
+        await admin
+          .from("workshop_progress")
+          .update({ current_step: 3, status: "in_progress" })
+          .eq("id", existingProgress.id);
+      }
+    }
+  }
+
+  // 구매 완료된 상품을 장바구니에서 제거
+  const purchasedProductIds = items.map((it) => it.product_id);
+  if (purchasedProductIds.length > 0) {
+    await admin
+      .from("cart_items")
+      .delete()
+      .eq("user_id", cartOrder.user_id)
+      .in("product_id", purchasedProductIds);
+  }
+
+  return NextResponse.redirect(`${baseUrl}/cart/complete/${cartOrder.id}`);
 }

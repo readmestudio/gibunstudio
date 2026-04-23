@@ -3,10 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
-import {
-  PaymentMethodSelector,
-  type PaymentMethod,
-} from '@/components/payment/PaymentMethodSelector';
+import { ProductBuyButtons } from '@/components/commerce/ProductBuyButtons';
+import type { BuyAction } from '@/types/payment';
 
 interface PaymentClientProps {
   phase1Id: string;
@@ -16,18 +14,24 @@ interface PaymentClientProps {
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || '';
 const NICEPAY_SDK_URL = process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || '';
 const IS_NICEPAY_ENABLED = !!NICEPAY_CLIENT_ID;
+const BUYNOW_METHOD = process.env.NEXT_PUBLIC_NICEPAY_BUYNOW_METHOD || '';
 
 const BANK_NAME = '신한은행';
 const ACCOUNT_NUMBER = '140-015-244655';
 const ACCOUNT_HOLDER = '원모어 스푼';
 const AMOUNT = 14900;
+const PRODUCT_ID = 'phase2-report';
+const PRODUCT_NAME = '기분 심층 분석 리포트';
 
 export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBankSubmitting, setIsBankSubmitting] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState<BuyAction | null>(
+    null
+  );
   const [depositorName, setDepositorName] = useState('');
   const [copied, setCopied] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer'>(
+  const [paymentTab, setPaymentTab] = useState<'card' | 'bank_transfer'>(
     IS_NICEPAY_ENABLED ? 'card' : 'bank_transfer'
   );
   const [sdkLoaded, setSdkLoaded] = useState(false);
@@ -38,17 +42,15 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  /** 카드/간편결제 처리 */
-  const handleCardPayment = async (method: PaymentMethod) => {
+  async function startPayment(action: 'buyNow' | 'npay', method?: string) {
     if (!window.AUTHNICE) {
       alert('결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 
-    setIsSubmitting(true);
+    setSubmittingAction(action);
 
     try {
-      // 1. 서버에 pending 결제 레코드 생성
       const response = await fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,7 +62,6 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
       });
 
       const data = await response.json();
-      console.log('결제 생성 응답:', response.status, data);
 
       if (!response.ok) {
         throw new Error(data.error || '결제 준비에 실패했습니다');
@@ -68,35 +69,43 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
 
       const { order_id } = data;
 
-      // 2. NicePay 결제창 호출
       window.AUTHNICE.requestPay({
         clientId: NICEPAY_CLIENT_ID,
-        method,
+        ...(method ? { method } : {}),
         orderId: order_id,
         amount: AMOUNT,
-        goodsName: '기분 심층 분석 리포트',
+        goodsName: PRODUCT_NAME,
         returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
         fnError: (result) => {
           console.error('NicePay 에러:', result);
           alert(`결제 오류: ${result.errorMsg}`);
-          setIsSubmitting(false);
+          setSubmittingAction(null);
         },
       });
     } catch (error) {
-      console.error('카드 결제 오류:', error);
-      alert(`결제 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
-      setIsSubmitting(false);
+      console.error('결제 오류:', error);
+      alert(
+        `결제 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
+      );
+      setSubmittingAction(null);
     }
-  };
+  }
 
-  /** 무통장입금 처리 */
-  const handleBankTransfer = async () => {
+  function handleBuyNow() {
+    startPayment('buyNow', BUYNOW_METHOD || undefined);
+  }
+
+  function handleNpay() {
+    startPayment('npay', 'naverpayCard');
+  }
+
+  async function handleBankTransfer() {
     if (!depositorName.trim()) {
       alert('입금자명을 입력해주세요.');
       return;
     }
 
-    setIsSubmitting(true);
+    setIsBankSubmitting(true);
 
     try {
       const response = await fetch('/api/payment/create', {
@@ -119,9 +128,11 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
     } catch (error) {
       console.error('Payment submission error:', error);
       alert('결제 신청에 실패했습니다. 다시 시도해주세요.');
-      setIsSubmitting(false);
+      setIsBankSubmitting(false);
     }
-  };
+  }
+
+  const isNicepaySubmitting = submittingAction !== null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] to-white py-12 px-4">
@@ -162,9 +173,9 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
           {IS_NICEPAY_ENABLED && (
             <div className="flex border-b border-[var(--border)]">
               <button
-                onClick={() => setPaymentMethod('card')}
+                onClick={() => setPaymentTab('card')}
                 className={`flex-1 py-4 text-center font-medium transition-colors ${
-                  paymentMethod === 'card'
+                  paymentTab === 'card'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
                     : 'text-[var(--foreground)]/60 hover:text-[var(--foreground)]'
                 }`}
@@ -172,9 +183,9 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
                 카드·간편결제
               </button>
               <button
-                onClick={() => setPaymentMethod('bank_transfer')}
+                onClick={() => setPaymentTab('bank_transfer')}
                 className={`flex-1 py-4 text-center font-medium transition-colors ${
-                  paymentMethod === 'bank_transfer'
+                  paymentTab === 'bank_transfer'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-[var(--accent)]/5'
                     : 'text-[var(--foreground)]/60 hover:text-[var(--foreground)]'
                 }`}
@@ -185,14 +196,18 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
           )}
 
           {/* Card / Easy Pay */}
-          {paymentMethod === 'card' && IS_NICEPAY_ENABLED && (
+          {paymentTab === 'card' && IS_NICEPAY_ENABLED && (
             <div className="p-6">
-              <p className="mb-4 text-center text-sm text-[var(--foreground)]/60">
-                원하시는 결제 수단을 선택해주세요
-              </p>
-              <PaymentMethodSelector
-                onSelect={handleCardPayment}
-                isSubmitting={isSubmitting}
+              <ProductBuyButtons
+                variant="inline"
+                productId={PRODUCT_ID}
+                productName={PRODUCT_NAME}
+                price={AMOUNT}
+                hideAddToCart
+                onBuyNow={handleBuyNow}
+                onNpayBuy={handleNpay}
+                isSubmitting={isNicepaySubmitting}
+                submittingAction={submittingAction}
                 disabled={!sdkLoaded}
                 disabledLabel="결제 모듈 로딩 중..."
               />
@@ -203,7 +218,7 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
           )}
 
           {/* Bank Transfer */}
-          {paymentMethod === 'bank_transfer' && (
+          {paymentTab === 'bank_transfer' && (
             <>
               <div className="p-8 border-b border-[var(--border)]">
                 <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">
@@ -273,15 +288,15 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
           )}
         </div>
 
-        {/* Submit Button — 무통장입금일 때만 (카드/간편결제는 선택 버튼이 곧 결제 시작) */}
-        {paymentMethod === 'bank_transfer' && (
+        {/* Submit Button — 무통장입금일 때만 */}
+        {paymentTab === 'bank_transfer' && (
           <div className="mt-8">
             <button
               onClick={handleBankTransfer}
-              disabled={isSubmitting || !depositorName.trim()}
+              disabled={isBankSubmitting || !depositorName.trim()}
               className="w-full py-4 bg-[var(--accent)] text-white font-semibold rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? '처리 중...' : '입금 완료 신청하기'}
+              {isBankSubmitting ? '처리 중...' : '입금 완료 신청하기'}
             </button>
             <p className="text-center text-sm text-[var(--foreground)]/60 mt-4">
               입금을 완료하셨다면 위 버튼을 눌러주세요

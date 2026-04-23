@@ -3,14 +3,13 @@
 import { useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
-import {
-  PaymentMethodSelector,
-  type PaymentMethod,
-} from "@/components/payment/PaymentMethodSelector";
+import { ProductBuyButtons } from "@/components/commerce/ProductBuyButtons";
+import type { BuyAction } from "@/types/payment";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
   process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
+const BUYNOW_METHOD = process.env.NEXT_PUBLIC_NICEPAY_BUYNOW_METHOD || "";
 
 interface PurchaseClientProps {
   /** 주문번호 prefix 및 returnUrl 경로에 사용할 슬러그 (예: "self-workshop") */
@@ -35,10 +34,12 @@ export function PurchaseClient({
   goodsName,
   features = [],
 }: PurchaseClientProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState<BuyAction | null>(
+    null
+  );
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  const handlePayment = (method: PaymentMethod) => {
+  function startPayment(action: "buyNow" | "npay", method?: string) {
     if (!NICEPAY_CLIENT_ID) {
       alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
       return;
@@ -48,16 +49,16 @@ export function PurchaseClient({
       return;
     }
 
-    setIsSubmitting(true);
+    setSubmittingAction(action);
 
-    // 클라이언트 측 주문번호 생성 (백엔드 결제 기록 없이 NicePay 결제창만 호출)
+    // 클라이언트 측 주문번호 (백엔드 기록 없이 NicePay 결제창만 호출)
     const orderId = `${slug.toUpperCase()}-${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 10)}`;
 
     window.AUTHNICE.requestPay({
       clientId: NICEPAY_CLIENT_ID,
-      method,
+      ...(method ? { method } : {}),
       orderId,
       amount,
       goodsName,
@@ -65,10 +66,16 @@ export function PurchaseClient({
       fnError: (result: { errorMsg: string }) => {
         console.error("NicePay 에러:", result);
         alert(`결제 오류: ${result.errorMsg}`);
-        setIsSubmitting(false);
+        setSubmittingAction(null);
       },
     });
-  };
+  }
+
+  const handleBuyNow = () =>
+    startPayment("buyNow", BUYNOW_METHOD || undefined);
+  const handleNpay = () => startPayment("npay", "naverpayCard");
+
+  const isSubmitting = submittingAction !== null;
 
   return (
     <div className="mx-auto max-w-xl px-4 py-16">
@@ -111,11 +118,18 @@ export function PurchaseClient({
         </p>
       </div>
 
-      {/* 결제 수단 선택 */}
+      {/* 결제 버튼 (장바구니 숨김) */}
       <div className="mt-8">
-        <PaymentMethodSelector
-          onSelect={handlePayment}
+        <ProductBuyButtons
+          variant="inline"
+          productId={slug}
+          productName={goodsName}
+          price={amount}
+          hideAddToCart
+          onBuyNow={handleBuyNow}
+          onNpayBuy={handleNpay}
           isSubmitting={isSubmitting}
+          submittingAction={submittingAction}
           disabled={!!NICEPAY_CLIENT_ID && !sdkLoaded}
           disabledLabel="결제 모듈 로딩 중..."
         />

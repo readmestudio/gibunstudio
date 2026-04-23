@@ -26,9 +26,11 @@ import { WorkbookPreviewSection } from "@/components/self-workshop/landing/Workb
 import { CurriculumSection } from "@/components/self-workshop/landing/CurriculumSection";
 import { StickyCtaButton } from "@/components/self-workshop/landing/StickyCtaButton";
 import { DiscountPriceDisplay } from "@/components/self-workshop/landing/DiscountPriceDisplay";
-import { type PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 
+const PRODUCT_ID = "achievement-addiction";
 const PRODUCT_NAME = "마음 챙김 워크북 · 성취 중독";
+const GOODS_NAME = "마음 챙김 워크북 - 성취 중독";
 
 interface Props {
   scores?: DiagnosisScores;
@@ -103,61 +105,25 @@ function getSignalLevel(score: number) {
 }
 
 export function WorkshopPaymentGate({ scores }: Props) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
   const level = scores
     ? DIAGNOSIS_LEVELS.find((l) => l.level === scores.level)
     : null;
 
-  async function handlePayment(method: PaymentMethod) {
-    if (!NICEPAY_CLIENT_ID || !window.AUTHNICE) {
-      alert("결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const res = await fetch("/api/payment/workshop/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workshopType: "achievement-addiction",
-          amount: WORKSHOP_PRICE,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.already_purchased) {
-        window.location.reload();
-        return;
-      }
-
-      if (!data.order_id) {
-        throw new Error(data.error || "결제 레코드 생성에 실패했습니다");
-      }
-
-      window.AUTHNICE.requestPay({
-        clientId: NICEPAY_CLIENT_ID,
-        method,
-        orderId: data.order_id,
-        amount: WORKSHOP_PRICE,
-        goodsName: "마음 챙김 워크북 - 성취 중독",
-        returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
-        fnError: (result: { errorMsg: string }) => {
-          console.error("NicePay 에러:", result);
-          alert(`결제 오류: ${result.errorMsg}`);
-          setIsSubmitting(false);
-        },
-      });
-    } catch (err) {
-      console.error("결제 시작 오류:", err);
-      alert("결제를 시작할 수 없습니다. 잠시 후 다시 시도해주세요.");
-      setIsSubmitting(false);
-    }
-  }
+  const {
+    submittingAction,
+    isSubmitting,
+    handleBuyNow,
+    handleNpay,
+    handleAddToCart,
+  } = useWorkshopCheckout({
+    productId: PRODUCT_ID,
+    workshopType: PRODUCT_ID,
+    amount: WORKSHOP_PRICE,
+    goodsName: GOODS_NAME,
+    onAlreadyPurchased: () => window.location.reload(),
+  });
 
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-40">
@@ -429,11 +395,16 @@ export function WorkshopPaymentGate({ scores }: Props) {
 
       {/* 하단 고정 구매 바 */}
       <StickyCtaButton
+        productId={PRODUCT_ID}
         productName={PRODUCT_NAME}
         originalPrice={WORKSHOP_ORIGINAL_PRICE}
         price={WORKSHOP_PRICE}
         discountPercent={WORKSHOP_DISCOUNT_PERCENT}
-        onCheckout={handlePayment}
+        onBuyNow={handleBuyNow}
+        onAddToCart={handleAddToCart}
+        onNpayBuy={handleNpay}
+        isSubmitting={isSubmitting}
+        submittingAction={submittingAction}
         disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
         disabledLabel={
           isSubmitting ? "결제 진행 중..." : "결제 모듈 로딩 중..."

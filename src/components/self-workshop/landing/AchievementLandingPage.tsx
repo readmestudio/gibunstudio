@@ -10,7 +10,7 @@ import { CurriculumSection } from "./CurriculumSection";
 import { WorkbookTestimonialSection } from "./WorkbookTestimonialSection";
 import { StickyCtaButton } from "./StickyCtaButton";
 import { DiscountPriceDisplay } from "./DiscountPriceDisplay";
-import { type PaymentMethod } from "@/components/payment/PaymentMethodSelector";
+import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 import {
   WORKSHOP_PRICE,
   WORKSHOP_ORIGINAL_PRICE,
@@ -18,68 +18,29 @@ import {
   WORKBOOK_FEATURES,
 } from "@/lib/self-workshop/landing-data";
 
+const PRODUCT_ID = "achievement-addiction";
 const PRODUCT_NAME = "마음 챙김 워크북 · 성취 중독";
+const GOODS_NAME = "마음 챙김 워크북 - 성취 중독";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
   process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
 
 export function AchievementLandingPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  async function handlePayment(method: PaymentMethod) {
-    if (!NICEPAY_CLIENT_ID) {
-      alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-    if (!window.AUTHNICE) {
-      alert("결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const res = await fetch("/api/payment/workshop/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workshopType: "achievement-addiction",
-          amount: WORKSHOP_PRICE,
-        }),
-      });
-      const data = await res.json();
-
-      if (data.already_purchased) {
-        alert("이미 구매한 워크북입니다.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!data.order_id) {
-        throw new Error(data.error || "결제 레코드 생성에 실패했습니다");
-      }
-
-      window.AUTHNICE.requestPay({
-        clientId: NICEPAY_CLIENT_ID,
-        method,
-        orderId: data.order_id,
-        amount: WORKSHOP_PRICE,
-        goodsName: "마음 챙김 워크북 - 성취 중독",
-        returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
-        fnError: (result: { errorMsg: string }) => {
-          console.error("NicePay 에러:", result);
-          alert(`결제 오류: ${result.errorMsg}`);
-          setIsSubmitting(false);
-        },
-      });
-    } catch (err) {
-      console.error("결제 시작 오류:", err);
-      alert("결제를 시작할 수 없습니다. 잠시 후 다시 시도해주세요.");
-      setIsSubmitting(false);
-    }
-  }
+  const {
+    submittingAction,
+    isSubmitting,
+    handleBuyNow,
+    handleNpay,
+    handleAddToCart,
+  } = useWorkshopCheckout({
+    productId: PRODUCT_ID,
+    workshopType: PRODUCT_ID,
+    amount: WORKSHOP_PRICE,
+    goodsName: GOODS_NAME,
+  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -184,11 +145,16 @@ export function AchievementLandingPage() {
 
       {/* 하단 고정 CTA */}
       <StickyCtaButton
+        productId={PRODUCT_ID}
         productName={PRODUCT_NAME}
         originalPrice={WORKSHOP_ORIGINAL_PRICE}
         price={WORKSHOP_PRICE}
         discountPercent={WORKSHOP_DISCOUNT_PERCENT}
-        onCheckout={handlePayment}
+        onBuyNow={handleBuyNow}
+        onAddToCart={handleAddToCart}
+        onNpayBuy={handleNpay}
+        isSubmitting={isSubmitting}
+        submittingAction={submittingAction}
         disabled={isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded)}
         disabledLabel={
           isSubmitting ? "결제 진행 중..." : "결제 모듈 로딩 중..."

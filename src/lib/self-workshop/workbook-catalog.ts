@@ -22,7 +22,7 @@ export const WORKBOOK_CATALOG: WorkbookInfo[] = [
   {
     id: "achievement-addiction",
     title: "성취 중독",
-    subtitle: "멈출 수 없는 나를 위한 워크북",
+    subtitle: "쉬지 못하는 마음을 위한 워크북",
     description:
       "멈출 수 없는 성취 욕구, 쉼에 대한 죄책감. CBT 기반 자가 진단과 실습으로 나만의 순환 패턴을 발견하고 대처법을 찾아보세요.",
     price: 69000,
@@ -40,28 +40,9 @@ export const WORKBOOK_CATALOG: WorkbookInfo[] = [
     illustration: "anchor-storm",
   },
   {
-    id: "people-pleasing",
-    title: "타인 중심 사고",
-    subtitle: "나를 잃지 않는 관계를 위한 워크북",
-    description:
-      "거절이 어렵고, 남의 기분을 내 것보다 먼저 챙기나요? 나를 잃지 않으면서 관계를 유지하는 법을 찾아보세요.",
-    price: 99000,
-    slug: "workbook-people-pleasing",
-    features: [
-      "타인 중심 사고 자가 진단",
-      "경계 설정 실습",
-      "자기 욕구 탐색 워크시트",
-      "관계 패턴 분석 리포트",
-    ],
-    estimatedMinutes: "60~90분",
-    comingSoon: true,
-    order: 2,
-    illustration: "face-smile",
-  },
-  {
     id: "anxiety-loop",
-    title: "불안 루프",
-    subtitle: "같은 걱정이 반복되는 나를 위한 워크북",
+    title: "불안",
+    subtitle: "불안이들을 위한 워크북",
     description:
       "같은 걱정이 끝없이 반복되나요? 불안의 구조를 이해하고, 반복을 끊는 나만의 방법을 만들어 보세요.",
     price: 99000,
@@ -74,7 +55,7 @@ export const WORKBOOK_CATALOG: WorkbookInfo[] = [
     ],
     estimatedMinutes: "60~90분",
     comingSoon: true,
-    order: 3,
+    order: 2,
     illustration: "arrow-squiggle",
   },
 ];
