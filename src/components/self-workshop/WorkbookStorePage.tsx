@@ -26,7 +26,7 @@ export function WorkbookStorePage() {
             재능이 아깝기 전에, 마음부터 챙기면 성과는 따라옵니다.
           </p>
           <p className="mt-3 text-sm text-[var(--foreground)]/50 max-w-md mx-auto break-keep">
-            진단에서 끝나지 않고, 실습과 실전 DO&DONT'S까지. 회사를 다닐 만하게 해드려요.
+            진단에서 끝나지 않고, 실습과 실전 DO&DONT&apos;S까지. 성취 중독을 극복하고 퍼포먼스를 극대화해드려요.
           </p>
         </div>
 

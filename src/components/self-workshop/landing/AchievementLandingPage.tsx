@@ -13,6 +13,8 @@ import { CurriculumSection } from "./CurriculumSection";
 import { WorkbookBenefitsSection } from "./WorkbookBenefitsSection";
 import { WorkshopComparisonSection } from "./WorkshopComparisonSection";
 import { WorkbookTestimonialSection } from "./WorkbookTestimonialSection";
+import { WorkbookRecommendSection } from "./WorkbookRecommendSection";
+import { WorkbookFaqSection } from "./WorkbookFaqSection";
 import { StickyCtaButton } from "./StickyCtaButton";
 import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 import {
@@ -87,6 +89,8 @@ export function AchievementLandingPage() {
         <WorkbookBenefitsSection />
         <WorkshopComparisonSection />
         <WorkbookTestimonialSection />
+        <WorkbookRecommendSection />
+        <WorkbookFaqSection />
       </div>
 
       {/* 하단 고정 CTA */}

@@ -22,23 +22,23 @@ export function SolutionStepsSection() {
             key={card.step}
             className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6"
           >
-            {/* 상단: 번호 + 태그 */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center justify-center w-9 h-9 rounded-full border-2 border-[var(--foreground)] text-sm font-bold text-[var(--foreground)]">
-                  {String(card.step).padStart(2, "0")}
-                </span>
-                <span className="text-base font-bold text-[var(--foreground)]">
-                  {card.title}
-                </span>
-              </div>
-              <span className="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-[var(--foreground)]/10 text-[var(--foreground)]">
-                {card.tag}
+            {/* 상단: 번호 + 제목 */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="flex items-center justify-center w-9 h-9 rounded-full border-2 border-[var(--foreground)] text-sm font-bold text-[var(--foreground)]">
+                {String(card.step).padStart(2, "0")}
+              </span>
+              <span className="text-base font-bold text-[var(--foreground)] break-keep">
+                {card.title}
               </span>
             </div>
 
             {/* 구분선 */}
             <div className="h-px bg-[var(--foreground)]/10 mb-4" />
+
+            {/* 태그 — 굵은 텍스트로 불릿 위에 */}
+            <p className="text-sm font-bold text-[var(--foreground)] mb-3 break-keep">
+              {card.tag}
+            </p>
 
             {/* 불릿 */}
             <ul className="space-y-2 mb-4">
@@ -54,7 +54,7 @@ export function SolutionStepsSection() {
             </ul>
 
             {/* 결론 */}
-            <p className="text-xs font-semibold text-[var(--foreground)]/50">
+            <p className="text-xs font-semibold text-[var(--foreground)]/50 break-keep">
               → {card.summary}
             </p>
           </div>
