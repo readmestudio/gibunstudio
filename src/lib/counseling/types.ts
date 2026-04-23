@@ -20,13 +20,13 @@ export interface CounselingType {
 export const COUNSELING_TYPES: CounselingType[] = [
   {
     id: "report-interpret",
-    title: "리포트 해석 상담",
+    title: "결과 해석 상담",
     price: 80000,
     priceLabel: "80,000",
     duration: "1시간",
     requirement: "셀프 검사 리포트 보유자",
     description:
-      "셀프 해킹 리포트 결과를 1급 심리상담사가 심층 해석해 주는 상담입니다.",
+      "셀프 해킹 프로그램의 결과를 한국상담심리학회 1급 심리 상담사가 심층 해석해주는 상담입니다.",
     recommended: "셀프 해킹 리포트를 받고 더 깊이 이해하고 싶은 분",
     features: [
       { text: "셀프 해킹 리포트 심층 해석", included: true },

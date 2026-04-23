@@ -37,8 +37,8 @@ const PROGRAMS: ProgramCardData[] = [
     title: "1:1 심리 상담",
     description:
       "1급 심리상담사와 만나 깊이 있는 대화로 내 마음을 이해해 보세요.",
-    href: "/payment/geumjjok",
-    cta: "구매하기 →",
+    href: "/#pricing",
+    cta: "자세히 보기 →",
     illustration: "chat-bubble",
   },
 ];
