@@ -2,14 +2,8 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  DIMENSIONS,
-  DIAGNOSIS_LEVELS,
-  type DiagnosisScores,
-  type DimensionKey,
-} from "@/lib/self-workshop/diagnosis";
-import { getSignalLevel } from "@/lib/self-workshop/signal";
 import { CognitiveCycleDiagram } from "./CognitiveCycleDiagram";
+import { CognitiveErrorsSection } from "./CognitiveErrorsSection";
 import {
   isAnalysisReport,
   type AnalysisReport,
@@ -19,7 +13,6 @@ import {
 interface Props {
   workshopId: string;
   savedReport: unknown;
-  diagnosisScores?: DiagnosisScores;
   userName?: string | null;
 }
 
@@ -34,7 +27,6 @@ const STAGE_LABEL: Record<PatternStage, string> = {
 export function WorkshopCognitiveReport({
   workshopId,
   savedReport,
-  diagnosisScores,
   userName,
 }: Props) {
   const router = useRouter();
@@ -105,21 +97,11 @@ export function WorkshopCognitiveReport({
     day: "numeric",
   });
 
-  const levelMeta = diagnosisScores
-    ? DIAGNOSIS_LEVELS.find((l) => l.level === diagnosisScores.level)
-    : null;
-
   return (
     <div className="mx-auto max-w-2xl space-y-10 pb-24">
       <ReportHeader userName={userName} today={today} />
 
-      {diagnosisScores && (
-        <DiagnosisSnapshot
-          scores={diagnosisScores}
-          levelName={levelMeta?.name ?? ""}
-          finalProfile={report.final_profile}
-        />
-      )}
+      <CognitiveErrorsSection errors={report.cognitive_errors} />
 
       <CyclePatternSection
         headline={report.pattern_cycle.headline}
@@ -173,124 +155,6 @@ function ReportHeader({
   );
 }
 
-/* ─────────────────────────────── 섹션 01 ─────────────────────────────── */
-
-const LIFE_IMPACT_AREAS: Array<{
-  key: keyof AnalysisReport["final_profile"]["life_impact"];
-  label: string;
-}> = [
-  { key: "work", label: "일" },
-  { key: "relationship", label: "관계" },
-  { key: "rest", label: "쉼" },
-  { key: "body", label: "몸" },
-];
-
-function DiagnosisSnapshot({
-  scores,
-  levelName,
-  finalProfile,
-}: {
-  scores: DiagnosisScores;
-  levelName: string;
-  finalProfile: AnalysisReport["final_profile"];
-}) {
-  return (
-    <section>
-      <SectionTitle num="01" title="당신의 진단 점수를 먼저 볼게요" />
-
-      {/* 총점·레벨 카드 */}
-      <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
-        <div className="flex items-baseline justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-[var(--foreground)]/50">
-              총점
-            </p>
-            <p className="text-4xl font-bold text-[var(--foreground)]">
-              {scores.total}
-              <span className="text-base font-normal text-[var(--foreground)]/40">
-                {" "}/100
-              </span>
-            </p>
-          </div>
-          <span className="rounded-full border-2 border-[var(--foreground)] px-3 py-1 text-xs font-semibold">
-            Level {scores.level} · {levelName}
-          </span>
-        </div>
-      </div>
-
-      {/* 통합 프로필: 캐릭터 + 차원 바 + 일상 영향 */}
-      <div className="mt-4 rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50 text-center">
-          Your Final Profile
-        </p>
-        <p className="mt-3 text-center text-xl font-bold leading-snug text-[var(--foreground)]">
-          {finalProfile.character_line}
-        </p>
-
-        {/* 4차원 콤팩트 바 모음 */}
-        <div className="mt-6 space-y-4">
-          {DIMENSIONS.map((dim) => {
-            const score = scores.dimensions[dim.key as DimensionKey];
-            const percent = (score / 25) * 100;
-            const signal = getSignalLevel(score);
-            return (
-              <div key={dim.key}>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 flex-1 text-sm font-semibold text-[var(--foreground)]">
-                    {dim.jargonLabel}
-                    <span className="ml-1 text-xs font-normal text-[var(--foreground)]/55">
-                      ({dim.label})
-                    </span>
-                  </p>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${signal.className}`}
-                    >
-                      <span>{signal.emoji}</span>
-                      {signal.label}
-                    </span>
-                    <span className="text-sm font-bold tabular-nums text-[var(--foreground)]">
-                      {score}/25
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--foreground)]/10">
-                  <div
-                    className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                    style={{ width: `${percent}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* 캐릭터 설명 — 점수 바 아래, 일상 영향 박스 위 */}
-        <p className="mt-6 text-sm leading-relaxed text-[var(--foreground)]/75">
-          {finalProfile.character_description}
-        </p>
-
-        {/* 일상 영향 4영역 */}
-        <div className="mt-6 grid grid-cols-1 gap-3">
-          {LIFE_IMPACT_AREAS.map((area) => (
-            <div
-              key={area.key}
-              className="rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-4"
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--foreground)]/50">
-                {area.label}
-              </p>
-              <p className="mt-1.5 text-sm leading-relaxed text-[var(--foreground)]/80">
-                {finalProfile.life_impact[area.key]}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ─────────────────────────────── 섹션 02 ─────────────────────────────── */
 
 function CyclePatternSection({
@@ -304,7 +168,15 @@ function CyclePatternSection({
 }) {
   return (
     <section>
-      <SectionTitle num="02" title="당신에게 반복되고 있는 흐름은 이렇습니다" />
+      <div className="mb-3 flex items-center gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--foreground)]/40">
+          Section 02
+        </span>
+        <span className="h-px flex-1 bg-[var(--foreground)]/15" />
+        <span className="text-sm font-bold text-[var(--foreground)]">
+          당신에게 반복되고 있는 흐름은 이렇습니다
+        </span>
+      </div>
 
       <div className="space-y-6">
         {/* ── Step 1: 패턴 발견 + 반복 일러스트 ── */}
@@ -394,19 +266,5 @@ function CyclePatternSection({
         </div>
       </div>
     </section>
-  );
-}
-
-/* ─────────────────────────────── 공용 ─────────────────────────────── */
-
-function SectionTitle({ num, title }: { num: string; title: string }) {
-  return (
-    <div className="mb-3 flex items-center gap-3">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--foreground)]/40">
-        Section {num}
-      </span>
-      <span className="h-px flex-1 bg-[var(--foreground)]/15" />
-      <span className="text-sm font-bold text-[var(--foreground)]">{title}</span>
-    </div>
   );
 }

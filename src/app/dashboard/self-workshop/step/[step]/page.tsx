@@ -12,6 +12,7 @@ import { WorkshopExerciseStep5CoreBelief } from "@/components/self-workshop/Work
 import { WorkshopExerciseStep7 } from "@/components/self-workshop/WorkshopExerciseStep7";
 import { WorkshopReflectionContent } from "@/components/self-workshop/WorkshopReflectionContent";
 import { WorkshopPaymentGate } from "@/components/self-workshop/WorkshopPaymentGate";
+import { isCognitiveErrorId } from "@/lib/self-workshop/cognitive-errors";
 
 interface Props {
   params: Promise<{ step: string }>;
@@ -168,11 +169,6 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
       )}
 
       {stepNumber === 3 && progress.diagnosis_scores && (() => {
-        const cachedReport = progress.personalized_report ?? null;
-        console.log("[step/3 SSR] progress.id:", progress.id,
-          "personalized_report length:",
-          progress.personalized_report?.length ?? "NULL",
-          "keys:", Object.keys(progress));
         if (phase === "exercise") {
           return (
             <WorkshopExerciseStep4
@@ -185,12 +181,7 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
           <WorkshopStep3Understand
             workshopId={workshopId}
             scores={progress.diagnosis_scores}
-            userName={
-              (user.user_metadata?.name as string | undefined) ??
-              (user.user_metadata?.full_name as string | undefined) ??
-              null
-            }
-            cachedReport={cachedReport}
+            cachedProfile={progress.diagnosis_profile ?? null}
             mechanismAlreadySaved={progress.mechanism_analysis !== null}
           />
         );
@@ -201,7 +192,6 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
           workshopId={workshopId}
           step={4}
           savedReport={progress.mechanism_insights ?? null}
-          diagnosisScores={progress.diagnosis_scores ?? undefined}
           userName={
             (user.user_metadata?.name as string | undefined) ??
             (user.user_metadata?.full_name as string | undefined) ??
@@ -247,36 +237,14 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
 }
 
 function extractCognitiveErrors(insights: unknown): string[] | undefined {
-  if (!insights) return undefined;
-
-  if (typeof insights === "object" && !Array.isArray(insights)) {
-    const r = insights as {
-      hidden_patterns?: { errors?: Array<{ id?: string }> };
-    };
-    const ids = r.hidden_patterns?.errors
-      ?.map((e) => e.id)
-      .filter((id): id is string => typeof id === "string");
-    return ids && ids.length ? ids : undefined;
+  if (!insights || typeof insights !== "object" || Array.isArray(insights)) {
+    return undefined;
   }
-
-  if (Array.isArray(insights)) {
-    const errorKeywords: Record<string, string> = {
-      이분법: "dichotomous",
-      "과잉 일반화": "overgeneralization",
-      당위: "should_statements",
-      "감정적 추론": "emotional_reasoning",
-      독심술: "mind_reading",
-      파국화: "catastrophizing",
-    };
-    const found: string[] = [];
-    const allContent = insights
-      .map((c: { content?: string }) => c.content ?? "")
-      .join(" ");
-    for (const [keyword, id] of Object.entries(errorKeywords)) {
-      if (allContent.includes(keyword)) found.push(id);
-    }
-    return found.length > 0 ? found : undefined;
-  }
-
-  return undefined;
+  const r = insights as {
+    cognitive_errors?: { items?: Array<{ id?: unknown }> };
+  };
+  const ids = r.cognitive_errors?.items
+    ?.map((item) => item.id)
+    .filter((id): id is string => isCognitiveErrorId(id));
+  return ids && ids.length > 0 ? ids : undefined;
 }

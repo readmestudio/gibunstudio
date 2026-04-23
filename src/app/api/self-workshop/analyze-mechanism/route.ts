@@ -5,6 +5,10 @@ import {
   isAnalysisReport,
   type AnalysisReport,
 } from "@/lib/self-workshop/analysis-report";
+import {
+  COGNITIVE_ERRORS,
+  COGNITIVE_ERROR_IDS,
+} from "@/lib/self-workshop/cognitive-errors";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -41,49 +45,60 @@ export async function POST(req: Request) {
     );
   }
 
+  const errorCatalog = COGNITIVE_ERRORS.map(
+    (e) => `  - ${e.id} (${e.label}): ${e.definition} 예시: "${e.example}"`
+  ).join("\n");
+
   const systemPrompt = `당신은 CBT(인지행동치료) 전문 심리학자이자, 유저에게 친근하게 말을 거는 작가입니다. 유저의 "성취 중독 진단 결과"와 "Mind Over Mood 자기 기술 자료"를 바탕으로, 따뜻하지만 예리한 리포트를 씁니다.
 
 **매우 중요 — 톤 규칙**
-- **전문 용어 금지**: "과잉 추동", "정서적 회피", "자기 가치의 조건화", "인지적 오류", "자동적 사고", "촉발" 같은 임상 용어를 그대로 쓰지 마세요. 대신 일상 언어로 풀어쓰세요 (예: "쉬지 못하고 달리는 습관", "불편한 감정을 일로 덮는 패턴", "머릿속에 훅 스치는 말", "생각의 함정").
+- **전문 용어 금지**: "과잉 추동", "정서적 회피", "자기 가치의 조건화", "촉발" 같은 임상 용어를 그대로 쓰지 마세요. 대신 일상 언어로 풀어쓰세요 (예: "쉬지 못하고 달리는 습관", "불편한 감정을 일로 덮는 패턴", "머릿속에 훅 스치는 말").
+- 단, **인지 오류 이름(items[].name)은 강의 용어 그대로** 사용합니다 (예: "명명하기", "재앙화", "당위 진술").
 
 **구조 규칙**: pattern_cycle은 Step 3에서 유저가 학습한 5단계 순환(촉발 상황 → 자동적 사고 → 감정 → 신체 반응 → 행동)에 정확히 일치해야 합니다.
+
+**인지 오류 카탈로그 (items[].id는 반드시 이 목록에서만 선택)**
+${errorCatalog}
 
 반드시 아래 JSON 스키마를 그대로 따라 **단일 객체**로 응답하세요. 배열로 감싸지 마세요.
 
 {
-  "final_profile": {
-    "character_line": "유저 전체 상태를 **한 문장 캐릭터**로 네이밍. 따옴표(\")로 감싼 12자 이내의 **은유적 캐릭터 이름**. 예: '쉼 없이 증명하는 완벽주의자' / '불안을 연료로 달리는 러너' / '멈추면 무너지는 수행자'. 반드시 따옴표 포함 문자열.",
-    "character_description": "캐릭터 네이밍의 의미를 풀어내는 2~3문장. 유저 실습에서 드러난 고유 장면·표현을 1개 이상 자연스럽게 녹임. 진단 결과의 '심각성'을 말하지 말고, **어떤 구조로 작동하는지**를 서술.",
-    "life_impact": {
-      "work": "일·업무 영역에서 이 패턴이 드러나는 모습 1~2문장. 유저 실습(recent_situation 등)에서 단서를 찾아 구체화.",
-      "relationship": "사람·관계 영역에서 드러나는 모습 1~2문장. 인정 갈망·비교 등이 관계에 어떻게 작동하는지.",
-      "rest": "쉼·여가·일 바깥 시간에 드러나는 모습 1~2문장. 죄책감·빈 시간 불안 등.",
-      "body": "몸·신체 감각에 드러나는 모습 1~2문장. 유저 body_text 인용 가능."
-    }
+  "cognitive_errors": {
+    "intro": "유저의 자동사고('${'\\"자동사고 원문\\"'}' 형태로 인용)와 이번 섹션이 어떤 얘기를 할지 1~2문장으로 여는 말. 강의 톤: '오늘은 당신의 자동사고 속에 어떤 함정이 숨어있는지 짚어볼게요.' 같은 예측형.",
+    "items": [
+      {
+        "id": "위 카탈로그의 snake_case id 중 하나 (예: labeling, catastrophizing, mind_reading)",
+        "name": "강의에서 쓰는 한글명 그대로 (예: '명명하기', '재앙화', '독심술')",
+        "definition": "강의 톤으로 쓴 이 오류의 한 줄 정의(60자 내외).",
+        "interpretation": "유저의 자동사고·체크리스트·핵심신념에서 이 오류가 어떻게 드러나는지 2~3문장. 유저 원문 표현을 **직접 인용(따옴표)** 하여 근거로 삼을 것. 판단·비난 없이 관찰자 관점으로."
+      }
+    ],
+    "closing": "1~2문장 마무리. 오류를 '틀렸다'고 낙인찍지 말고, 이것이 감정을 유발하는 스위치임을 짚으며 다음 섹션(패턴 사이클)로 자연스럽게 연결."
   },
   "pattern_cycle": {
-    "headline": "유저가 보이는 패턴에 이름을 붙이는 **한 줄 문장**. 화살표·단계 나열 **금지**. '패턴이에요'로 끝나는 35자 이내 문장. 예: '타인의 성공 경험이 과잉 노력의 연료가 되는 패턴이에요' / '휴식이 생기면 곧바로 불안으로 갈아타는 패턴이에요' / '실수 한 번이 자기비난의 도미노를 여는 패턴이에요'.",
+    "headline": "유저가 보이는 패턴에 이름을 붙이는 **한 줄 문장**. 화살표·단계 나열 **금지**. '패턴이에요'로 끝나는 35자 이내 문장. 예: '타인의 성공 경험이 과잉 노력의 연료가 되는 패턴이에요' / '휴식이 생기면 곧바로 불안으로 갈아타는 패턴이에요'.",
     "overview": "2~3문장으로 왜 이 패턴이 반복 강화되는지 서술. 유저 원문 표현 1~2개 직접 인용. 전문 용어 금지.",
     "nodes": [
-      { "stage": "trigger",  "label": "핵심 키워드 **6글자 이내**. stage 이름(촉발 상황 등) 포함 금지. 예: '타인의 성공', '빈 주말', '평가 직전'", "description": "1~2문장. 이 상황이 유저에게 어떤 의미로 다가오는지 쓰고, 이것이 어떤 생각을 자동으로 불러오는지 다음 단계로 연결. 예: '~한 상황을 마주하면, ~라는 생각이 저절로 떠오르게 돼요.'" },
-      { "stage": "thought",  "label": "예: '나만 뒤처져', '더 해야 해'", "description": "1~2문장. 앞 단계(상황)가 왜 이 생각을 만들어내는지 이어서 쓰고, 이 생각이 어떤 감정을 일으키는지 다음 단계로 연결. 예: '~한 상황이 이 생각에 불을 붙이고, 그 생각은 곧 ~한 감정으로 번져요.'" },
-      { "stage": "emotion",  "label": "예: '불안·자책', '초조'",         "description": "1~2문장. 앞 단계(생각)가 이 감정을 어떻게 키우는지 이어서 쓰고, 이 감정이 몸에서 어떻게 느껴지는지 다음 단계로 연결. 예: '~라는 생각이 반복될수록 ~한 감정이 커지고, 그 감정은 몸으로 옮겨가요.'" },
-      { "stage": "body",     "label": "예: '가슴 답답', '불면'",         "description": "1~2문장. 앞 단계(감정)가 몸에서 어떻게 나타나는지 이어서 쓰고, 이 불편감이 어떤 행동을 하게 만드는지 다음 단계로 연결. 예: '~한 감정이 ~로 몸에 나타나면, 그 불편함에서 벗어나려 ~하게 돼요.'" },
-      { "stage": "behavior", "label": "예: '주말 과몰두', '새 목표'",    "description": "1~2문장. 앞 단계(신체 불편)가 이 행동을 어떻게 유발하는지 이어서 쓰고, 이 행동이 잠깐의 안도 뒤에 다시 1단계(촉발 상황)를 만들어내는 순환 고리까지 포함. 예: '~해서 잠깐은 괜찮아지지만, 곧 다시 ~한 상황과 마주하게 돼요.'" }
+      { "stage": "trigger",  "label": "핵심 키워드 **6글자 이내**. stage 이름(촉발 상황 등) 포함 금지. 예: '타인의 성공', '빈 주말', '평가 직전'", "description": "1~2문장. 이 상황이 유저에게 어떤 의미로 다가오는지 쓰고, 이것이 어떤 생각을 자동으로 불러오는지 다음 단계로 연결." },
+      { "stage": "thought",  "label": "예: '나만 뒤처져', '더 해야 해'", "description": "1~2문장. 앞 단계(상황)가 왜 이 생각을 만들어내는지 이어서 쓰고, 이 생각이 어떤 감정을 일으키는지 다음 단계로 연결." },
+      { "stage": "emotion",  "label": "예: '불안·자책', '초조'",          "description": "1~2문장. 앞 단계(생각)가 이 감정을 어떻게 키우는지 이어서 쓰고, 이 감정이 몸에서 어떻게 느껴지는지 다음 단계로 연결." },
+      { "stage": "body",     "label": "예: '가슴 답답', '불면'",          "description": "1~2문장. 앞 단계(감정)가 몸에서 어떻게 나타나는지 이어서 쓰고, 이 불편감이 어떤 행동을 하게 만드는지 다음 단계로 연결." },
+      { "stage": "behavior", "label": "예: '주말 과몰두', '새 목표'",     "description": "1~2문장. 앞 단계(신체 불편)가 이 행동을 어떻게 유발하는지 이어서 쓰고, 이 행동이 잠깐의 안도 뒤에 다시 1단계(촉발 상황)를 만들어내는 순환 고리까지 포함." }
     ]
-  },
+  }
 }
 
 규칙:
-- **final_profile.character_line** 은 반드시 따옴표로 감싼 12자 이내 은유적 캐릭터. "프로필", "타입" 같은 분류명 금지. 임팩트 있는 은유 1문장.
-- **final_profile.life_impact** 4영역(work/relationship/rest/body) 모두 비어있지 않고, 각각 유저 실습 자료에서 단서를 가져와 구체적으로 작성.
-- pattern_cycle.nodes 는 **정확히 5개** (stage 순서: trigger → thought → emotion → body → behavior). 더 많거나 적으면 안 됩니다.
-- **nodes[].label 은 반드시 6글자(한글 기준) 이내**. stage 이름(촉발 상황/자동 사고/감정/신체 반응/행동)을 label 앞에 붙이지 마세요. 콜론(:)도 금지. 핵심 키워드만.
-- **headline 은 35자 이내 한 문장**, '패턴이에요'로 끝남. 화살표(→)나 단계 나열 금지.
+- **cognitive_errors.items 는 3~4개가 기본**. 유저의 자동사고·체크리스트·핵심신념이 매우 비어있을 때만 1~2개 허용. 4개 초과 금지.
+- **items[].id 는 반드시 위 카탈로그의 snake_case id** (dichotomous / catastrophizing / labeling / magnification_minimization / emotional_reasoning / mental_filter / mind_reading / overgeneralization / personalization / should_statements) 중에서 선택.
+- **items[].interpretation 은 유저 원문을 따옴표로 인용**해야 합니다. 일반론 금지.
+- 같은 id를 중복 선택 금지.
+- pattern_cycle.nodes 는 **정확히 5개** (stage 순서: trigger → thought → emotion → body → behavior).
+- **nodes[].label 은 반드시 6글자(한글 기준) 이내**. stage 이름을 label 앞에 붙이지 마세요. 콜론(:)도 금지.
+- **headline 은 35자 이내 한 문장**, '패턴이에요'로 끝남. 화살표(→) 금지.
 - 모든 description은 150자 이내로 간결하게.
-- **도미노 서술**: 각 nodes[].description은 **앞 단계에서 이어받고 → 다음 단계로 넘기는** 흐름으로 작성. 5개 description을 순서대로 읽으면 하나의 이야기처럼 자연스럽게 이어져야 합니다. 단, 앞/뒤 stage 이름을 직접 언급하지 말고 내용으로 연결하세요.
-- **전문 용어 금지**: "과잉 추동", "정서적 회피", "자기 가치의 조건화", "인지적 오류", "자동적 사고", "촉발 자극" 등 임상 용어를 텍스트에 그대로 쓰지 마세요. 일상 언어로 풀어쓰기.
-- 어조: 따뜻하면서도 예리함. 판단·비난 금지. 유저의 표현을 구체적으로 인용.
+- **도미노 서술**: 각 nodes[].description은 **앞 단계에서 이어받고 → 다음 단계로 넘기는** 흐름으로. 5개를 순서대로 읽으면 하나의 이야기처럼 자연스럽게 이어져야 합니다.
+- 어조: 따뜻하면서도 예리함. 판단·비난 금지. 유저 표현을 구체적으로 인용.
 - JSON 외에 다른 텍스트(설명, markdown 코드펜스) 절대 포함하지 마세요.`;
 
   const cb = mechanism_analysis.core_beliefs ?? {};
@@ -159,6 +174,25 @@ export async function POST(req: Request) {
       console.error(
         "analyze-mechanism: nodes stage 순서/명칭 불일치",
         report.pattern_cycle.nodes.map((n) => n.stage)
+      );
+      return NextResponse.json(
+        { error: "분석 결과 형식이 올바르지 않습니다. 다시 시도해 주세요." },
+        { status: 500 }
+      );
+    }
+
+    // cognitive_errors.items id 중복 제거 (같은 id가 들어온 경우 첫 항목만 유지)
+    const seenIds = new Set<string>();
+    report.cognitive_errors.items = report.cognitive_errors.items.filter(
+      (item) => {
+        if (seenIds.has(item.id)) return false;
+        seenIds.add(item.id);
+        return COGNITIVE_ERROR_IDS.includes(item.id);
+      }
+    );
+    if (report.cognitive_errors.items.length < 1) {
+      console.error(
+        "analyze-mechanism: 중복 제거 후 cognitive_errors.items 비어있음"
       );
       return NextResponse.json(
         { error: "분석 결과 형식이 올바르지 않습니다. 다시 시도해 주세요." },

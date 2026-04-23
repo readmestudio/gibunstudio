@@ -188,16 +188,9 @@ export const EMOTION_CHIPS = [
   "공허함", "자기비난", "조급함", "짜증",
 ] as const;
 
-// ── 인지적 오류 목록 (Step 6, 7 용) ──
-
-export const COGNITIVE_ERRORS = [
-  { id: "dichotomous", label: "이분법적 사고", example: "완벽하지 않으면 실패다" },
-  { id: "overgeneralization", label: "과잉 일반화", example: "한 번 실패하면 항상 실패할 것이다" },
-  { id: "should_statements", label: "당위적 사고", example: "나는 반드시 ~해야 한다" },
-  { id: "emotional_reasoning", label: "감정적 추론", example: "불안하니까 분명 잘못될 것이다" },
-  { id: "mind_reading", label: "독심술", example: "저 사람은 나를 무능하다고 생각할 것이다" },
-  { id: "catastrophizing", label: "파국화", example: "이번 실수로 모든 게 끝장날 것이다" },
-] as const;
+// ── 인지적 오류 목록 (Step 4 해석 섹션 · Step 6 체크박스 공용) ──
+// 단일 출처: cognitive-errors.ts (10종 정의)
+export { COGNITIVE_ERRORS } from "./cognitive-errors";
 
 // ── 워크북 Step 메타데이터 ──
 

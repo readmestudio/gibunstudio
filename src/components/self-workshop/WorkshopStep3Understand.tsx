@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DiagnosisScores } from "@/lib/self-workshop/diagnosis";
-import { PersonalizedReport } from "./PersonalizedReport";
+import type { DiagnosisProfile } from "@/lib/self-workshop/diagnosis-profile";
+import { DiagnosisProfileCard } from "./DiagnosisProfileCard";
 import { AchievementAddictionExplanation } from "./AchievementAddictionExplanation";
 
 interface Props {
   workshopId: string;
   scores: DiagnosisScores;
-  userName: string | null;
-  cachedReport: string | null;
+  cachedProfile: DiagnosisProfile | null;
   mechanismAlreadySaved: boolean;
 }
 
@@ -26,8 +26,7 @@ const EMPTY_MECHANISM = {
 export function WorkshopStep3Understand({
   workshopId,
   scores,
-  userName,
-  cachedReport,
+  cachedProfile,
   mechanismAlreadySaved,
 }: Props) {
   const router = useRouter();
@@ -56,11 +55,10 @@ export function WorkshopStep3Understand({
 
   return (
     <div className="mx-auto max-w-lg space-y-10 pb-32">
-      <PersonalizedReport
+      <DiagnosisProfileCard
         workshopId={workshopId}
         scores={scores}
-        userName={userName}
-        cachedReport={cachedReport}
+        cachedProfile={cachedProfile}
       />
 
       <AchievementAddictionExplanation />

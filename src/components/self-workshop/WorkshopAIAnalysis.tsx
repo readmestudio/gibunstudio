@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { WorkshopCognitiveReport } from "./WorkshopCognitiveReport";
-import type { DiagnosisScores } from "@/lib/self-workshop/diagnosis";
 
 interface InsightCard {
   card_type: string;
@@ -16,7 +15,6 @@ interface Props {
   step: 4 | 7;
   savedCards?: InsightCard[];
   savedReport?: unknown;
-  diagnosisScores?: DiagnosisScores;
   userName?: string | null;
 }
 
@@ -25,7 +23,6 @@ export function WorkshopAIAnalysis({
   step,
   savedCards,
   savedReport,
-  diagnosisScores,
   userName,
 }: Props) {
   if (step === 4) {
@@ -33,7 +30,6 @@ export function WorkshopAIAnalysis({
       <WorkshopCognitiveReport
         workshopId={workshopId}
         savedReport={savedReport ?? null}
-        diagnosisScores={diagnosisScores}
         userName={userName}
       />
     );
