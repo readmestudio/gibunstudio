@@ -1,10 +1,10 @@
-import Image from "next/image";
+import { WorkbookSlideshow } from "./WorkbookSlideshow";
 
 /**
  * 성취 중독 워크북 랜딩 HERO 섹션
  *
- * - 데스크탑: 좌측 텍스트 / 우측 일러스트 2분할, min-h 90vh
- * - 모바일: 텍스트 → 일러스트 상하 배치
+ * - 데스크탑: 좌측 텍스트 / 우측 워크북 슬라이드쇼 2분할, min-h 90vh
+ * - 모바일: 텍스트 → 슬라이드쇼 상하 배치
  * - 3초 내 "이거 내 얘기다" 반응을 유도하는 풀 카피
  */
 export function HeroSection() {
@@ -63,16 +63,9 @@ export function HeroSection() {
           </ul>
         </div>
 
-        {/* 우측 일러스트 */}
+        {/* 우측 워크북 슬라이드쇼 */}
         <div className="flex items-center justify-center">
-          <Image
-            src="/doodles/brain-mind.svg"
-            alt=""
-            width={420}
-            height={420}
-            priority
-            className="w-full max-w-[320px] md:max-w-[420px] h-auto opacity-90"
-          />
+          <WorkbookSlideshow />
         </div>
       </div>
     </section>
