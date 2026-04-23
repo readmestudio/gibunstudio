@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   DIAGNOSIS_QUESTIONS,
@@ -22,6 +22,16 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // 재진입 시점의 기준 스냅샷 — 이후 답 변경 감지에 사용
+  const initialAnswers = useMemo(() => savedAnswers ?? {}, [savedAnswers]);
+  const hasPreviousSubmission = Object.keys(initialAnswers).length === TOTAL;
+  const answersChanged =
+    hasPreviousSubmission &&
+    DIAGNOSIS_QUESTIONS.some(
+      (q) => answers[String(q.id)] !== initialAnswers[String(q.id)]
+    );
 
   const answeredCount = Object.keys(answers).length;
   const allAnswered = answeredCount === TOTAL;
@@ -42,8 +52,18 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
     [currentIndex, question.id]
   );
 
-  async function handleSubmit() {
+  function handleSubmitClick() {
     if (!allAnswered) return;
+    // 기존 제출이 있고 답이 바뀐 경우에만 리셋 경고 모달 노출
+    if (answersChanged) {
+      setShowResetConfirm(true);
+      return;
+    }
+    void submitDiagnosis();
+  }
+
+  async function submitDiagnosis() {
+    setShowResetConfirm(false);
     setSubmitting(true);
     setError("");
 
@@ -80,6 +100,20 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
 
   return (
     <div className="mx-auto max-w-lg">
+      {/* 재진입 안내 배너 */}
+      {hasPreviousSubmission && (
+        <div className="mb-6 rounded-xl border-2 border-[var(--foreground)]/20 bg-[var(--surface)]/50 p-4">
+          <p className="text-sm font-semibold text-[var(--foreground)]">
+            이미 진단을 완료하셨어요
+          </p>
+          <p className="mt-1.5 text-xs leading-relaxed text-[var(--foreground)]/70">
+            답을 <strong>그대로 두고 결과 보기</strong>를 누르면 이후 단계의 진행 상태가
+            그대로 유지돼요. 답을 바꾸시면 진단 결과가 달라지기 때문에
+            Step 2부터 다시 짚어봐야 해요.
+          </p>
+        </div>
+      )}
+
       {/* 프로그레스 바 */}
       <div className="mb-8">
         <div className="mb-2 flex items-center justify-between text-xs text-[var(--foreground)]/60">
@@ -143,7 +177,7 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
           </button>
         ) : (
           <button
-            onClick={handleSubmit}
+            onClick={handleSubmitClick}
             disabled={!allAnswered}
             className="rounded-lg border-2 border-[var(--foreground)] px-6 py-2.5 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-30"
           >
@@ -185,6 +219,51 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
           );
         })}
       </div>
+
+      {/* 답 변경 시 리셋 경고 모달 */}
+      {showResetConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowResetConfirm(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reset-confirm-title"
+        >
+          <div
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl border-2 border-[var(--foreground)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="reset-confirm-title"
+              className="text-lg font-bold text-[var(--foreground)]"
+            >
+              답이 바뀌었어요
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/75">
+              진단 답변이 달라졌기 때문에 진단 결과도 다시 계산돼요.
+              <br />
+              <strong>Step 2부터 다시 확인</strong>해야 하지만, 이전에 작성하신
+              Step 3 이후의 답변은 그대로 남아 있어요.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 rounded-lg border-2 border-[var(--foreground)]/20 px-4 py-2.5 text-sm font-medium text-[var(--foreground)]/70 transition-colors hover:border-[var(--foreground)]/40"
+              >
+                다시 확인할게요
+              </button>
+              <button
+                type="button"
+                onClick={submitDiagnosis}
+                className="flex-1 rounded-lg border-2 border-[var(--foreground)] bg-[var(--foreground)] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                그래도 진행할게요
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -132,7 +132,7 @@ export function WorkshopCognitiveReport({
           onClick={() => router.push("/dashboard/self-workshop/step/5")}
           className="inline-flex rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
         >
-          내 안의 진실 발굴하기 →
+          패턴을 만드는 핵심 믿음 찾기 →
         </button>
       </div>
     </div>

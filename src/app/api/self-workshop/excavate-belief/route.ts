@@ -45,10 +45,26 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { workshopId, phase, answers } = body as {
+  const {
+    workshopId,
+    phase,
+    answers,
+    hotThought: hotThoughtInput,
+    q1Answer,
+    q2Answer,
+  } = body as {
     workshopId: string;
-    phase: "generate-candidates" | "hypothesize" | "synthesize";
+    phase:
+      | "generate-candidates"
+      | "generate-options-q1"
+      | "generate-options-q2"
+      | "generate-options-q3"
+      | "hypothesize"
+      | "synthesize";
     answers?: Answers;
+    hotThought?: string;
+    q1Answer?: string;
+    q2Answer?: string;
   };
 
   if (!workshopId || !phase) {
@@ -108,6 +124,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ candidates: result.candidates });
     }
 
+    if (
+      phase === "generate-options-q1" ||
+      phase === "generate-options-q2" ||
+      phase === "generate-options-q3"
+    ) {
+      const hotThought =
+        (hotThoughtInput && hotThoughtInput.trim()) ||
+        existing?.answers?.selected_hot_thought ||
+        aiThoughtLabel;
+
+      if (!hotThought) {
+        return NextResponse.json(
+          { error: "뜨거운 생각이 필요합니다" },
+          { status: 400 }
+        );
+      }
+
+      const options = await runGenerateQuestionOptions(
+        phase,
+        hotThought,
+        q1Answer ?? "",
+        q2Answer ?? ""
+      );
+      return NextResponse.json({ options });
+    }
+
     if (!answers) {
       return NextResponse.json(
         { error: "answers가 필요합니다" },
@@ -125,10 +167,11 @@ export async function POST(req: Request) {
         generated_at: new Date().toISOString(),
       };
 
+      // answers는 프론트엔드의 auto-save가 원본 구조(q1_selected/q1_custom 등)로
+      // 이미 관리하므로 여기서는 덮어쓰지 않고 mid_hypothesis만 갱신.
       const merged = {
-        answers,
+        ...(existing ?? {}),
         mid_hypothesis,
-        synthesis: existing?.synthesis,
       };
 
       await supabase
@@ -147,8 +190,7 @@ export async function POST(req: Request) {
       );
 
       const merged = {
-        answers,
-        mid_hypothesis: existing?.mid_hypothesis,
+        ...(existing ?? {}),
         synthesis: result,
       };
 
@@ -388,5 +430,155 @@ Q5. 사랑하는 친구가 같은 믿음을 갖고 있다면 내가 해줄 말:
     belief_line: parsed.belief_line.trim(),
     how_it_works: parsed.how_it_works.trim(),
     reframe_invitation: parsed.reframe_invitation.trim(),
+  };
+}
+
+/* ─────────────── Phase: Q1/Q2/Q3 객관식 보기 생성 ─────────────── */
+
+const Q1_FALLBACK = [
+  "결국 아무도 나를 필요로 하지 않게 돼요",
+  "중요한 기회를 놓치게 돼요",
+  "관계에서 점점 밀려나게 돼요",
+  "스스로를 더 몰아붙이게 돼요",
+];
+
+const Q2_FALLBACK = [
+  "혼자 남겨지는 것",
+  "쓸모없는 사람이 되는 것",
+  "아무에게도 인정받지 못하는 것",
+  "내 존재 자체가 가치 없게 느껴지는 것",
+];
+
+const Q3_FALLBACK = [
+  "증명하지 않으면 사랑받을 수 없는 사람이다",
+  "쉬면 뒤쳐지는 사람이다",
+  "완벽하지 않으면 가치 없는 사람이다",
+  "혼자서는 충분하지 않은 사람이다",
+];
+
+async function runGenerateQuestionOptions(
+  phase:
+    | "generate-options-q1"
+    | "generate-options-q2"
+    | "generate-options-q3",
+  hotThought: string,
+  q1Answer: string,
+  q2Answer: string
+): Promise<string[]> {
+  const { systemPrompt, userMessage, fallback } = buildQuestionOptionsPrompt(
+    phase,
+    hotThought,
+    q1Answer,
+    q2Answer
+  );
+
+  try {
+    const response = await chatCompletion(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      {
+        model: "gemini-2.5-flash",
+        temperature: 0.6,
+        max_tokens: 512,
+        response_format: { type: "json_object" },
+      }
+    );
+
+    const parsed = safeJsonParse<{ options: string[] }>(response);
+    const cleaned = (parsed?.options ?? [])
+      .filter((t) => typeof t === "string" && t.trim().length > 0)
+      .map((t) => t.trim())
+      .slice(0, 5);
+
+    if (cleaned.length === 0) return fallback;
+    return cleaned;
+  } catch (err) {
+    console.error(`${phase} LLM 실패, fallback 사용:`, err);
+    return fallback;
+  }
+}
+
+function buildQuestionOptionsPrompt(
+  phase:
+    | "generate-options-q1"
+    | "generate-options-q2"
+    | "generate-options-q3",
+  hotThought: string,
+  q1Answer: string,
+  q2Answer: string
+): { systemPrompt: string; userMessage: string; fallback: string[] } {
+  const baseSystem = `당신은 CBT 전문 심리학자입니다. 유저가 한국어로 Downward Arrow 기법을 따라가며 핵심 믿음에 접근하는 것을 돕고 있어요.
+
+공통 규칙:
+- 유저의 뜨거운 생각 맥락에 꼭 맞는, 자연스러운 1인칭 내면의 목소리로 쓰세요.
+- 문어체 금지. 친구에게 속마음을 털어놓듯 일상적인 말투.
+- 임상 용어, '인지 왜곡' 같은 전문 용어 금지.
+- 각 보기는 12~28자 사이. 너무 짧지도, 길지도 않게.
+- 서로 다른 결/뉘앙스로 **정확히 4개** 보기를 만드세요. 중복·유사 표현 금지.
+
+응답 형식: 반드시 아래 JSON 단일 객체.
+{ "options": ["보기1", "보기2", "보기3", "보기4"] }
+JSON 외 텍스트 절대 포함 금지.`;
+
+  if (phase === "generate-options-q1") {
+    return {
+      systemPrompt: `${baseSystem}
+
+## 이 질문의 성격
+유저가 고른 뜨거운 생각이 '만약 100% 사실이라면 내 인생에 어떤 일이 벌어질까?' 에 대한 **구체적이고 관찰 가능한 결과** 4가지.
+- 관계 결과(사람들이 어떻게 반응할지), 기회 결과(일/커리어에서 무엇을 잃을지), 자기 이미지 결과(스스로를 어떻게 볼지) 등 서로 다른 차원에서 뽑아주세요.
+- "~하게 돼요", "~이 일어나요" 같은 '결과 서술' 톤.`,
+      userMessage: `유저가 고른 뜨거운 생각:
+"${hotThought}"
+
+이 생각이 100% 사실이라면, 유저의 삶에 어떤 일이 벌어질까요?
+서로 다른 결의 결과 4가지를 JSON으로 응답하세요.`,
+      fallback: Q1_FALLBACK,
+    };
+  }
+
+  if (phase === "generate-options-q2") {
+    return {
+      systemPrompt: `${baseSystem}
+
+## 이 질문의 성격
+Q1에서 예상한 결과들이 **진짜 일어난다고 상상했을 때**, 유저가 가슴으로 느끼는 가장 근본적인 두려움 4가지.
+- '~되는 것', '~당하는 것' 처럼 **명사형 두려움 대상** 톤.
+- 관계/고립, 정체성 상실, 존재 가치, 통제 상실 등 서로 다른 실존적 층위에서 뽑아주세요.
+- 사건보다 감정·실존에 가까운 표현 (예: "혼자 남겨지는 것" > "친구가 끊기는 것").`,
+      userMessage: `유저가 고른 뜨거운 생각:
+"${hotThought}"
+
+Q1(결과) 답변:
+${q1Answer || "(답변이 아직 없음 — 뜨거운 생각 맥락에서 추론)"}
+
+이 결과들이 진짜 일어난다면, 유저가 가장 두려워할 4가지를 JSON으로 응답하세요.`,
+      fallback: Q2_FALLBACK,
+    };
+  }
+
+  // q3
+  return {
+    systemPrompt: `${baseSystem}
+
+## 이 질문의 성격
+Q2에서 드러난 두려움은 결국 "나는 어떤 사람이다"라는 자기 정체성을 말하고 있어요. 그 **'나'에 대한 믿음 문장**의 서술부 4가지를 뽑아주세요.
+- 중요: 응답 옵션은 **"나는"으로 시작하지 마세요**. UI에서 "나는 " 접두어를 자동으로 붙여주므로, 옵션 자체는 서술부만. 예: "쉬면 뒤쳐지는 사람이다", "증명해야만 사랑받는 사람이다".
+- 각 옵션은 반드시 "…사람이다" 혹은 "…존재다" 로 끝나도록.
+- 수치심·무가치감·완벽주의·관계적 의존 등 서로 다른 정체성 축에서 뽑아주세요.
+- 핵심 믿음(core belief) 톤으로, 너무 부드럽지 않게 — 유저가 실제로 자신에 대해 내리는 가혹한 선언.`,
+    userMessage: `유저가 고른 뜨거운 생각:
+"${hotThought}"
+
+Q1(결과) 답변:
+${q1Answer || "(없음)"}
+
+Q2(두려움) 답변:
+${q2Answer || "(없음)"}
+
+이 두려움이 말하고 있는 '나는 ~한 사람이다'의 서술부 4가지를 JSON으로 응답하세요. "나는"으로 시작하지 마세요.`,
+    fallback: Q3_FALLBACK,
   };
 }

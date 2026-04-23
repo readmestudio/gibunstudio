@@ -62,7 +62,7 @@ export function WorkbookStorePage() {
 
       window.AUTHNICE.requestPay({
         clientId: NICEPAY_CLIENT_ID,
-        method: "card",
+        method: "cardAndEasyPay",
         orderId: data.order_id,
         amount: active.price,
         goodsName: `마음 챙김 워크북 - ${active.title}`,

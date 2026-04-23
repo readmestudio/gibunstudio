@@ -61,8 +61,6 @@ export function WorkshopResultContent({ scores, workshopId }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workshopId,
-          field: "result_read",
-          data: true,
           advanceStep: 3,
         }),
       });

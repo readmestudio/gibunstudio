@@ -12,9 +12,12 @@ import {
 
 interface Answers {
   selected_hot_thought: string;
-  q1_consequence: string;
-  q2_fear: string;
-  q3_identity: string;
+  q1_selected: string[];
+  q1_custom: string;
+  q2_selected: string[];
+  q2_custom: string;
+  q3_selected: string[];
+  q3_custom: string;
   q4_origin: string;
   q5_compassion: string;
 }
@@ -51,47 +54,45 @@ interface Props {
 
 const EMPTY_ANSWERS: Answers = {
   selected_hot_thought: "",
-  q1_consequence: "",
-  q2_fear: "",
-  q3_identity: "",
+  q1_selected: [],
+  q1_custom: "",
+  q2_selected: [],
+  q2_custom: "",
+  q3_selected: [],
+  q3_custom: "",
   q4_origin: "",
   q5_compassion: "",
 };
+
+function asStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
+}
 
 function migrateAnswers(
   saved: Record<string, unknown> | undefined
 ): Partial<Answers> {
   if (!saved) return {};
+  // 레거시 자유텍스트 필드(q1_consequence, q1_meaning 등)는 q1_custom으로 이관해
+  // 기존 진행 중 사용자의 답을 잃지 않도록 함.
+  const legacyQ1 =
+    (saved.q1_consequence as string) ?? (saved.q1_meaning as string) ?? "";
+  const legacyQ2 =
+    (saved.q2_fear as string) ?? (saved.q2_about_self as string) ?? "";
+  const legacyQ3 =
+    (saved.q3_identity as string) ?? (saved.q3_core_sentence as string) ?? "";
   return {
-    selected_hot_thought:
-      (saved.selected_hot_thought as string) ?? "",
-    q1_consequence:
-      (saved.q1_consequence as string) ?? (saved.q1_meaning as string) ?? "",
-    q2_fear:
-      (saved.q2_fear as string) ?? (saved.q2_about_self as string) ?? "",
-    q3_identity:
-      (saved.q3_identity as string) ?? (saved.q3_core_sentence as string) ?? "",
+    selected_hot_thought: (saved.selected_hot_thought as string) ?? "",
+    q1_selected: asStringArray(saved.q1_selected),
+    q1_custom: (saved.q1_custom as string) ?? legacyQ1 ?? "",
+    q2_selected: asStringArray(saved.q2_selected),
+    q2_custom: (saved.q2_custom as string) ?? legacyQ2 ?? "",
+    q3_selected: asStringArray(saved.q3_selected),
+    q3_custom: (saved.q3_custom as string) ?? legacyQ3 ?? "",
     q4_origin: (saved.q4_origin as string) ?? "",
     q5_compassion: (saved.q5_compassion as string) ?? "",
   };
 }
-
-const Q1_EXAMPLES = [
-  "'나만 뒤처졌다'가 사실이면 → 결국 아무도 나를 필요로 하지 않게 돼요",
-  "'이 정도론 부족해'가 사실이면 → 중요한 기회를 놓치게 돼요",
-];
-
-const Q2_EXAMPLES = [
-  "혼자 남겨지는 게 가장 무서워요",
-  "쓸모없는 사람이 되는 게 두려워요",
-  "아무에게도 인정받지 못할까 봐 두려워요",
-];
-
-const Q3_EXAMPLES = [
-  "증명하지 않으면 사랑받을 수 없는 사람이다",
-  "쉬면 뒤쳐지는 사람이다",
-  "완벽하지 않으면 가치 없는 사람이다",
-];
 
 const Q4_EXAMPLES = [
   "어릴 때 부모님이 성적으로만 저를 칭찬해 주셨어요",
@@ -146,6 +147,23 @@ export function WorkshopExerciseStep5CoreBelief({
   const [customThought, setCustomThought] = useState("");
   const [useCustom, setUseCustom] = useState(false);
 
+  /* ── Part 1: Q1~Q3 객관식 옵션 ── */
+  const [q1Options, setQ1Options] = useState<string[]>([]);
+  const [q2Options, setQ2Options] = useState<string[]>([]);
+  const [q3Options, setQ3Options] = useState<string[]>([]);
+  const [q1Loading, setQ1Loading] = useState(false);
+  const [q2Loading, setQ2Loading] = useState(false);
+  const [q3Loading, setQ3Loading] = useState(false);
+  const [q1UseCustom, setQ1UseCustom] = useState(
+    !!migrated.q1_custom && (migrated.q1_selected?.length ?? 0) === 0
+  );
+  const [q2UseCustom, setQ2UseCustom] = useState(
+    !!migrated.q2_custom && (migrated.q2_selected?.length ?? 0) === 0
+  );
+  const [q3UseCustom, setQ3UseCustom] = useState(
+    !!migrated.q3_custom && (migrated.q3_selected?.length ?? 0) === 0
+  );
+
   const [hypothesizing, setHypothesizing] = useState(false);
   const [synthesizing, setSynthesizing] = useState(false);
   const [error, setError] = useState("");
@@ -166,6 +184,77 @@ export function WorkshopExerciseStep5CoreBelief({
       .catch(() => {})
       .finally(() => setCandidatesLoading(false));
   }, [workshopId, hotThoughtConfirmed, report]);
+
+  const q1HasAnswer =
+    answers.q1_selected.length > 0 || answers.q1_custom.trim().length > 0;
+  const q2HasAnswer =
+    answers.q2_selected.length > 0 || answers.q2_custom.trim().length > 0;
+  const q3HasAnswer =
+    answers.q3_selected.length > 0 || answers.q3_custom.trim().length > 0;
+
+  const fetchQuestionOptions = useCallback(
+    async (q: "q1" | "q2" | "q3") => {
+      const setLoading =
+        q === "q1" ? setQ1Loading : q === "q2" ? setQ2Loading : setQ3Loading;
+      const setOptions =
+        q === "q1" ? setQ1Options : q === "q2" ? setQ2Options : setQ3Options;
+
+      setLoading(true);
+      try {
+        const res = await fetch("/api/self-workshop/excavate-belief", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workshopId,
+            phase: `generate-options-${q}`,
+            hotThought: answers.selected_hot_thought,
+            q1Answer: joinAnswer(answers.q1_selected, answers.q1_custom),
+            q2Answer: joinAnswer(answers.q2_selected, answers.q2_custom),
+          }),
+        });
+        const data = await res.json();
+        if (Array.isArray(data.options) && data.options.length > 0) {
+          setOptions(data.options);
+        }
+      } catch {
+        /* 실패 시 options는 빈 상태로 유지 — UI가 "직접 쓰기" fallback 유도 */
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      workshopId,
+      answers.selected_hot_thought,
+      answers.q1_selected,
+      answers.q1_custom,
+      answers.q2_selected,
+      answers.q2_custom,
+    ]
+  );
+
+  // Q1 옵션: 뜨거운 생각 확정 직후 최초 1회만 생성
+  useEffect(() => {
+    if (!hotThoughtConfirmed) return;
+    if (q1Options.length > 0 || q1Loading) return;
+    fetchQuestionOptions("q1");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hotThoughtConfirmed]);
+
+  // Q2 옵션: Q1에 답이 있으면 최초 1회만 생성
+  useEffect(() => {
+    if (!hotThoughtConfirmed || !q1HasAnswer) return;
+    if (q2Options.length > 0 || q2Loading) return;
+    fetchQuestionOptions("q2");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hotThoughtConfirmed, q1HasAnswer]);
+
+  // Q3 옵션: Q2에 답이 있으면 최초 1회만 생성
+  useEffect(() => {
+    if (!hotThoughtConfirmed || !q2HasAnswer) return;
+    if (q3Options.length > 0 || q3Loading) return;
+    fetchQuestionOptions("q3");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hotThoughtConfirmed, q2HasAnswer]);
 
   const autoSave = useCallback(
     (updated: Answers) => {
@@ -200,16 +289,70 @@ export function WorkshopExerciseStep5CoreBelief({
     setHotThoughtConfirmed(true);
   }
 
-  const part1Complete =
-    answers.q1_consequence.trim().length > 0 &&
-    answers.q2_fear.trim().length > 0 &&
-    answers.q3_identity.trim().length > 0;
+  function returnToHotThoughtSelection() {
+    // 뜨거운 생각이 바뀌면 Q1~Q3 보기와 답이 맥락에 안 맞으므로 모두 초기화.
+    // mid_hypothesis/synthesis도 리셋해 Part 2 UI가 닫히도록.
+    const reset: Answers = {
+      ...answers,
+      selected_hot_thought: "",
+      q1_selected: [],
+      q1_custom: "",
+      q2_selected: [],
+      q2_custom: "",
+      q3_selected: [],
+      q3_custom: "",
+    };
+    setAnswers(reset);
+    autoSave(reset);
+    setQ1Options([]);
+    setQ2Options([]);
+    setQ3Options([]);
+    setQ1UseCustom(false);
+    setQ2UseCustom(false);
+    setQ3UseCustom(false);
+    setHypothesis(undefined);
+    setSynthesis(undefined);
+    setError("");
+    setCustomThought("");
+    setUseCustom(false);
+    setHotThoughtConfirmed(false);
+  }
+
+  function toggleQSelection(
+    key: "q1_selected" | "q2_selected" | "q3_selected",
+    option: string
+  ) {
+    const current = answers[key];
+    const next = current.includes(option)
+      ? current.filter((o) => o !== option)
+      : [...current, option];
+    update(key, next);
+  }
+
+  function joinAnswer(selected: string[], custom: string): string {
+    return [...selected, custom.trim()].filter((s) => s.length > 0).join(" / ");
+  }
+
+  const part1Complete = q1HasAnswer && q2HasAnswer && q3HasAnswer;
 
   const part2Complete =
     part1Complete &&
     !!hypothesis &&
     answers.q4_origin.trim().length > 0 &&
     answers.q5_compassion.trim().length > 0;
+
+  // LLM이 기대하는 기존 스키마(q1_consequence/q2_fear/q3_identity)로
+  // 다중 선택 + 직접 입력을 합본해 전달.
+  function buildApiAnswers() {
+    return {
+      selected_hot_thought: answers.selected_hot_thought,
+      q1_consequence: joinAnswer(answers.q1_selected, answers.q1_custom),
+      q2_fear: joinAnswer(answers.q2_selected, answers.q2_custom),
+      q3_identity: joinAnswer(answers.q3_selected, answers.q3_custom),
+      q4_origin: answers.q4_origin,
+      q5_compassion: answers.q5_compassion,
+    };
+  }
 
   async function handleHypothesize() {
     setHypothesizing(true);
@@ -221,7 +364,7 @@ export function WorkshopExerciseStep5CoreBelief({
         body: JSON.stringify({
           workshopId,
           phase: "hypothesize",
-          answers,
+          answers: buildApiAnswers(),
         }),
       });
       const data = await res.json();
@@ -244,7 +387,7 @@ export function WorkshopExerciseStep5CoreBelief({
         body: JSON.stringify({
           workshopId,
           phase: "synthesize",
-          answers,
+          answers: buildApiAnswers(),
         }),
       });
       const data = await res.json();
@@ -281,12 +424,22 @@ export function WorkshopExerciseStep5CoreBelief({
 
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-20">
-      <Link
-        href="/dashboard/self-workshop/step/4"
-        className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
-      >
-        ← Step 4 리포트 다시 보기
-      </Link>
+      {hotThoughtConfirmed ? (
+        <button
+          type="button"
+          onClick={returnToHotThoughtSelection}
+          className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
+        >
+          ← 뜨거운 생각 다시 선택하기
+        </button>
+      ) : (
+        <Link
+          href="/dashboard/self-workshop/step/4"
+          className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
+        >
+          ← Step 4 리포트 다시 보기
+        </Link>
+      )}
 
       {/* ── Phase 0: 뜨거운 생각 선택 ── */}
       {!hotThoughtConfirmed ? (
@@ -572,24 +725,34 @@ export function WorkshopExerciseStep5CoreBelief({
           {/* ── Part 1: 한 겹씩 따라가 보기 ── */}
           <PartHeader num="Part 1" title="한 겹씩 따라가 보기" />
 
-          <QuestionBlock
+          <QuestionBlockMultiSelect
             step={1}
-            label="이 생각이 사실이라면, 어떤 일이 벌어지나요?"
-            guide="이 생각이 100% 맞다고 가정하고, 그 결과를 상상해 보세요."
-            examples={Q1_EXAMPLES}
-            value={answers.q1_consequence}
-            onChange={(v) => update("q1_consequence", v)}
-            placeholder="예: 결국 아무도 나를 필요로 하지 않게 돼요"
+            label="내가 고른 뜨거운 생각이 사실이라면, 어떤 일이 벌어지나요?"
+            guide="해당되는 걸 모두 골라주세요. 직접 적어도 좋아요."
+            options={q1Options}
+            loading={q1Loading}
+            selected={answers.q1_selected}
+            onToggle={(opt) => toggleQSelection("q1_selected", opt)}
+            useCustom={q1UseCustom}
+            onToggleCustom={() => setQ1UseCustom((v) => !v)}
+            customValue={answers.q1_custom}
+            onCustomChange={(v) => update("q1_custom", v)}
+            customPlaceholder="예: 결국 아무도 나를 필요로 하지 않게 돼요"
           />
 
-          <QuestionBlock
+          <QuestionBlockMultiSelect
             step={2}
             label={
               <>
-                {answers.q1_consequence.trim() ? (
+                {q1HasAnswer ? (
                   <>
                     <span className="text-[var(--foreground)]/55">
-                      &ldquo;{truncate(answers.q1_consequence, 40)}&rdquo;
+                      &ldquo;
+                      {truncate(
+                        joinAnswer(answers.q1_selected, answers.q1_custom),
+                        40
+                      )}
+                      &rdquo;
                     </span>
                     {" "}— 이게 진짜 일어난다면,
                     <br />
@@ -598,24 +761,34 @@ export function WorkshopExerciseStep5CoreBelief({
                 가장 두려운 건 뭔가요?
               </>
             }
-            guide="머리가 아니라 가슴으로 느껴지는 두려움을 적어보세요."
-            examples={Q2_EXAMPLES}
-            value={answers.q2_fear}
-            onChange={(v) => update("q2_fear", v)}
-            disabled={!answers.q1_consequence.trim()}
-            placeholder="예: 혼자 남겨지는 게 가장 무서워요"
+            guide="가슴으로 느껴지는 두려움을 모두 골라주세요. 직접 적어도 좋아요."
+            options={q2Options}
+            loading={q2Loading}
+            selected={answers.q2_selected}
+            onToggle={(opt) => toggleQSelection("q2_selected", opt)}
+            useCustom={q2UseCustom}
+            onToggleCustom={() => setQ2UseCustom((v) => !v)}
+            customValue={answers.q2_custom}
+            onCustomChange={(v) => update("q2_custom", v)}
+            disabled={!q1HasAnswer}
+            customPlaceholder="예: 혼자 남겨지는 게 가장 무서워요"
           />
 
-          <QuestionBlock
+          <QuestionBlockMultiSelect
             step={3}
             label="그 두려움은 결국, 당신이 어떤 사람이라고 말하고 있나요?"
-            guide="두려움 뒤에 숨은 '나'에 대한 문장을 완성해 보세요."
-            examples={Q3_EXAMPLES}
-            disabled={!answers.q2_fear.trim()}
+            guide="해당되는 문장을 모두 골라주세요. 직접 적어도 좋아요."
+            options={q3Options}
+            loading={q3Loading}
+            selected={answers.q3_selected}
+            onToggle={(opt) => toggleQSelection("q3_selected", opt)}
+            useCustom={q3UseCustom}
+            onToggleCustom={() => setQ3UseCustom((v) => !v)}
+            customValue={answers.q3_custom}
+            onCustomChange={(v) => update("q3_custom", v)}
+            disabled={!q2HasAnswer}
             prefix="나는 "
-            value={answers.q3_identity}
-            onChange={(v) => update("q3_identity", v)}
-            placeholder="예: 증명하지 않으면 사랑받을 수 없는 사람이다"
+            customPlaceholder="예: 증명하지 않으면 사랑받을 수 없는 사람이다"
           />
 
           {/* 가설 생성 버튼 또는 가설 카드 */}
@@ -629,15 +802,15 @@ export function WorkshopExerciseStep5CoreBelief({
                 {hypothesizing ? (
                   <>
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    따라간 결과를 정리하는 중…
+                    핵심 믿음을 찾는 중…
                   </>
                 ) : (
-                  "여기까지 정리해 볼게요 →"
+                  "내 답에서 핵심 믿음 찾기 →"
                 )}
               </button>
               {!part1Complete && (
                 <p className="mt-2 text-xs text-[var(--foreground)]/50">
-                  세 질문을 모두 채우면 활성화돼요
+                  세 질문을 모두 답하면 활성화돼요
                 </p>
               )}
             </div>
@@ -842,6 +1015,195 @@ function QuestionBlock({
           rows={3}
           className="mt-4 w-full resize-none rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors"
         />
+      )}
+    </div>
+  );
+}
+
+function QuestionBlockMultiSelect({
+  step,
+  label,
+  guide,
+  options,
+  loading,
+  selected,
+  onToggle,
+  useCustom,
+  onToggleCustom,
+  customValue,
+  onCustomChange,
+  disabled,
+  prefix,
+  customPlaceholder,
+}: {
+  step: number;
+  label: ReactNode;
+  guide?: string;
+  options: string[];
+  loading: boolean;
+  selected: string[];
+  onToggle: (option: string) => void;
+  useCustom: boolean;
+  onToggleCustom: () => void;
+  customValue: string;
+  onCustomChange: (v: string) => void;
+  disabled?: boolean;
+  prefix?: string;
+  customPlaceholder?: string;
+}) {
+  return (
+    <div
+      className={`rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5 transition-opacity ${
+        disabled ? "opacity-40 pointer-events-none" : ""
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
+          {step}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold leading-relaxed text-[var(--foreground)]">
+            {label}
+          </p>
+          {guide && (
+            <p className="mt-1 text-xs leading-relaxed text-[var(--foreground)]/55">
+              {guide}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="mt-4 flex items-center gap-2 text-sm text-[var(--foreground)]/50">
+          <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--foreground)]/30 border-t-transparent" />
+          내 뜨거운 생각에 맞춘 보기를 만드는 중…
+        </div>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {options.map((opt) => {
+            const isChecked = selected.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => onToggle(opt)}
+                className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
+                  isChecked
+                    ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
+                    : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
+                }`}
+              >
+                <span
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
+                    isChecked
+                      ? "border-[var(--foreground)] bg-[var(--foreground)]"
+                      : "border-[var(--foreground)]/30"
+                  }`}
+                >
+                  {isChecked && (
+                    <svg
+                      viewBox="0 0 12 12"
+                      className="h-3 w-3"
+                      aria-hidden
+                    >
+                      <path
+                        d="M2.5 6.5l2.2 2.2 4.8-4.8"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </span>
+                <span
+                  className={`min-w-0 break-words leading-relaxed ${
+                    isChecked
+                      ? "font-semibold text-[var(--foreground)]"
+                      : "text-[var(--foreground)]/80"
+                  }`}
+                >
+                  {prefix ? (
+                    <>
+                      <span className="text-[var(--foreground)]/55">
+                        {prefix}
+                      </span>
+                      {opt}
+                    </>
+                  ) : (
+                    opt
+                  )}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* 직접 입력 토글 */}
+          <button
+            type="button"
+            onClick={onToggleCustom}
+            className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
+              useCustom
+                ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
+                : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
+            }`}
+          >
+            <span
+              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
+                useCustom
+                  ? "border-[var(--foreground)] bg-[var(--foreground)]"
+                  : "border-[var(--foreground)]/30"
+              }`}
+            >
+              {useCustom && (
+                <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
+                  <path
+                    d="M2.5 6.5l2.2 2.2 4.8-4.8"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </span>
+            <span
+              className={`leading-relaxed ${
+                useCustom
+                  ? "font-semibold text-[var(--foreground)]"
+                  : "text-[var(--foreground)]/80"
+              }`}
+            >
+              직접 적기
+            </span>
+          </button>
+
+          {useCustom &&
+            (prefix ? (
+              <div className="mt-2 flex items-baseline gap-1.5 rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-3 focus-within:border-[var(--foreground)]">
+                <span className="text-base font-medium text-[var(--foreground)]/80">
+                  {prefix}
+                </span>
+                <input
+                  type="text"
+                  value={customValue}
+                  onChange={(e) => onCustomChange(e.target.value)}
+                  placeholder={customPlaceholder}
+                  className="min-w-0 flex-1 bg-transparent text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:outline-none"
+                />
+              </div>
+            ) : (
+              <textarea
+                value={customValue}
+                onChange={(e) => onCustomChange(e.target.value)}
+                placeholder={customPlaceholder}
+                rows={3}
+                className="mt-2 w-full resize-none rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors"
+              />
+            ))}
+        </div>
       )}
     </div>
   );

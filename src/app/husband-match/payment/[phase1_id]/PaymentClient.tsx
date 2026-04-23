@@ -67,7 +67,7 @@ export function PaymentClient({ phase1Id, userEmail }: PaymentClientProps) {
       // 2. NicePay 결제창 호출
       window.AUTHNICE.requestPay({
         clientId: NICEPAY_CLIENT_ID,
-        method: 'card',
+        method: 'cardAndEasyPay',
         orderId: order_id,
         amount: AMOUNT,
         goodsName: '기분 심층 분석 리포트',

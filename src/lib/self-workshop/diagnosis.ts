@@ -215,7 +215,7 @@ export const WORKSHOP_STEPS: WorkshopStep[] = [
   { step: 2, title: "나의 진단 결과", subtitle: "결과 분석", type: "result", estimatedMinutes: [5, 8], hasUserInput: false },
   { step: 3, title: "나의 성취 중독 패턴 찾기", subtitle: "성취 중독 이해 + 패턴 찾기 실습", type: "exercise", estimatedMinutes: [20, 30], hasUserInput: true },
   { step: 4, title: "당신의 패턴은 이렇습니다", subtitle: "인지 패턴 분석", type: "ai_analysis", estimatedMinutes: [3, 5], hasUserInput: false },
-  { step: 5, title: "내 안의 진실 발굴하기", subtitle: "핵심 믿음 문답 실습", type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
+  { step: 5, title: "패턴을 만드는 핵심 믿음 찾기", subtitle: "핵심 믿음 문답 실습", type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
   { step: 6, title: "나만의 대처 계획 세우기", subtitle: "대처 실습", type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
   { step: 7, title: "나의 워크북 요약", subtitle: "전체 써머리", type: "ai_analysis", estimatedMinutes: [3, 5], hasUserInput: false },
   { step: 8, title: "워크북을 마치며", subtitle: "마무리 성찰", type: "reflection", estimatedMinutes: [5, 10], hasUserInput: true },

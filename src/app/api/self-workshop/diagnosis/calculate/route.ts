@@ -37,10 +37,10 @@ export async function POST(req: Request) {
     );
   }
 
-  // 본인 확인
+  // 본인 확인 + 기존 답과 비교하기 위해 diagnosis_answers/current_step 함께 조회
   const { data: progress } = await supabase
     .from("workshop_progress")
-    .select("id, user_id")
+    .select("id, user_id, diagnosis_answers, current_step")
     .eq("id", workshopId)
     .single();
 
@@ -51,14 +51,30 @@ export async function POST(req: Request) {
   // 점수 계산
   const scores = calculateDiagnosisScores(answers);
 
-  // 저장 + Step 3으로 이동
+  // 기존 답변과 동일한지 확인 — 같으면 current_step을 건드리지 않아
+  // 이후 단계(Step 3~8)의 진행도가 유지되도록 함.
+  const prevAnswers = progress.diagnosis_answers as Record<string, number> | null;
+  const answersUnchanged =
+    prevAnswers !== null &&
+    Object.keys(prevAnswers).length === Object.keys(answers).length &&
+    Object.entries(answers as Record<string, number>).every(
+      ([k, v]) => prevAnswers[k] === v
+    );
+
+  const updatePayload: Record<string, unknown> = {
+    diagnosis_answers: answers,
+    diagnosis_scores: scores,
+  };
+
+  if (!answersUnchanged) {
+    // 답이 바뀌었을 때만 진행도를 2로 되돌려 이후 단계를 재검토하도록.
+    // (DB의 mechanism_analysis 등 원본 데이터는 보존되므로 Step 3~로 진행하면 다시 볼 수 있음)
+    updatePayload.current_step = 2;
+  }
+
   const { error } = await supabase
     .from("workshop_progress")
-    .update({
-      diagnosis_answers: answers,
-      diagnosis_scores: scores,
-      current_step: 2,
-    })
+    .update(updatePayload)
     .eq("id", workshopId);
 
   if (error) {
@@ -68,5 +84,9 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ scores });
+  return NextResponse.json({
+    scores,
+    answersUnchanged,
+    previousStep: progress.current_step ?? null,
+  });
 }

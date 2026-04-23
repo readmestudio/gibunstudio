@@ -53,7 +53,7 @@ export function PurchaseClient({
 
     window.AUTHNICE.requestPay({
       clientId: NICEPAY_CLIENT_ID,
-      method: "card",
+      method: "cardAndEasyPay",
       orderId,
       amount,
       goodsName,

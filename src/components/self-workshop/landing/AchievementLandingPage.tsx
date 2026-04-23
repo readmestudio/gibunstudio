@@ -62,7 +62,7 @@ export function AchievementLandingPage() {
 
       window.AUTHNICE.requestPay({
         clientId: NICEPAY_CLIENT_ID,
-        method: "card",
+        method: "cardAndEasyPay",
         orderId: data.order_id,
         amount: WORKSHOP_PRICE,
         goodsName: "마음 챙김 워크북 - 성취 중독",
