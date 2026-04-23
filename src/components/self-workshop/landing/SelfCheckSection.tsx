@@ -33,7 +33,7 @@ export function SelfCheckSection() {
   }
 
   const count = checked.size;
-  const isSignal = count >= 3;
+  const message = getSignalMessage(count);
 
   return (
     <section className="mx-auto max-w-3xl px-4 py-20">
@@ -114,12 +114,76 @@ export function SelfCheckSection() {
           <span className="font-bold text-[var(--foreground)]">{count}개</span>{" "}
           체크하셨어요
         </p>
-        {isSignal && (
-          <p className="mt-3 inline-block rounded-full border-2 border-[var(--foreground)] px-4 py-1.5 text-sm font-semibold text-[var(--foreground)]">
-            지금 당신의 마음이 보내는 신호를 들어야 할 때입니다.
+        {message && (
+          <p
+            className={`mt-3 inline-block break-keep ${message.className}`}
+          >
+            {message.text}
           </p>
         )}
       </div>
     </section>
   );
+}
+
+/**
+ * 체크 개수에 따른 단계별 메시지 & 강도 스타일.
+ * 0개: 메시지 없음
+ * 1~2개: 중립 힌트
+ * 3~4개: 테두리 있는 중간 경고
+ * 5~6개: 굵은 테두리 + 살짝 채운 경고
+ * 7~8개: 검정 배경 흰 글씨 강한 경고
+ */
+function getSignalMessage(count: number): { text: string; className: string } | null {
+  const pillBase = "rounded-full px-4 py-1.5 text-sm font-semibold";
+  const neutral = "text-sm text-[var(--foreground)]/60";
+
+  if (count === 0) return null;
+  if (count === 1) {
+    return {
+      text: "한두 번은 누구에게나 있는 일이에요.",
+      className: neutral,
+    };
+  }
+  if (count === 2) {
+    return {
+      text: "반복되고 있다면, 한번 들여다볼 때입니다.",
+      className: neutral,
+    };
+  }
+  if (count === 3) {
+    return {
+      text: "지금 당신의 마음이 보내는 신호를 들어야 할 때입니다.",
+      className: `${pillBase} border-2 border-[var(--foreground)] text-[var(--foreground)]`,
+    };
+  }
+  if (count === 4) {
+    return {
+      text: "이미 패턴이 만들어져 있어요. 그냥 지나칠 수 없는 단계입니다.",
+      className: `${pillBase} border-2 border-[var(--foreground)] text-[var(--foreground)]`,
+    };
+  }
+  if (count === 5) {
+    return {
+      text: "성취 중독의 악순환에 들어서는 중이에요. 방치하면 더 깊어집니다.",
+      className: `${pillBase} border-2 border-[var(--foreground)] bg-[var(--foreground)]/5 text-[var(--foreground)]`,
+    };
+  }
+  if (count === 6) {
+    return {
+      text: "번아웃의 문턱이에요. 혼자 빠져나오기 어려운 지점에 와 있습니다.",
+      className: `${pillBase} border-2 border-[var(--foreground)] bg-[var(--foreground)]/5 text-[var(--foreground)]`,
+    };
+  }
+  if (count === 7) {
+    return {
+      text: "마음이 한계에 가까워지고 있어요. 지금 멈추고 돌봐야 합니다.",
+      className: `${pillBase} bg-[var(--foreground)] text-white`,
+    };
+  }
+  // count === 8
+  return {
+    text: "회사도, 당신도 지킬 수 없는 상태예요. 지금 행동하지 않으면 너무 늦습니다.",
+    className: `${pillBase} bg-[var(--foreground)] text-white`,
+  };
 }

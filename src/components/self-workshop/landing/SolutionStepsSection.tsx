@@ -4,16 +4,16 @@ export function SolutionStepsSection() {
   return (
     <section className="py-16">
       <p className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/40 mb-3 text-center">
-        SOLUTION
+        WORKBOOK LOGIC
       </p>
       <h2
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] text-center mb-3"
         style={{ wordBreak: "keep-all" }}
       >
-        성취중독은 이렇게 해결됩니다
+        이렇게 풀어갑니다
       </h2>
       <p className="text-sm text-[var(--foreground)]/60 text-center mb-10 max-w-md mx-auto">
-        진단부터 실천까지, 4단계 CBT 기반 솔루션
+        진단 테스트부터 실전 DO&amp;DON&apos;T 리스트까지, 4단계 워크북 로직
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
