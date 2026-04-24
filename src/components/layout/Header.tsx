@@ -35,7 +35,7 @@ export function Header() {
             href="/essays"
             className="text-sm font-medium text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-colors"
           >
-            뉴스레터
+            기분 레터
           </Link>
           {user ? (
             <>

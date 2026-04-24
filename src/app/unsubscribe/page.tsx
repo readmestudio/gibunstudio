@@ -46,7 +46,7 @@ function getContent(status?: string, email?: string) {
     case "ok":
       return {
         title: "구독이 해지되었습니다",
-        body: `${email ? `${email} 주소로` : ""} 더 이상 뉴스레터를 보내지 않을게요. 언제든 다시 구독하러 돌아와 주세요.`,
+        body: `${email ? `${email} 주소로` : ""} 더 이상 기분 레터를 보내지 않을게요. 언제든 다시 구독하러 돌아와 주세요.`,
       };
     case "already":
       return {
@@ -56,7 +56,7 @@ function getContent(status?: string, email?: string) {
     case "invalid":
       return {
         title: "해지 링크가 유효하지 않아요",
-        body: "링크가 만료되었거나 잘못된 토큰이에요. 수신함의 최신 뉴스레터에서 해지 링크를 다시 확인해 주세요.",
+        body: "링크가 만료되었거나 잘못된 토큰이에요. 수신함의 최신 기분 레터에서 해지 링크를 다시 확인해 주세요.",
       };
     case "error":
       return {
