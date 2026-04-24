@@ -49,15 +49,16 @@ export async function GET(req: Request) {
   }
 
   const admin = createAdminClient();
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayUtcIso = new Date().toISOString().slice(0, 10);
 
-  // 중복 발송 체크 (같은 slug + 같은 날짜)
+  // 중복 발송 체크 — sent_on(UTC 기준 DATE, generated column)과 비교
+  // DB에 newsletter_sends_dedupe_idx (essay_slug, sent_on) unique index가
+  // 이중 방어 역할을 하므로, 이 SELECT 체크는 깨끗한 응답을 위한 1차 필터.
   const { data: duplicate } = await admin
     .from("newsletter_sends")
     .select("id")
     .eq("essay_slug", essay.slug)
-    .gte("sent_at", `${todayIso}T00:00:00Z`)
-    .lt("sent_at", `${todayIso}T23:59:59Z`)
+    .eq("sent_on", todayUtcIso)
     .maybeSingle();
 
   if (duplicate) {
