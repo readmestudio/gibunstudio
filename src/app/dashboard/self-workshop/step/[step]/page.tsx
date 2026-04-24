@@ -5,7 +5,6 @@ import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
 import { WorkshopDiagnosisContent } from "@/components/self-workshop/WorkshopDiagnosisContent";
 import { WorkshopResultContent } from "@/components/self-workshop/WorkshopResultContent";
 import { WorkshopExerciseStep4 } from "@/components/self-workshop/WorkshopExerciseStep4";
-import { WorkshopStep3Understand } from "@/components/self-workshop/WorkshopStep3Understand";
 import { WorkshopStepNav } from "@/components/self-workshop/WorkshopStepNav";
 import { WorkshopAIAnalysis } from "@/components/self-workshop/WorkshopAIAnalysis";
 import { WorkshopExerciseStep5CoreBelief } from "@/components/self-workshop/WorkshopExerciseStep5CoreBelief";
@@ -16,12 +15,10 @@ import { isCognitiveErrorId } from "@/lib/self-workshop/cognitive-errors";
 
 interface Props {
   params: Promise<{ step: string }>;
-  searchParams: Promise<{ phase?: string }>;
 }
 
-export default async function WorkshopStepPage({ params, searchParams }: Props) {
+export default async function WorkshopStepPage({ params }: Props) {
   const { step: stepParam } = await params;
-  const { phase } = await searchParams;
   const stepNumber = parseInt(stepParam, 10);
 
   // 유효한 step 번호 확인
@@ -165,27 +162,17 @@ export default async function WorkshopStepPage({ params, searchParams }: Props) 
         <WorkshopResultContent
           scores={progress.diagnosis_scores}
           workshopId={workshopId}
+          cachedProfile={progress.diagnosis_profile ?? null}
+          mechanismAlreadySaved={progress.mechanism_analysis !== null}
         />
       )}
 
-      {stepNumber === 3 && progress.diagnosis_scores && (() => {
-        if (phase === "exercise") {
-          return (
-            <WorkshopExerciseStep4
-              workshopId={workshopId}
-              savedData={progress.mechanism_analysis ?? undefined}
-            />
-          );
-        }
-        return (
-          <WorkshopStep3Understand
-            workshopId={workshopId}
-            scores={progress.diagnosis_scores}
-            cachedProfile={progress.diagnosis_profile ?? null}
-            mechanismAlreadySaved={progress.mechanism_analysis !== null}
-          />
-        );
-      })()}
+      {stepNumber === 3 && (
+        <WorkshopExerciseStep4
+          workshopId={workshopId}
+          savedData={progress.mechanism_analysis ?? undefined}
+        />
+      )}
 
       {stepNumber === 4 && (
         <WorkshopAIAnalysis
