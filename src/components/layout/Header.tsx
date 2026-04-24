@@ -31,6 +31,12 @@ export function Header() {
           <Image src="/logo-wide.png" alt="gibun" width={180} height={60} className="h-12 w-auto" />
         </Link>
         <nav className="flex items-center gap-6">
+          <Link
+            href="/essays"
+            className="text-sm font-medium text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-colors"
+          >
+            뉴스레터
+          </Link>
           {user ? (
             <>
               <Link

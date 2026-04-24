@@ -5,7 +5,6 @@ import { FeatureTwo } from "@/components/FeatureTwo";
 import { SelfHackingElements } from "@/components/SelfHackingElements";
 import { Testimonials } from "@/components/Testimonials";
 import { PricingTable } from "@/components/PricingTable";
-import { EssaySubscription } from "@/components/EssaySubscription";
 
 export default function Home() {
   return (
@@ -63,9 +62,6 @@ export default function Home() {
 
       {/* 상담 프라이싱 */}
       <PricingTable />
-
-      {/* 마음 구독 에세이 */}
-      <EssaySubscription />
     </div>
   );
 }
