@@ -16,6 +16,9 @@ interface Props {
 
 const EMPTY_MECHANISM = {
   recent_situation: "",
+  primary_emotion: "",
+  emotion_intensity: 0,
+  candidate_thoughts: [] as string[],
   automatic_thought: "",
   common_thoughts_checked: [] as string[],
   trigger_context: "",

@@ -31,6 +31,7 @@ interface CandidatesResult {
 
 interface MechanismAnalysis {
   automatic_thought?: string;
+  candidate_thoughts?: string[];
   common_thoughts_checked?: string[];
 }
 

@@ -7,6 +7,9 @@ import { EMOTION_CHIPS } from "@/lib/self-workshop/diagnosis";
 
 interface MechanismAnalysis {
   recent_situation: string;
+  primary_emotion: string;
+  emotion_intensity: number;
+  candidate_thoughts: string[];
   automatic_thought: string;
   common_thoughts_checked: string[];
   trigger_context: string;
@@ -20,6 +23,8 @@ interface MechanismAnalysis {
     about_world: string;
   };
 }
+
+const MAX_CANDIDATE_THOUGHTS = 5;
 
 interface Props {
   workshopId: string;
@@ -43,6 +48,9 @@ const COMMON_ACHIEVEMENT_THOUGHTS = [
 
 const EMPTY: MechanismAnalysis = {
   recent_situation: "",
+  primary_emotion: "",
+  emotion_intensity: 0,
+  candidate_thoughts: [],
   automatic_thought: "",
   common_thoughts_checked: [],
   trigger_context: "",
@@ -54,13 +62,30 @@ function mergeSaved(
   saved: Partial<MechanismAnalysis> | undefined
 ): MechanismAnalysis {
   if (!saved) return EMPTY;
+
+  const legacyThought = saved.automatic_thought?.trim() ?? "";
+  const candidatesFromSave = saved.candidate_thoughts ?? [];
+  const seededCandidates =
+    candidatesFromSave.length > 0
+      ? candidatesFromSave
+      : legacyThought.length > 0
+        ? [legacyThought]
+        : [];
+
+  const savedEmotions = saved.emotions_body?.emotions ?? [];
+  const primaryEmotion = saved.primary_emotion ?? savedEmotions[0] ?? "";
+
   return {
     recent_situation: saved.recent_situation ?? "",
+    primary_emotion: primaryEmotion,
+    emotion_intensity:
+      typeof saved.emotion_intensity === "number" ? saved.emotion_intensity : 0,
+    candidate_thoughts: seededCandidates,
     automatic_thought: saved.automatic_thought ?? "",
     common_thoughts_checked: saved.common_thoughts_checked ?? [],
     trigger_context: saved.trigger_context ?? "",
     emotions_body: {
-      emotions: saved.emotions_body?.emotions ?? [],
+      emotions: savedEmotions,
       body_text: saved.emotions_body?.body_text ?? "",
     },
     core_beliefs: {
@@ -69,6 +94,15 @@ function mergeSaved(
       about_world: saved.core_beliefs?.about_world ?? "",
     },
   };
+}
+
+function mergeEmotions(primary: string, extras: string[]): string[] {
+  const out: string[] = [];
+  if (primary) out.push(primary);
+  for (const emo of extras) {
+    if (emo && !out.includes(emo)) out.push(emo);
+  }
+  return out;
 }
 
 export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
@@ -113,12 +147,80 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     update("common_thoughts_checked", next);
   }
 
-  function toggleEmotion(emotion: string) {
-    const current = data.emotions_body.emotions;
-    const next = current.includes(emotion)
+  function setPrimaryEmotion(emotion: string) {
+    // 같은 칩을 다시 누르면 해제
+    const nextPrimary = data.primary_emotion === emotion ? "" : emotion;
+    const extras = data.emotions_body.emotions.filter(
+      (e) => e !== data.primary_emotion && e !== emotion
+    );
+    const next: MechanismAnalysis = {
+      ...data,
+      primary_emotion: nextPrimary,
+      emotions_body: {
+        ...data.emotions_body,
+        emotions: mergeEmotions(nextPrimary, extras),
+      },
+    };
+    setData(next);
+    autoSave(next);
+  }
+
+  function setEmotionIntensity(n: number) {
+    update("emotion_intensity", Math.max(0, Math.min(10, n)));
+  }
+
+  function updateCandidateThought(index: number, value: string) {
+    const next = data.candidate_thoughts.map((t, i) =>
+      i === index ? value : t
+    );
+    // 현재 핵심으로 선정된 문장이 편집되고 있다면 automatic_thought도 동기화
+    const oldThought = data.candidate_thoughts[index] ?? "";
+    const patch: Partial<MechanismAnalysis> = { candidate_thoughts: next };
+    if (data.automatic_thought === oldThought) {
+      patch.automatic_thought = value;
+    }
+    const merged = { ...data, ...patch };
+    setData(merged);
+    autoSave(merged);
+  }
+
+  function addCandidateThought() {
+    if (data.candidate_thoughts.length >= MAX_CANDIDATE_THOUGHTS) return;
+    const next = [...data.candidate_thoughts, ""];
+    const merged = { ...data, candidate_thoughts: next };
+    setData(merged);
+    autoSave(merged);
+  }
+
+  function removeCandidateThought(index: number) {
+    const removed = data.candidate_thoughts[index] ?? "";
+    const next = data.candidate_thoughts.filter((_, i) => i !== index);
+    const patch: Partial<MechanismAnalysis> = { candidate_thoughts: next };
+    if (data.automatic_thought === removed) {
+      patch.automatic_thought = next.length === 1 ? (next[0]?.trim() ?? "") : "";
+    }
+    const merged = { ...data, ...patch };
+    setData(merged);
+    autoSave(merged);
+  }
+
+  function pickCoreThought(thought: string) {
+    update("automatic_thought", thought);
+  }
+
+  function toggleSecondaryEmotion(emotion: string) {
+    // 2a에서 고른 primary는 여기서 토글 불가(잠금)
+    if (emotion === data.primary_emotion) return;
+    const current = data.emotions_body.emotions.filter(
+      (e) => e !== data.primary_emotion
+    );
+    const nextExtras = current.includes(emotion)
       ? current.filter((e) => e !== emotion)
       : [...current, emotion];
-    update("emotions_body", { ...data.emotions_body, emotions: next });
+    update("emotions_body", {
+      ...data.emotions_body,
+      emotions: mergeEmotions(data.primary_emotion, nextExtras),
+    });
   }
 
   function updateBodyText(text: string) {
@@ -136,15 +238,32 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     data.common_thoughts_checked.length > 0 ||
     data.trigger_context.trim().length > 0;
 
+  const nonEmptyCandidates = data.candidate_thoughts.filter(
+    (t) => t.trim().length > 0
+  );
+  const effectiveCoreThought =
+    data.automatic_thought.trim().length > 0
+      ? data.automatic_thought.trim()
+      : nonEmptyCandidates.length === 1
+        ? nonEmptyCandidates[0]!.trim()
+        : "";
+
   const isComplete =
     data.recent_situation.trim().length > 0 &&
-    data.automatic_thought.trim().length > 0 &&
+    data.primary_emotion.length > 0 &&
+    data.emotion_intensity >= 1 &&
+    nonEmptyCandidates.length >= 1 &&
+    effectiveCoreThought.length > 0 &&
     hasContext &&
     data.core_beliefs.about_self.trim().length > 0;
 
   const missingItems: string[] = [];
   if (data.recent_situation.trim().length === 0) missingItems.push("1번 상황");
-  if (data.automatic_thought.trim().length === 0) missingItems.push("2번 생각");
+  if (data.primary_emotion.length === 0 || data.emotion_intensity < 1)
+    missingItems.push("2a 감정·강도");
+  if (nonEmptyCandidates.length === 0) missingItems.push("2b 떠오른 생각");
+  else if (effectiveCoreThought.length === 0)
+    missingItems.push("2c 핵심 생각 선택");
   if (!hasContext) missingItems.push("3번 체크리스트 또는 4번 맥락");
   if (data.core_beliefs.about_self.trim().length === 0)
     missingItems.push("6-1번 (나에 대한 신념)");
@@ -154,6 +273,16 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     setSubmitting(true);
     setError("");
 
+    // 제출 직전 정규화: candidate_thoughts의 빈 문자열 제거, automatic_thought 보정
+    const cleanedCandidates = data.candidate_thoughts
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    const normalized: MechanismAnalysis = {
+      ...data,
+      candidate_thoughts: cleanedCandidates,
+      automatic_thought: effectiveCoreThought,
+    };
+
     try {
       const res = await fetch("/api/self-workshop/save-progress", {
         method: "PATCH",
@@ -161,7 +290,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         body: JSON.stringify({
           workshopId,
           field: "mechanism_analysis",
-          data,
+          data: normalized,
           advanceStep: 4,
         }),
       });
@@ -213,24 +342,176 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         />
       </Section>
 
-      {/* 섹션 2: 자동 사고 */}
-      <Section
-        label="2. 그 상황에서 머릿속에 자동으로 스친 생각"
-        guide="‘생각’이라기보다 훅 지나간 말·문장·이미지에 가까워요. 길지 않아도 괜찮아요."
-      >
-        <textarea
-          value={data.automatic_thought}
-          onChange={(e) => update("automatic_thought", e.target.value)}
-          placeholder="예: ‘내 아이디어가 별로인가 봐. 나 진짜 별 볼일 없네.’"
-          rows={3}
-          className={textareaClass}
-        />
-      </Section>
+      {/* 섹션 2: 자동 사고 — 2a 감정·강도 / 2b 후보 생각 / 2c 핵심 선정 */}
+      <div className="space-y-6">
+        {/* 2a: 가장 강했던 감정 + 강도 */}
+        <SubSection
+          label="2a. 그 순간 가장 강하게 올라온 감정 하나"
+          guide="그때의 감정 중 가장 크게 훅 올라온 것 하나를 고르고, 0~10 중 몇 점쯤이었는지 체크해 주세요. (5점 = 보통 불편, 10점 = 견디기 힘듦)"
+        >
+          <div className="mb-3 flex flex-wrap gap-2">
+            {EMOTION_CHIPS.map((emotion) => {
+              const selected = data.primary_emotion === emotion;
+              return (
+                <button
+                  key={emotion}
+                  type="button"
+                  onClick={() => setPrimaryEmotion(emotion)}
+                  className={`rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
+                    selected
+                      ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
+                      : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
+                  }`}
+                >
+                  {emotion}
+                </button>
+              );
+            })}
+          </div>
+
+          <IntensitySlider
+            value={data.emotion_intensity}
+            onChange={setEmotionIntensity}
+            disabled={data.primary_emotion.length === 0}
+          />
+        </SubSection>
+
+        {/* 2b: 머릿속에 스쳐 지나간 생각들 (후보) */}
+        <SubSection
+          label="2b. 그 순간 머릿속에 스쳐 지나간 생각들"
+          guide="정답을 고르려 하지 말고, 떠오르는 대로 짧게 적어보세요. 한 줄이어도 괜찮아요."
+        >
+          <div className="mb-3 rounded-xl border-2 border-[var(--foreground)]/20 bg-[var(--surface)] p-4 text-sm leading-relaxed text-[var(--foreground)]/75">
+            머릿속을 스친 생각들은 <strong>화재경보기</strong> 같아요. 실제
+            화재를 판단한 게 아니라 ‘일단 위험’이라고 빠르게 울린 신호죠.
+            합리적이지 않아도 괜찮아요 — 그냥 떠오른 대로 모두 적어봅니다.
+          </div>
+
+          <div className="space-y-2">
+            {(data.candidate_thoughts.length === 0
+              ? [""]
+              : data.candidate_thoughts
+            ).map((thought, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <span className="mt-3 shrink-0 text-sm text-[var(--foreground)]/40">
+                  {idx + 1}.
+                </span>
+                <textarea
+                  value={thought}
+                  onChange={(e) => {
+                    if (data.candidate_thoughts.length === 0) {
+                      // 초기 렌더 때 빈 줄 1개를 시드
+                      const merged = {
+                        ...data,
+                        candidate_thoughts: [e.target.value],
+                      };
+                      setData(merged);
+                      autoSave(merged);
+                    } else {
+                      updateCandidateThought(idx, e.target.value);
+                    }
+                  }}
+                  placeholder={
+                    idx === 0
+                      ? "예: ‘내 아이디어가 별로인가 봐.’"
+                      : "예: ‘나 진짜 별 볼일 없네.’"
+                  }
+                  rows={2}
+                  className={textareaClass}
+                />
+                {data.candidate_thoughts.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeCandidateThought(idx)}
+                    className="mt-1 shrink-0 rounded-lg border-2 border-[var(--foreground)]/20 px-2 py-1 text-xs text-[var(--foreground)]/50 hover:border-[var(--foreground)] hover:text-[var(--foreground)]"
+                    aria-label={`${idx + 1}번 생각 삭제`}
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {data.candidate_thoughts.length < MAX_CANDIDATE_THOUGHTS && (
+            <button
+              type="button"
+              onClick={addCandidateThought}
+              className="mt-3 inline-flex items-center gap-1 rounded-xl border-2 border-dashed border-[var(--foreground)]/30 px-4 py-2 text-sm font-medium text-[var(--foreground)]/60 hover:border-[var(--foreground)] hover:text-[var(--foreground)]"
+            >
+              + 생각 추가하기
+            </button>
+          )}
+          {data.candidate_thoughts.length >= MAX_CANDIDATE_THOUGHTS && (
+            <p className="mt-2 text-xs text-[var(--foreground)]/40">
+              최대 {MAX_CANDIDATE_THOUGHTS}개까지 적을 수 있어요.
+            </p>
+          )}
+        </SubSection>
+
+        {/* 2c: 감정과 가장 직접 연결된 생각 고르기 */}
+        {nonEmptyCandidates.length >= 2 && (
+          <SubSection
+            label="2c. 그 감정(2a)을 가장 직접 불러온 생각 하나 고르기"
+            guide={
+              data.primary_emotion && data.emotion_intensity > 0
+                ? `“이 생각을 떠올리면 다시 ${data.primary_emotion}(${data.emotion_intensity}점)이 올라오나요?” 한 개만 골라주세요.`
+                : "감정과 가장 직접 연결된 생각을 하나만 골라주세요."
+            }
+          >
+            <div className="space-y-2">
+              {nonEmptyCandidates.map((thought) => {
+                const selected = data.automatic_thought === thought;
+                return (
+                  <button
+                    key={thought}
+                    type="button"
+                    onClick={() => pickCoreThought(thought)}
+                    className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
+                      selected
+                        ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
+                        : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                        selected
+                          ? "border-[var(--foreground)] bg-[var(--foreground)]"
+                          : "border-[var(--foreground)]/30 bg-white"
+                      }`}
+                    >
+                      {selected && (
+                        <span className="block h-2 w-2 rounded-full bg-white" />
+                      )}
+                    </span>
+                    <span
+                      className={
+                        selected
+                          ? "font-medium text-[var(--foreground)]"
+                          : "text-[var(--foreground)]/75"
+                      }
+                    >
+                      {thought}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </SubSection>
+        )}
+        {nonEmptyCandidates.length === 1 && (
+          <p className="rounded-xl border-2 border-[var(--foreground)]/15 bg-[var(--surface)] px-4 py-3 text-xs text-[var(--foreground)]/60">
+            적어주신 생각을 <strong>핵심 자동사고</strong>로 자동 선정했어요.
+            생각을 더 추가하면 그중 하나를 고르는 단계가 나타납니다.
+          </p>
+        )}
+      </div>
 
       {/* 섹션 3: 체크리스트 */}
       <Section
         label="3. 최근에 아래 같은 생각을 한 적 있나요?"
-        guide="비슷하다고 느껴지는 걸 모두 골라주세요. 2번에 적은 생각과 유사한 것도 포함됩니다."
+        guide="2b에서 떠올린 생각과 비슷하게 느껴지는 것들을 모두 골라주세요."
       >
         <div className="space-y-2">
           {COMMON_ACHIEVEMENT_THOUGHTS.map((thought) => {
@@ -295,38 +576,51 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         />
       </Section>
 
-      {/* 섹션 5: 신체·감정 */}
+      {/* 섹션 5: 몸 반응 중심 (+ 동반 감정 선택) */}
       <Section
-        label="5. 그때 몸과 마음의 반응은 어땠나요?"
-        guide="느꼈던 감정을 모두 고르고, 몸의 반응이 있었다면 아래에 적어주세요."
+        label="5. 그때 몸의 반응은 어땠나요?"
+        guide="몸에서 어떤 반응이 있었는지 적어주세요. 2a에서 고른 감정 외에 동반된 감정이 있으면 아래에서 더 골라도 좋아요."
       >
-        <div className="mb-3 flex flex-wrap gap-2">
-          {EMOTION_CHIPS.map((emotion) => {
-            const selected = data.emotions_body.emotions.includes(emotion);
-            return (
-              <button
-                key={emotion}
-                type="button"
-                onClick={() => toggleEmotion(emotion)}
-                className={`rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
-                  selected
-                    ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
-                    : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
-                }`}
-              >
-                {emotion}
-              </button>
-            );
-          })}
-        </div>
-
         <textarea
           value={data.emotions_body.body_text}
           onChange={(e) => updateBodyText(e.target.value)}
-          placeholder="몸의 반응도 함께 적어주세요. 예: ‘가슴이 답답했다’, ‘잠을 못 잤다’"
+          placeholder="예: ‘가슴이 답답했다’, ‘잠을 못 잤다’, ‘어깨에 힘이 들어갔다’"
           rows={3}
           className={textareaClass}
         />
+
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-medium text-[var(--foreground)]/55">
+            동반 감정 (선택)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {EMOTION_CHIPS.map((emotion) => {
+              const isPrimary = data.primary_emotion === emotion;
+              const selected =
+                isPrimary ||
+                data.emotions_body.emotions.includes(emotion);
+              return (
+                <button
+                  key={emotion}
+                  type="button"
+                  onClick={() => toggleSecondaryEmotion(emotion)}
+                  disabled={isPrimary}
+                  title={isPrimary ? "2a에서 고른 감정이에요" : undefined}
+                  className={`rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
+                    isPrimary
+                      ? "cursor-not-allowed border-[var(--foreground)]/60 bg-[var(--foreground)]/10 text-[var(--foreground)]/70"
+                      : selected
+                        ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
+                        : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
+                  }`}
+                >
+                  {emotion}
+                  {isPrimary && <span className="ml-1 text-xs">· 핵심</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </Section>
 
       {/* 섹션 6: 핵심 신념 (3축) */}
@@ -339,8 +633,9 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
 
         <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-[var(--surface)] p-5 text-sm leading-relaxed text-[var(--foreground)]/75">
           자동으로 떠오르는 생각 뒤에는, <strong>자신·타인·세상에 대한 깊은 믿음</strong>이
-          숨어 있어요. 당신이 2번에 적은 그 생각이 각각에 대해 뭐라고 말하고 있는지
-          천천히 풀어보세요. 한 줄이어도 괜찮고, 떠오르는 것만 적어도 괜찮아요.
+          숨어 있어요. 당신이 <strong>2c에서 고른 핵심 생각</strong>이 각각에 대해
+          뭐라고 말하고 있는지 천천히 풀어보세요. 한 줄이어도 괜찮고, 떠오르는 것만
+          적어도 괜찮아요.
         </div>
 
         <SubSection
@@ -450,6 +745,53 @@ function SubSection({
       </label>
       <p className="mb-2 text-xs text-[var(--foreground)]/55">{guide}</p>
       {children}
+    </div>
+  );
+}
+
+function IntensitySlider({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  disabled?: boolean;
+}) {
+  const steps = Array.from({ length: 11 }, (_, i) => i);
+  return (
+    <div className={disabled ? "opacity-40" : undefined}>
+      <div className="flex items-center justify-between text-[11px] text-[var(--foreground)]/50">
+        <span>전혀 아님 0</span>
+        <span>보통 5</span>
+        <span>10 견디기 힘듦</span>
+      </div>
+      <div
+        role="group"
+        aria-label="감정 강도 0~10"
+        className="mt-2 grid grid-cols-11 gap-1"
+      >
+        {steps.map((n) => {
+          const selected = value === n;
+          return (
+            <button
+              key={n}
+              type="button"
+              disabled={disabled}
+              onClick={() => onChange(n)}
+              aria-pressed={selected}
+              aria-label={`강도 ${n}`}
+              className={`flex h-10 items-center justify-center rounded-lg border-2 text-sm font-semibold transition-colors ${
+                selected
+                  ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
+                  : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
+              } ${disabled ? "cursor-not-allowed" : ""}`}
+            >
+              {n}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

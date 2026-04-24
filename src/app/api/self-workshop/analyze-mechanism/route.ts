@@ -62,9 +62,11 @@ ${errorCatalog}
 
 반드시 아래 JSON 스키마를 그대로 따라 **단일 객체**로 응답하세요. 배열로 감싸지 마세요.
 
+**핵심 자동사고란?**: 유저는 여러 후보 생각을 적은 뒤, 그중 **2a 감정(primary_emotion + intensity)과 가장 직접 연결된다고 스스로 고른 한 문장**을 "핵심 자동사고(automatic_thought)"로 선정했습니다. 인용과 근거는 **핵심 자동사고를 우선**하세요. 후보 생각(candidate_thoughts)은 보조 재료로만 참고하세요.
+
 {
   "cognitive_errors": {
-    "intro": "유저의 자동사고('${'\\"자동사고 원문\\"'}' 형태로 인용)와 이번 섹션이 어떤 얘기를 할지 1~2문장으로 여는 말. 강의 톤: '오늘은 당신의 자동사고 속에 어떤 함정이 숨어있는지 짚어볼게요.' 같은 예측형.",
+    "intro": "유저의 핵심 자동사고('${'\\"자동사고 원문\\"'}' 형태로 인용)와 이번 섹션이 어떤 얘기를 할지 1~2문장으로 여는 말. 가능하면 감정 강도(예: '불안 7점')를 한 번 언급해 '그때의 온도'를 살짝 짚어주세요. 강의 톤: '오늘은 당신의 자동사고 속에 어떤 함정이 숨어있는지 짚어볼게요.' 같은 예측형.",
     "items": [
       {
         "id": "위 카탈로그의 snake_case id 중 하나 (예: labeling, catastrophizing, mind_reading)",
@@ -108,6 +110,23 @@ ${errorCatalog}
     checked.length > 0 ? checked.map((t: string) => `"${t}"`).join(", ") : "없음";
   const eb = mechanism_analysis.emotions_body ?? {};
 
+  const candidates: string[] = (
+    mechanism_analysis.candidate_thoughts ?? []
+  ).filter((t: string) => typeof t === "string" && t.trim().length > 0);
+  const candidatesText =
+    candidates.length > 0
+      ? candidates.map((t) => `"${t}"`).join(" / ")
+      : "없음";
+  const primaryEmotion: string = mechanism_analysis.primary_emotion ?? "";
+  const emotionIntensity: number =
+    typeof mechanism_analysis.emotion_intensity === "number"
+      ? mechanism_analysis.emotion_intensity
+      : 0;
+  const emotionStrengthLine =
+    primaryEmotion && emotionIntensity > 0
+      ? `${primaryEmotion} (${emotionIntensity}/10)`
+      : primaryEmotion || "미체크";
+
   const userMessage = `## 진단 결과 (리커트 5점 척도 20문항)
 - 총점: ${diagnosis_scores.total}/100
 - 레벨: ${diagnosis_scores.level} (${diagnosis_scores.levelName})
@@ -119,10 +138,12 @@ ${errorCatalog}
 
 ## 유저가 수집한 재료 (Mind Over Mood 흐름)
 - 최근 불편했던 상황: ${mechanism_analysis.recent_situation ?? "미작성"}
-- 그때 자동으로 떠오른 생각: ${mechanism_analysis.automatic_thought ?? "미작성"}
+- 그 상황에서 가장 강했던 감정·강도: ${emotionStrengthLine}
+- 그때 머릿속에 스쳐 지나간 생각들(후보 전체): ${candidatesText}
+- 그중 감정과 가장 직접 연결된 핵심 자동사고: "${mechanism_analysis.automatic_thought ?? "미작성"}"
 - 최근에 자주 한 생각(체크리스트): ${checkedText}
 - 이 생각이 주로 드는 맥락: ${mechanism_analysis.trigger_context ?? "미작성"}
-- 감정: ${eb.emotions?.join(", ") ?? "없음"}
+- 감정 전체(핵심 + 동반): ${eb.emotions?.join(", ") ?? "없음"}
 - 신체 반응: ${eb.body_text ?? "미작성"}
 - 핵심 신념 — 나에 대해: ${cb.about_self ?? "미작성"}
 - 핵심 신념 — 남에 대해: ${cb.about_others ?? "미작성"}
