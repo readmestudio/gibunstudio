@@ -88,7 +88,7 @@ ${errorCatalog}
       { "stage": "thought",  "label": "예: '나만 뒤처져', '더 해야 해'", "description": "1~2문장. 앞 단계(상황)가 왜 이 생각을 만들어내는지 이어서 쓰고, 이 생각이 어떤 감정을 일으키는지 다음 단계로 연결." },
       { "stage": "emotion",  "label": "예: '불안·자책', '초조'",          "description": "1~2문장. 앞 단계(생각)가 이 감정을 어떻게 키우는지 이어서 쓰고, 이 감정이 몸에서 어떻게 느껴지는지 다음 단계로 연결." },
       { "stage": "body",     "label": "예: '가슴 답답', '불면'",          "description": "1~2문장. 앞 단계(감정)가 몸에서 어떻게 나타나는지 이어서 쓰고, 이 불편감이 어떤 행동을 하게 만드는지 다음 단계로 연결." },
-      { "stage": "behavior", "label": "예: '주말 과몰두', '새 목표'",     "description": "1~2문장. 앞 단계(신체 불편)가 이 행동을 어떻게 유발하는지 이어서 쓰고, 이 행동이 잠깐의 안도 뒤에 다시 1단계(촉발 상황)를 만들어내는 순환 고리까지 포함." }
+      { "stage": "behavior", "label": "예: '주말 과몰두', '새 목표'. 유저가 '실제 행동' 을 적었다면 그 표현을 6글자로 압축해 우선 반영.", "description": "1~2문장. 앞 단계(신체 불편)가 이 행동을 어떻게 유발하는지 이어서 쓰고, 이 행동이 잠깐의 안도 뒤에 다시 1단계(촉발 상황)를 만들어내는 순환 고리까지 포함. 유저가 적은 '실제 행동' 원문을 따옴표로 직접 인용." }
     ]
   }
 }
@@ -146,6 +146,10 @@ ${errorCatalog}
     typeof mechanism_analysis.social_perception === "string"
       ? mechanism_analysis.social_perception
       : "";
+  const resultingBehavior: string =
+    typeof mechanism_analysis.resulting_behavior === "string"
+      ? mechanism_analysis.resulting_behavior
+      : "";
   const composedThought = composeAutomaticThought(
     primaryThought,
     worstCaseResult
@@ -173,6 +177,7 @@ ${errorCatalog}
 - 이 생각이 주로 드는 맥락: ${mechanism_analysis.trigger_context ?? "미작성"}
 - 감정 전체(핵심 + 동반): ${eb.emotions?.join(", ") ?? "없음"}
 - 신체 반응: ${eb.body_text ?? "미작성"}
+- 그 생각으로 인한 실제 행동(5-Part Model의 behavior 축): ${resultingBehavior ? `"${resultingBehavior}"` : "미작성"}
 - 핵심 신념 — 나에 대해: ${cb.about_self ?? "미작성"}`;
 
   try {

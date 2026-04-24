@@ -20,6 +20,7 @@ interface MechanismAnalysis {
   worst_case_result: string;
   thought_image: string;
   social_perception: string;
+  resulting_behavior: string;
   core_beliefs: {
     about_self: string;
     // about_others / about_world: 옵셔널 — 이전 사용자 데이터 보존용 (신규 UI에서 노출 X)
@@ -62,6 +63,7 @@ const EMPTY: MechanismAnalysis = {
   worst_case_result: "",
   thought_image: "",
   social_perception: "",
+  resulting_behavior: "",
   core_beliefs: { about_self: "" },
 };
 
@@ -98,6 +100,7 @@ function mergeSaved(
     worst_case_result: saved.worst_case_result ?? "",
     thought_image: saved.thought_image ?? "",
     social_perception: saved.social_perception ?? "",
+    resulting_behavior: saved.resulting_behavior ?? "",
     core_beliefs: {
       about_self: saved.core_beliefs?.about_self ?? "",
       // 이전 작성값은 그대로 보존(미노출) — DB 손실 방지
@@ -267,7 +270,8 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     effectiveCoreThought.length > 0 &&
     hasContext &&
     data.core_beliefs.about_self.trim().length > 0 &&
-    data.worst_case_result.trim().length > 0;
+    data.worst_case_result.trim().length > 0 &&
+    data.resulting_behavior.trim().length > 0;
 
   const missingItems: string[] = [];
   if (data.recent_situation.trim().length === 0) missingItems.push("불편했던 상황");
@@ -281,6 +285,8 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     missingItems.push("나에 대한 신념");
   if (data.worst_case_result.trim().length === 0)
     missingItems.push("생각으로 인한 결과");
+  if (data.resulting_behavior.trim().length === 0)
+    missingItems.push("그 생각이 만든 행동");
 
   async function handleNext() {
     if (!isComplete) return;
@@ -689,6 +695,19 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
             value={data.social_perception}
             onChange={(e) => update("social_perception", e.target.value)}
             placeholder="예: ‘업무도 제대로 못하는 형편없는 사람.’"
+            rows={3}
+            className={textareaClass}
+          />
+        </SubSection>
+
+        <SubSection
+          label="그 생각 때문에 실제로 어떤 행동을 하게 되었나요?"
+          guide="자동사고가 당신을 어떤 행동으로 이끌었는지 돌아보며 적어주세요. 쉼, 회피, 과몰두, 새 목표 설정 — 무엇이든 좋아요."
+        >
+          <textarea
+            value={data.resulting_behavior}
+            onChange={(e) => update("resulting_behavior", e.target.value)}
+            placeholder="예: ‘그래서 주말에도 쉬지 않고 새로운 프로젝트를 시작했다.’"
             rows={3}
             className={textareaClass}
           />

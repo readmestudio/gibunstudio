@@ -26,6 +26,7 @@ const EMPTY_MECHANISM = {
   worst_case_result: "",
   thought_image: "",
   social_perception: "",
+  resulting_behavior: "",
   core_beliefs: { about_self: "" },
 };
 

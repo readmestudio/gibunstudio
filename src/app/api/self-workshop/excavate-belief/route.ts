@@ -36,6 +36,7 @@ interface MechanismAnalysis {
   worst_case_result?: string;
   thought_image?: string;
   social_perception?: string;
+  resulting_behavior?: string;
 }
 
 export async function POST(req: Request) {
