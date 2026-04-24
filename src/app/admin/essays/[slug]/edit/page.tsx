@@ -19,7 +19,8 @@ interface Props {
 export default async function EditEssayPage({ params }: Props) {
   await requireAdmin();
   const { slug } = await params;
-  const essay = await getEssayBySlug(slug);
+  // 예약 공개 상태인 글도 어드민에서는 편집 가능해야 하므로 includeScheduled: true
+  const essay = await getEssayBySlug(slug, { includeScheduled: true });
   if (!essay) notFound();
 
   // updateEssay 는 (originalSlug, prevState, formData) 시그니처이므로
@@ -52,6 +53,7 @@ export default async function EditEssayPage({ params }: Props) {
               illustration: essay.illustration ?? null,
               coverImage: essay.coverImage ?? null,
               body: essay.body ?? null,
+              newsletterSendAt: essay.newsletterSendAt ?? null,
             }}
             action={boundAction}
             submitLabel="변경사항 저장"

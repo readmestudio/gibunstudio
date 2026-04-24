@@ -37,6 +37,7 @@ export default async function NewEssayPage() {
               illustration: null,
               coverImage: null,
               body: null,
+              newsletterSendAt: null,
             }}
             action={createEssay}
             submitLabel="저장하고 발행"

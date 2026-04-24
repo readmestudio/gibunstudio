@@ -25,6 +25,7 @@ export interface EssayFormDefaults {
   illustration: string | null;
   coverImage: string | null;
   body: string | null;
+  newsletterSendAt: string | null;
 }
 
 type FormState = { error?: string } | undefined;
@@ -111,7 +112,7 @@ export function EssayForm({ defaults, action, submitLabel }: Props) {
             htmlFor="publishedAt"
             className="block text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/60 mb-2"
           >
-            발행일
+            공개 일자
           </label>
           <input
             id="publishedAt"
@@ -121,6 +122,29 @@ export function EssayForm({ defaults, action, submitLabel }: Props) {
             defaultValue={defaults.publishedAt}
             className="w-full px-4 py-2.5 rounded-lg border-2 border-[var(--foreground)]/20 bg-white text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--foreground)]"
           />
+          <p className="mt-1.5 text-xs text-[var(--foreground)]/50">
+            미래 날짜로 설정하면 해당 날짜 전까지 공개 페이지에 노출되지 않아요.
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="newsletterSendAt"
+            className="block text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/60 mb-2"
+          >
+            뉴스레터 자동 발송 시작일
+          </label>
+          <input
+            id="newsletterSendAt"
+            name="newsletterSendAt"
+            type="date"
+            defaultValue={defaults.newsletterSendAt ?? ""}
+            className="w-full px-4 py-2.5 rounded-lg border-2 border-[var(--foreground)]/20 bg-white text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--foreground)]"
+          />
+          <p className="mt-1.5 text-xs text-[var(--foreground)]/50">
+            이 날짜 이후 첫 목요일 오전 9시(KST)에 구독자에게 자동 발송돼요.
+            비워두면 자동 발송 안 함. 중복 발송은 자동 방지.
+          </p>
         </div>
 
         <div>

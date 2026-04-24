@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/admin/auth";
 import { getAllEssays, formatEssayDate } from "@/lib/essays/data";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { DeleteEssayButton } from "./DeleteEssayButton";
 
 export const metadata: Metadata = {
@@ -12,9 +13,32 @@ export const metadata: Metadata = {
 // admin 페이지는 매 요청마다 최신 상태로
 export const dynamic = "force-dynamic";
 
+function formatShortDate(iso: string): string {
+  // YYYY-MM-DD → MM.DD
+  return iso.slice(5).replaceAll("-", ".");
+}
+
 export default async function AdminEssaysPage() {
   await requireAdmin();
-  const essays = await getAllEssays();
+  const essays = await getAllEssays({ includeScheduled: true });
+
+  // 발송 완료된 slug 집합 조회 (N+1 회피용 일괄 SELECT)
+  const sentSlugs = new Set<string>();
+  if (essays.length > 0) {
+    const admin = createAdminClient();
+    const { data: sends } = await admin
+      .from("newsletter_sends")
+      .select("essay_slug")
+      .in(
+        "essay_slug",
+        essays.map((e) => e.slug)
+      );
+    for (const row of sends ?? []) {
+      if (row.essay_slug) sentSlugs.add(row.essay_slug);
+    }
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <main className="bg-[var(--surface)] min-h-screen">
@@ -60,7 +84,7 @@ export default async function AdminEssaysPage() {
                     발행일
                   </th>
                   <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
-                    본문
+                    상태
                   </th>
                   <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
                     작업
@@ -90,15 +114,31 @@ export default async function AdminEssaysPage() {
                       {formatEssayDate(essay.publishedAt)}
                     </td>
                     <td className="px-5 py-4">
-                      {essay.body ? (
-                        <span className="inline-flex px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-medium">
-                          작성 완료
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
-                          초안
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        {essay.body ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-medium">
+                            작성 완료
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
+                            초안
+                          </span>
+                        )}
+                        {essay.publishedAt > today && (
+                          <span className="inline-flex px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 text-xs font-medium whitespace-nowrap">
+                            예약 공개 · {formatShortDate(essay.publishedAt)}
+                          </span>
+                        )}
+                        {sentSlugs.has(essay.slug) ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 text-xs font-medium whitespace-nowrap">
+                            발송 완료
+                          </span>
+                        ) : essay.newsletterSendAt ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium whitespace-nowrap">
+                            발송 예정 · {formatShortDate(essay.newsletterSendAt)}
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-5 py-4 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-3">

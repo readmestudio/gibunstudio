@@ -18,6 +18,7 @@ export interface Essay {
   illustration?: string | null;    // 작은 SVG 아이콘 (public/doodles/*.svg)
   coverImage?: string | null;      // 큰 썸네일 이미지 (public 기준 절대 경로). 있으면 illustration/타이포 헤더보다 우선
   body?: string | null;            // null 이면 "곧 도착해요" 플레이스홀더
+  newsletterSendAt?: string | null;// YYYY-MM-DD. null 이면 자동 발송 안 함
 }
 
 interface EssayRow {
@@ -28,6 +29,18 @@ interface EssayRow {
   illustration: string | null;
   cover_image: string | null;
   body: string | null;
+  newsletter_send_at: string | null;
+}
+
+const SELECT_COLUMNS =
+  "slug, title, preview, published_at, illustration, cover_image, body, newsletter_send_at";
+
+interface QueryOpts {
+  /**
+   * true 면 published_at 이 미래인 "예약 공개" 에세이도 함께 조회.
+   * 어드민 전용 — 공개 페이지에서는 기본 false 로 두어 예약글이 노출되지 않도록.
+   */
+  includeScheduled?: boolean;
 }
 
 let publicClient: SupabaseClient | null = null;
@@ -43,6 +56,10 @@ function getPublicClient(): SupabaseClient {
   return publicClient;
 }
 
+function todayIsoDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function rowToEssay(row: EssayRow): Essay {
   return {
     slug: row.slug,
@@ -52,15 +69,21 @@ function rowToEssay(row: EssayRow): Essay {
     illustration: row.illustration,
     coverImage: row.cover_image,
     body: row.body,
+    newsletterSendAt: row.newsletter_send_at,
   };
 }
 
-export async function getAllEssays(): Promise<Essay[]> {
-  const { data, error } = await getPublicClient()
+export async function getAllEssays(opts: QueryOpts = {}): Promise<Essay[]> {
+  let query = getPublicClient()
     .from("essays")
-    .select("slug, title, preview, published_at, illustration, cover_image, body")
+    .select(SELECT_COLUMNS)
     .order("published_at", { ascending: false });
 
+  if (!opts.includeScheduled) {
+    query = query.lte("published_at", todayIsoDate());
+  }
+
+  const { data, error } = await query;
   if (error) {
     console.error("[essays/data] getAllEssays 실패:", error);
     return [];
@@ -68,13 +91,20 @@ export async function getAllEssays(): Promise<Essay[]> {
   return (data ?? []).map(rowToEssay);
 }
 
-export async function getEssayBySlug(slug: string): Promise<Essay | null> {
-  const { data, error } = await getPublicClient()
+export async function getEssayBySlug(
+  slug: string,
+  opts: QueryOpts = {}
+): Promise<Essay | null> {
+  let query = getPublicClient()
     .from("essays")
-    .select("slug, title, preview, published_at, illustration, cover_image, body")
-    .eq("slug", slug)
-    .maybeSingle();
+    .select(SELECT_COLUMNS)
+    .eq("slug", slug);
 
+  if (!opts.includeScheduled) {
+    query = query.lte("published_at", todayIsoDate());
+  }
+
+  const { data, error } = await query.maybeSingle();
   if (error) {
     console.error(`[essays/data] getEssayBySlug(${slug}) 실패:`, error);
     return null;
@@ -82,13 +112,21 @@ export async function getEssayBySlug(slug: string): Promise<Essay | null> {
   return data ? rowToEssay(data) : null;
 }
 
-export async function getLatestEssays(count: number): Promise<Essay[]> {
-  const { data, error } = await getPublicClient()
+export async function getLatestEssays(
+  count: number,
+  opts: QueryOpts = {}
+): Promise<Essay[]> {
+  let query = getPublicClient()
     .from("essays")
-    .select("slug, title, preview, published_at, illustration, cover_image, body")
+    .select(SELECT_COLUMNS)
     .order("published_at", { ascending: false })
     .limit(count);
 
+  if (!opts.includeScheduled) {
+    query = query.lte("published_at", todayIsoDate());
+  }
+
+  const { data, error } = await query;
   if (error) {
     console.error("[essays/data] getLatestEssays 실패:", error);
     return [];

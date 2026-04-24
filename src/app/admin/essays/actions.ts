@@ -22,7 +22,10 @@ interface EssayInput {
   illustration: string | null;
   coverImage: string | null;
   body: string | null;
+  newsletterSendAt: string | null;
 }
+
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function parseFormData(formData: FormData): EssayInput | { error: string } {
   const slug = (formData.get("slug") ?? "").toString().trim();
@@ -32,6 +35,7 @@ function parseFormData(formData: FormData): EssayInput | { error: string } {
   const illustrationRaw = (formData.get("illustration") ?? "").toString().trim();
   const coverImageRaw = (formData.get("coverImage") ?? "").toString().trim();
   const bodyRaw = (formData.get("body") ?? "").toString();
+  const newsletterSendAtRaw = (formData.get("newsletterSendAt") ?? "").toString().trim();
 
   if (!slug) return { error: "slug 를 입력해주세요." };
   if (!SLUG_REGEX.test(slug)) {
@@ -39,11 +43,14 @@ function parseFormData(formData: FormData): EssayInput | { error: string } {
   }
   if (!title) return { error: "제목을 입력해주세요." };
   if (!preview) return { error: "preview 를 입력해주세요." };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(publishedAt)) {
+  if (!DATE_REGEX.test(publishedAt)) {
     return { error: "발행일 형식이 올바르지 않아요. (YYYY-MM-DD)" };
   }
   if (coverImageRaw && !coverImageRaw.startsWith("/") && !/^https?:\/\//.test(coverImageRaw)) {
     return { error: "썸네일 이미지는 '/' 로 시작하는 절대 경로 또는 http(s) URL 이어야 해요." };
+  }
+  if (newsletterSendAtRaw && !DATE_REGEX.test(newsletterSendAtRaw)) {
+    return { error: "뉴스레터 발송 시작일 형식이 올바르지 않아요. (YYYY-MM-DD)" };
   }
 
   return {
@@ -54,6 +61,7 @@ function parseFormData(formData: FormData): EssayInput | { error: string } {
     illustration: illustrationRaw === "" ? null : illustrationRaw,
     coverImage: coverImageRaw === "" ? null : coverImageRaw,
     body: bodyRaw.trim() === "" ? null : bodyRaw,
+    newsletterSendAt: newsletterSendAtRaw === "" ? null : newsletterSendAtRaw,
   };
 }
 
@@ -74,6 +82,7 @@ export async function createEssay(
     illustration: parsed.illustration,
     cover_image: parsed.coverImage,
     body: parsed.body,
+    newsletter_send_at: parsed.newsletterSendAt,
   });
 
   if (error) {
@@ -110,6 +119,7 @@ export async function updateEssay(
       illustration: parsed.illustration,
       cover_image: parsed.coverImage,
       body: parsed.body,
+      newsletter_send_at: parsed.newsletterSendAt,
     })
     .eq("slug", originalSlug);
 

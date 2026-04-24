@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend, getFromAddress, getSiteUrl } from "@/lib/newsletter/resend-client";
 import { buildWeeklyEmail } from "@/lib/newsletter/email-templates";
-import { getLatestEssays } from "@/lib/essays/data";
+import type { Essay } from "@/lib/essays/data";
 
 /**
  * GET /api/newsletter/cron-send
@@ -13,7 +13,8 @@ import { getLatestEssays } from "@/lib/essays/data";
  *
  * 동작:
  * 1. 인증 검증
- * 2. 가장 최신 에세이 1개 선택 (body 필수)
+ * 2. newsletter_send_at 가 오늘 이하이고 본문이 있는 에세이 중 가장 오래된 것 선택
+ *    (아직 발송되지 않은 건만). 어드민이 예약한 것만 자동 발송 대상.
  * 3. 오늘 해당 에세이가 이미 발송됐는지 확인 (DB unique index로 이중 방어)
  * 4. 활성 구독자 조회
  * 5. 각 구독자에게 개별 발송 (Resend API, 구독자별 해지 토큰 포함)
@@ -38,18 +39,55 @@ export async function GET(req: Request) {
 
   const dryRun = req.headers.get(DRY_RUN_HEADER) === "true";
 
-  // 가장 최신 에세이 선택 (본문이 있어야 발송 가능)
-  const candidates = (await getLatestEssays(5)).filter((e) => !!e.body?.trim());
-  const essay = candidates[0];
-  if (!essay) {
+  const admin = createAdminClient();
+  const todayUtcIso = new Date().toISOString().slice(0, 10);
+
+  // 예약된 에세이 중 아직 발송되지 않은 가장 오래된 것 한 건
+  // - newsletter_send_at <= today : 예약 시점 도달
+  // - body IS NOT NULL / not empty : 본문 필수 (검증 편의상 서버에서 한 번 더 체크)
+  // - 이미 newsletter_sends 에 기록된 slug 는 제외 (한 에세이당 1회만 자동 발송)
+  const { data: sentRows } = await admin
+    .from("newsletter_sends")
+    .select("essay_slug");
+  const alreadySentSet = new Set(
+    (sentRows ?? []).map((r) => r.essay_slug).filter((s): s is string => !!s)
+  );
+
+  const { data: scheduledRows, error: scheduledError } = await admin
+    .from("essays")
+    .select(
+      "slug, title, preview, published_at, illustration, cover_image, body, newsletter_send_at"
+    )
+    .not("newsletter_send_at", "is", null)
+    .lte("newsletter_send_at", todayUtcIso)
+    .order("newsletter_send_at", { ascending: true });
+
+  if (scheduledError) {
+    console.error("[newsletter/cron-send] 예약 에세이 조회 실패:", scheduledError);
+    return NextResponse.json({ error: "DB 조회 실패" }, { status: 500 });
+  }
+
+  const pending = (scheduledRows ?? []).find(
+    (r) => !!r.body?.trim() && !alreadySentSet.has(r.slug)
+  );
+
+  if (!pending) {
     return NextResponse.json(
-      { skipped: true, reason: "본문이 있는 에세이가 없습니다." },
+      { skipped: true, reason: "발송 대상 예약 에세이가 없습니다." },
       { status: 200 }
     );
   }
 
-  const admin = createAdminClient();
-  const todayUtcIso = new Date().toISOString().slice(0, 10);
+  const essay: Essay = {
+    slug: pending.slug,
+    title: pending.title,
+    preview: pending.preview,
+    publishedAt: pending.published_at,
+    illustration: pending.illustration,
+    coverImage: pending.cover_image,
+    body: pending.body,
+    newsletterSendAt: pending.newsletter_send_at,
+  };
 
   // 중복 발송 체크 — sent_on(UTC 기준 DATE, generated column)과 비교
   // DB에 newsletter_sends_dedupe_idx (essay_slug, sent_on) unique index가
