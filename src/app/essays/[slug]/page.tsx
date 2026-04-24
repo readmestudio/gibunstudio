@@ -42,33 +42,68 @@ export default async function EssayDetailPage({
   return (
     <main className="bg-[var(--surface)] min-h-screen">
       <article className="container px-5 py-24 mx-auto max-w-2xl">
-        <div className="flex flex-col items-center text-center mb-12">
-          <Image
-            src={`/doodles/${essay.illustration}.svg`}
-            alt={essay.title}
-            width={96}
-            height={96}
-            className="w-24 h-24 opacity-80 mb-8"
-          />
-          <time
-            dateTime={essay.publishedAt}
-            className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/50 mb-4"
-          >
-            {formatEssayDate(essay.publishedAt)}
-          </time>
-          <h1
-            className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mb-4 leading-snug"
-            style={{ wordBreak: "keep-all" }}
-          >
-            {essay.title}
-          </h1>
-          <p
-            className="text-base text-[var(--foreground)]/70 leading-relaxed"
-            style={{ wordBreak: "keep-all" }}
-          >
-            {essay.preview}
-          </p>
-        </div>
+        {essay.illustration ? (
+          <div className="flex flex-col items-center text-center mb-12">
+            <Image
+              src={`/doodles/${essay.illustration}.svg`}
+              alt={essay.title}
+              width={96}
+              height={96}
+              className="w-24 h-24 opacity-80 mb-8"
+            />
+            <time
+              dateTime={essay.publishedAt}
+              className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/50 mb-4"
+            >
+              {formatEssayDate(essay.publishedAt)}
+            </time>
+            <h1
+              className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mb-4 leading-snug"
+              style={{ wordBreak: "keep-all" }}
+            >
+              {essay.title}
+            </h1>
+            <p
+              className="text-base text-[var(--foreground)]/70 leading-relaxed"
+              style={{ wordBreak: "keep-all" }}
+            >
+              {essay.preview}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-start text-left mb-12">
+            <time
+              dateTime={essay.publishedAt}
+              className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/50 mb-6"
+            >
+              {formatEssayDate(essay.publishedAt)}
+            </time>
+            <h1
+              className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tight mb-6 text-[var(--foreground)]"
+              style={{ wordBreak: "keep-all" }}
+            >
+              {essay.title.split(",").map((part, i, arr) => {
+                const isLast = i === arr.length - 1;
+                return (
+                  <span
+                    key={i}
+                    className={isLast ? "italic font-semibold" : undefined}
+                  >
+                    {part.trim()}
+                    {!isLast && ","}
+                    {!isLast && <br />}
+                  </span>
+                );
+              })}
+            </h1>
+            <p
+              className="text-base md:text-lg text-[var(--foreground)]/70 leading-relaxed"
+              style={{ wordBreak: "keep-all" }}
+            >
+              {essay.preview}
+            </p>
+          </div>
+        )}
 
         <div className="border-t-2 border-[var(--foreground)]/10 pt-12">
           {essay.body ? (
