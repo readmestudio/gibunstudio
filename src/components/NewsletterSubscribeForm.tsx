@@ -120,20 +120,13 @@ export function NewsletterSubscribeForm({ variant = "banner" }: Props) {
         <h2
           className={
             isBanner
-              ? "text-2xl md:text-3xl font-bold text-[var(--foreground)] mb-3 leading-snug"
-              : "text-lg md:text-xl font-bold text-[var(--foreground)] mb-2 leading-snug"
+              ? "text-2xl md:text-3xl font-bold text-[var(--foreground)] leading-snug"
+              : "text-lg md:text-xl font-bold text-[var(--foreground)] leading-snug"
           }
           style={{ wordBreak: "keep-all" }}
         >
-          매주 목요일, 마음에게 편지를 보내드려요
+          매주 목요일, 한 주를 살아가며 만난 마음에 대한 에세이를 보내드려요
         </h2>
-        <p
-          className="text-sm md:text-base text-[var(--foreground)]/70 leading-relaxed"
-          style={{ wordBreak: "keep-all" }}
-        >
-          번아웃, 조급함, 완벽주의 — 조용히 덜어내고 싶은 마음들에게 건네는
-          짧은 이야기. 이메일만 남겨두시면 목요일 아침 받은편지함에 도착해요.
-        </p>
       </div>
 
       {isSuccess ? (
