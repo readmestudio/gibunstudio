@@ -381,11 +381,11 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
           label="2b. 그 순간 머릿속에 스쳐 지나간 생각들"
           guide="정답을 고르려 하지 말고, 떠오르는 대로 짧게 적어보세요. 한 줄이어도 괜찮아요."
         >
-          <div className="mb-3 rounded-xl border-2 border-[var(--foreground)]/20 bg-[var(--surface)] p-4 text-sm leading-relaxed text-[var(--foreground)]/75">
-            머릿속을 스친 생각들은 <strong>화재경보기</strong> 같아요. 실제
-            화재를 판단한 게 아니라 ‘일단 위험’이라고 빠르게 울린 신호죠.
+          <p className="mb-4 text-sm leading-relaxed text-[var(--foreground)]/60">
+            머릿속을 스친 생각들은 <strong className="text-[var(--foreground)]/80">화재경보기</strong> 같아요.
+            실제 화재를 판단한 게 아니라 ‘일단 위험’이라고 빠르게 울린 신호죠.
             합리적이지 않아도 괜찮아요 — 그냥 떠오른 대로 모두 적어봅니다.
-          </div>
+          </p>
 
           <div className="space-y-2">
             {(data.candidate_thoughts.length === 0
@@ -437,7 +437,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
             <button
               type="button"
               onClick={addCandidateThought}
-              className="mt-3 inline-flex items-center gap-1 rounded-xl border-2 border-dashed border-[var(--foreground)]/30 px-4 py-2 text-sm font-medium text-[var(--foreground)]/60 hover:border-[var(--foreground)] hover:text-[var(--foreground)]"
+              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
             >
               + 생각 추가하기
             </button>
@@ -501,8 +501,8 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
           </SubSection>
         )}
         {nonEmptyCandidates.length === 1 && (
-          <p className="rounded-xl border-2 border-[var(--foreground)]/15 bg-[var(--surface)] px-4 py-3 text-xs text-[var(--foreground)]/60">
-            적어주신 생각을 <strong>핵심 자동사고</strong>로 자동 선정했어요.
+          <p className="text-xs text-[var(--foreground)]/50">
+            적어주신 생각을 <strong className="text-[var(--foreground)]/75">핵심 자동사고</strong>로 자동 선정했어요.
             생각을 더 추가하면 그중 하나를 고르는 단계가 나타납니다.
           </p>
         )}
