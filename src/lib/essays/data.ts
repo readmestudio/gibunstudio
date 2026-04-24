@@ -1,10 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Essay
  *
  * 이전에는 같은 이름의 하드코딩 배열로 관리했으나,
  * /admin/essays CMS 도입 이후 Supabase `essays` 테이블이 단일 출처입니다.
+ *
+ * 읽기는 essays_public_read (RLS, USING true) 로 누구나 가능하므로
+ * 쿠키 기반 서버 클라이언트 대신 anon 키만 사용하는 공개 클라이언트를 씁니다.
+ * generateStaticParams 같이 request scope 밖에서도 안전하게 호출하기 위함.
  */
 export interface Essay {
   slug: string;
@@ -24,6 +28,19 @@ interface EssayRow {
   body: string | null;
 }
 
+let publicClient: SupabaseClient | null = null;
+
+function getPublicClient(): SupabaseClient {
+  if (!publicClient) {
+    publicClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false } }
+    );
+  }
+  return publicClient;
+}
+
 function rowToEssay(row: EssayRow): Essay {
   return {
     slug: row.slug,
@@ -36,8 +53,7 @@ function rowToEssay(row: EssayRow): Essay {
 }
 
 export async function getAllEssays(): Promise<Essay[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error } = await getPublicClient()
     .from("essays")
     .select("slug, title, preview, published_at, illustration, body")
     .order("published_at", { ascending: false });
@@ -50,8 +66,7 @@ export async function getAllEssays(): Promise<Essay[]> {
 }
 
 export async function getEssayBySlug(slug: string): Promise<Essay | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error } = await getPublicClient()
     .from("essays")
     .select("slug, title, preview, published_at, illustration, body")
     .eq("slug", slug)
@@ -65,8 +80,7 @@ export async function getEssayBySlug(slug: string): Promise<Essay | null> {
 }
 
 export async function getLatestEssays(count: number): Promise<Essay[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error } = await getPublicClient()
     .from("essays")
     .select("slug, title, preview, published_at, illustration, body")
     .order("published_at", { ascending: false })
