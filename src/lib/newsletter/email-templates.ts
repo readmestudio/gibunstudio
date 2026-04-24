@@ -70,7 +70,7 @@ export function buildWeeklyEmail({
     .split(/\n\n+/)
     .map(
       (p) =>
-        `<p style="font-size:15px; line-height:1.85; margin:0 0 18px 0; color:#2a2a2a; white-space:pre-wrap;">${escapeHtml(p)}</p>`
+        `<p style="font-size:15px; line-height:1.85; margin:0 0 18px 0; color:#2a2a2a; white-space:pre-wrap; text-align:justify; text-justify:inter-character; word-break:keep-all;">${escapeHtml(p)}</p>`
     )
     .join("");
 

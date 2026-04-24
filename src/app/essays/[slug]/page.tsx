@@ -115,8 +115,12 @@ export default async function EssayDetailPage({
         <div className="border-t-2 border-[var(--foreground)]/10 pt-12">
           {essay.body ? (
             <div
-              className="whitespace-pre-wrap text-base md:text-lg leading-[1.9] text-[var(--foreground)]/85"
-              style={{ wordBreak: "keep-all" }}
+              className="whitespace-pre-wrap text-base md:text-lg leading-[1.9] text-[var(--foreground)]/85 text-justify"
+              style={{
+                wordBreak: "keep-all",
+                textJustify: "inter-character",
+                hangingPunctuation: "allow-end",
+              }}
             >
               {essay.body}
             </div>
