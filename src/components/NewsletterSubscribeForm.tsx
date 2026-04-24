@@ -5,8 +5,12 @@ import { useState } from "react";
 type Status = "idle" | "submitting" | "success" | "already" | "error";
 
 interface Props {
-  /** "banner" — /essays 상단 큰 배너용, "inline" — 에세이 하단 삽입용 */
-  variant?: "banner" | "inline";
+  /**
+   * "banner" — /essays 상단 큰 배너용 (제목 포함)
+   * "inline" — 에세이 하단 삽입용 (제목 포함, 더 작음)
+   * "hero"   — 히어로 영역 안에 배치할 베어 폼 (외부에서 이미 제목/설명을 렌더)
+   */
+  variant?: "banner" | "inline" | "hero";
 }
 
 /**
@@ -47,7 +51,59 @@ export function NewsletterSubscribeForm({ variant = "banner" }: Props) {
   }
 
   const isBanner = variant === "banner";
+  const isHero = variant === "hero";
   const isSuccess = status === "success" || status === "already";
+
+  // Hero variant: 외부에서 이미 제목/서브카피를 렌더하므로 wrapper 없이 폼만 반환.
+  if (isHero) {
+    if (isSuccess) {
+      return (
+        <div className="text-center">
+          <p className="text-lg font-semibold text-[var(--foreground)] mb-1">
+            {status === "already"
+              ? "이미 구독 중이에요 🌱"
+              : "구독 신청이 완료됐어요 🌱"}
+          </p>
+          <p
+            className="text-sm text-[var(--foreground)]/70 leading-relaxed"
+            style={{ wordBreak: "keep-all" }}
+          >
+            {status === "already"
+              ? "이미 등록된 이메일이에요. 이번 주 목요일에 뵙겠습니다."
+              : "환영 편지가 곧 도착할 거예요. 확인해 주세요."}
+          </p>
+        </div>
+      );
+    }
+    return (
+      <form onSubmit={handleSubmit}>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="email"
+            required
+            placeholder="이메일 주소"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={status === "submitting"}
+            className="flex-1 px-5 py-4 rounded-lg border-2 border-[var(--foreground)] bg-white text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--foreground)]/20 disabled:opacity-60"
+          />
+          <button
+            type="submit"
+            disabled={status === "submitting" || !email.trim()}
+            className="px-8 py-4 rounded-lg bg-[var(--foreground)] text-white font-semibold text-base whitespace-nowrap transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {status === "submitting" ? "신청 중..." : "구독 신청"}
+          </button>
+        </div>
+        {status === "error" && errorMessage && (
+          <p className="mt-3 text-sm text-red-600 text-center">{errorMessage}</p>
+        )}
+        <p className="mt-4 text-xs text-[var(--foreground)]/50 text-center">
+          언제든 구독 해지 가능해요.
+        </p>
+      </form>
+    );
+  }
 
   return (
     <div
