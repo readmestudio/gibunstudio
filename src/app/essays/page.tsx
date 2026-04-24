@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ESSAYS } from "@/lib/essays/data";
 import { EssayCard } from "@/components/EssaySubscription";
+import { NewsletterSubscribeForm } from "@/components/NewsletterSubscribeForm";
 
 export const metadata: Metadata = {
   title: "마음 구독 에세이 | 기분 스튜디오",
@@ -33,6 +34,11 @@ export default function EssaysIndexPage() {
           >
             기분 스튜디오가 매주 한 편씩, 조용히 덜어내고 싶은 마음에게 건네는 편지를 모아 올려요.
           </p>
+        </div>
+
+        {/* 구독 신청 배너 */}
+        <div className="max-w-2xl mx-auto mb-16">
+          <NewsletterSubscribeForm variant="banner" />
         </div>
 
         {essays.length === 0 ? (

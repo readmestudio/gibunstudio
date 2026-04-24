@@ -7,6 +7,7 @@ import {
   formatEssayDate,
   getEssayBySlug,
 } from "@/lib/essays/data";
+import { NewsletterSubscribeForm } from "@/components/NewsletterSubscribeForm";
 
 type RouteParams = { slug: string };
 
@@ -133,7 +134,12 @@ export default async function EssayDetailPage({
           )}
         </div>
 
-        <div className="flex justify-center mt-16">
+        {/* 본문 읽은 직후 전환율이 높은 지점 — 구독 CTA */}
+        <div className="mt-16">
+          <NewsletterSubscribeForm variant="inline" />
+        </div>
+
+        <div className="flex justify-center mt-12">
           <Link
             href="/essays"
             className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--foreground)] hover:opacity-70 transition-opacity"
