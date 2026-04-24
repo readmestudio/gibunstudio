@@ -52,20 +52,12 @@ export function Header() {
               </form>
             </>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="text-sm font-medium text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-colors"
-              >
-                로그인
-              </Link>
-              <Link
-                href="/login/coach"
-                className="text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)]/80 transition-colors"
-              >
-                코치님이라면 여기
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className="text-sm font-medium text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-colors"
+            >
+              로그인
+            </Link>
           )}
         </nav>
       </div>
