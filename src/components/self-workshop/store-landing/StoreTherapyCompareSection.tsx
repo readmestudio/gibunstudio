@@ -92,11 +92,11 @@ export function StoreTherapyCompareSection() {
       </div>
 
       {/* 핵심 효용 유지 메시지 */}
-      <div className="mt-8 rounded-2xl border-2 border-[var(--foreground)] bg-[var(--foreground)] p-6 text-white">
-        <p className="text-sm sm:text-base leading-relaxed break-keep">
-          <span className="font-bold">상담의 핵심 효용 3가지는 그대로입니다 — </span>
-          이야기를 꺼내기 / 객관적으로 분석하기 / 대체 사고 찾기.
-          <span className="block mt-1 text-white/70">단점만 덜어냈습니다.</span>
+      <div className="mt-10 rounded-2xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-10 sm:py-14 text-center text-white">
+        <p className="text-xl sm:text-2xl md:text-3xl font-bold leading-[1.4] break-keep">
+          심리 상담의 장점은 취하고
+          <br />
+          단점은 완벽하게 덜어냈습니다
         </p>
       </div>
     </section>
