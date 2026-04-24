@@ -33,6 +33,9 @@ interface MechanismAnalysis {
   automatic_thought?: string;
   candidate_thoughts?: string[];
   common_thoughts_checked?: string[];
+  worst_case_result?: string;
+  thought_image?: string;
+  social_perception?: string;
 }
 
 export async function POST(req: Request) {

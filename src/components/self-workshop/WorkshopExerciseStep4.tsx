@@ -17,10 +17,14 @@ interface MechanismAnalysis {
     emotions: string[];
     body_text: string;
   };
+  worst_case_result: string;
+  thought_image: string;
+  social_perception: string;
   core_beliefs: {
     about_self: string;
-    about_others: string;
-    about_world: string;
+    // about_others / about_world: 옵셔널 — 이전 사용자 데이터 보존용 (신규 UI에서 노출 X)
+    about_others?: string;
+    about_world?: string;
   };
 }
 
@@ -55,7 +59,10 @@ const EMPTY: MechanismAnalysis = {
   common_thoughts_checked: [],
   trigger_context: "",
   emotions_body: { emotions: [], body_text: "" },
-  core_beliefs: { about_self: "", about_others: "", about_world: "" },
+  worst_case_result: "",
+  thought_image: "",
+  social_perception: "",
+  core_beliefs: { about_self: "" },
 };
 
 function mergeSaved(
@@ -88,10 +95,14 @@ function mergeSaved(
       emotions: savedEmotions,
       body_text: saved.emotions_body?.body_text ?? "",
     },
+    worst_case_result: saved.worst_case_result ?? "",
+    thought_image: saved.thought_image ?? "",
+    social_perception: saved.social_perception ?? "",
     core_beliefs: {
       about_self: saved.core_beliefs?.about_self ?? "",
-      about_others: saved.core_beliefs?.about_others ?? "",
-      about_world: saved.core_beliefs?.about_world ?? "",
+      // 이전 작성값은 그대로 보존(미노출) — DB 손실 방지
+      about_others: saved.core_beliefs?.about_others,
+      about_world: saved.core_beliefs?.about_world,
     },
   };
 }
@@ -255,7 +266,8 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     nonEmptyCandidates.length >= 1 &&
     effectiveCoreThought.length > 0 &&
     hasContext &&
-    data.core_beliefs.about_self.trim().length > 0;
+    data.core_beliefs.about_self.trim().length > 0 &&
+    data.worst_case_result.trim().length > 0;
 
   const missingItems: string[] = [];
   if (data.recent_situation.trim().length === 0) missingItems.push("불편했던 상황");
@@ -267,6 +279,8 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
   if (!hasContext) missingItems.push("비슷한 생각 체크 또는 주로 드는 맥락");
   if (data.core_beliefs.about_self.trim().length === 0)
     missingItems.push("나에 대한 신념");
+  if (data.worst_case_result.trim().length === 0)
+    missingItems.push("생각으로 인한 결과");
 
   async function handleNext() {
     if (!isComplete) return;
@@ -612,7 +626,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </div>
       </Section>
 
-      {/* 섹션: 핵심 신념 (3축) */}
+      {/* 섹션: 자동사고 완성하기 (상황에 대한 생각 + 생각으로 인한 결과) */}
       <div className="space-y-4">
         <div>
           <h4 className="text-base font-semibold text-[var(--foreground)]">
@@ -621,10 +635,9 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </div>
 
         <p className="text-sm leading-relaxed text-[var(--foreground)]/60">
-          자동으로 떠오르는 생각 뒤에는, <strong className="text-[var(--foreground)]/80">자신·타인·세상에
-          대한 깊은 믿음</strong>이 숨어 있어요. 앞에서 고른 핵심 생각이 각각에 대해
-          뭐라고 말하고 있는지 천천히 풀어보세요. 한 줄이어도 괜찮고, 떠오르는
-          것만 적어도 괜찮아요.
+          앞에서 고른 핵심 생각이 당신에게 어떤 이야기를 들려주고 있는지
+          천천히 풀어보세요. 이 답들이 모여 당신의{" "}
+          <strong className="text-[var(--foreground)]/80">자동사고</strong>가 완성돼요.
         </p>
 
         <SubSection
@@ -641,26 +654,41 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </SubSection>
 
         <SubSection
-          label="그 생각은 남(타인)에 대해 뭐라고 말하고 있나요?"
-          guide="예: ‘남들은 나보다 앞서 있어.’ ‘사람들은 내 실수를 기억해.’"
+          label="최악의 경우, 어떤 일이 일어날 것 같다는 생각이 들었나요?"
+          guide="그 생각이 사실이라면 앞으로 어떤 결과가 벌어질지 떠오르는 대로 적어주세요. (생각으로 인한 결과)"
         >
           <textarea
-            value={data.core_beliefs.about_others}
-            onChange={(e) => updateCoreBelief("about_others", e.target.value)}
-            placeholder="떠오르지 않으면 비워도 괜찮아요."
+            value={data.worst_case_result}
+            onChange={(e) =>
+              update("worst_case_result", e.target.value)
+            }
+            placeholder="예: ‘사람들이 나를 별로라고 생각할 것이고, 회사 내 평가도 엉망이 될 것이다.’"
             rows={3}
             className={textareaClass}
           />
         </SubSection>
 
         <SubSection
-          label="그 생각은 세상에 대해 뭐라고 말하고 있나요?"
-          guide="예: ‘세상은 증명한 사람만 인정해.’ ‘쉬면 낙오되는 곳이야.’"
+          label="그때 떠오른 장면이나 이미지는?"
+          guide="머릿속에 구체적인 그림으로 그려진 장면이 있다면 적어주세요. 떠오르지 않으면 비워도 괜찮아요."
         >
           <textarea
-            value={data.core_beliefs.about_world}
-            onChange={(e) => updateCoreBelief("about_world", e.target.value)}
-            placeholder="떠오르지 않으면 비워도 괜찮아요."
+            value={data.thought_image}
+            onChange={(e) => update("thought_image", e.target.value)}
+            placeholder="예: ‘회의실에서 사람들이 나에 대해 수군거리는 모습.’"
+            rows={3}
+            className={textareaClass}
+          />
+        </SubSection>
+
+        <SubSection
+          label="남들에게 내가 어떤 사람으로 보여질까요?"
+          guide="그 상황에서 다른 사람들 눈에 비친 ‘나’는 어떤 모습일지. 떠오르지 않으면 비워도 괜찮아요."
+        >
+          <textarea
+            value={data.social_perception}
+            onChange={(e) => update("social_perception", e.target.value)}
+            placeholder="예: ‘업무도 제대로 못하는 형편없는 사람.’"
             rows={3}
             className={textareaClass}
           />

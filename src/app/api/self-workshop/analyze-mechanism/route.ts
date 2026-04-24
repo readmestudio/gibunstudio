@@ -9,6 +9,7 @@ import {
   COGNITIVE_ERRORS,
   COGNITIVE_ERROR_IDS,
 } from "@/lib/self-workshop/cognitive-errors";
+import { composeAutomaticThought } from "@/lib/self-workshop/compose-automatic-thought";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -62,7 +63,9 @@ ${errorCatalog}
 
 반드시 아래 JSON 스키마를 그대로 따라 **단일 객체**로 응답하세요. 배열로 감싸지 마세요.
 
-**핵심 자동사고란?**: 유저는 여러 후보 생각을 적은 뒤, 그중 **2a 감정(primary_emotion + intensity)과 가장 직접 연결된다고 스스로 고른 한 문장**을 "핵심 자동사고(automatic_thought)"로 선정했습니다. 인용과 근거는 **핵심 자동사고를 우선**하세요. 후보 생각(candidate_thoughts)은 보조 재료로만 참고하세요.
+**핵심 자동사고란?**: 유저는 여러 후보 생각을 적은 뒤, 그중 **감정(primary_emotion + intensity)과 가장 직접 연결된다고 스스로 고른 한 문장**을 "상황에 대한 생각(automatic_thought)"으로 선정했습니다.
+
+**자동사고 합성 공식**: 완성된 자동사고는 **"상황에 대한 생각 + 생각으로 인한 결과(worst_case_result)"** 의 합으로 정의됩니다. 인용과 근거는 **이 완성된 자동사고를 우선**하세요. 후보 생각(candidate_thoughts)은 보조 재료로만 참고하세요.
 
 {
   "cognitive_errors": {
@@ -127,6 +130,27 @@ ${errorCatalog}
       ? `${primaryEmotion} (${emotionIntensity}/10)`
       : primaryEmotion || "미체크";
 
+  const primaryThought: string =
+    typeof mechanism_analysis.automatic_thought === "string"
+      ? mechanism_analysis.automatic_thought
+      : "";
+  const worstCaseResult: string =
+    typeof mechanism_analysis.worst_case_result === "string"
+      ? mechanism_analysis.worst_case_result
+      : "";
+  const thoughtImage: string =
+    typeof mechanism_analysis.thought_image === "string"
+      ? mechanism_analysis.thought_image
+      : "";
+  const socialPerception: string =
+    typeof mechanism_analysis.social_perception === "string"
+      ? mechanism_analysis.social_perception
+      : "";
+  const composedThought = composeAutomaticThought(
+    primaryThought,
+    worstCaseResult
+  );
+
   const userMessage = `## 진단 결과 (리커트 5점 척도 20문항)
 - 총점: ${diagnosis_scores.total}/100
 - 레벨: ${diagnosis_scores.level} (${diagnosis_scores.levelName})
@@ -140,14 +164,16 @@ ${errorCatalog}
 - 최근 불편했던 상황: ${mechanism_analysis.recent_situation ?? "미작성"}
 - 그 상황에서 가장 강했던 감정·강도: ${emotionStrengthLine}
 - 그때 머릿속에 스쳐 지나간 생각들(후보 전체): ${candidatesText}
-- 그중 감정과 가장 직접 연결된 핵심 자동사고: "${mechanism_analysis.automatic_thought ?? "미작성"}"
+- 상황에 대한 생각(감정과 가장 직접 연결): "${primaryThought || "미작성"}"
+- 생각으로 인한 결과(최악 시나리오): "${worstCaseResult || "미작성"}"
+- **완성된 자동사고(③상황에 대한 생각 + ④생각으로 인한 결과)**: "${composedThought || "미완성"}"
+- 그때 떠오른 장면·이미지: ${thoughtImage ? `"${thoughtImage}"` : "비움"}
+- 남들에게 내가 어떤 사람으로 보여질까: ${socialPerception ? `"${socialPerception}"` : "비움"}
 - 최근에 자주 한 생각(체크리스트): ${checkedText}
 - 이 생각이 주로 드는 맥락: ${mechanism_analysis.trigger_context ?? "미작성"}
 - 감정 전체(핵심 + 동반): ${eb.emotions?.join(", ") ?? "없음"}
 - 신체 반응: ${eb.body_text ?? "미작성"}
-- 핵심 신념 — 나에 대해: ${cb.about_self ?? "미작성"}
-- 핵심 신념 — 남에 대해: ${cb.about_others ?? "미작성"}
-- 핵심 신념 — 세상에 대해: ${cb.about_world ?? "미작성"}`;
+- 핵심 신념 — 나에 대해: ${cb.about_self ?? "미작성"}`;
 
   try {
     const response = await chatCompletion(

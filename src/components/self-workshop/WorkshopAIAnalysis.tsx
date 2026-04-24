@@ -15,6 +15,7 @@ interface Props {
   step: 4 | 7;
   savedCards?: InsightCard[];
   savedReport?: unknown;
+  mechanismAnalysis?: unknown;
   userName?: string | null;
 }
 
@@ -23,6 +24,7 @@ export function WorkshopAIAnalysis({
   step,
   savedCards,
   savedReport,
+  mechanismAnalysis,
   userName,
 }: Props) {
   if (step === 4) {
@@ -30,6 +32,7 @@ export function WorkshopAIAnalysis({
       <WorkshopCognitiveReport
         workshopId={workshopId}
         savedReport={savedReport ?? null}
+        mechanismAnalysis={mechanismAnalysis ?? null}
         userName={userName}
       />
     );

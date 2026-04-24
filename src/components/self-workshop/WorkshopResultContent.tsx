@@ -23,7 +23,10 @@ const EMPTY_MECHANISM = {
   common_thoughts_checked: [] as string[],
   trigger_context: "",
   emotions_body: { emotions: [] as string[], body_text: "" },
-  core_beliefs: { about_self: "", about_others: "", about_world: "" },
+  worst_case_result: "",
+  thought_image: "",
+  social_perception: "",
+  core_beliefs: { about_self: "" },
 };
 
 export function WorkshopResultContent({

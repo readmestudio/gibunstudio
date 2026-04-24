@@ -179,6 +179,7 @@ export default async function WorkshopStepPage({ params }: Props) {
           workshopId={workshopId}
           step={4}
           savedReport={progress.mechanism_insights ?? null}
+          mechanismAnalysis={progress.mechanism_analysis ?? null}
           userName={
             (user.user_metadata?.name as string | undefined) ??
             (user.user_metadata?.full_name as string | undefined) ??

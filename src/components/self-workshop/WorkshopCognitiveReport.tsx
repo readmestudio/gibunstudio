@@ -9,11 +9,29 @@ import {
   type AnalysisReport,
   type PatternStage,
 } from "@/lib/self-workshop/analysis-report";
+import { composeAutomaticThought } from "@/lib/self-workshop/compose-automatic-thought";
 
 interface Props {
   workshopId: string;
   savedReport: unknown;
+  mechanismAnalysis?: unknown;
   userName?: string | null;
+}
+
+function extractThoughtParts(raw: unknown): {
+  primary: string;
+  worstCase: string;
+} {
+  if (!raw || typeof raw !== "object") return { primary: "", worstCase: "" };
+  const m = raw as {
+    automatic_thought?: unknown;
+    worst_case_result?: unknown;
+  };
+  return {
+    primary: typeof m.automatic_thought === "string" ? m.automatic_thought : "",
+    worstCase:
+      typeof m.worst_case_result === "string" ? m.worst_case_result : "",
+  };
 }
 
 const STAGE_LABEL: Record<PatternStage, string> = {
@@ -27,6 +45,7 @@ const STAGE_LABEL: Record<PatternStage, string> = {
 export function WorkshopCognitiveReport({
   workshopId,
   savedReport,
+  mechanismAnalysis,
   userName,
 }: Props) {
   const router = useRouter();
@@ -97,9 +116,19 @@ export function WorkshopCognitiveReport({
     day: "numeric",
   });
 
+  const { primary, worstCase } = extractThoughtParts(mechanismAnalysis);
+  const composedThought = composeAutomaticThought(primary, worstCase);
+
   return (
     <div className="mx-auto max-w-2xl space-y-10 pb-24">
       <ReportHeader userName={userName} today={today} />
+
+      {composedThought.length > 0 && (
+        <AutomaticThoughtHeadline
+          thought={composedThought}
+          hasBothParts={primary.trim().length > 0 && worstCase.trim().length > 0}
+        />
+      )}
 
       <CognitiveErrorsSection errors={report.cognitive_errors} />
 
@@ -152,6 +181,45 @@ function ReportHeader({
         </div>
       </div>
     </header>
+  );
+}
+
+/* ─────────────────────────── 자동사고 헤드라인 ─────────────────────────── */
+
+function AutomaticThoughtHeadline({
+  thought,
+  hasBothParts,
+}: {
+  thought: string;
+  hasBothParts: boolean;
+}) {
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--foreground)]/40">
+          Automatic Thought
+        </span>
+        <span className="h-px flex-1 bg-[var(--foreground)]/15" />
+        <span className="text-sm font-bold text-[var(--foreground)]">
+          당신이 찾은 자동사고
+        </span>
+      </div>
+
+      <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--foreground)]/45">
+          {hasBothParts
+            ? "상황에 대한 생각 + 생각으로 인한 결과"
+            : "상황에 대한 생각"}
+        </p>
+        <p className="mt-3 text-lg leading-relaxed font-semibold text-[var(--foreground)]">
+          “{thought}”
+        </p>
+        <p className="mt-4 text-xs text-[var(--foreground)]/55">
+          이 문장이 어떤 감정과 행동을 만들어내는지, 아래 리포트에서 함께
+          살펴볼게요.
+        </p>
+      </div>
+    </section>
   );
 }
 
