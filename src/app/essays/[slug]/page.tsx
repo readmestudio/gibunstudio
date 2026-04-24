@@ -3,16 +3,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
-  ESSAYS,
   formatEssayDate,
+  getAllEssays,
   getEssayBySlug,
 } from "@/lib/essays/data";
 import { NewsletterSubscribeForm } from "@/components/NewsletterSubscribeForm";
 
 type RouteParams = { slug: string };
 
-export function generateStaticParams(): RouteParams[] {
-  return ESSAYS.map((essay) => ({ slug: essay.slug }));
+// CMS 수정 후 1분 내 반영
+export const revalidate = 60;
+// DB에 신규 slug가 추가되어도 허용 (빌드 시 없던 slug도 on-demand SSG)
+export const dynamicParams = true;
+
+export async function generateStaticParams(): Promise<RouteParams[]> {
+  const essays = await getAllEssays();
+  return essays.map((essay) => ({ slug: essay.slug }));
 }
 
 export async function generateMetadata({
@@ -21,7 +27,7 @@ export async function generateMetadata({
   params: Promise<RouteParams>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const essay = getEssayBySlug(slug);
+  const essay = await getEssayBySlug(slug);
   if (!essay) {
     return { title: "에세이를 찾을 수 없어요 | 기분 스튜디오" };
   }
@@ -37,7 +43,7 @@ export default async function EssayDetailPage({
   params: Promise<RouteParams>;
 }) {
   const { slug } = await params;
-  const essay = getEssayBySlug(slug);
+  const essay = await getEssayBySlug(slug);
   if (!essay) notFound();
 
   return (

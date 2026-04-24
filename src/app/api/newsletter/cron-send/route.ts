@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   const dryRun = req.headers.get(DRY_RUN_HEADER) === "true";
 
   // 가장 최신 에세이 선택 (본문이 있어야 발송 가능)
-  const candidates = getLatestEssays(5).filter((e) => !!e.body?.trim());
+  const candidates = (await getLatestEssays(5)).filter((e) => !!e.body?.trim());
   const essay = candidates[0];
   if (!essay) {
     return NextResponse.json(

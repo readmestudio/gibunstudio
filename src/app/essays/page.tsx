@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ESSAYS } from "@/lib/essays/data";
+import { getAllEssays } from "@/lib/essays/data";
 import { EssayCard } from "@/components/EssaySubscription";
 import { NewsletterSubscribeForm } from "@/components/NewsletterSubscribeForm";
 
@@ -10,10 +10,11 @@ export const metadata: Metadata = {
     "번아웃, 조급함, 완벽주의 — 조용히 덜어내고 싶은 마음들에게 건네는 짧은 편지 모음.",
 };
 
-export default function EssaysIndexPage() {
-  const essays = [...ESSAYS].sort((a, b) =>
-    b.publishedAt.localeCompare(a.publishedAt)
-  );
+// CMS 에서 수정 후 1분 내 반영되도록 ISR
+export const revalidate = 60;
+
+export default async function EssaysIndexPage() {
+  const essays = await getAllEssays();
 
   return (
     <main className="bg-[var(--surface)] min-h-screen">

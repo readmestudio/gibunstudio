@@ -6,15 +6,26 @@ export function EssayCard({ essay }: { essay: Essay }) {
   return (
     <Link href={`/essays/${essay.slug}`}>
       <div className="flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-        <div className="flex items-center justify-center py-10 px-6">
-          <Image
-            src={`/doodles/${essay.illustration}.svg`}
-            alt={essay.title}
-            width={96}
-            height={96}
-            className="w-24 h-24 opacity-80"
-          />
-        </div>
+        {essay.illustration ? (
+          <div className="flex items-center justify-center py-10 px-6">
+            <Image
+              src={`/doodles/${essay.illustration}.svg`}
+              alt={essay.title}
+              width={96}
+              height={96}
+              className="w-24 h-24 opacity-80"
+            />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-10 px-6 min-h-[176px] bg-[var(--surface)]/50">
+            <p
+              className="text-lg md:text-xl font-bold text-[var(--foreground)] text-center leading-snug italic"
+              style={{ wordBreak: "keep-all" }}
+            >
+              {essay.title}
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col flex-grow p-5 border-t border-[var(--foreground)]/10">
           <time
@@ -44,8 +55,8 @@ export function EssayCard({ essay }: { essay: Essay }) {
   );
 }
 
-export function EssaySubscription() {
-  const latest = getLatestEssays(3);
+export async function EssaySubscription() {
+  const latest = await getLatestEssays(3);
 
   return (
     <section className="bg-[var(--surface)]">
