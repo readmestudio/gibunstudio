@@ -258,15 +258,15 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     data.core_beliefs.about_self.trim().length > 0;
 
   const missingItems: string[] = [];
-  if (data.recent_situation.trim().length === 0) missingItems.push("1번 상황");
+  if (data.recent_situation.trim().length === 0) missingItems.push("불편했던 상황");
   if (data.primary_emotion.length === 0 || data.emotion_intensity < 1)
-    missingItems.push("2a 감정·강도");
-  if (nonEmptyCandidates.length === 0) missingItems.push("2b 떠오른 생각");
+    missingItems.push("감정과 강도");
+  if (nonEmptyCandidates.length === 0) missingItems.push("떠오른 생각");
   else if (effectiveCoreThought.length === 0)
-    missingItems.push("2c 핵심 생각 선택");
-  if (!hasContext) missingItems.push("3번 체크리스트 또는 4번 맥락");
+    missingItems.push("핵심 생각 선택");
+  if (!hasContext) missingItems.push("비슷한 생각 체크 또는 주로 드는 맥락");
   if (data.core_beliefs.about_self.trim().length === 0)
-    missingItems.push("6-1번 (나에 대한 신념)");
+    missingItems.push("나에 대한 신념");
 
   async function handleNext() {
     if (!isComplete) return;
@@ -319,18 +319,16 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         <h3 className="text-base font-semibold text-[var(--foreground)]">
           이제, 당신의 성취 중독 패턴을 함께 찾아볼 차례예요
         </h3>
-        <div className="rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-4">
-          <p className="text-sm leading-relaxed text-[var(--foreground)]/65">
-            정답은 없어요. 아래 여섯 가지 질문에 떠오르는 대로 솔직하게
-            적어주세요. 한 번에 모두 적지 않아도 괜찮아요 — 적은 만큼 자동
-            저장되고, 언제든 이어서 쓸 수 있습니다.
-          </p>
-        </div>
+        <p className="text-sm leading-relaxed text-[var(--foreground)]/65">
+          정답은 없어요. 아래 질문에 떠오르는 대로 솔직하게 적어주세요. 한
+          번에 모두 적지 않아도 괜찮아요 — 적은 만큼 자동 저장되고, 언제든
+          이어서 쓸 수 있습니다.
+        </p>
       </div>
 
-      {/* 섹션 1: 최근 상황 */}
+      {/* 섹션: 최근 상황 */}
       <Section
-        label="1. 최근 '성취 때문에' 마음이 불편했던 순간"
+        label="최근 '성취 때문에' 마음이 불편했던 순간"
         guide="지난 일주일 안에, 일·성과·경쟁 때문에 마음이 무거워진 장면을 하나 떠올려 주세요."
       >
         <textarea
@@ -344,10 +342,10 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
 
       {/* 섹션 2: 자동 사고 — 2a 감정·강도 / 2b 후보 생각 / 2c 핵심 선정 */}
       <div className="space-y-6">
-        {/* 2a: 가장 강했던 감정 + 강도 */}
+        {/* 가장 강했던 감정 + 강도 */}
         <SubSection
-          label="2a. 그 순간 가장 강하게 올라온 감정 하나"
-          guide="그때의 감정 중 가장 크게 훅 올라온 것 하나를 고르고, 0~10 중 몇 점쯤이었는지 체크해 주세요. (5점 = 보통 불편, 10점 = 견디기 힘듦)"
+          label="그 순간 가장 강하게 올라온 감정 하나"
+          guide="가장 크게 훅 올라온 감정 하나를 고르고, 0~10 중 몇 점쯤이었는지 체크해 주세요. (5점 = 보통 불편, 10점 = 견디기 힘듦)"
         >
           <div className="mb-3 flex flex-wrap gap-2">
             {EMOTION_CHIPS.map((emotion) => {
@@ -376,8 +374,8 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
           />
         </SubSection>
 
-        {/* 2b: 머릿속에 스쳐 지나간 생각들 (후보) */}
-        <SubSection label="2b. 그 순간 머릿속에 스쳐 지나간 생각들">
+        {/* 머릿속에 스쳐 지나간 생각들 (후보) */}
+        <SubSection label="그 순간 머릿속에 스쳐 지나간 생각들">
           <p className="mb-4 text-sm leading-relaxed text-[var(--foreground)]/60">
             머릿속을 스친 생각들은 <strong className="text-[var(--foreground)]/80">화재경보기</strong> 같아요.
             실제 화재를 판단한 게 아니라 ‘일단 위험’이라고 빠르게 울린 신호죠.
@@ -446,10 +444,10 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
           )}
         </SubSection>
 
-        {/* 2c: 감정과 가장 직접 연결된 생각 고르기 */}
+        {/* 감정과 가장 직접 연결된 생각 고르기 */}
         {nonEmptyCandidates.length >= 2 && (
           <SubSection
-            label="2c. 그 감정(2a)을 가장 직접 불러온 생각 하나 고르기"
+            label="그 감정을 가장 직접 불러온 생각 하나 고르기"
             guide={
               data.primary_emotion && data.emotion_intensity > 0
                 ? `“이 생각을 떠올리면 다시 ${data.primary_emotion}(${data.emotion_intensity}점)이 올라오나요?” 한 개만 골라주세요.`
@@ -499,10 +497,10 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         )}
       </div>
 
-      {/* 섹션 3: 체크리스트 */}
+      {/* 섹션: 체크리스트 */}
       <Section
-        label="3. 최근에 아래 같은 생각을 한 적 있나요?"
-        guide="2b에서 떠올린 생각과 비슷하게 느껴지는 것들을 모두 골라주세요."
+        label="최근에 아래 같은 생각을 한 적 있나요?"
+        guide="앞에서 떠올린 생각과 비슷하게 느껴지는 것들을 모두 골라주세요."
       >
         <div className="space-y-2">
           {COMMON_ACHIEVEMENT_THOUGHTS.map((thought) => {
@@ -553,9 +551,9 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </div>
       </Section>
 
-      {/* 섹션 4: 맥락 */}
+      {/* 섹션: 맥락 */}
       <Section
-        label="4. 이런 생각은 주로 어떤 상황에서 드나요?"
+        label="이런 생각은 주로 어떤 상황에서 드나요?"
         guide="자주 떠오르는 장면이 있다면 적어주세요. (예: 월말 평가 직전, 친구 SNS 보고, 퇴근 후 혼자 있을 때)"
       >
         <textarea
@@ -567,10 +565,10 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         />
       </Section>
 
-      {/* 섹션 5: 몸 반응 중심 (+ 동반 감정 선택) */}
+      {/* 섹션: 몸 반응 중심 (+ 동반 감정 선택) */}
       <Section
-        label="5. 그때 몸의 반응은 어땠나요?"
-        guide="몸에서 어떤 반응이 있었는지 적어주세요. 2a에서 고른 감정 외에 동반된 감정이 있으면 아래에서 더 골라도 좋아요."
+        label="그때 몸의 반응은 어땠나요?"
+        guide="몸에서 어떤 반응이 있었는지 적어주세요. 위에서 고른 감정 외에 동반된 감정이 있으면 아래에서 더 골라도 좋아요."
       >
         <textarea
           value={data.emotions_body.body_text}
@@ -596,7 +594,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
                   type="button"
                   onClick={() => toggleSecondaryEmotion(emotion)}
                   disabled={isPrimary}
-                  title={isPrimary ? "2a에서 고른 감정이에요" : undefined}
+                  title={isPrimary ? "위에서 고른 감정이에요" : undefined}
                   className={`rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
                     isPrimary
                       ? "cursor-not-allowed border-[var(--foreground)]/60 bg-[var(--foreground)]/10 text-[var(--foreground)]/70"
@@ -614,23 +612,23 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </div>
       </Section>
 
-      {/* 섹션 6: 핵심 신념 (3축) */}
+      {/* 섹션: 핵심 신념 (3축) */}
       <div className="space-y-4">
         <div>
           <h4 className="text-base font-semibold text-[var(--foreground)]">
-            6. 그 생각은 당신에게 어떤 이야기를 들려주고 있나요?
+            그 생각은 당신에게 어떤 이야기를 들려주고 있나요?
           </h4>
         </div>
 
-        <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-[var(--surface)] p-5 text-sm leading-relaxed text-[var(--foreground)]/75">
-          자동으로 떠오르는 생각 뒤에는, <strong>자신·타인·세상에 대한 깊은 믿음</strong>이
-          숨어 있어요. 당신이 <strong>2c에서 고른 핵심 생각</strong>이 각각에 대해
-          뭐라고 말하고 있는지 천천히 풀어보세요. 한 줄이어도 괜찮고, 떠오르는 것만
-          적어도 괜찮아요.
-        </div>
+        <p className="text-sm leading-relaxed text-[var(--foreground)]/60">
+          자동으로 떠오르는 생각 뒤에는, <strong className="text-[var(--foreground)]/80">자신·타인·세상에
+          대한 깊은 믿음</strong>이 숨어 있어요. 앞에서 고른 핵심 생각이 각각에 대해
+          뭐라고 말하고 있는지 천천히 풀어보세요. 한 줄이어도 괜찮고, 떠오르는
+          것만 적어도 괜찮아요.
+        </p>
 
         <SubSection
-          label="6-1. 그 생각은 나에 대해 뭐라고 말하고 있나요?"
+          label="그 생각은 나에 대해 뭐라고 말하고 있나요?"
           guide="예: ‘나는 부족해.’ ‘나는 뒤처지고 있어.’ ‘나는 아직 인정받을 만하지 않아.’"
         >
           <textarea
@@ -643,7 +641,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </SubSection>
 
         <SubSection
-          label="6-2. 그 생각은 남(타인)에 대해 뭐라고 말하고 있나요?"
+          label="그 생각은 남(타인)에 대해 뭐라고 말하고 있나요?"
           guide="예: ‘남들은 나보다 앞서 있어.’ ‘사람들은 내 실수를 기억해.’"
         >
           <textarea
@@ -656,7 +654,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </SubSection>
 
         <SubSection
-          label="6-3. 그 생각은 세상에 대해 뭐라고 말하고 있나요?"
+          label="그 생각은 세상에 대해 뭐라고 말하고 있나요?"
           guide="예: ‘세상은 증명한 사람만 인정해.’ ‘쉬면 낙오되는 곳이야.’"
         >
           <textarea
