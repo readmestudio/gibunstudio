@@ -50,6 +50,7 @@ export default async function EditEssayPage({ params }: Props) {
               preview: essay.preview,
               publishedAt: essay.publishedAt,
               illustration: essay.illustration ?? null,
+              coverImage: essay.coverImage ?? null,
               body: essay.body ?? null,
             }}
             action={boundAction}

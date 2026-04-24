@@ -23,6 +23,7 @@ export interface EssayFormDefaults {
   preview: string;
   publishedAt: string;
   illustration: string | null;
+  coverImage: string | null;
   body: string | null;
 }
 
@@ -146,6 +147,28 @@ export function EssayForm({ defaults, action, submitLabel }: Props) {
             비워두면 제목이 큰 타이포그래픽으로 렌더됩니다.
           </p>
         </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor="coverImage"
+          className="block text-xs font-semibold uppercase tracking-wider text-[var(--foreground)]/60 mb-2"
+        >
+          썸네일 이미지 경로 (선택)
+        </label>
+        <input
+          id="coverImage"
+          name="coverImage"
+          type="text"
+          defaultValue={defaults.coverImage ?? ""}
+          placeholder="/essays/my-essay.png"
+          className="w-full px-4 py-2.5 rounded-lg border-2 border-[var(--foreground)]/20 bg-white text-sm font-mono text-[var(--foreground)] focus:outline-none focus:border-[var(--foreground)]"
+        />
+        <p className="mt-1.5 text-xs text-[var(--foreground)]/50">
+          값이 있으면 카드·상세 상단에 이 이미지가 4:3 비율로 채워집니다. public 폴더 기준 절대 경로로 입력하세요 (예:{" "}
+          <code className="font-mono">/essays/my-essay.png</code>).
+          이미지 파일은 별도로 <code className="font-mono">public/essays/</code> 에 올려 커밋해야 해요.
+        </p>
       </div>
 
       <div>

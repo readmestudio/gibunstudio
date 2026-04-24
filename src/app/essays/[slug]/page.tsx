@@ -49,7 +49,38 @@ export default async function EssayDetailPage({
   return (
     <main className="bg-[var(--surface)] min-h-screen">
       <article className="container px-5 py-24 mx-auto max-w-2xl">
-        {essay.illustration ? (
+        {essay.coverImage ? (
+          <div className="flex flex-col items-center text-center mb-12">
+            <div className="relative w-full aspect-[4/3] mb-8 overflow-hidden rounded-2xl border-2 border-[var(--foreground)]/10 bg-[var(--surface)]/50">
+              <Image
+                src={essay.coverImage}
+                alt={essay.title}
+                fill
+                sizes="(min-width: 768px) 640px, 100vw"
+                className="object-cover"
+                priority
+              />
+            </div>
+            <time
+              dateTime={essay.publishedAt}
+              className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/50 mb-4"
+            >
+              {formatEssayDate(essay.publishedAt)}
+            </time>
+            <h1
+              className="text-3xl md:text-4xl font-bold text-[var(--foreground)] mb-4 leading-snug"
+              style={{ wordBreak: "keep-all" }}
+            >
+              {essay.title}
+            </h1>
+            <p
+              className="text-base text-[var(--foreground)]/70 leading-relaxed"
+              style={{ wordBreak: "keep-all" }}
+            >
+              {essay.preview}
+            </p>
+          </div>
+        ) : essay.illustration ? (
           <div className="flex flex-col items-center text-center mb-12">
             <Image
               src={`/doodles/${essay.illustration}.svg`}

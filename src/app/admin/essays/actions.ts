@@ -20,6 +20,7 @@ interface EssayInput {
   preview: string;
   publishedAt: string;
   illustration: string | null;
+  coverImage: string | null;
   body: string | null;
 }
 
@@ -29,6 +30,7 @@ function parseFormData(formData: FormData): EssayInput | { error: string } {
   const preview = (formData.get("preview") ?? "").toString().trim();
   const publishedAt = (formData.get("publishedAt") ?? "").toString().trim();
   const illustrationRaw = (formData.get("illustration") ?? "").toString().trim();
+  const coverImageRaw = (formData.get("coverImage") ?? "").toString().trim();
   const bodyRaw = (formData.get("body") ?? "").toString();
 
   if (!slug) return { error: "slug 를 입력해주세요." };
@@ -40,6 +42,9 @@ function parseFormData(formData: FormData): EssayInput | { error: string } {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(publishedAt)) {
     return { error: "발행일 형식이 올바르지 않아요. (YYYY-MM-DD)" };
   }
+  if (coverImageRaw && !coverImageRaw.startsWith("/") && !/^https?:\/\//.test(coverImageRaw)) {
+    return { error: "썸네일 이미지는 '/' 로 시작하는 절대 경로 또는 http(s) URL 이어야 해요." };
+  }
 
   return {
     slug,
@@ -47,6 +52,7 @@ function parseFormData(formData: FormData): EssayInput | { error: string } {
     preview,
     publishedAt,
     illustration: illustrationRaw === "" ? null : illustrationRaw,
+    coverImage: coverImageRaw === "" ? null : coverImageRaw,
     body: bodyRaw.trim() === "" ? null : bodyRaw,
   };
 }
@@ -66,6 +72,7 @@ export async function createEssay(
     preview: parsed.preview,
     published_at: parsed.publishedAt,
     illustration: parsed.illustration,
+    cover_image: parsed.coverImage,
     body: parsed.body,
   });
 
@@ -101,6 +108,7 @@ export async function updateEssay(
       preview: parsed.preview,
       published_at: parsed.publishedAt,
       illustration: parsed.illustration,
+      cover_image: parsed.coverImage,
       body: parsed.body,
     })
     .eq("slug", originalSlug);

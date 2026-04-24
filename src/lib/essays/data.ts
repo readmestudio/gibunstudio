@@ -15,7 +15,8 @@ export interface Essay {
   title: string;
   preview: string;
   publishedAt: string;             // ISO date (YYYY-MM-DD)
-  illustration?: string | null;    // null 이면 타이포그래픽 헤더
+  illustration?: string | null;    // 작은 SVG 아이콘 (public/doodles/*.svg)
+  coverImage?: string | null;      // 큰 썸네일 이미지 (public 기준 절대 경로). 있으면 illustration/타이포 헤더보다 우선
   body?: string | null;            // null 이면 "곧 도착해요" 플레이스홀더
 }
 
@@ -25,6 +26,7 @@ interface EssayRow {
   preview: string;
   published_at: string;
   illustration: string | null;
+  cover_image: string | null;
   body: string | null;
 }
 
@@ -48,6 +50,7 @@ function rowToEssay(row: EssayRow): Essay {
     preview: row.preview,
     publishedAt: row.published_at,
     illustration: row.illustration,
+    coverImage: row.cover_image,
     body: row.body,
   };
 }
@@ -55,7 +58,7 @@ function rowToEssay(row: EssayRow): Essay {
 export async function getAllEssays(): Promise<Essay[]> {
   const { data, error } = await getPublicClient()
     .from("essays")
-    .select("slug, title, preview, published_at, illustration, body")
+    .select("slug, title, preview, published_at, illustration, cover_image, body")
     .order("published_at", { ascending: false });
 
   if (error) {
@@ -68,7 +71,7 @@ export async function getAllEssays(): Promise<Essay[]> {
 export async function getEssayBySlug(slug: string): Promise<Essay | null> {
   const { data, error } = await getPublicClient()
     .from("essays")
-    .select("slug, title, preview, published_at, illustration, body")
+    .select("slug, title, preview, published_at, illustration, cover_image, body")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -82,7 +85,7 @@ export async function getEssayBySlug(slug: string): Promise<Essay | null> {
 export async function getLatestEssays(count: number): Promise<Essay[]> {
   const { data, error } = await getPublicClient()
     .from("essays")
-    .select("slug, title, preview, published_at, illustration, body")
+    .select("slug, title, preview, published_at, illustration, cover_image, body")
     .order("published_at", { ascending: false })
     .limit(count);
 

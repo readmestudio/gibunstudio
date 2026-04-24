@@ -35,6 +35,7 @@ export default async function NewEssayPage() {
               preview: "",
               publishedAt: today,
               illustration: null,
+              coverImage: null,
               body: null,
             }}
             action={createEssay}

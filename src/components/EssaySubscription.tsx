@@ -6,7 +6,17 @@ export function EssayCard({ essay }: { essay: Essay }) {
   return (
     <Link href={`/essays/${essay.slug}`}>
       <div className="flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-        {essay.illustration ? (
+        {essay.coverImage ? (
+          <div className="relative w-full aspect-[4/3] overflow-hidden bg-[var(--surface)]/50">
+            <Image
+              src={essay.coverImage}
+              alt={essay.title}
+              fill
+              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              className="object-cover"
+            />
+          </div>
+        ) : essay.illustration ? (
           <div className="flex items-center justify-center py-10 px-6">
             <Image
               src={`/doodles/${essay.illustration}.svg`}
