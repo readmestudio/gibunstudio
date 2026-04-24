@@ -360,7 +360,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         />
       </Section>
 
-      {/* 섹션 2: 자동 사고 — 2a 감정·강도 / 2b 후보 생각 / 2c 핵심 선정 */}
+      {/* 섹션: 상황에 대한 생각 — 감정·강도 / 후보 / 핵심 선정 */}
       <div className="space-y-6">
         {/* 가장 강했던 감정 + 강도 */}
         <SubSection
@@ -632,7 +632,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </div>
       </Section>
 
-      {/* 섹션: 자동사고 완성하기 (상황에 대한 생각 + 생각으로 인한 결과) */}
+      {/* 섹션: 생각이 만드는 파장 (나에 대한 믿음 + 결과 + 이미지 + 사회적 시선 + 행동) */}
       <div className="space-y-4">
         <div>
           <h4 className="text-base font-semibold text-[var(--foreground)]">
@@ -642,8 +642,9 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
 
         <p className="text-sm leading-relaxed text-[var(--foreground)]/60">
           앞에서 고른 핵심 생각이 당신에게 어떤 이야기를 들려주고 있는지
-          천천히 풀어보세요. 이 답들이 모여 당신의{" "}
-          <strong className="text-[var(--foreground)]/80">자동사고</strong>가 완성돼요.
+          천천히 풀어보세요. 이 답들을 통해{" "}
+          <strong className="text-[var(--foreground)]/80">그 생각이 당신을
+          어떻게 움직이는지</strong> 선명해질 거예요.
         </p>
 
         <SubSection
@@ -702,7 +703,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
 
         <SubSection
           label="그 생각 때문에 실제로 어떤 행동을 하게 되었나요?"
-          guide="자동사고가 당신을 어떤 행동으로 이끌었는지 돌아보며 적어주세요. 쉼, 회피, 과몰두, 새 목표 설정 — 무엇이든 좋아요."
+          guide="그 생각이 당신을 어떤 행동으로 이끌었는지 돌아보며 적어주세요. 쉼, 회피, 과몰두, 새 목표 설정 — 무엇이든 좋아요."
         >
           <textarea
             value={data.resulting_behavior}
