@@ -377,10 +377,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
         </SubSection>
 
         {/* 2b: 머릿속에 스쳐 지나간 생각들 (후보) */}
-        <SubSection
-          label="2b. 그 순간 머릿속에 스쳐 지나간 생각들"
-          guide="정답을 고르려 하지 말고, 떠오르는 대로 짧게 적어보세요. 한 줄이어도 괜찮아요."
-        >
+        <SubSection label="2b. 그 순간 머릿속에 스쳐 지나간 생각들">
           <p className="mb-4 text-sm leading-relaxed text-[var(--foreground)]/60">
             머릿속을 스친 생각들은 <strong className="text-[var(--foreground)]/80">화재경보기</strong> 같아요.
             실제 화재를 판단한 게 아니라 ‘일단 위험’이라고 빠르게 울린 신호죠.
@@ -499,12 +496,6 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
               })}
             </div>
           </SubSection>
-        )}
-        {nonEmptyCandidates.length === 1 && (
-          <p className="text-xs text-[var(--foreground)]/50">
-            적어주신 생각을 <strong className="text-[var(--foreground)]/75">핵심 자동사고</strong>로 자동 선정했어요.
-            생각을 더 추가하면 그중 하나를 고르는 단계가 나타납니다.
-          </p>
         )}
       </div>
 
@@ -735,7 +726,7 @@ function SubSection({
   children,
 }: {
   label: string;
-  guide: string;
+  guide?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -743,7 +734,9 @@ function SubSection({
       <label className="mb-1 block text-sm font-semibold text-[var(--foreground)]">
         {label}
       </label>
-      <p className="mb-2 text-xs text-[var(--foreground)]/55">{guide}</p>
+      {guide && (
+        <p className="mb-2 text-xs text-[var(--foreground)]/55">{guide}</p>
+      )}
       {children}
     </div>
   );
