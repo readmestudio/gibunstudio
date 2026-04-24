@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { HERO_CHECK_ITEMS } from "./content";
-import { StoreHeroWorkbookCards } from "./StoreHeroWorkbookCards";
+import { StoreHeroWorkbookSlideshow } from "./StoreHeroWorkbookSlideshow";
 
 /**
  * [01] Hero + 공감 체크리스트
@@ -45,8 +45,8 @@ export function StoreHeroSection() {
         비즈니스 퍼포먼스를 위한 라이팅 테라피
       </p>
 
-      {/* 히어로 인라인 워크북 카드 */}
-      <StoreHeroWorkbookCards />
+      {/* 히어로 워크북 슬라이드쇼 (placeholder) */}
+      <StoreHeroWorkbookSlideshow />
 
       {/* 체크리스트 */}
       <div className="mt-14">
