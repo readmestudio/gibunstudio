@@ -1,0 +1,39 @@
+import { CREATOR_STORY_PARAGRAPHS } from "./content";
+
+/**
+ * [05] 창작자 스토리
+ *
+ * 담담하고 진솔한 톤. "왜 만들었는지"가 먼저 전달되도록 구성.
+ */
+export function StoreCreatorStorySection() {
+  return (
+    <section className="mx-auto max-w-3xl px-4 py-20">
+      <p className="text-center text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/40 mb-3">
+        WHY WE MADE IT
+      </p>
+      <h2 className="text-center text-2xl sm:text-3xl font-bold text-[var(--foreground)] break-keep">
+        왜 이걸 만들었는가
+      </h2>
+
+      <div className="mt-12 rounded-2xl border-2 border-[var(--foreground)]/15 bg-[var(--surface)] p-8 sm:p-10">
+        {CREATOR_STORY_PARAGRAPHS.map((paragraph, idx) => {
+          const isLast = idx === CREATOR_STORY_PARAGRAPHS.length - 1;
+          return (
+            <p
+              key={idx}
+              className={`text-base sm:text-lg leading-relaxed text-[var(--foreground)]/80 break-keep ${
+                idx > 0 ? "mt-5" : ""
+              } ${isLast ? "font-semibold text-[var(--foreground)]" : ""}`}
+            >
+              {paragraph}
+            </p>
+          );
+        })}
+
+        <p className="mt-8 text-right text-sm text-[var(--foreground)]/50">
+          — 기분 스튜디오 창작자 드림
+        </p>
+      </div>
+    </section>
+  );
+}
