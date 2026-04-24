@@ -3,6 +3,28 @@
  * (성취 중독 서브 랜딩(`landing-data.ts`)과는 다른 전체 랜딩 관점 콘텐츠)
  */
 
+/* ── Hero 인라인 컴팩트 워크북 카드 ── */
+export interface HeroWorkbookCard {
+  id: string; // WORKBOOK_CATALOG.id와 매칭
+  heroTitle: string;
+  summary: string;
+}
+
+export const HERO_WORKBOOK_CARDS: HeroWorkbookCard[] = [
+  {
+    id: "achievement-addiction",
+    heroTitle: "성취 중독자를 위한 마음 챙김 워크북",
+    summary:
+      "쉼에 대한 죄책감과 멈출 수 없는 성과 욕구. CBT 기반 20문항 진단과 실습으로 나만의 순환 패턴을 찾고 대처법을 설계합니다.",
+  },
+  {
+    id: "anxiety-loop",
+    heroTitle: "불안이들을 위한 마음 챙김 워크북",
+    summary:
+      "같은 걱정이 끝없이 반복되는 당신에게. 불안의 구조를 해부하고 반복을 끊는 나만의 대처 루틴을 만들어갑니다.",
+  },
+];
+
 /* ── Hero 공감 체크리스트 (6문항) ── */
 export const HERO_CHECK_ITEMS = [
   "회당 8~15만원, 매주 가는 건 현실적으로 부담된다",

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { HERO_CHECK_ITEMS } from "./content";
+import { StoreHeroWorkbookCards } from "./StoreHeroWorkbookCards";
 
 /**
  * [01] Hero + 공감 체크리스트
@@ -34,10 +35,8 @@ export function StoreHeroSection() {
       </p>
 
       {/* 히어로 헤드라인 */}
-      <h1 className="text-center text-3xl sm:text-4xl md:text-[2.75rem] font-bold leading-[1.3] text-[var(--foreground)] break-keep">
-        마음은 복잡한데
-        <br />
-        심리 상담은 부담스러운 당신을 위한
+      <h1 className="text-center text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.25] text-[var(--foreground)] break-keep">
+        직장인을 위한
         <br />
         마음 챙김 워크북
       </h1>
@@ -45,6 +44,9 @@ export function StoreHeroSection() {
       <p className="mt-6 text-center text-base sm:text-lg leading-relaxed text-[var(--foreground)]/70 break-keep">
         비즈니스 퍼포먼스를 위한 라이팅 테라피
       </p>
+
+      {/* 히어로 인라인 워크북 카드 */}
+      <StoreHeroWorkbookCards />
 
       {/* 체크리스트 */}
       <div className="mt-14">
