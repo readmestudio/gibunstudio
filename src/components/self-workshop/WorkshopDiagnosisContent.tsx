@@ -35,21 +35,27 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
 
   const answeredCount = Object.keys(answers).length;
   const allAnswered = answeredCount === TOTAL;
-  const question = DIAGNOSIS_QUESTIONS[currentIndex];
-  const progress = ((currentIndex + 1) / TOTAL) * 100;
+  // currentIndex가 어떤 이유로든 범위를 벗어나도 안전하게 첫/마지막 문항으로 클램프
+  const safeIndex = Math.min(Math.max(currentIndex, 0), TOTAL - 1);
+  const question = DIAGNOSIS_QUESTIONS[safeIndex];
+  const questionId = question.id;
+  const progress = ((safeIndex + 1) / TOTAL) * 100;
 
   const handleSelect = useCallback(
     (value: number) => {
       setAnswers((prev) => ({
         ...prev,
-        [String(question.id)]: value,
+        [String(questionId)]: value,
       }));
-      // 자동으로 다음 문항으로
-      if (currentIndex < TOTAL - 1) {
-        setTimeout(() => setCurrentIndex((i) => i + 1), 300);
+      // 자동으로 다음 문항으로 — 범위 밖으로 나가지 않도록 Math.min 캡
+      if (safeIndex < TOTAL - 1) {
+        setTimeout(
+          () => setCurrentIndex((i) => Math.min(i + 1, TOTAL - 1)),
+          300,
+        );
       }
     },
-    [currentIndex, question.id]
+    [safeIndex, questionId]
   );
 
   function handleSubmitClick() {
@@ -79,8 +85,9 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
         throw new Error(data.error || "점수 계산에 실패했습니다.");
       }
 
-      // Step 2 (진단 결과)로 이동
-      router.push("/dashboard/self-workshop/step/2");
+      // Step 2 (진단 결과)로 이동 — router cache 완전 우회 위해 full navigation.
+      // (router.push + refresh로는 stale RSC payload가 잡히는 케이스가 있어서)
+      window.location.href = "/dashboard/self-workshop/step/2";
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
       setSubmitting(false);
@@ -168,9 +175,9 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
           ← 이전
         </button>
 
-        {currentIndex < TOTAL - 1 ? (
+        {safeIndex < TOTAL - 1 ? (
           <button
-            onClick={() => setCurrentIndex((i) => i + 1)}
+            onClick={() => setCurrentIndex((i) => Math.min(i + 1, TOTAL - 1))}
             className="rounded-lg border-2 border-[var(--foreground)] px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
           >
             다음 →

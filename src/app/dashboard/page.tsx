@@ -248,12 +248,12 @@ export default async function DashboardPage() {
         .from("counseling_bookings")
         .select("id, status, confirmed_slot")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
+        .order("updated_at", { ascending: false }),
       supabase
         .from("phase2_results")
         .select("id, published_at")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
       supabase
@@ -261,6 +261,8 @@ export default async function DashboardPage() {
         .select("id, current_step, status, workshop_type, mechanism_analysis")
         .eq("user_id", user.id)
         .eq("workshop_type", "achievement-addiction")
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
       supabase
         .from("workshop_purchases")

@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { calculateDiagnosisScores } from "@/lib/self-workshop/diagnosis";
 
 /**
@@ -66,13 +68,16 @@ export async function POST(req: Request) {
     diagnosis_scores: scores,
   };
 
-  if (!answersUnchanged) {
-    // 답이 바뀌었을 때만 진행도를 2로 되돌려 이후 단계를 재검토하도록.
-    // (DB의 mechanism_analysis 등 원본 데이터는 보존되므로 Step 3~로 진행하면 다시 볼 수 있음)
-    updatePayload.current_step = 2;
-  }
+  // 답이 바뀌었을 때는 step 2로 다운그레이드해 이후 단계를 재검토하도록.
+  // 답이 그대로면 기존 진행도 유지하되, 최소한 step 2(진단 리포트)는 보장.
+  // (이렇게 하지 않으면 current_step이 1로 남은 사용자가 step 2에서 redirect됨)
+  const baseStep = !answersUnchanged ? 2 : (progress.current_step ?? 1);
+  updatePayload.current_step = Math.max(2, baseStep);
 
-  const { error } = await supabase
+  // admin client로 update — RLS와 무관하게 current_step까지 확실히 갱신.
+  // (본인 확인은 위에서 progress.user_id === user.id로 이미 끝냄)
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("workshop_progress")
     .update(updatePayload)
     .eq("id", workshopId);
@@ -83,6 +88,10 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+
+  // 서버 캐시 무효화 — diagnosis_scores 갱신을 step/2 페이지가 반드시 새로 읽도록
+  revalidatePath("/dashboard/self-workshop/step/2");
+  revalidatePath("/dashboard/self-workshop");
 
   return NextResponse.json({
     scores,

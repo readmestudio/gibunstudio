@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WorkshopStepList } from "@/components/self-workshop/WorkshopStepList";
+import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
 
 export default async function SelfWorkshopDashboardPage() {
   const supabase = await createClient();
@@ -24,6 +25,8 @@ export default async function SelfWorkshopDashboardPage() {
     .select("*")
     .eq("user_id", user.id)
     .eq("workshop_type", "achievement-addiction")
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   // 테스트 유저: workshop_progress 레코드가 없으면 admin 클라이언트로 자동 생성
@@ -49,7 +52,7 @@ export default async function SelfWorkshopDashboardPage() {
   const completedSteps: number[] = [];
   if (progress) {
     if (progress.status === "completed") {
-      for (let i = 1; i <= 8; i++) completedSteps.push(i);
+      for (let i = 1; i <= WORKSHOP_STEPS.length; i++) completedSteps.push(i);
     } else {
       for (let i = 1; i < currentStep; i++) completedSteps.push(i);
     }
