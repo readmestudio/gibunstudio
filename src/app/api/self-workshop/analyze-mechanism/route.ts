@@ -196,7 +196,6 @@ ${errorCatalog}
 - 그때 떠오른 장면·이미지: ${thoughtImage ? `"${thoughtImage}"` : "비움"}
 - 남들에게 내가 어떤 사람으로 보여질까: ${socialPerception ? `"${socialPerception}"` : "비움"}
 - 최근에 자주 한 생각(체크리스트): ${checkedText}
-- 이 생각이 주로 드는 맥락: ${mechanism_analysis.trigger_context ?? "미작성"}
 - 감정 전체(핵심 + 동반): ${eb.emotions?.join(", ") ?? "없음"}
 - 신체 반응: ${eb.body_text ?? "미작성"}
 - 그 생각으로 인한 실제 행동(5-Part Model의 behavior 축): ${resultingBehavior ? `"${resultingBehavior}"` : "미작성"}

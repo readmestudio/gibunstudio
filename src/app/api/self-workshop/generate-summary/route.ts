@@ -249,7 +249,12 @@ ${userName}님
 - 최근 상황: ${mechanism_analysis.recent_situation ?? "(미작성)"}
 - 자동사고: "${mechanism_analysis.automatic_thought ?? ""}"
 - 결과(최악 시나리오): "${mechanism_analysis.worst_case_result ?? ""}"
-- 감정: ${mechanism_analysis.primary_emotion ?? ""} (${mechanism_analysis.emotion_intensity ?? 0}/10)
+- 감정: ${mechanism_analysis.primary_emotion ?? ""}${
+    typeof mechanism_analysis.emotion_intensity === "number" &&
+    mechanism_analysis.emotion_intensity > 0
+      ? ` (${mechanism_analysis.emotion_intensity}/10)`
+      : ""
+  }
 - 신체 반응: ${mechanism_analysis.emotions_body?.body_text ?? "(없음)"}
 - 실제 행동(behavior 축): "${mechanism_analysis.resulting_behavior ?? ""}"
 

@@ -179,10 +179,6 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     autoSave(next);
   }
 
-  function setEmotionIntensity(n: number) {
-    update("emotion_intensity", Math.max(0, Math.min(10, n)));
-  }
-
   function updateCandidateThought(index: number, value: string) {
     const next = data.candidate_thoughts.map((t, i) =>
       i === index ? value : t
@@ -218,12 +214,8 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     autoSave(merged);
   }
 
-  function pickCoreThought(thought: string) {
-    update("automatic_thought", thought);
-  }
-
   function toggleSecondaryEmotion(emotion: string) {
-    // 2a에서 고른 primary는 여기서 토글 불가(잠금)
+    // primary로 고른 감정은 여기서 토글 불가(잠금)
     if (emotion === data.primary_emotion) return;
     const current = data.emotions_body.emotions.filter(
       (e) => e !== data.primary_emotion
@@ -248,45 +240,33 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
     update("core_beliefs", { ...data.core_beliefs, [key]: value });
   }
 
-  const hasContext =
-    data.common_thoughts_checked.length > 0 ||
-    data.trigger_context.trim().length > 0;
-
   const nonEmptyCandidates = data.candidate_thoughts.filter(
     (t) => t.trim().length > 0
   );
-  const effectiveCoreThought =
-    data.automatic_thought.trim().length > 0
-      ? data.automatic_thought.trim()
-      : nonEmptyCandidates.length === 1
-        ? nonEmptyCandidates[0]!.trim()
-        : "";
+  // 가장 먼저 떠오른 생각(첫 후보)을 자동으로 핵심 자동사고로 사용
+  const effectiveCoreThought = nonEmptyCandidates[0]?.trim() ?? "";
 
   const isComplete =
     data.recent_situation.trim().length > 0 &&
     data.primary_emotion.length > 0 &&
-    data.emotion_intensity >= 1 &&
     nonEmptyCandidates.length >= 1 &&
     effectiveCoreThought.length > 0 &&
-    hasContext &&
     data.core_beliefs.about_self.trim().length > 0 &&
     data.worst_case_result.trim().length > 0 &&
     data.resulting_behavior.trim().length > 0;
 
   const missingItems: string[] = [];
-  if (data.recent_situation.trim().length === 0) missingItems.push("불편했던 상황");
-  if (data.primary_emotion.length === 0 || data.emotion_intensity < 1)
-    missingItems.push("감정과 강도");
-  if (nonEmptyCandidates.length === 0) missingItems.push("떠오른 생각");
-  else if (effectiveCoreThought.length === 0)
-    missingItems.push("핵심 생각 선택");
-  if (!hasContext) missingItems.push("비슷한 생각 체크 또는 주로 드는 맥락");
-  if (data.core_beliefs.about_self.trim().length === 0)
-    missingItems.push("나에 대한 신념");
-  if (data.worst_case_result.trim().length === 0)
-    missingItems.push("생각으로 인한 결과");
+  if (data.recent_situation.trim().length === 0) missingItems.push("① 상황");
+  if (data.primary_emotion.length === 0) missingItems.push("② 감정");
+  if (
+    nonEmptyCandidates.length === 0 ||
+    effectiveCoreThought.length === 0 ||
+    data.core_beliefs.about_self.trim().length === 0 ||
+    data.worst_case_result.trim().length === 0
+  )
+    missingItems.push("③ 생각");
   if (data.resulting_behavior.trim().length === 0)
-    missingItems.push("그 생각이 만든 행동");
+    missingItems.push("⑤ 행동");
 
   async function handleNext() {
     if (!isComplete) return;
@@ -325,7 +305,7 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-10 pb-20">
+    <div className="mx-auto max-w-lg pb-20">
       {/* 이전 페이지로 돌아가기 */}
       <Link
         href="/dashboard/self-workshop/step/3"
@@ -335,174 +315,340 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
       </Link>
 
       {/* 안내 */}
-      <div className="space-y-2">
+      <div className="mt-10 mb-8 space-y-2">
         <h3 className="text-base font-semibold text-[var(--foreground)]">
           이제, 당신의 성취 중독 패턴을 함께 찾아볼 차례예요
         </h3>
         <p className="text-sm leading-relaxed text-[var(--foreground)]/65">
-          정답은 없어요. 아래 질문에 떠오르는 대로 솔직하게 적어주세요. 한
-          번에 모두 적지 않아도 괜찮아요 — 적은 만큼 자동 저장되고, 언제든
-          이어서 쓸 수 있습니다.
+          최근 마음이 불편했던 한 순간을 떠올리고, 그 순간을{" "}
+          <strong className="text-[var(--foreground)]/80">
+            상황 · 감정 · 생각 · 신체 · 행동
+          </strong>{" "}
+          다섯 축으로 풀어볼게요. 정답은 없으니, 떠오르는 대로 솔직하게 적어주세요. 한
+          번에 모두 적지 않아도 괜찮아요 — 적은 만큼 자동 저장됩니다.
         </p>
       </div>
 
-      {/* 섹션: 최근 상황 */}
-      <Section
-        label="최근 '성취 때문에' 마음이 불편했던 순간"
-        guide="지난 일주일 안에, 일·성과·경쟁 때문에 마음이 무거워진 장면을 하나 떠올려 주세요."
-      >
-        <textarea
-          value={data.recent_situation}
-          onChange={(e) => update("recent_situation", e.target.value)}
-          placeholder="예: 금요일 회의에서 팀장이 내 제안을 가볍게 넘기고 다음 주제로 넘어갔을 때"
-          rows={4}
-          className={textareaClass}
-        />
-      </Section>
-
-      {/* 섹션: 상황에 대한 생각 — 감정·강도 / 후보 / 핵심 선정 */}
-      <div className="space-y-6">
-        {/* 가장 강했던 감정 + 강도 */}
-        <SubSection
-          label="그 순간 가장 강하게 올라온 감정 하나"
-          guide="가장 크게 훅 올라온 감정 하나를 고르고, 0~10 중 몇 점쯤이었는지 체크해 주세요. (5점 = 보통 불편, 10점 = 견디기 힘듦)"
+      {/* 5-Part Model — 다섯 축을 얇은 가로선으로 분리 */}
+      <div className="divide-y divide-[var(--foreground)]/15">
+        {/* ── ① 상황 ───────────────────────────────────── */}
+        <AxisCard
+          index="①"
+          title="상황"
+          subtitle="Situation · 무슨 일이 있었나요"
         >
-          <div className="mb-3 flex flex-wrap gap-2">
-            {EMOTION_CHIPS.map((emotion) => {
-              const selected = data.primary_emotion === emotion;
-              return (
-                <button
-                  key={emotion}
-                  type="button"
-                  onClick={() => setPrimaryEmotion(emotion)}
-                  className={`rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
-                    selected
-                      ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
-                      : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
-                  }`}
-                >
-                  {emotion}
-                </button>
-              );
-            })}
-          </div>
+          <SubField
+            label="최근 '성취 때문에' 마음이 불편했던 순간"
+            guide="지난 일주일 안에, 일·성과·경쟁 때문에 마음이 무거워진 장면을 하나 떠올려 주세요."
+          >
+            <textarea
+              value={data.recent_situation}
+              onChange={(e) => update("recent_situation", e.target.value)}
+              placeholder="예: 금요일 회의에서 팀장이 내 제안을 가볍게 넘기고 다음 주제로 넘어갔을 때"
+              rows={4}
+              className={textareaClass}
+            />
+          </SubField>
+        </AxisCard>
 
-          <IntensitySlider
-            value={data.emotion_intensity}
-            onChange={setEmotionIntensity}
-            disabled={data.primary_emotion.length === 0}
-          />
-        </SubSection>
-
-        {/* 머릿속에 스쳐 지나간 생각들 (후보) */}
-        <SubSection label="그 순간 머릿속에 스쳐 지나간 생각들">
-          <p className="mb-4 text-sm leading-relaxed text-[var(--foreground)]/60">
-            머릿속을 스친 생각들은 <strong className="text-[var(--foreground)]/80">화재경보기</strong> 같아요.
-            실제 화재를 판단한 게 아니라 ‘일단 위험’이라고 빠르게 울린 신호죠.
-            합리적이지 않아도 괜찮아요 — 그냥 떠오른 대로 모두 적어봅니다.
-          </p>
-
-          <div className="space-y-2">
-            {(data.candidate_thoughts.length === 0
-              ? [""]
-              : data.candidate_thoughts
-            ).map((thought, idx) => (
-              <div key={idx} className="flex items-start gap-2">
-                <span className="mt-3 shrink-0 text-sm text-[var(--foreground)]/40">
-                  {idx + 1}.
-                </span>
-                <textarea
-                  value={thought}
-                  onChange={(e) => {
-                    if (data.candidate_thoughts.length === 0) {
-                      // 초기 렌더 때 빈 줄 1개를 시드
-                      const merged = {
-                        ...data,
-                        candidate_thoughts: [e.target.value],
-                      };
-                      setData(merged);
-                      autoSave(merged);
-                    } else {
-                      updateCandidateThought(idx, e.target.value);
-                    }
-                  }}
-                  placeholder={
-                    idx === 0
-                      ? "예: ‘내 아이디어가 별로인가 봐.’"
-                      : "예: ‘나 진짜 별 볼일 없네.’"
-                  }
-                  rows={2}
-                  className={textareaClass}
-                />
-                {data.candidate_thoughts.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeCandidateThought(idx)}
-                    className="mt-1 shrink-0 rounded-lg border-2 border-[var(--foreground)]/20 px-2 py-1 text-xs text-[var(--foreground)]/50 hover:border-[var(--foreground)] hover:text-[var(--foreground)]"
-                    aria-label={`${idx + 1}번 생각 삭제`}
-                  >
-                    삭제
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {data.candidate_thoughts.length < MAX_CANDIDATE_THOUGHTS && (
-            <button
-              type="button"
-              onClick={addCandidateThought}
-              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
+        {/* ── ② 감정 ───────────────────────────────────── */}
+        <AxisCard
+          index="②"
+          title="감정"
+          subtitle="Emotions · 마음의 첫 반응"
+        >
+          <div className="space-y-6">
+            <SubField
+              label="그 순간 가장 강하게 올라온 감정 하나"
+              guide="가장 크게 훅 올라온 감정 하나를 골라 주세요."
             >
-              + 생각 추가하기
-            </button>
-          )}
-          {data.candidate_thoughts.length >= MAX_CANDIDATE_THOUGHTS && (
-            <p className="mt-2 text-xs text-[var(--foreground)]/40">
-              최대 {MAX_CANDIDATE_THOUGHTS}개까지 적을 수 있어요.
-            </p>
-          )}
-        </SubSection>
+              <div className="flex flex-wrap gap-2">
+                {EMOTION_CHIPS.map((emotion) => {
+                  const selected = data.primary_emotion === emotion;
+                  return (
+                    <button
+                      key={emotion}
+                      type="button"
+                      onClick={() => setPrimaryEmotion(emotion)}
+                      className={`rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
+                        selected
+                          ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
+                          : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
+                      }`}
+                    >
+                      {emotion}
+                    </button>
+                  );
+                })}
+              </div>
+            </SubField>
 
-        {/* 감정과 가장 직접 연결된 생각 고르기 */}
-        {nonEmptyCandidates.length >= 2 && (
-          <SubSection
-            label="그 감정을 가장 직접 불러온 생각 하나 고르기"
-            guide={
-              data.primary_emotion && data.emotion_intensity > 0
-                ? `“이 생각을 떠올리면 다시 ${data.primary_emotion}(${data.emotion_intensity}점)이 올라오나요?” 한 개만 골라주세요.`
-                : "감정과 가장 직접 연결된 생각을 하나만 골라주세요."
-            }
+            <SubField
+              label="함께 떠오른 다른 감정"
+              guide="위에서 고른 감정 외에 동반된 감정이 있으면 골라주세요."
+              optional
+            >
+              <div className="flex flex-wrap gap-2">
+                {EMOTION_CHIPS.map((emotion) => {
+                  const isPrimary = data.primary_emotion === emotion;
+                  const selected =
+                    isPrimary ||
+                    data.emotions_body.emotions.includes(emotion);
+                  return (
+                    <button
+                      key={emotion}
+                      type="button"
+                      onClick={() => toggleSecondaryEmotion(emotion)}
+                      disabled={isPrimary}
+                      title={isPrimary ? "위에서 고른 감정이에요" : undefined}
+                      className={`rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
+                        isPrimary
+                          ? "cursor-not-allowed border-[var(--foreground)]/60 bg-[var(--foreground)]/10 text-[var(--foreground)]/70"
+                          : selected
+                            ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
+                            : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
+                      }`}
+                    >
+                      {emotion}
+                      {isPrimary && <span className="ml-1 text-xs">· 핵심</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </SubField>
+          </div>
+        </AxisCard>
+
+        {/* ── ③ 생각 ───────────────────────────────────── */}
+        <AxisCard
+          index="③"
+          title="생각"
+          subtitle="Thoughts · 머릿속에 스친 말"
+        >
+          <div className="space-y-6">
+            {/* a) 그때 떠오른 생각들 */}
+            <SubField label="그 순간 머릿속에 어떤 생각이 가장 먼저 스쳐 지나갔나요?">
+              <p className="mb-4 text-sm leading-relaxed text-[var(--foreground)]/60">
+                머릿속을 스친 생각들은{" "}
+                <strong className="text-[var(--foreground)]/80">화재경보기</strong>{" "}
+                같아요. 실제 화재를 판단한 게 아니라 ‘일단 위험’이라고 빠르게 울린
+                신호죠. 합리적이지 않아도 괜찮아요 — 그냥 떠오른 대로 모두 적어봅니다.
+              </p>
+
+              <div className="space-y-2">
+                {(data.candidate_thoughts.length === 0
+                  ? [""]
+                  : data.candidate_thoughts
+                ).map((thought, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="mt-3 shrink-0 text-sm text-[var(--foreground)]/40">
+                      {idx + 1}.
+                    </span>
+                    <textarea
+                      value={thought}
+                      onChange={(e) => {
+                        if (data.candidate_thoughts.length === 0) {
+                          // 초기 렌더 때 빈 줄 1개를 시드
+                          const merged = {
+                            ...data,
+                            candidate_thoughts: [e.target.value],
+                          };
+                          setData(merged);
+                          autoSave(merged);
+                        } else {
+                          updateCandidateThought(idx, e.target.value);
+                        }
+                      }}
+                      placeholder={
+                        idx === 0
+                          ? "예: ‘내 아이디어가 별로인가 봐.’"
+                          : "예: ‘나 진짜 별 볼일 없네.’"
+                      }
+                      rows={2}
+                      className={textareaClass}
+                    />
+                    {data.candidate_thoughts.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeCandidateThought(idx)}
+                        className="mt-1 shrink-0 rounded-lg border-2 border-[var(--foreground)]/20 px-2 py-1 text-xs text-[var(--foreground)]/50 hover:border-[var(--foreground)] hover:text-[var(--foreground)]"
+                        aria-label={`${idx + 1}번 생각 삭제`}
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {data.candidate_thoughts.length < MAX_CANDIDATE_THOUGHTS && (
+                <button
+                  type="button"
+                  onClick={addCandidateThought}
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
+                >
+                  + 생각 추가하기
+                </button>
+              )}
+              {data.candidate_thoughts.length >= MAX_CANDIDATE_THOUGHTS && (
+                <p className="mt-2 text-xs text-[var(--foreground)]/40">
+                  최대 {MAX_CANDIDATE_THOUGHTS}개까지 적을 수 있어요.
+                </p>
+              )}
+            </SubField>
+
+            {/* b) 그 생각이 나에 대해 말하는 것 */}
+            <SubField
+              label="그 생각은 나에 대해 뭐라고 말하고 있나요?"
+              guide="예: ‘나는 부족해.’ ‘나는 뒤처지고 있어.’ ‘나는 아직 인정받을 만하지 않아.’"
+            >
+              <textarea
+                value={data.core_beliefs.about_self}
+                onChange={(e) => updateCoreBelief("about_self", e.target.value)}
+                placeholder="‘나는 …한 사람이다’로 시작해도 좋아요."
+                rows={3}
+                className={textareaClass}
+              />
+            </SubField>
+
+            {/* f) 떠오른 이미지 */}
+            <SubField
+              label="그때 떠오른 장면이나 이미지는?"
+              guide="머릿속에 구체적인 그림으로 그려진 장면이 있다면 적어주세요."
+              optional
+            >
+              <textarea
+                value={data.thought_image}
+                onChange={(e) => update("thought_image", e.target.value)}
+                placeholder="예: ‘회의실에서 사람들이 나에 대해 수군거리는 모습.’"
+                rows={3}
+                className={textareaClass}
+              />
+            </SubField>
+
+            {/* g) 사회적 시선 */}
+            <SubField
+              label="남들에게 내가 어떤 사람으로 보여질까요?"
+              guide="그 상황에서 다른 사람들 눈에 비친 ‘나’는 어떤 모습일지."
+              optional
+            >
+              <textarea
+                value={data.social_perception}
+                onChange={(e) => update("social_perception", e.target.value)}
+                placeholder="예: ‘업무도 제대로 못하는 형편없는 사람.’"
+                rows={3}
+                className={textareaClass}
+              />
+            </SubField>
+
+            {/* h) 최악의 결과 */}
+            <SubField
+              label="최악의 경우, 어떤 일이 일어날 것 같다는 생각이 들었나요?"
+              guide="그 생각이 사실이라면 앞으로 어떤 결과가 벌어질지 떠오르는 대로 적어주세요."
+            >
+              <textarea
+                value={data.worst_case_result}
+                onChange={(e) => update("worst_case_result", e.target.value)}
+                placeholder="예: ‘사람들이 나를 별로라고 생각할 것이고, 회사 내 평가도 엉망이 될 것이다.’"
+                rows={3}
+                className={textareaClass}
+              />
+            </SubField>
+          </div>
+        </AxisCard>
+
+        {/* ── ④ 신체 ───────────────────────────────────── */}
+        <AxisCard
+          index="④"
+          title="신체"
+          subtitle="Body · 몸이 보낸 신호"
+        >
+          <SubField
+            label="그때 몸의 반응은 어땠나요?"
+            guide="몸의 어디에서, 어떤 감각이 있었는지 적어주세요."
+          >
+            <textarea
+              value={data.emotions_body.body_text}
+              onChange={(e) => updateBodyText(e.target.value)}
+              placeholder="예: ‘가슴이 답답했다’, ‘잠을 못 잤다’, ‘어깨에 힘이 들어갔다’"
+              rows={3}
+              className={textareaClass}
+            />
+          </SubField>
+        </AxisCard>
+
+        {/* ── ⑤ 행동 ───────────────────────────────────── */}
+        <AxisCard
+          index="⑤"
+          title="행동"
+          subtitle="Behaviors · 그래서 어떻게 했나"
+        >
+          <SubField
+            label="그 상황을 해결하기 위해 어떤 행동을 하게 되었나요?"
+            guide="쉼, 회피, 과몰두, 새 목표 설정 — 무엇이든 좋아요. 그 순간을 마주하기 위해 실제로 한 행동을 돌아보며 적어주세요."
+          >
+            <textarea
+              value={data.resulting_behavior}
+              onChange={(e) => update("resulting_behavior", e.target.value)}
+              placeholder="예: ‘그래서 주말에도 쉬지 않고 새로운 프로젝트를 시작했다.’"
+              rows={3}
+              className={textareaClass}
+            />
+          </SubField>
+        </AxisCard>
+
+        {/* ── ⑥ 추가 질문 ──────────────────────────────── */}
+        <AxisCard
+          index="⑥"
+          title="추가 질문"
+          subtitle="평소에 비슷한 생각을 한 적이 있나요 · 선택"
+        >
+          <SubField
+            label="최근에 아래 같은 생각을 한 적 있나요?"
+            guide="앞에서 떠올린 생각과 비슷하게 느껴지는 것들을 모두 골라주세요. 해당 없으면 비워둬도 괜찮아요."
+            optional
           >
             <div className="space-y-2">
-              {nonEmptyCandidates.map((thought) => {
-                const selected = data.automatic_thought === thought;
+              {COMMON_ACHIEVEMENT_THOUGHTS.map((thought) => {
+                const checked = data.common_thoughts_checked.includes(thought);
                 return (
                   <button
                     key={thought}
                     type="button"
-                    onClick={() => pickCoreThought(thought)}
+                    onClick={() => toggleChecklist(thought)}
                     className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
-                      selected
+                      checked
                         ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
                         : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
                     }`}
                   >
                     <span
                       aria-hidden
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                        selected
-                          ? "border-[var(--foreground)] bg-[var(--foreground)]"
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${
+                        checked
+                          ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
                           : "border-[var(--foreground)]/30 bg-white"
                       }`}
                     >
-                      {selected && (
-                        <span className="block h-2 w-2 rounded-full bg-white" />
+                      {checked && (
+                        <svg
+                          className="h-3 w-3"
+                          viewBox="0 0 12 12"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            d="M2 6l3 3 5-6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
                       )}
                     </span>
                     <span
                       className={
-                        selected
+                        checked
                           ? "font-medium text-[var(--foreground)]"
                           : "text-[var(--foreground)]/75"
                       }
@@ -513,217 +659,19 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
                 );
               })}
             </div>
-          </SubSection>
-        )}
-      </div>
-
-      {/* 섹션: 체크리스트 */}
-      <Section
-        label="최근에 아래 같은 생각을 한 적 있나요?"
-        guide="앞에서 떠올린 생각과 비슷하게 느껴지는 것들을 모두 골라주세요."
-      >
-        <div className="space-y-2">
-          {COMMON_ACHIEVEMENT_THOUGHTS.map((thought) => {
-            const checked = data.common_thoughts_checked.includes(thought);
-            return (
-              <button
-                key={thought}
-                type="button"
-                onClick={() => toggleChecklist(thought)}
-                className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
-                  checked
-                    ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
-                    : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
-                }`}
-              >
-                <span
-                  aria-hidden
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${
-                    checked
-                      ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
-                      : "border-[var(--foreground)]/30 bg-white"
-                  }`}
-                >
-                  {checked && (
-                    <svg
-                      className="h-3 w-3"
-                      viewBox="0 0 12 12"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M2 6l3 3 5-6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </span>
-                <span
-                  className={
-                    checked
-                      ? "font-medium text-[var(--foreground)]"
-                      : "text-[var(--foreground)]/75"
-                  }
-                >
-                  {thought}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </Section>
-
-      {/* 섹션: 맥락 */}
-      <Section
-        label="이런 생각은 주로 어떤 상황에서 드나요?"
-        guide="자주 떠오르는 장면이 있다면 적어주세요. (예: 월말 평가 직전, 친구 SNS 보고, 퇴근 후 혼자 있을 때)"
-      >
-        <textarea
-          value={data.trigger_context}
-          onChange={(e) => update("trigger_context", e.target.value)}
-          placeholder="예: 주말 저녁에 혼자 있을 때, 동기가 좋은 소식을 올릴 때"
-          rows={3}
-          className={textareaClass}
-        />
-      </Section>
-
-      {/* 섹션: 몸 반응 중심 (+ 동반 감정 선택) */}
-      <Section
-        label="그때 몸의 반응은 어땠나요?"
-        guide="몸에서 어떤 반응이 있었는지 적어주세요. 위에서 고른 감정 외에 동반된 감정이 있으면 아래에서 더 골라도 좋아요."
-      >
-        <textarea
-          value={data.emotions_body.body_text}
-          onChange={(e) => updateBodyText(e.target.value)}
-          placeholder="예: ‘가슴이 답답했다’, ‘잠을 못 잤다’, ‘어깨에 힘이 들어갔다’"
-          rows={3}
-          className={textareaClass}
-        />
-
-        <div className="mt-4">
-          <p className="mb-2 text-xs font-medium text-[var(--foreground)]/55">
-            동반 감정 (선택)
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {EMOTION_CHIPS.map((emotion) => {
-              const isPrimary = data.primary_emotion === emotion;
-              const selected =
-                isPrimary ||
-                data.emotions_body.emotions.includes(emotion);
-              return (
-                <button
-                  key={emotion}
-                  type="button"
-                  onClick={() => toggleSecondaryEmotion(emotion)}
-                  disabled={isPrimary}
-                  title={isPrimary ? "위에서 고른 감정이에요" : undefined}
-                  className={`rounded-full border-2 px-3 py-1 text-sm font-medium transition-colors ${
-                    isPrimary
-                      ? "cursor-not-allowed border-[var(--foreground)]/60 bg-[var(--foreground)]/10 text-[var(--foreground)]/70"
-                      : selected
-                        ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
-                        : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
-                  }`}
-                >
-                  {emotion}
-                  {isPrimary && <span className="ml-1 text-xs">· 핵심</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </Section>
-
-      {/* 섹션: 생각이 만드는 파장 (나에 대한 믿음 + 결과 + 이미지 + 사회적 시선 + 행동) */}
-      <div className="space-y-4">
-        <div>
-          <h4 className="text-base font-semibold text-[var(--foreground)]">
-            그 생각은 당신에게 어떤 이야기를 들려주고 있나요?
-          </h4>
-        </div>
-
-        <p className="text-sm leading-relaxed text-[var(--foreground)]/60">
-          앞에서 고른 핵심 생각이 당신에게 어떤 이야기를 들려주고 있는지
-          천천히 풀어보세요. 이 답들을 통해{" "}
-          <strong className="text-[var(--foreground)]/80">그 생각이 당신을
-          어떻게 움직이는지</strong> 선명해질 거예요.
-        </p>
-
-        <SubSection
-          label="그 생각은 나에 대해 뭐라고 말하고 있나요?"
-          guide="예: ‘나는 부족해.’ ‘나는 뒤처지고 있어.’ ‘나는 아직 인정받을 만하지 않아.’"
-        >
-          <textarea
-            value={data.core_beliefs.about_self}
-            onChange={(e) => updateCoreBelief("about_self", e.target.value)}
-            placeholder="‘나는 …한 사람이다’로 시작해도 좋아요."
-            rows={3}
-            className={textareaClass}
-          />
-        </SubSection>
-
-        <SubSection
-          label="최악의 경우, 어떤 일이 일어날 것 같다는 생각이 들었나요?"
-          guide="그 생각이 사실이라면 앞으로 어떤 결과가 벌어질지 떠오르는 대로 적어주세요. (생각으로 인한 결과)"
-        >
-          <textarea
-            value={data.worst_case_result}
-            onChange={(e) =>
-              update("worst_case_result", e.target.value)
-            }
-            placeholder="예: ‘사람들이 나를 별로라고 생각할 것이고, 회사 내 평가도 엉망이 될 것이다.’"
-            rows={3}
-            className={textareaClass}
-          />
-        </SubSection>
-
-        <SubSection
-          label="그때 떠오른 장면이나 이미지는?"
-          guide="머릿속에 구체적인 그림으로 그려진 장면이 있다면 적어주세요. 떠오르지 않으면 비워도 괜찮아요."
-        >
-          <textarea
-            value={data.thought_image}
-            onChange={(e) => update("thought_image", e.target.value)}
-            placeholder="예: ‘회의실에서 사람들이 나에 대해 수군거리는 모습.’"
-            rows={3}
-            className={textareaClass}
-          />
-        </SubSection>
-
-        <SubSection
-          label="남들에게 내가 어떤 사람으로 보여질까요?"
-          guide="그 상황에서 다른 사람들 눈에 비친 ‘나’는 어떤 모습일지. 떠오르지 않으면 비워도 괜찮아요."
-        >
-          <textarea
-            value={data.social_perception}
-            onChange={(e) => update("social_perception", e.target.value)}
-            placeholder="예: ‘업무도 제대로 못하는 형편없는 사람.’"
-            rows={3}
-            className={textareaClass}
-          />
-        </SubSection>
-
-        <SubSection
-          label="그 생각 때문에 실제로 어떤 행동을 하게 되었나요?"
-          guide="그 생각이 당신을 어떤 행동으로 이끌었는지 돌아보며 적어주세요. 쉼, 회피, 과몰두, 새 목표 설정 — 무엇이든 좋아요."
-        >
-          <textarea
-            value={data.resulting_behavior}
-            onChange={(e) => update("resulting_behavior", e.target.value)}
-            placeholder="예: ‘그래서 주말에도 쉬지 않고 새로운 프로젝트를 시작했다.’"
-            rows={3}
-            className={textareaClass}
-          />
-        </SubSection>
+          </SubField>
+        </AxisCard>
       </div>
 
       {/* 자동 저장 안내 */}
-      <p className="text-center text-xs text-[var(--foreground)]/40">
+      <p className="mt-10 text-center text-xs text-[var(--foreground)]/40">
         작성 내용은 자동으로 저장됩니다
       </p>
 
-      {error && <p className="text-center text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
 
       {/* 제출 */}
-      <div className="text-center">
+      <div className="mt-6 text-center">
         <button
           onClick={handleNext}
           disabled={!isComplete || submitting}
@@ -746,91 +694,63 @@ export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
 const textareaClass =
   "w-full resize-none rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors";
 
-function Section({
-  label,
-  guide,
+function AxisCard({
+  index,
+  title,
+  subtitle,
   children,
 }: {
-  label: string;
-  guide: string;
+  index: string;
+  title: string;
+  subtitle: string;
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="mb-1 block text-base font-semibold text-[var(--foreground)]">
-        {label}
-      </label>
-      <p className="mb-3 text-sm text-[var(--foreground)]/60">{guide}</p>
+    <section className="py-10 first:pt-0 last:pb-0">
+      <header className="mb-6 flex items-baseline gap-3">
+        <span className="text-3xl font-bold leading-none text-[var(--foreground)]">
+          {index}
+        </span>
+        <div>
+          <h3 className="text-lg font-bold leading-tight text-[var(--foreground)]">
+            {title}
+          </h3>
+          <p className="mt-0.5 text-xs text-[var(--foreground)]/50">{subtitle}</p>
+        </div>
+      </header>
       {children}
-    </div>
+    </section>
   );
 }
 
-function SubSection({
+function SubField({
   label,
   guide,
+  optional,
   children,
 }: {
   label: string;
   guide?: string;
+  optional?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-semibold text-[var(--foreground)]">
-        {label}
+      <label className="mb-1 flex items-baseline gap-2">
+        <span className="text-sm font-semibold text-[var(--foreground)]">
+          {label}
+        </span>
+        {optional && (
+          <span className="text-[10px] font-medium text-[var(--foreground)]/40">
+            선택
+          </span>
+        )}
       </label>
       {guide && (
-        <p className="mb-2 text-xs text-[var(--foreground)]/55">{guide}</p>
+        <p className="mb-3 text-xs text-[var(--foreground)]/55">{guide}</p>
       )}
       {children}
     </div>
   );
 }
 
-function IntensitySlider({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  disabled?: boolean;
-}) {
-  const steps = Array.from({ length: 11 }, (_, i) => i);
-  return (
-    <div className={disabled ? "opacity-40" : undefined}>
-      <div className="flex items-center justify-between text-[11px] text-[var(--foreground)]/50">
-        <span>전혀 아님 0</span>
-        <span>보통 5</span>
-        <span>10 견디기 힘듦</span>
-      </div>
-      <div
-        role="group"
-        aria-label="감정 강도 0~10"
-        className="mt-2 grid grid-cols-11 gap-1"
-      >
-        {steps.map((n) => {
-          const selected = value === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              disabled={disabled}
-              onClick={() => onChange(n)}
-              aria-pressed={selected}
-              aria-label={`강도 ${n}`}
-              className={`flex h-10 items-center justify-center rounded-lg border-2 text-sm font-semibold transition-colors ${
-                selected
-                  ? "border-[var(--foreground)] bg-[var(--foreground)] text-white"
-                  : "border-[var(--foreground)]/20 text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
-              } ${disabled ? "cursor-not-allowed" : ""}`}
-            >
-              {n}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
