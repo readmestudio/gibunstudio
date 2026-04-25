@@ -37,11 +37,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ report: progress.mechanism_insights });
   }
 
-  const { diagnosis_scores, mechanism_analysis } = progress;
+  const { diagnosis_scores, mechanism_analysis, core_belief_excavation } =
+    progress;
 
   if (!diagnosis_scores || !mechanism_analysis) {
     return NextResponse.json(
       { error: "진단 결과와 실습 자료가 필요합니다" },
+      { status: 400 }
+    );
+  }
+
+  // 새 흐름: 통합 분석(FIND_OUT 3)은 핵심 신념 발굴(FIND_OUT 2)이 선행되어야 함.
+  // synthesis.belief_line이 6-Part 도미노의 마지막 노드(core_belief) 입력으로 사용됨.
+  type Synthesis = {
+    belief_line?: string;
+    how_it_works?: string;
+    reframe_invitation?: string;
+  };
+  const synthesis: Synthesis | null =
+    (core_belief_excavation as { synthesis?: Synthesis } | null)?.synthesis ??
+    null;
+  const beliefLine = synthesis?.belief_line?.trim() ?? "";
+  const howItWorks = synthesis?.how_it_works?.trim() ?? "";
+
+  if (!beliefLine) {
+    return NextResponse.json(
+      { error: "핵심 신념 찾기(FIND_OUT 2단계)가 먼저 필요합니다" },
       { status: 400 }
     );
   }
@@ -56,7 +77,7 @@ export async function POST(req: Request) {
 - **전문 용어 금지**: "과잉 추동", "정서적 회피", "자기 가치의 조건화", "촉발" 같은 임상 용어를 그대로 쓰지 마세요. 대신 일상 언어로 풀어쓰세요 (예: "쉬지 못하고 달리는 습관", "불편한 감정을 일로 덮는 패턴", "머릿속에 훅 스치는 말").
 - 단, **인지 오류 이름(items[].name)은 강의 용어 그대로** 사용합니다 (예: "명명하기", "재앙화", "당위 진술").
 
-**구조 규칙**: pattern_cycle은 Step 3에서 유저가 학습한 5단계 순환(촉발 상황 → 자동적 사고 → 감정 → 신체 반응 → 행동)에 정확히 일치해야 합니다.
+**구조 규칙**: pattern_cycle은 **6단계 도미노**(촉발 상황 → 자동적 사고 → 감정 → 신체 반응 → 행동 → 핵심 신념)에 정확히 일치해야 합니다. 마지막 노드 **core_belief**는 유저가 FIND_OUT 2단계에서 발굴한 한 줄 핵심 믿음(belief_line)을 6글자 이내로 압축한 라벨입니다. core_belief 노드는 "행동이 만든 잠시의 안도가 다시 이 믿음을 강화하고, 그 믿음이 다음 촉발 상황을 같은 의미로 해석하게 만든다"는 **닫힌 고리**를 보여줍니다.
 
 **인지 오류 카탈로그 (items[].id는 반드시 이 목록에서만 선택)**
 ${errorCatalog}
@@ -84,11 +105,12 @@ ${errorCatalog}
     "headline": "유저가 보이는 패턴에 이름을 붙이는 **한 줄 문장**. 화살표·단계 나열 **금지**. '패턴이에요'로 끝나는 35자 이내 문장. 예: '타인의 성공 경험이 과잉 노력의 연료가 되는 패턴이에요' / '휴식이 생기면 곧바로 불안으로 갈아타는 패턴이에요'.",
     "overview": "2~3문장으로 왜 이 패턴이 반복 강화되는지 서술. 유저 원문 표현 1~2개 직접 인용. 전문 용어 금지.",
     "nodes": [
-      { "stage": "trigger",  "label": "핵심 키워드 **6글자 이내**. stage 이름(촉발 상황 등) 포함 금지. 예: '타인의 성공', '빈 주말', '평가 직전'", "description": "1~2문장. 이 상황이 유저에게 어떤 의미로 다가오는지 쓰고, 이것이 어떤 생각을 자동으로 불러오는지 다음 단계로 연결." },
-      { "stage": "thought",  "label": "예: '나만 뒤처져', '더 해야 해'", "description": "1~2문장. 앞 단계(상황)가 왜 이 생각을 만들어내는지 이어서 쓰고, 이 생각이 어떤 감정을 일으키는지 다음 단계로 연결." },
-      { "stage": "emotion",  "label": "예: '불안·자책', '초조'",          "description": "1~2문장. 앞 단계(생각)가 이 감정을 어떻게 키우는지 이어서 쓰고, 이 감정이 몸에서 어떻게 느껴지는지 다음 단계로 연결." },
-      { "stage": "body",     "label": "예: '가슴 답답', '불면'",          "description": "1~2문장. 앞 단계(감정)가 몸에서 어떻게 나타나는지 이어서 쓰고, 이 불편감이 어떤 행동을 하게 만드는지 다음 단계로 연결." },
-      { "stage": "behavior", "label": "예: '주말 과몰두', '새 목표'. 유저가 '실제 행동' 을 적었다면 그 표현을 6글자로 압축해 우선 반영.", "description": "1~2문장. 앞 단계(신체 불편)가 이 행동을 어떻게 유발하는지 이어서 쓰고, 이 행동이 잠깐의 안도 뒤에 다시 1단계(촉발 상황)를 만들어내는 순환 고리까지 포함. 유저가 적은 '실제 행동' 원문을 따옴표로 직접 인용." }
+      { "stage": "trigger",     "label": "핵심 키워드 **6글자 이내**. stage 이름(촉발 상황 등) 포함 금지. 예: '타인의 성공', '빈 주말', '평가 직전'", "description": "1~2문장. 이 상황이 유저에게 어떤 의미로 다가오는지 쓰고, 이것이 어떤 생각을 자동으로 불러오는지 다음 단계로 연결." },
+      { "stage": "thought",     "label": "예: '나만 뒤처져', '더 해야 해'", "description": "1~2문장. 앞 단계(상황)가 왜 이 생각을 만들어내는지 이어서 쓰고, 이 생각이 어떤 감정을 일으키는지 다음 단계로 연결." },
+      { "stage": "emotion",     "label": "예: '불안·자책', '초조'",         "description": "1~2문장. 앞 단계(생각)가 이 감정을 어떻게 키우는지 이어서 쓰고, 이 감정이 몸에서 어떻게 느껴지는지 다음 단계로 연결." },
+      { "stage": "body",        "label": "예: '가슴 답답', '불면'",         "description": "1~2문장. 앞 단계(감정)가 몸에서 어떻게 나타나는지 이어서 쓰고, 이 불편감이 어떤 행동을 하게 만드는지 다음 단계로 연결." },
+      { "stage": "behavior",    "label": "예: '주말 과몰두', '새 목표'. 유저가 '실제 행동'을 적었다면 그 표현을 6글자로 압축해 우선 반영.", "description": "1~2문장. 앞 단계(신체 불편)가 이 행동을 어떻게 유발하는지 이어서 쓰고, 이 행동이 잠깐의 안도 뒤에 어떤 핵심 믿음을 다시 강화하는지 다음 단계(core_belief)로 연결. 유저가 적은 '실제 행동' 원문을 따옴표로 직접 인용." },
+      { "stage": "core_belief", "label": "유저의 핵심 믿음(belief_line)을 **6글자 이내**로 압축. 예: '쉬면 뒤쳐짐', '증명해야 사랑'", "description": "2~3문장. (1) 앞 단계(행동)의 잠시의 안도가 이 믿음을 어떻게 더 굳히는지, (2) 이 믿음이 다음 1단계(촉발 상황)를 어떻게 다시 위협으로 해석하게 만드는지 — 이 **닫힌 고리**를 명확히 서술. belief_line 원문을 따옴표로 직접 인용할 것." }
     ]
   }
 }
@@ -98,11 +120,11 @@ ${errorCatalog}
 - **items[].id 는 반드시 위 카탈로그의 snake_case id** (dichotomous / catastrophizing / labeling / magnification_minimization / emotional_reasoning / mental_filter / mind_reading / overgeneralization / personalization / should_statements) 중에서 선택.
 - **items[].interpretation 은 유저 원문을 따옴표로 인용**해야 합니다. 일반론 금지.
 - 같은 id를 중복 선택 금지.
-- pattern_cycle.nodes 는 **정확히 5개** (stage 순서: trigger → thought → emotion → body → behavior).
+- pattern_cycle.nodes 는 **정확히 6개** (stage 순서: trigger → thought → emotion → body → behavior → core_belief).
 - **nodes[].label 은 반드시 6글자(한글 기준) 이내**. stage 이름을 label 앞에 붙이지 마세요. 콜론(:)도 금지.
 - **headline 은 35자 이내 한 문장**, '패턴이에요'로 끝남. 화살표(→) 금지.
-- 모든 description은 150자 이내로 간결하게.
-- **도미노 서술**: 각 nodes[].description은 **앞 단계에서 이어받고 → 다음 단계로 넘기는** 흐름으로. 5개를 순서대로 읽으면 하나의 이야기처럼 자연스럽게 이어져야 합니다.
+- 모든 description은 150자 이내로 간결하게 (단, core_belief 노드는 닫힌 고리 묘사를 위해 200자까지 허용).
+- **도미노 서술**: 각 nodes[].description은 **앞 단계에서 이어받고 → 다음 단계로 넘기는** 흐름으로. 6개를 순서대로 읽으면 하나의 이야기처럼 자연스럽게 이어지고, 마지막 core_belief가 다시 1단계 trigger로 돌아가는 닫힌 고리가 보여야 합니다.
 - 어조: 따뜻하면서도 예리함. 판단·비난 금지. 유저 표현을 구체적으로 인용.
 - JSON 외에 다른 텍스트(설명, markdown 코드펜스) 절대 포함하지 마세요.`;
 
@@ -178,7 +200,13 @@ ${errorCatalog}
 - 감정 전체(핵심 + 동반): ${eb.emotions?.join(", ") ?? "없음"}
 - 신체 반응: ${eb.body_text ?? "미작성"}
 - 그 생각으로 인한 실제 행동(5-Part Model의 behavior 축): ${resultingBehavior ? `"${resultingBehavior}"` : "미작성"}
-- 핵심 신념 — 나에 대해: ${cb.about_self ?? "미작성"}`;
+- 핵심 신념 — 나에 대해(자기 기술): ${cb.about_self ?? "미작성"}
+
+## FIND_OUT 2단계에서 발굴된 핵심 믿음 (6번째 노드 입력)
+- 한 줄 핵심 믿음(belief_line): "${beliefLine}"
+- 어떻게 작동하는가(how_it_works): ${howItWorks ? `"${howItWorks}"` : "비움"}
+
+위 belief_line을 6글자 이내로 압축해서 nodes[5] (core_belief) 의 label로 사용하세요. description에는 belief_line 원문을 따옴표로 직접 인용하고, 행동→믿음 강화→다음 trigger로 이어지는 닫힌 고리를 보여주세요.`;
 
   try {
     const response = await chatCompletion(
@@ -205,7 +233,7 @@ ${errorCatalog}
     }
 
     const nodeCount = report.pattern_cycle.nodes.length;
-    if (nodeCount !== 5) {
+    if (nodeCount !== 6) {
       console.error("analyze-mechanism: nodes 개수 이상", nodeCount);
       return NextResponse.json(
         { error: "분석 결과 형식이 올바르지 않습니다. 다시 시도해 주세요." },
@@ -218,6 +246,7 @@ ${errorCatalog}
       "emotion",
       "body",
       "behavior",
+      "core_belief",
     ];
     const stageMismatch = report.pattern_cycle.nodes.some(
       (n, i) => n.stage !== expectedStages[i]
@@ -255,7 +284,10 @@ ${errorCatalog}
     // label 6글자 초과 시 자동 축약 (LLM이 프롬프트를 어긴 경우 안전망)
     report.pattern_cycle.nodes = report.pattern_cycle.nodes.map((n) => {
       const stripped = n.label
-        .replace(/^(촉발 상황|자동 사고|자동적 사고|감정|신체 반응|행동)\s*[:：]\s*/u, "")
+        .replace(
+          /^(촉발 상황|자동 사고|자동적 사고|감정|신체 반응|행동|핵심 신념|핵심신념)\s*[:：]\s*/u,
+          ""
+        )
         .trim();
       const trimmed = Array.from(stripped).slice(0, 8).join("");
       return { ...n, label: trimmed };
@@ -264,7 +296,8 @@ ${errorCatalog}
       .from("workshop_progress")
       .update({
         mechanism_insights: report,
-        current_step: Math.max(5, progress.current_step ?? 4),
+        // 새 흐름: 통합 분석(FIND_OUT 3 = step 5) 완료 → DESTROY 1(step 6)
+        current_step: Math.max(6, progress.current_step ?? 5),
       })
       .eq("id", workshopId);
 

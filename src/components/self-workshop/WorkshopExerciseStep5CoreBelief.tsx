@@ -43,6 +43,7 @@ export interface CoreBeliefExcavation {
 interface MechanismAnalysisData {
   automatic_thought?: string;
   common_thoughts_checked?: string[];
+  candidate_thoughts?: string[];
 }
 
 interface Props {
@@ -170,7 +171,7 @@ export function WorkshopExerciseStep5CoreBelief({
   const debounceRef = useRef<NodeJS.Timeout>(undefined);
 
   useEffect(() => {
-    if (hotThoughtConfirmed || !report) return;
+    if (hotThoughtConfirmed) return;
     setCandidatesLoading(true);
     fetch("/api/self-workshop/excavate-belief", {
       method: "POST",
@@ -183,7 +184,7 @@ export function WorkshopExerciseStep5CoreBelief({
       })
       .catch(() => {})
       .finally(() => setCandidatesLoading(false));
-  }, [workshopId, hotThoughtConfirmed, report]);
+  }, [workshopId, hotThoughtConfirmed]);
 
   const q1HasAnswer =
     answers.q1_selected.length > 0 || answers.q1_custom.trim().length > 0;
@@ -401,22 +402,28 @@ export function WorkshopExerciseStep5CoreBelief({
   }
 
   function handleNext() {
-    router.push("/dashboard/self-workshop/step/6");
+    router.push("/dashboard/self-workshop/step/5");
   }
 
   /* ─────────────────────────── 렌더 ─────────────────────────── */
 
-  if (!report) {
+  // 새 흐름: 트리거-자동사고 실습(FIND_OUT 1)이 선행 조건.
+  // mechanism_analysis가 비어 있으면 그 단계로 돌려보냄.
+  const hasMechanism =
+    !!mechanism.automatic_thought ||
+    (mechanism.candidate_thoughts?.length ?? 0) > 0 ||
+    (mechanism.common_thoughts_checked?.length ?? 0) > 0;
+  if (!hasMechanism) {
     return (
       <div className="mx-auto max-w-lg py-20 text-center">
         <p className="text-sm text-[var(--foreground)]/60">
-          Step 4 리포트를 먼저 완료해 주세요.
+          먼저 트리거 → 자동사고 실습을 완료해 주세요.
         </p>
         <Link
-          href="/dashboard/self-workshop/step/4"
+          href="/dashboard/self-workshop/step/3"
           className="mt-4 inline-block text-sm font-medium text-[var(--foreground)] underline"
         >
-          Step 4로 돌아가기 →
+          이전 단계로 돌아가기 →
         </Link>
       </div>
     );
@@ -434,10 +441,10 @@ export function WorkshopExerciseStep5CoreBelief({
         </button>
       ) : (
         <Link
-          href="/dashboard/self-workshop/step/4"
+          href="/dashboard/self-workshop/step/3"
           className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
         >
-          ← Step 4 리포트 다시 보기
+          ← 자동사고 실습 다시 보기
         </Link>
       )}
 

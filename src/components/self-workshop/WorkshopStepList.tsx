@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
+import {
+  WORKSHOP_STEPS,
+  WORKSHOP_SECTIONS,
+  type WorkshopSection,
+  type WorkshopStep,
+} from "@/lib/self-workshop/diagnosis";
 
 interface Props {
   currentStep: number;
@@ -12,6 +17,18 @@ export function WorkshopStepList({ currentStep, completedSteps }: Props) {
   const totalSteps = WORKSHOP_STEPS.length;
   const completedCount = completedSteps.length;
   const progressPercent = Math.round((completedCount / totalSteps) * 100);
+
+  // 예상 소요 시간 동적 합산 (분 단위 min~max)
+  const totalMin = WORKSHOP_STEPS.reduce((acc, s) => acc + s.estimatedMinutes[0], 0);
+  const totalMax = WORKSHOP_STEPS.reduce((acc, s) => acc + s.estimatedMinutes[1], 0);
+
+  // 섹션별 그룹핑
+  const stepsBySection = new Map<WorkshopSection, WorkshopStep[]>();
+  for (const s of WORKSHOP_STEPS) {
+    const arr = stepsBySection.get(s.section) ?? [];
+    arr.push(s);
+    stepsBySection.set(s.section, arr);
+  }
 
   return (
     <div className="space-y-6">
@@ -32,29 +49,50 @@ export function WorkshopStepList({ currentStep, completedSteps }: Props) {
           />
         </div>
         <p className="mt-2 text-xs text-[var(--foreground)]/50">
-          예상 소요 시간: 65~95분
+          예상 소요 시간: {totalMin}~{totalMax}분
         </p>
       </div>
 
-      {/* Step 목록 */}
-      <div className="space-y-3">
-        {WORKSHOP_STEPS.map((ws) => {
-          const isCompleted = completedSteps.includes(ws.step);
-          const isCurrent = ws.step === currentStep;
-          const isLocked = ws.step > currentStep && !isCompleted;
+      {/* 섹션별 그룹 */}
+      <div className="space-y-8">
+        {WORKSHOP_SECTIONS.map((sectionMeta, idx) => {
+          const sectionSteps = stepsBySection.get(sectionMeta.section) ?? [];
+          if (sectionSteps.length === 0) return null;
 
           return (
-            <StepCard
-              key={ws.step}
-              step={ws.step}
-              title={ws.title}
-              subtitle={ws.subtitle}
-              type={ws.type}
-              estimatedMinutes={ws.estimatedMinutes}
-              isCompleted={isCompleted}
-              isCurrent={isCurrent}
-              isLocked={isLocked}
-            />
+            <div key={sectionMeta.section} className="space-y-3">
+              {/* 섹션 헤더 */}
+              <div className="flex items-baseline gap-3 px-1">
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--foreground)]/40">
+                  {String(idx + 1).padStart(2, "0")}
+                </span>
+                <h2 className="text-lg font-bold text-[var(--foreground)]">
+                  {sectionMeta.label}
+                </h2>
+                <p className="text-xs text-[var(--foreground)]/50">
+                  {sectionMeta.description}
+                </p>
+              </div>
+
+              {/* 섹션 내 step 카드 */}
+              <div className="space-y-2">
+                {sectionSteps.map((ws) => {
+                  const isCompleted = completedSteps.includes(ws.step);
+                  const isCurrent = ws.step === currentStep;
+                  const isLocked = ws.step > currentStep && !isCompleted;
+
+                  return (
+                    <StepCard
+                      key={ws.step}
+                      step={ws}
+                      isCompleted={isCompleted}
+                      isCurrent={isCurrent}
+                      isLocked={isLocked}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
@@ -65,25 +103,13 @@ export function WorkshopStepList({ currentStep, completedSteps }: Props) {
 // ── Step 카드 ──
 
 interface StepCardProps {
-  step: number;
-  title: string;
-  subtitle: string;
-  type: string;
-  estimatedMinutes: [number, number];
+  step: WorkshopStep;
   isCompleted: boolean;
   isCurrent: boolean;
   isLocked: boolean;
 }
 
-function StepCard({
-  step,
-  title,
-  subtitle,
-  estimatedMinutes,
-  isCompleted,
-  isCurrent,
-  isLocked,
-}: StepCardProps) {
+function StepCard({ step, isCompleted, isCurrent, isLocked }: StepCardProps) {
   const content = (
     <div
       className={`rounded-xl border-2 p-5 transition-colors ${
@@ -106,22 +132,22 @@ function StepCard({
                   : "border-[var(--foreground)]/20 text-[var(--foreground)]/40"
             }`}
           >
-            {isCompleted ? "✓" : step}
+            {isCompleted ? "✓" : step.sectionStepNumber}
           </div>
 
           <div>
             <p className="text-xs font-medium text-[var(--foreground)]/50 uppercase tracking-wider">
-              {subtitle}
+              {step.subtitle}
             </p>
             <h3 className="text-base font-semibold text-[var(--foreground)]">
-              {title}
+              {step.title}
             </h3>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <span className="text-xs text-[var(--foreground)]/40">
-            {estimatedMinutes[0]}~{estimatedMinutes[1]}분
+            {step.estimatedMinutes[0]}~{step.estimatedMinutes[1]}분
           </span>
           {isCurrent && (
             <span className="rounded-lg border-2 border-[var(--foreground)] px-4 py-1.5 text-sm font-semibold text-[var(--foreground)]">
@@ -158,8 +184,6 @@ function StepCard({
   }
 
   return (
-    <Link href={`/dashboard/self-workshop/step/${step}`}>
-      {content}
-    </Link>
+    <Link href={`/dashboard/self-workshop/step/${step.step}`}>{content}</Link>
   );
 }

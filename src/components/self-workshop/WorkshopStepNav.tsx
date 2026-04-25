@@ -3,7 +3,7 @@ import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
 
 interface Props {
   currentStep: number;
-  maxAccessibleStep: number; // 접근 가능한 최대 step (진행 중인 current_step 또는 completed면 8)
+  maxAccessibleStep: number; // 접근 가능한 최대 step
 }
 
 export function WorkshopStepNav({ currentStep, maxAccessibleStep }: Props) {
@@ -27,11 +27,11 @@ export function WorkshopStepNav({ currentStep, maxAccessibleStep }: Props) {
             ←
           </span>
           <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--foreground)]/40">
-              이전
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground)]/50">
+              {prev.sectionLabel} · {prev.sectionStepNumber}단계
             </p>
             <p className="truncate text-sm font-medium text-[var(--foreground)]/80">
-              {prev.step}. {prev.title}
+              {prev.title}
             </p>
           </div>
         </Link>
@@ -39,7 +39,7 @@ export function WorkshopStepNav({ currentStep, maxAccessibleStep }: Props) {
         <div className="flex flex-1 items-center gap-3 rounded-lg px-3 py-2 opacity-30">
           <span className="text-lg">←</span>
           <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--foreground)]/40">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground)]/40">
               이전
             </p>
             <p className="truncate text-sm text-[var(--foreground)]/50">
@@ -59,11 +59,11 @@ export function WorkshopStepNav({ currentStep, maxAccessibleStep }: Props) {
           className="group flex flex-1 items-center justify-end gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[var(--surface)]"
         >
           <div className="min-w-0 text-right">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--foreground)]/40">
-              다음
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground)]/50">
+              {next.sectionLabel} · {next.sectionStepNumber}단계
             </p>
             <p className="truncate text-sm font-medium text-[var(--foreground)]/80">
-              {next.step}. {next.title}
+              {next.title}
             </p>
           </div>
           <span className="text-lg text-[var(--foreground)]/50 group-hover:text-[var(--foreground)] transition-colors">
@@ -73,7 +73,7 @@ export function WorkshopStepNav({ currentStep, maxAccessibleStep }: Props) {
       ) : (
         <div className="flex flex-1 items-center justify-end gap-3 rounded-lg px-3 py-2 opacity-30">
           <div className="min-w-0 text-right">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--foreground)]/40">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--foreground)]/40">
               다음
             </p>
             <p className="truncate text-sm text-[var(--foreground)]/50">

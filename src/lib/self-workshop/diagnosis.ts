@@ -192,24 +192,108 @@ export const EMOTION_CHIPS = [
 // 단일 출처: cognitive-errors.ts (10종 정의)
 export { COGNITIVE_ERRORS } from "./cognitive-errors";
 
+// ── 워크북 섹션 정의 ──
+// 5섹션 구조: TEST → FIND_OUT → DESTROY → SOLUTION → SUMMARY
+
+export type WorkshopSection =
+  | "TEST"
+  | "FIND_OUT"
+  | "DESTROY"
+  | "SOLUTION"
+  | "SUMMARY";
+
 // ── 워크북 Step 메타데이터 ──
 
 export interface WorkshopStep {
-  step: number;
+  step: number;                    // 1~10 글로벌 순번
+  section: WorkshopSection;        // 소속 섹션
+  sectionLabel: string;            // 화면 표기용 ("TEST", "FIND OUT" 등)
+  sectionStepNumber: number;       // 섹션 내 단계 번호 (1부터)
   title: string;
   subtitle: string;
-  type: "read" | "diagnosis" | "result" | "exercise" | "ai_analysis" | "reflection";
+  type:
+    | "read"
+    | "diagnosis"
+    | "result"
+    | "exercise"
+    | "ai_analysis"
+    | "destroy"
+    | "alternative_thought"
+    | "new_belief"
+    | "reflection";
   estimatedMinutes: [number, number]; // [min, max]
   hasUserInput: boolean;
 }
 
 export const WORKSHOP_STEPS: WorkshopStep[] = [
-  { step: 1, title: "나의 성취 패턴 진단", subtitle: "자가 진단", type: "diagnosis", estimatedMinutes: [7, 10], hasUserInput: true },
-  { step: 2, title: "나의 진단 결과", subtitle: "결과 분석", type: "result", estimatedMinutes: [5, 8], hasUserInput: false },
-  { step: 3, title: "나의 성취 중독 패턴 찾기", subtitle: "성취 중독 이해 + 패턴 찾기 실습", type: "exercise", estimatedMinutes: [20, 30], hasUserInput: true },
-  { step: 4, title: "당신의 패턴은 이렇습니다", subtitle: "인지 패턴 분석", type: "ai_analysis", estimatedMinutes: [3, 5], hasUserInput: false },
-  { step: 5, title: "패턴을 만드는 핵심 믿음 찾기", subtitle: "핵심 믿음 문답 실습", type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
-  { step: 6, title: "나만의 대처 계획 세우기", subtitle: "대처 실습", type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
-  { step: 7, title: "나의 워크북 요약", subtitle: "전체 써머리", type: "ai_analysis", estimatedMinutes: [3, 5], hasUserInput: false },
-  { step: 8, title: "워크북을 마치며", subtitle: "마무리 성찰", type: "reflection", estimatedMinutes: [5, 10], hasUserInput: true },
+  // ── TEST ──
+  { step: 1, section: "TEST", sectionLabel: "TEST", sectionStepNumber: 1,
+    title: "성취 중독 테스트", subtitle: "자가 진단 20문항",
+    type: "diagnosis", estimatedMinutes: [7, 10], hasUserInput: true },
+  { step: 2, section: "TEST", sectionLabel: "TEST", sectionStepNumber: 2,
+    title: "진단 리포트", subtitle: "결과 분석 + 캐릭터 프로필",
+    type: "result", estimatedMinutes: [5, 8], hasUserInput: false },
+
+  // ── FIND OUT ──
+  { step: 3, section: "FIND_OUT", sectionLabel: "FIND OUT", sectionStepNumber: 1,
+    title: "트리거 → 자동사고 찾기", subtitle: "5-Part Model 실습",
+    type: "exercise", estimatedMinutes: [20, 30], hasUserInput: true },
+  { step: 4, section: "FIND_OUT", sectionLabel: "FIND OUT", sectionStepNumber: 2,
+    title: "핵심 신념 찾기", subtitle: "Downward Arrow 문답",
+    type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
+  { step: 5, section: "FIND_OUT", sectionLabel: "FIND OUT", sectionStepNumber: 3,
+    title: "통합 패턴 분석", subtitle: "6-Part 인지 사이클 + 인지 오류",
+    type: "ai_analysis", estimatedMinutes: [3, 5], hasUserInput: false },
+
+  // ── DESTROY ──
+  { step: 6, section: "DESTROY", sectionLabel: "DESTROY", sectionStepNumber: 1,
+    title: "핵심 믿음 반박하기", subtitle: "삼중 컬럼 / 이중 표준 / 증거 / 비용편익",
+    type: "destroy", estimatedMinutes: [20, 30], hasUserInput: true },
+  { step: 7, section: "DESTROY", sectionLabel: "DESTROY", sectionStepNumber: 2,
+    title: "대안 자동사고 시뮬레이션", subtitle: "같은 상황, 다른 사고였다면",
+    type: "alternative_thought", estimatedMinutes: [10, 15], hasUserInput: true },
+
+  // ── SOLUTION ──
+  { step: 8, section: "SOLUTION", sectionLabel: "SOLUTION", sectionStepNumber: 1,
+    title: "새 핵심 신념 찾기", subtitle: "리프레임 작성",
+    type: "new_belief", estimatedMinutes: [10, 15], hasUserInput: true },
+  { step: 9, section: "SOLUTION", sectionLabel: "SOLUTION", sectionStepNumber: 2,
+    title: "대체 사고 + 실천 계획", subtitle: "인지 재구조화 / 행동 실험 / 자기 돌봄",
+    type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
+
+  // ── SUMMARY ──
+  { step: 10, section: "SUMMARY", sectionLabel: "SUMMARY", sectionStepNumber: 1,
+    title: "전문 상담사 리포트", subtitle: "DO & DON'T 포함 통합 정리",
+    type: "ai_analysis", estimatedMinutes: [5, 8], hasUserInput: false },
+  { step: 11, section: "SUMMARY", sectionLabel: "SUMMARY", sectionStepNumber: 2,
+    title: "워크북을 마치며", subtitle: "마무리 성찰",
+    type: "reflection", estimatedMinutes: [5, 10], hasUserInput: true },
 ];
+
+// ── 섹션 메타데이터 (그룹 헤더 표시용) ──
+
+export interface WorkshopSectionMeta {
+  section: WorkshopSection;
+  label: string;        // "TEST", "FIND OUT", ...
+  description: string;  // 각 섹션의 한 줄 설명 (그룹 헤더용)
+  order: number;        // 1~5 표시 순서
+}
+
+export const WORKSHOP_SECTIONS: WorkshopSectionMeta[] = [
+  { section: "TEST", label: "TEST", order: 1,
+    description: "내 성취 패턴이 어디까지 왔는지 진단해요" },
+  { section: "FIND_OUT", label: "FIND OUT", order: 2,
+    description: "내 자동사고와 핵심 신념을 찾아내요" },
+  { section: "DESTROY", label: "DESTROY", order: 3,
+    description: "오래된 믿음을 네 가지 기법으로 반박해요" },
+  { section: "SOLUTION", label: "SOLUTION", order: 4,
+    description: "새 핵심 신념과 실천 계획을 만들어요" },
+  { section: "SUMMARY", label: "SUMMARY", order: 5,
+    description: "전체 여정을 전문 리포트로 정리해요" },
+];
+
+// ── 헤더 표기 헬퍼 ──
+
+export function formatSectionHeader(s: WorkshopStep): string {
+  return `${s.sectionLabel} · ${s.sectionStepNumber}단계 ${s.title}`;
+}

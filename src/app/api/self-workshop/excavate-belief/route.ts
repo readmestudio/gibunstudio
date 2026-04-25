@@ -89,22 +89,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "권한이 없습니다" }, { status: 403 });
   }
 
+  // 새 흐름(FIND_OUT 1 → 2 → 3): Step 4 진입 시 mechanism_insights는 아직 없을 수 있음.
+  // mechanism_analysis만 있으면 진행, insights는 있으면 보조 입력으로 활용.
+  const mechanismRaw = (progress.mechanism_analysis ?? {}) as MechanismAnalysis;
+  const hasMechanism =
+    !!mechanismRaw.automatic_thought ||
+    (mechanismRaw.candidate_thoughts?.length ?? 0) > 0 ||
+    (mechanismRaw.common_thoughts_checked?.length ?? 0) > 0;
+
+  if (!hasMechanism) {
+    return NextResponse.json(
+      { error: "트리거 → 자동사고 실습이 먼저 필요합니다" },
+      { status: 400 }
+    );
+  }
+
   const insights: AnalysisReport | null = isAnalysisReport(
     progress.mechanism_insights
   )
     ? progress.mechanism_insights
     : null;
 
-  if (!insights) {
-    return NextResponse.json(
-      { error: "Step 4 리포트가 필요합니다" },
-      { status: 400 }
-    );
-  }
-
   const aiThoughtLabel =
-    insights.pattern_cycle.nodes.find((n) => n.stage === "thought")?.label ??
+    insights?.pattern_cycle.nodes.find((n) => n.stage === "thought")?.label ??
+    mechanismRaw.automatic_thought ??
     "";
+  const patternHeadline = insights?.pattern_cycle.headline ?? "";
 
   const existing =
     (progress.core_belief_excavation as {
@@ -119,12 +129,11 @@ export async function POST(req: Request) {
 
   try {
     if (phase === "generate-candidates") {
-      const mechanism = (progress.mechanism_analysis ?? {}) as MechanismAnalysis;
       const result = await runGenerateCandidates(
-        mechanism.automatic_thought ?? "",
-        mechanism.common_thoughts_checked ?? [],
+        mechanismRaw.automatic_thought ?? "",
+        mechanismRaw.common_thoughts_checked ?? [],
         aiThoughtLabel,
-        insights.pattern_cycle.headline
+        patternHeadline
       );
       return NextResponse.json({ candidates: result.candidates });
     }
@@ -203,7 +212,8 @@ export async function POST(req: Request) {
         .from("workshop_progress")
         .update({
           core_belief_excavation: merged,
-          current_step: Math.max(6, progress.current_step ?? 5),
+          // 새 흐름: Step 4(핵심신념) 완료 → Step 5(통합 분석)로 진입
+          current_step: Math.max(5, progress.current_step ?? 4),
         })
         .eq("id", workshopId);
 

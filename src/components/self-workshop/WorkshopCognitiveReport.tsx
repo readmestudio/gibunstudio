@@ -40,6 +40,7 @@ const STAGE_LABEL: Record<PatternStage, string> = {
   emotion: "감정",
   body: "신체 반응",
   behavior: "행동",
+  core_belief: "핵심 신념",
 };
 
 export function WorkshopCognitiveReport({
@@ -140,10 +141,10 @@ export function WorkshopCognitiveReport({
 
       <div className="text-center pt-4">
         <button
-          onClick={() => router.push("/dashboard/self-workshop/step/5")}
+          onClick={() => router.push("/dashboard/self-workshop/step/6")}
           className="inline-flex rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
         >
-          패턴을 만드는 핵심 믿음 찾기 →
+          핵심 믿음 반박하기 →
         </button>
       </div>
     </div>
