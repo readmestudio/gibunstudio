@@ -245,11 +245,11 @@ export const WORKSHOP_STEPS: WorkshopStep[] = [
     title: "통합 패턴 분석", subtitle: "6-Part 인지 사이클 + 인지 오류",
     type: "ai_analysis", estimatedMinutes: [3, 5], hasUserInput: false },
 
-  // ── DESTROY ──
-  { step: 6, section: "DESTROY", sectionLabel: "DESTROY", sectionStepNumber: 1,
+  // ── SOFTEN ──
+  { step: 6, section: "DESTROY", sectionLabel: "SOFTEN", sectionStepNumber: 1,
     title: "핵심 믿음 반박하기", subtitle: "삼중 컬럼 / 이중 표준 / 증거 / 비용편익",
     type: "destroy", estimatedMinutes: [20, 30], hasUserInput: true },
-  { step: 7, section: "DESTROY", sectionLabel: "DESTROY", sectionStepNumber: 2,
+  { step: 7, section: "DESTROY", sectionLabel: "SOFTEN", sectionStepNumber: 2,
     title: "대안 자동사고 시뮬레이션", subtitle: "같은 상황, 다른 사고였다면",
     type: "alternative_thought", estimatedMinutes: [10, 15], hasUserInput: true },
 
@@ -284,7 +284,7 @@ export const WORKSHOP_SECTIONS: WorkshopSectionMeta[] = [
     description: "내 성취 패턴이 어디까지 왔는지 진단해요" },
   { section: "FIND_OUT", label: "FIND OUT", order: 2,
     description: "내 자동사고와 핵심 신념을 찾아내요" },
-  { section: "DESTROY", label: "DESTROY", order: 3,
+  { section: "DESTROY", label: "SOFTEN", order: 3,
     description: "오래된 믿음을 네 가지 기법으로 반박해요" },
   { section: "SOLUTION", label: "SOLUTION", order: 4,
     description: "새 핵심 신념과 실천 계획을 만들어요" },

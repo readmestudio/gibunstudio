@@ -85,7 +85,7 @@ export function AchievementAddictionExplanation() {
         <AchievementCycleMotion />
       </div>
 
-      {/* [3] 워크북 진행 — 3단계 로드맵 (FIND OUT / DESTROY / SOLUTION) */}
+      {/* [3] 워크북 진행 — 3단계 로드맵 (FIND OUT / SOFTEN / SOLUTION) */}
       <div className="space-y-4">
         <div className="space-y-2">
           <h3 className="text-base font-semibold text-[var(--foreground)]">

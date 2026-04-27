@@ -268,7 +268,7 @@ ${userName}님
 - 인지 오류 해석:
 ${cognitiveErrorsBlock}
 
-## DESTROY 1: 핵심 믿음 반박 (4기법)
+## SOFTEN 1: 핵심 믿음 반박 (4기법)
 ${beliefDestroyBlock}
 
 ## SOLUTION 1: 새 핵심 신념
