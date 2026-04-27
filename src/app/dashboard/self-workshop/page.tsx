@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { WorkshopStepList } from "@/components/self-workshop/WorkshopStepList";
+import { WorkbookIndex } from "@/components/self-workshop/workbook-redesign/WorkbookIndex";
 import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
 
 export default async function SelfWorkshopDashboardPage() {
@@ -58,44 +58,33 @@ export default async function SelfWorkshopDashboardPage() {
     }
   }
 
+  // 미구매: 결제 안내 + 잠긴 목록
+  // 구매 / 테스트 유저: EDITORIAL 톤 워크북 인덱스
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
-      <div className="mb-8">
-        <Link
-          href="/dashboard"
-          className="text-sm text-[var(--foreground)]/60 hover:underline"
-        >
-          ← 대시보드
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-[var(--foreground)]">
-          성취 중독을 위한 마음챙김 워크북
-        </h1>
-        <p className="mt-1 text-sm text-[var(--foreground)]/60">
-          CBT 기반 셀프 마음 챙김 워크북
-        </p>
-      </div>
-
+    <>
       {!hasPurchase && (
-        <div className="mb-8 rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-          <h2 className="text-lg font-semibold text-[var(--foreground)]">
-            워크북을 시작하세요
-          </h2>
-          <p className="mt-2 text-sm text-[var(--foreground)]/70">
-            마음 챙김 워크북을 구매하면 워크북을 진행할 수 있습니다.
-          </p>
-          <Link
-            href="/payment/self-workshop"
-            className="mt-4 inline-flex rounded-lg border-2 border-[var(--foreground)] px-6 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
-          >
-            구매하기
-          </Link>
+        <div className="mx-auto" style={{ maxWidth: 1024, padding: "56px 64px 0" }}>
+          <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+            <h2 className="text-lg font-semibold text-[var(--foreground)]">
+              워크북을 시작하세요
+            </h2>
+            <p className="mt-2 text-sm text-[var(--foreground)]/70">
+              마음 챙김 워크북을 구매하면 워크북을 진행할 수 있습니다.
+            </p>
+            <Link
+              href="/payment/self-workshop"
+              className="mt-4 inline-flex rounded-lg border-2 border-[var(--foreground)] px-6 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
+            >
+              구매하기
+            </Link>
+          </div>
         </div>
       )}
 
-      <WorkshopStepList
+      <WorkbookIndex
         currentStep={currentStep}
         completedSteps={completedSteps}
       />
-    </div>
+    </>
   );
 }

@@ -5,13 +5,12 @@ import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
 import { WorkshopDiagnosisContent } from "@/components/self-workshop/WorkshopDiagnosisContent";
 import { WorkshopResultContent } from "@/components/self-workshop/WorkshopResultContent";
 import { WorkshopExerciseStep4 } from "@/components/self-workshop/WorkshopExerciseStep4";
-import { WorkshopStepNav } from "@/components/self-workshop/WorkshopStepNav";
+import { WorkbookChapterHeader } from "@/components/self-workshop/workbook-redesign/WorkbookChapterHeader";
 import { WorkshopAIAnalysis } from "@/components/self-workshop/WorkshopAIAnalysis";
 import { WorkshopExerciseStep5CoreBelief } from "@/components/self-workshop/WorkshopExerciseStep5CoreBelief";
 import { WorkshopExerciseStep7 } from "@/components/self-workshop/WorkshopExerciseStep7";
 import { WorkshopReflectionContent } from "@/components/self-workshop/WorkshopReflectionContent";
 import { WorkshopPaymentGate } from "@/components/self-workshop/WorkshopPaymentGate";
-import { WorkshopSectionBadge } from "@/components/self-workshop/WorkshopSectionBadge";
 import { WorkshopBeliefDestroyContent } from "@/components/self-workshop/WorkshopBeliefDestroyContent";
 import { WorkshopAlternativeThoughtContent } from "@/components/self-workshop/WorkshopAlternativeThoughtContent";
 import { WorkshopNewBeliefContent } from "@/components/self-workshop/WorkshopNewBeliefContent";
@@ -134,42 +133,25 @@ export default async function WorkshopStepPage({ params }: Props) {
 
   const workshopId = progress.id;
 
-  return (
-    <div className="min-h-screen bg-white px-4 py-8">
-      {/* 상단 네비게이션 */}
-      <div className="mx-auto max-w-lg mb-8">
-        <Link
-          href="/dashboard/self-workshop"
-          className="text-sm text-[var(--foreground)]/60 hover:underline"
-        >
-          ← 워크북 목록
-        </Link>
-        <div className="mt-3 flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
-            {stepMeta.sectionStepNumber}
-          </span>
-          <div className="min-w-0">
-            <div className="mb-1.5">
-              <WorkshopSectionBadge step={stepMeta} size="sm" />
-            </div>
-            <p className="text-[11px] font-medium text-[var(--foreground)]/50 uppercase tracking-wider">
-              {stepMeta.subtitle}
-            </p>
-            <h1 className="text-xl font-bold text-[var(--foreground)]">
-              {stepMeta.title}
-            </h1>
-          </div>
-        </div>
+  // 진행 카운터: 완료된 챕터 수 (현재 step 직전까지)
+  // - completed: 전부 완료
+  // - 그 외: current_step 이전까지 완료된 것으로 간주
+  const doneCount =
+    progress.status === "completed"
+      ? WORKSHOP_STEPS.length
+      : Math.max(0, progress.current_step - 1);
 
-        <WorkshopStepNav
-          currentStep={stepNumber}
-          maxAccessibleStep={
-            progress.status === "completed"
-              ? WORKSHOP_STEPS.length
-              : progress.current_step
-          }
-        />
-      </div>
+  return (
+    <div className="min-h-screen bg-white pb-8">
+      <WorkbookChapterHeader
+        currentStep={stepNumber}
+        maxAccessibleStep={
+          progress.status === "completed"
+            ? WORKSHOP_STEPS.length
+            : progress.current_step
+        }
+        doneCount={doneCount}
+      />
 
       {/* Step별 콘텐츠 렌더링 (11단계 / 5섹션) */}
 

@@ -27,6 +27,23 @@
   --border-dark: #d4d4d4;
   --surface: #fafafa;
   --surface-hover: #f5f5f5;
+
+  /* Workbook redesign tokens (워크북 목록·챕터 헤더 전용)
+     "테크 / 애플 제품 페이지" 톤 — 헤어라인 + 풍부한 여백 + 모노 메타.
+     액센트 오렌지는 면적 비중 10% 미만(액티브 카드 좌측 룰, 도트, 진행바 현재 세그먼트). */
+  --wb-ink: #0A0A0B;
+  --wb-ink-soft: #1A1A1C;
+  --wb-text: #1F1F22;
+  --wb-text2: #5B5B62;
+  --wb-text3: #8A8A92;
+  --wb-hair: #E5E5EA;
+  --wb-hair2: #EFEFF2;
+  --wb-hair3: #F4F4F6;
+  --wb-surface: #FFFFFF;
+  --wb-surface2: #FAFAFB;
+  --wb-surface3: #F2F2F4;
+  --wb-accent: #FF5A1F;
+  --wb-accent-soft: rgba(255, 90, 31, 0.08);
 }
 
 @theme inline {
@@ -49,3 +66,55 @@ body {
 /* 스크롤바 숨기기 유틸리티 */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─────────────────────────────────────────────────────────
+   Workbook redesign — 반응형 (목록 페이지·챕터 헤더 공용)
+   핸드오프 명세:
+     - <1024px: 컨테이너 패딩 축소
+     - <768px:  Hero 64→36, ProgressStrip 1열, 챕터 카드 2열 + 액션 행 wrap
+                챕터 헤더 거대 번호 140→88, 타이틀 52→32, 페이저 두 줄 스택
+   ───────────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .wb-container { padding: 40px 32px 64px !important; }
+}
+@media (max-width: 767px) {
+  .wb-container { padding: 24px 20px 56px !important; }
+  .wb-hero-title { font-size: 36px !important; line-height: 1.1 !important; }
+  .wb-progress-strip {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    justify-items: center;
+  }
+  .wb-progress-strip > div:last-child { width: 100%; }
+  .wb-progress-meta {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+  }
+  .wb-section-header {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .wb-chapter-card {
+    grid-template-columns: 40px 1fr !important;
+    grid-template-rows: auto auto !important;
+    gap: 16px !important;
+  }
+  .wb-chapter-card > :nth-child(3),
+  .wb-chapter-card > :nth-child(4) {
+    grid-column: 2 / 3 !important;
+  }
+  /* 챕터 헤더 metric */
+  .wb-ch-num { font-size: 88px !important; }
+  .wb-ch-title { font-size: 32px !important; }
+  .wb-ch-hero { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .wb-ch-pager { flex-direction: column; gap: 16px; align-items: stretch !important; }
+  .wb-ch-pager > button { width: 100%; }
+}
+
+/* prefers-reduced-motion: 워크북 리뱀프의 모든 트랜지션 비활성 */
+@media (prefers-reduced-motion: reduce) {
+  .wb-container *, .wb-container *::before, .wb-container *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
