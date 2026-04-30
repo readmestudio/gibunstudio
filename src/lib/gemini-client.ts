@@ -44,6 +44,13 @@ export async function chatCompletion(
     temperature?: number;
     max_tokens?: number;
     response_format?: { type: 'json_object' };
+    /**
+     * Gemini 2.5의 thinking(reasoning) 토큰을 비활성/제한.
+     * - undefined(기본): 모델 기본동작(2.5 Flash는 thinking ON, max_tokens를 reasoning이 잠식해 출력이 잘릴 수 있음)
+     * - 0:               thinking 끔 (짧은 분류·생성 응답에 권장)
+     * - 양수:             해당 토큰만큼만 reasoning 허용
+     */
+    thinking_budget?: number;
   }
 ) {
   const modelName = resolveModel(options?.model);
@@ -78,7 +85,16 @@ export async function chatCompletion(
       ...(options?.response_format?.type === 'json_object'
         ? { responseMimeType: 'application/json' }
         : {}),
-    },
+      // Gemini 2.5 시리즈는 thinkingConfig.thinkingBudget으로 reasoning 토큰을 제어.
+      // 명시 안 하면 모델 기본값(보통 thinking ON)이라 max_tokens를 reasoning이 잠식.
+      ...(typeof options?.thinking_budget === 'number'
+        ? {
+            thinkingConfig: {
+              thinkingBudget: options.thinking_budget,
+            },
+          }
+        : {}),
+    } as Parameters<typeof genAI.getGenerativeModel>[0]['generationConfig'],
   });
 
   const result = await model.generateContent({ contents: mergedContents });

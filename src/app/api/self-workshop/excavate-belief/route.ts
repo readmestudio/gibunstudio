@@ -5,6 +5,16 @@ import {
   isAnalysisReport,
   type AnalysisReport,
 } from "@/lib/self-workshop/analysis-report";
+import {
+  SCT_QUESTIONS,
+  SCT_CATEGORIES,
+  type SctCategoryCode,
+} from "@/lib/self-workshop/sct-questions";
+import type {
+  BeliefAnalysis,
+  SctResponses,
+  Synthesis as SctSynthesis,
+} from "@/lib/self-workshop/core-belief-excavation";
 
 interface Answers {
   selected_hot_thought: string;
@@ -57,9 +67,13 @@ export async function POST(req: Request) {
     hotThought: hotThoughtInput,
     q1Answer,
     q2Answer,
+    sctResponses,
   } = body as {
     workshopId: string;
     phase:
+      // 새 흐름 (SCT 기반)
+      | "analyze-sct"
+      // 레거시 (Downward Arrow 기반) — 코드는 유지하되 새 UI에서 호출하지 않음
       | "generate-candidates"
       | "generate-options-q1"
       | "generate-options-q2"
@@ -70,6 +84,7 @@ export async function POST(req: Request) {
     hotThought?: string;
     q1Answer?: string;
     q2Answer?: string;
+    sctResponses?: SctResponses;
   };
 
   if (!workshopId || !phase) {
@@ -118,16 +133,62 @@ export async function POST(req: Request) {
 
   const existing =
     (progress.core_belief_excavation as {
+      // 새 구조 (SCT)
+      sct_responses?: SctResponses;
+      belief_analysis?: BeliefAnalysis;
+      // 다운스트림 호환 + 레거시
+      synthesis?: SynthesizeResult;
+      // 레거시 (Downward Arrow)
       answers?: Answers;
       mid_hypothesis?: {
         hot_thought: string;
         core_belief: string;
         generated_at: string;
       };
-      synthesis?: SynthesizeResult;
     } | null) ?? null;
 
   try {
+    /* ─────────────── [LEGACY] SCT 응답 분리 분석 ───────────────
+     * 통합 분석(A안)으로 전환 후, Step 5의 analyze-mechanism이 자동사고와 SCT를 한 번에 처리한다.
+     * 이 분리 분석 phase는 더 이상 UI에서 호출되지 않지만, 향후 재사용 또는 단독 분석 옵션을 위해 코드는 유지한다.
+     */
+    if (phase === "analyze-sct") {
+      if (!sctResponses || typeof sctResponses !== "object") {
+        return NextResponse.json(
+          { error: "sctResponses가 필요합니다" },
+          { status: 400 }
+        );
+      }
+
+      const result = await runAnalyzeSct(
+        sctResponses,
+        mechanismRaw,
+        aiThoughtLabel
+      );
+
+      // 다운스트림 호환을 위해 belief_analysis와 함께 synthesis도 갱신.
+      const merged = {
+        ...(existing ?? {}),
+        sct_responses: sctResponses,
+        belief_analysis: result.belief_analysis,
+        synthesis: result.synthesis,
+      };
+
+      await supabase
+        .from("workshop_progress")
+        .update({
+          core_belief_excavation: merged,
+          // SCT 분석 완료 → Step 5(통합 분석)로 진입 가능
+          current_step: Math.max(5, progress.current_step ?? 4),
+        })
+        .eq("id", workshopId);
+
+      return NextResponse.json({
+        belief_analysis: result.belief_analysis,
+        synthesis: result.synthesis,
+      });
+    }
+
     if (phase === "generate-candidates") {
       const result = await runGenerateCandidates(
         mechanismRaw.automatic_thought ?? "",
@@ -229,6 +290,12 @@ export async function POST(req: Request) {
     );
   }
 }
+
+/* ─────────────── [LEGACY] Downward Arrow 흐름 (UI에서는 호출하지 않음) ───────────────
+ * 아래 5개 phase(generate-candidates, generate-options-q1/q2/q3, hypothesize, synthesize)는
+ * 기존 Downward Arrow 기반 Step 4 UI에서 사용되었다. 새 SCT UI로 전환되면서 호출되지 않지만,
+ * 캐시된 클라이언트나 향후 비교 분석을 위해 코드는 유지한다.
+ */
 
 /* ─────────────── Phase 0: Generate Candidates ─────────────── */
 
@@ -596,4 +663,184 @@ ${q2Answer || "(없음)"}
 이 두려움이 말하고 있는 '나는 ~한 사람이다'의 서술부 4가지를 JSON으로 응답하세요. "나는"으로 시작하지 마세요.`,
     fallback: Q3_FALLBACK,
   };
+}
+
+/* ─────────────── 새 흐름: SCT 응답 → 핵심 신념 분석 ─────────────── */
+
+interface AnalyzeSctRawResult {
+  belief_about_self: string;
+  belief_about_others: string;
+  belief_about_world: string;
+  dominant_schemas: Array<{
+    ems_code: string;
+    natural_label_ko: string;
+    strength: "strong" | "moderate";
+  }>;
+  evidence_quotes: Array<{
+    sct_code: string;
+    category_ko: string;
+    quote: string;
+  }>;
+  synthesis: SctSynthesis;
+}
+
+async function runAnalyzeSct(
+  responses: SctResponses,
+  mechanism: MechanismAnalysis,
+  aiThoughtLabel: string
+): Promise<{ belief_analysis: BeliefAnalysis; synthesis: SctSynthesis }> {
+  const userMessage = buildSctUserMessage(responses, mechanism, aiThoughtLabel);
+
+  const systemPrompt = `당신은 인지행동치료(CBT)와 도식치료(Schema Therapy)에 능숙한 한국어 임상심리 전문가입니다. 유저는 14문항의 문장 완성검사(SCT)에 답했습니다. 당신의 임무는 그 응답을 통합해 유저의 핵심 신념을 자기·타인·세계 3축으로 추정하고, 두드러진 마음의 패턴을 짚어주는 것입니다.
+
+## 출력 규칙
+반드시 아래 JSON 단일 객체로 응답하세요. JSON 외 텍스트 절대 금지.
+
+{
+  "belief_about_self": "유저가 자기 자신에 대해 무의식적으로 믿고 있는 문장 1줄. '나는 ~한 사람이다' 또는 '나의 가치는 ~에 달려 있다' 형식. 60자 이내.",
+  "belief_about_others": "타인에 대한 일반화된 신념 1줄. '사람들은 결국 ~다' 형식. 60자 이내. 정보가 부족하면 '(아직 충분한 단서가 없어요)'.",
+  "belief_about_world": "세상에 대한 일반화된 신념 1줄. '세상은 ~다' 형식. 60자 이내. 정보가 부족하면 '(아직 충분한 단서가 없어요)'.",
+  "dominant_schemas": [
+    {
+      "ems_code": "DS|ED|AB|MA|SI|DI|EM|US|IS|EI|AS|PU 중 1개",
+      "natural_label_ko": "쉬운 한국어 비유 라벨. 임상 용어/도식 명칭 절대 금지. 예: '기준을 낮추면 안 된다는 오래된 안경', '결함이 있다는 오래된 안경', '인정받지 못하면 무가치하다는 오래된 안경', '약한 모습을 보이면 안 된다는 마음의 규칙'",
+      "strength": "strong | moderate"
+    }
+  ],
+  "evidence_quotes": [
+    { "sct_code": "A1~D3 중 하나", "category_ko": "자기 가치|성취·인정|타인 신뢰·관계|통제·안전 중 하나", "quote": "유저 원문에서 그대로 인용 — 가공·요약·환각 절대 금지" }
+  ],
+  "synthesis": {
+    "belief_line": "belief_about_self와 의미가 같은 가장 핵심적인 한 줄. 다운스트림 단계에서 사용됨.",
+    "how_it_works": "이 신념이 유저의 일상에서 어떻게 작동하는지 2~3문장. 유저 응답 키워드를 직접 녹여 서술. 전문 용어 금지. 만약 Step 3 자동사고 컨텍스트가 있으면 그것과의 연결을 한 문장 녹일 것.",
+    "reframe_invitation": "다시 바라보기 초대 1~2문장. '이것은 진실이 아니라 ___에서 배운 오래된 믿음일 수 있어요' 형식. 친구처럼 따뜻한 어조."
+  }
+}
+
+## 추정 규칙
+1. dominant_schemas는 1~2개만. 응답 빈도와 강도(부정 단어, 이분법, 절대화)로 선정.
+2. evidence_quotes는 3~4개, 가능하면 서로 다른 카테고리에서 골고루.
+3. 유저가 건너뛴(스킵) 문항은 무시.
+4. 'EMS', '도식', '인지 왜곡', '병리적' 같은 임상 용어를 natural_label_ko·belief_*·how_it_works·reframe_invitation에 절대 노출 금지. 일상 한국어로만.
+5. natural_label_ko는 반드시 '~다는 오래된 안경' 또는 '~다는 마음의 규칙' 같은 비유 형식.
+6. '성취 중독' 워크북 맥락이므로, 가혹한 기준(US)·인정 추구(AS)·결함/수치심(DS)이 보이면 우선 고려.
+7. 판단·비난 금지. 따뜻하고 공감적인 어조.`;
+
+  const response = await chatCompletion(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userMessage },
+    ],
+    {
+      model: "gemini-2.5-pro",
+      temperature: 0.4,
+      max_tokens: 2048,
+      response_format: { type: "json_object" },
+    }
+  );
+
+  const parsed = safeJsonParse<AnalyzeSctRawResult>(response);
+  if (!isValidSctAnalysis(parsed)) {
+    throw new Error("analyze-sct 결과 형식이 올바르지 않습니다");
+  }
+
+  const generated_at = new Date().toISOString();
+
+  const belief_analysis: BeliefAnalysis = {
+    belief_about_self: parsed.belief_about_self.trim(),
+    belief_about_others: parsed.belief_about_others.trim(),
+    belief_about_world: parsed.belief_about_world.trim(),
+    dominant_schemas: parsed.dominant_schemas
+      .slice(0, 2)
+      .map((s) => ({
+        ems_code: s.ems_code.trim(),
+        natural_label_ko: s.natural_label_ko.trim(),
+        strength: s.strength === "strong" ? "strong" : "moderate",
+      })),
+    evidence_quotes: parsed.evidence_quotes
+      .slice(0, 4)
+      .map((q) => ({
+        sct_code: q.sct_code.trim(),
+        category_ko: q.category_ko.trim(),
+        quote: q.quote.trim(),
+      })),
+    generated_at,
+  };
+
+  const synthesis: SctSynthesis = {
+    belief_line: parsed.synthesis.belief_line.trim(),
+    how_it_works: parsed.synthesis.how_it_works.trim(),
+    reframe_invitation: parsed.synthesis.reframe_invitation.trim(),
+  };
+
+  return { belief_analysis, synthesis };
+}
+
+function buildSctUserMessage(
+  responses: SctResponses,
+  mechanism: MechanismAnalysis,
+  aiThoughtLabel: string
+): string {
+  const grouped: Record<SctCategoryCode, string[]> = {
+    A: [],
+    B: [],
+    C: [],
+    D: [],
+  };
+
+  for (const q of SCT_QUESTIONS) {
+    const r = responses[q.code];
+    const value =
+      r && !r.skipped && r.answer.trim().length > 0
+        ? `"${r.answer.trim()}"`
+        : "(건너뜀)";
+    grouped[q.category].push(`${q.code}. ${q.prompt} → ${value}`);
+  }
+
+  const sections = (Object.keys(grouped) as SctCategoryCode[])
+    .map(
+      (code) =>
+        `[${code}. ${SCT_CATEGORIES[code].labelKo}]\n${grouped[code].join("\n")}`
+    )
+    .join("\n\n");
+
+  const recentSituation = mechanism.automatic_thought ?? "";
+  const automaticThought = aiThoughtLabel || mechanism.automatic_thought || "";
+
+  return `## 유저의 SCT 14문항 응답
+
+${sections}
+
+## Step 3에서 유저가 적은 컨텍스트 (참조용, 직접 인용 금지)
+- 최근 상황과 자동사고: "${recentSituation}"
+- 핵심 자동사고 라벨: "${automaticThought}"
+
+위를 종합하여 시스템 메시지의 JSON 스키마로만 응답하세요.`;
+}
+
+function isValidSctAnalysis(
+  v: AnalyzeSctRawResult | null | undefined
+): v is AnalyzeSctRawResult {
+  if (!v) return false;
+  if (
+    typeof v.belief_about_self !== "string" ||
+    v.belief_about_self.trim().length === 0
+  )
+    return false;
+  if (typeof v.belief_about_others !== "string") return false;
+  if (typeof v.belief_about_world !== "string") return false;
+  if (!Array.isArray(v.dominant_schemas) || v.dominant_schemas.length === 0)
+    return false;
+  if (!Array.isArray(v.evidence_quotes)) return false;
+  if (
+    !v.synthesis ||
+    typeof v.synthesis.belief_line !== "string" ||
+    typeof v.synthesis.how_it_works !== "string" ||
+    typeof v.synthesis.reframe_invitation !== "string" ||
+    v.synthesis.belief_line.trim().length === 0 ||
+    v.synthesis.how_it_works.trim().length === 0 ||
+    v.synthesis.reframe_invitation.trim().length === 0
+  )
+    return false;
+  return true;
 }

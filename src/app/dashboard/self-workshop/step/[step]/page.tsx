@@ -8,16 +8,11 @@ import { WorkshopExerciseStep4 } from "@/components/self-workshop/WorkshopExerci
 import { WorkbookChapterHeader } from "@/components/self-workshop/workbook-redesign/WorkbookChapterHeader";
 import { WorkshopAIAnalysis } from "@/components/self-workshop/WorkshopAIAnalysis";
 import { WorkshopExerciseStep5CoreBelief } from "@/components/self-workshop/WorkshopExerciseStep5CoreBelief";
-import { WorkshopExerciseStep7 } from "@/components/self-workshop/WorkshopExerciseStep7";
+import { WorkshopBeliefEvidenceContent } from "@/components/self-workshop/WorkshopBeliefEvidenceContent";
 import { WorkshopReflectionContent } from "@/components/self-workshop/WorkshopReflectionContent";
 import { WorkshopPaymentGate } from "@/components/self-workshop/WorkshopPaymentGate";
-import { WorkshopBeliefDestroyContent } from "@/components/self-workshop/WorkshopBeliefDestroyContent";
 import { WorkshopAlternativeThoughtContent } from "@/components/self-workshop/WorkshopAlternativeThoughtContent";
 import { WorkshopNewBeliefContent } from "@/components/self-workshop/WorkshopNewBeliefContent";
-import {
-  isCognitiveErrorId,
-  type CognitiveErrorId,
-} from "@/lib/self-workshop/cognitive-errors";
 
 interface Props {
   params: Promise<{ step: string }>;
@@ -33,6 +28,11 @@ export default async function WorkshopStepPage({ params }: Props) {
   const { step: stepParam } = await params;
   const stepNumber = parseInt(stepParam, 10);
 
+  // 11단계 → 10단계 구조 시프트.
+  // - DB의 current_step은 progress 조회 직후 lazy migration으로 자동 정렬(아래 블록).
+  // - URL redirect는 두지 않는다 — 새 사용자가 정상적으로 새 step/7, 8 등에 진입하는
+  //   경로까지 가로채기 때문. 옛 URL(예: 옛 step/11) 북마크는 이제 invalid step으로 notFound 처리.
+
   // 유효한 step 번호 확인
   const stepMeta = WORKSHOP_STEPS.find((s) => s.step === stepNumber);
   if (!stepMeta) notFound();
@@ -45,12 +45,14 @@ export default async function WorkshopStepPage({ params }: Props) {
   if (!user) redirect("/login?redirect=/dashboard/self-workshop");
 
   // 워크북 진행 데이터 조회 — 같은 (user_id, workshop_type)에 여러 row가 있어도
-  // 가장 최근 1개를 사용 (PGRST116 "multiple rows" 에러 방지)
+  // 가장 진행이 많이 된 row(current_step desc) → 같은 단계면 가장 최근 row를 사용.
+  // PGRST116 "multiple rows" 에러 방지 + 옛 진행 이력이 새 진행을 가로막지 않도록.
   let { data: progress } = await supabase
     .from("workshop_progress")
     .select("*")
     .eq("user_id", user.id)
     .eq("workshop_type", "achievement-addiction")
+    .order("current_step", { ascending: false })
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -81,6 +83,21 @@ export default async function WorkshopStepPage({ params }: Props) {
   // 진행 데이터가 없으면 대시보드로
   if (!progress) redirect("/dashboard/self-workshop");
 
+  // [마이그레이션] 옛 11단계 → 새 10단계 구조로 시프트.
+  // current_step >= 7 (옛 7~11) 이었던 사용자는 한 칸씩 앞으로 당겨준다.
+  // 옛 6 (핵심 믿음 다시 보기)에 멈춰있던 사용자는 그 자리(=새 6 대안 자동사고)에 그대로 두고,
+  // 빈 belief_destroy 데이터는 미사용 상태로 자동 무시된다.
+  if (typeof progress.current_step === "number" && progress.current_step >= 7) {
+    const migrated = Math.min(progress.current_step - 1, 10);
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    await admin
+      .from("workshop_progress")
+      .update({ current_step: migrated })
+      .eq("id", progress.id);
+    progress.current_step = migrated;
+  }
+
   // Step 2+ 접근 시 구매 확인 (테스트 유저 제외)
   let hasPurchase = isTestUser;
   if (!hasPurchase && stepNumber >= 2) {
@@ -98,10 +115,15 @@ export default async function WorkshopStepPage({ params }: Props) {
   // 예외 1: 구매자가 Step 2를 건너뛰고 Step 3로 이어가는 경우 허용
   // 예외 2: 진단 점수가 있는 사용자는 Step 2(진단 리포트)는 항상 접근 가능
   //         (calculate API가 어떤 이유로 current_step을 못 올린 케이스 보호)
+  // 예외 3: 인접 진행(N-1 → N)은 항상 허용 — 컴포넌트의 advanceStep fetch가
+  //         race condition·여러 progress row·캐시 등 구조적 이유로 적용되지
+  //         않은 채 router.push가 도착해도 사용자가 갇히지 않도록 안전망.
+  //         단계 *건너뛰기*(N+2 이상)는 여전히 차단됨.
   if (stepNumber > progress.current_step) {
     const canBypass =
       (hasPurchase && stepNumber === 3 && progress.current_step === 2) ||
-      (stepNumber === 2 && progress.diagnosis_scores != null);
+      (stepNumber === 2 && progress.diagnosis_scores != null) ||
+      stepNumber === progress.current_step + 1;
     if (!canBypass) {
       redirect("/dashboard/self-workshop");
     }
@@ -198,6 +220,7 @@ export default async function WorkshopStepPage({ params }: Props) {
           step={5}
           savedReport={progress.mechanism_insights ?? null}
           mechanismAnalysis={progress.mechanism_analysis ?? null}
+          coreBeliefExcavation={progress.core_belief_excavation ?? null}
           userName={
             (user.user_metadata?.name as string | undefined) ??
             (user.user_metadata?.full_name as string | undefined) ??
@@ -206,23 +229,8 @@ export default async function WorkshopStepPage({ params }: Props) {
         />
       )}
 
-      {/* DESTROY · 1단계: 핵심 믿음 반박 (4기법 통합) */}
+      {/* RESHAPE · 1단계: 대안 자동사고 시뮬레이션 */}
       {stepNumber === 6 && (
-        <WorkshopBeliefDestroyContent
-          workshopId={workshopId}
-          savedData={progress.belief_destroy ?? undefined}
-          beliefLine={extractBeliefLine(progress.core_belief_excavation)}
-          prefillAutomaticThought={
-            progress.mechanism_analysis?.automatic_thought ?? ""
-          }
-          prefillCognitiveErrors={extractCognitiveErrorIds(
-            progress.mechanism_insights
-          )}
-        />
-      )}
-
-      {/* DESTROY · 2단계: 대안 자동사고 시뮬레이션 */}
-      {stepNumber === 7 && (
         <WorkshopAlternativeThoughtContent
           workshopId={workshopId}
           savedData={progress.alternative_thought_simulation ?? undefined}
@@ -230,40 +238,37 @@ export default async function WorkshopStepPage({ params }: Props) {
         />
       )}
 
-      {/* SOLUTION · 1단계: 새 핵심 신념 찾기 */}
-      {stepNumber === 8 && (
+      {/* RESHAPE · 2단계: 새 핵심 신념 찾기 */}
+      {stepNumber === 7 && (
         <WorkshopNewBeliefContent
           workshopId={workshopId}
           savedData={progress.new_belief ?? undefined}
           recentSituation={progress.mechanism_analysis?.recent_situation ?? ""}
-          oldBeliefLine={extractBeliefLine(progress.core_belief_excavation)}
-          reframeInvitation={extractReframeInvitation(
-            progress.core_belief_excavation
-          )}
+          beliefAnalysis={extractBeliefAnalysis(progress.core_belief_excavation)}
         />
       )}
 
-      {/* SOLUTION · 2단계: 대체 사고 + 실천 계획 */}
-      {stepNumber === 9 && (
-        <WorkshopExerciseStep7
+      {/* RESHAPE · 3단계: 새 신념 떠받치기 (근거 모으기 실습) */}
+      {stepNumber === 8 && (
+        <WorkshopBeliefEvidenceContent
           workshopId={workshopId}
           savedData={progress.coping_plan ?? undefined}
-          prefillThought={progress.mechanism_analysis?.automatic_thought}
-          aiSuggestedErrors={extractCognitiveErrors(progress.mechanism_insights)}
+          newBelief={progress.new_belief ?? null}
+          beliefAnalysis={extractBeliefAnalysis(progress.core_belief_excavation)}
         />
       )}
 
       {/* SUMMARY · 1단계: 전문 상담사 리포트 */}
-      {stepNumber === 10 && (
+      {stepNumber === 9 && (
         <WorkshopAIAnalysis
           workshopId={workshopId}
-          step={10}
+          step={9}
           savedCards={progress.summary_cards ?? undefined}
         />
       )}
 
       {/* SUMMARY · 2단계: 마무리 성찰 */}
-      {stepNumber === 11 && (
+      {stepNumber === 10 && (
         <WorkshopReflectionContent
           workshopId={workshopId}
           savedData={progress.reflections ?? undefined}
@@ -273,44 +278,49 @@ export default async function WorkshopStepPage({ params }: Props) {
   );
 }
 
-function extractCognitiveErrors(insights: unknown): string[] | undefined {
-  if (!insights || typeof insights !== "object" || Array.isArray(insights)) {
-    return undefined;
-  }
-  const r = insights as {
-    cognitive_errors?: { items?: Array<{ id?: unknown }> };
-  };
-  const ids = r.cognitive_errors?.items
-    ?.map((item) => item.id)
-    .filter((id): id is string => isCognitiveErrorId(id));
-  return ids && ids.length > 0 ? ids : undefined;
-}
-
-function extractCognitiveErrorIds(
-  insights: unknown
-): CognitiveErrorId[] | undefined {
-  const ids = extractCognitiveErrors(insights);
-  if (!ids) return undefined;
-  // isCognitiveErrorId로 한번 더 좁히기
-  return ids.filter((id): id is CognitiveErrorId => isCognitiveErrorId(id));
-}
-
-function extractBeliefLine(excavation: unknown): string {
-  if (!excavation || typeof excavation !== "object") return "";
+function extractBeliefAnalysis(excavation: unknown): {
+  belief_about_self?: string;
+  belief_about_others?: string;
+  belief_about_world?: string;
+} | null {
+  if (!excavation || typeof excavation !== "object") return null;
   const r = excavation as {
+    belief_analysis?: {
+      belief_about_self?: unknown;
+      belief_about_others?: unknown;
+      belief_about_world?: unknown;
+    };
     synthesis?: { belief_line?: unknown };
   };
-  const v = r.synthesis?.belief_line;
-  return typeof v === "string" ? v.trim() : "";
-}
+  const ba = r.belief_analysis;
+  const out: {
+    belief_about_self?: string;
+    belief_about_others?: string;
+    belief_about_world?: string;
+  } = {};
+  if (typeof ba?.belief_about_self === "string")
+    out.belief_about_self = ba.belief_about_self.trim();
+  if (typeof ba?.belief_about_others === "string")
+    out.belief_about_others = ba.belief_about_others.trim();
+  if (typeof ba?.belief_about_world === "string")
+    out.belief_about_world = ba.belief_about_world.trim();
 
-function extractReframeInvitation(excavation: unknown): string {
-  if (!excavation || typeof excavation !== "object") return "";
-  const r = excavation as {
-    synthesis?: { reframe_invitation?: unknown };
-  };
-  const v = r.synthesis?.reframe_invitation;
-  return typeof v === "string" ? v.trim() : "";
+  // belief_analysis가 비어 있고 legacy synthesis.belief_line만 있는 경우
+  // → self 축에라도 채워서 단일 신념 흐름이 작동하도록.
+  if (
+    !out.belief_about_self &&
+    !out.belief_about_others &&
+    !out.belief_about_world
+  ) {
+    const fallback = r.synthesis?.belief_line;
+    if (typeof fallback === "string" && fallback.trim()) {
+      out.belief_about_self = fallback.trim();
+    } else {
+      return null;
+    }
+  }
+
+  return out;
 }
 
 function extractMechanismSnapshot(mechanism: unknown): {

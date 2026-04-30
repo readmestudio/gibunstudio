@@ -23,16 +23,10 @@ const PRACTICE_STEPS: PracticeSection[] = [
       "어떤 상황에서 어떤 자동사고가 튀어나오는지부터 시작합니다. 그 위에 얹힌 행동 패턴을 따라가다 보면, 가장 깊은 곳에 자리 잡은 핵심 믿음에 닿게 됩니다. 이 단계에서는 평소 외면해 온 생각도 솔직하게 마주하셔야 해요.",
   },
   {
-    section: "DESTROY",
-    title: "오래된 믿음을 흔들기",
+    section: "RESHAPE",
+    title: "새 신념을 다시 빚어 자리잡게 하기",
     description:
-      "당연하다고 여겼던 신념을 네 가지 검증 기법으로 다시 살펴봅니다. 같은 상황을 다른 사고로 통과해보면, 자연스럽게 보였던 반응이 사실은 선택지 중 하나였다는 사실이 분명해져요.",
-  },
-  {
-    section: "SOLUTION",
-    title: "내 방식의 대처법 만들기",
-    description:
-      "새 핵심 신념을 다시 쓰고, 같은 상황이 다시 닥쳤을 때 무엇을 하고 무엇을 하지 않을지 직접 설계합니다. 머리로 끝나는 통찰이 아니라, 일상에서 그대로 꺼내 쓸 수 있는 행동 단위까지 내려갑니다.",
+      "같은 상황을 다른 자동사고로 통과해보고, 옛 신념 옆에 균형 잡힌 새 핵심 신념을 함께 둡니다. 그리고 그 신념을 떠받칠 살아있는 작은 증거들을 모아, 머리로 끝나는 통찰이 아니라 일상에서 꺼내 쓸 수 있는 자리까지 내려갑니다.",
   },
 ];
 
@@ -85,7 +79,7 @@ export function AchievementAddictionExplanation() {
         <AchievementCycleMotion />
       </div>
 
-      {/* [3] 워크북 진행 — 3단계 로드맵 (FIND OUT / SOFTEN / SOLUTION) */}
+      {/* [3] 워크북 진행 — 2단계 로드맵 (FIND OUT / RESHAPE) */}
       <div className="space-y-4">
         <div className="space-y-2">
           <h3 className="text-base font-semibold text-[var(--foreground)]">

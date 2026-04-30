@@ -207,7 +207,7 @@ export function WorkshopProfessionalReport({
       {/* 다음 */}
       <div className="text-center pt-4">
         <button
-          onClick={() => router.push("/dashboard/self-workshop/step/11")}
+          onClick={() => router.push("/dashboard/self-workshop/step/10")}
           className="inline-flex rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
         >
           마무리 성찰 →

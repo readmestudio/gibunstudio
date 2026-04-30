@@ -193,13 +193,23 @@ export const EMOTION_CHIPS = [
 export { COGNITIVE_ERRORS } from "./cognitive-errors";
 
 // ── 워크북 섹션 정의 ──
-// 5섹션 구조: TEST → FIND_OUT → DESTROY → SOLUTION → SUMMARY
+// 4섹션 구조: TEST → FIND_OUT → RESHAPE → SUMMARY
+//
+// 옛 SOFTEN("핵심 믿음 다시 보기" + "대안 자동사고 시뮬레이션") 섹션과
+// 옛 SOLUTION("새 핵심 신념 찾기" + "새 신념 떠받치기") 섹션을 하나의
+// RESHAPE로 통합. 옛 CH6 "핵심 믿음 다시 보기"는 CH8 "새 핵심 신념 찾기"와
+// 작업 본질이 같아 삭제. 옛 7~11 → 새 6~10.
+//
+// `DESTROY` / `SOLUTION` 옛 union 멤버는 외부 코드(예:
+// AchievementAddictionExplanation 라이브러리 내 PRACTICE_STEPS) 호환을 위해
+// 유지하되 신규 WORKSHOP_STEPS에서는 사용하지 않는다.
 
 export type WorkshopSection =
   | "TEST"
   | "FIND_OUT"
-  | "DESTROY"
-  | "SOLUTION"
+  | "RESHAPE"
+  | "DESTROY" // [deprecated] 외부 호환만
+  | "SOLUTION" // [deprecated] 외부 호환만
   | "SUMMARY";
 
 // ── 워크북 Step 메타데이터 ──
@@ -245,27 +255,25 @@ export const WORKSHOP_STEPS: WorkshopStep[] = [
     title: "통합 패턴 분석", subtitle: "6-Part 인지 사이클 + 인지 오류",
     type: "ai_analysis", estimatedMinutes: [3, 5], hasUserInput: false },
 
-  // ── SOFTEN ──
-  { step: 6, section: "DESTROY", sectionLabel: "SOFTEN", sectionStepNumber: 1,
-    title: "핵심 믿음 반박하기", subtitle: "삼중 컬럼 / 이중 표준 / 증거 / 비용편익",
-    type: "destroy", estimatedMinutes: [20, 30], hasUserInput: true },
-  { step: 7, section: "DESTROY", sectionLabel: "SOFTEN", sectionStepNumber: 2,
+  // ── RESHAPE ──
+  // 옛 SOFTEN(핵심 믿음 다시 보기 + 대안 자동사고)와 옛 SOLUTION(새 핵심 신념 찾기 + 떠받치기)을
+  // 하나의 섹션으로 통합. 옛 6 "핵심 믿음 다시 보기"는 작업 본질이 새 7 "새 핵심 신념 찾기"와
+  // 같아서 삭제. 옛 7~9 → 새 6~8.
+  { step: 6, section: "RESHAPE", sectionLabel: "RESHAPE", sectionStepNumber: 1,
     title: "대안 자동사고 시뮬레이션", subtitle: "같은 상황, 다른 사고였다면",
     type: "alternative_thought", estimatedMinutes: [10, 15], hasUserInput: true },
-
-  // ── SOLUTION ──
-  { step: 8, section: "SOLUTION", sectionLabel: "SOLUTION", sectionStepNumber: 1,
+  { step: 7, section: "RESHAPE", sectionLabel: "RESHAPE", sectionStepNumber: 2,
     title: "새 핵심 신념 찾기", subtitle: "리프레임 작성",
     type: "new_belief", estimatedMinutes: [10, 15], hasUserInput: true },
-  { step: 9, section: "SOLUTION", sectionLabel: "SOLUTION", sectionStepNumber: 2,
-    title: "대체 사고 + 실천 계획", subtitle: "인지 재구조화 / 행동 실험 / 자기 돌봄",
+  { step: 8, section: "RESHAPE", sectionLabel: "RESHAPE", sectionStepNumber: 3,
+    title: "새 신념 떠받치기", subtitle: "근거 모으기 실습",
     type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
 
   // ── SUMMARY ──
-  { step: 10, section: "SUMMARY", sectionLabel: "SUMMARY", sectionStepNumber: 1,
+  { step: 9, section: "SUMMARY", sectionLabel: "SUMMARY", sectionStepNumber: 1,
     title: "전문 상담사 리포트", subtitle: "DO & DON'T 포함 통합 정리",
     type: "ai_analysis", estimatedMinutes: [5, 8], hasUserInput: false },
-  { step: 11, section: "SUMMARY", sectionLabel: "SUMMARY", sectionStepNumber: 2,
+  { step: 10, section: "SUMMARY", sectionLabel: "SUMMARY", sectionStepNumber: 2,
     title: "워크북을 마치며", subtitle: "마무리 성찰",
     type: "reflection", estimatedMinutes: [5, 10], hasUserInput: true },
 ];
@@ -284,11 +292,9 @@ export const WORKSHOP_SECTIONS: WorkshopSectionMeta[] = [
     description: "내 성취 패턴이 어디까지 왔는지 진단해요" },
   { section: "FIND_OUT", label: "FIND OUT", order: 2,
     description: "내 자동사고와 핵심 신념을 찾아내요" },
-  { section: "DESTROY", label: "SOFTEN", order: 3,
-    description: "오래된 믿음을 네 가지 기법으로 반박해요" },
-  { section: "SOLUTION", label: "SOLUTION", order: 4,
-    description: "새 핵심 신념과 실천 계획을 만들어요" },
-  { section: "SUMMARY", label: "SUMMARY", order: 5,
+  { section: "RESHAPE", label: "RESHAPE", order: 3,
+    description: "같은 상황을 다른 시선으로 통과해보고, 새 신념을 다시 빚어 일상에 자리잡게 해요" },
+  { section: "SUMMARY", label: "SUMMARY", order: 4,
     description: "전체 여정을 전문 리포트로 정리해요" },
 ];
 

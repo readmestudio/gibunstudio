@@ -1,264 +1,72 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
-  isAnalysisReport,
-  type AnalysisReport,
-} from "@/lib/self-workshop/analysis-report";
+  SCT_CATEGORIES,
+  SCT_MIN_FOR_ANALYSIS,
+  SCT_QUESTIONS,
+  SCT_TOTAL_COUNT,
+  type SctCategoryCode,
+  type SctQuestion,
+} from "@/lib/self-workshop/sct-questions";
+import {
+  countAnsweredResponses,
+  migrateLegacyExcavation,
+  type CoreBeliefExcavation,
+  type SctResponses,
+} from "@/lib/self-workshop/core-belief-excavation";
 
-/* ─────────────────────────────── 타입 ─────────────────────────────── */
-
-interface Answers {
-  selected_hot_thought: string;
-  q1_selected: string[];
-  q1_custom: string;
-  q2_selected: string[];
-  q2_custom: string;
-  q3_selected: string[];
-  q3_custom: string;
-  q4_origin: string;
-  q5_compassion: string;
-}
-
-interface MidHypothesis {
-  hot_thought: string;
-  core_belief: string;
-  generated_at: string;
-}
-
-interface Synthesis {
-  belief_line: string;
-  how_it_works: string;
-  reframe_invitation: string;
-}
-
-export interface CoreBeliefExcavation {
-  answers: Answers;
-  mid_hypothesis?: MidHypothesis;
-  synthesis?: Synthesis;
-}
+/* ─────────────────────────────── Props ─────────────────────────────── */
 
 interface MechanismAnalysisData {
   automatic_thought?: string;
-  common_thoughts_checked?: string[];
   candidate_thoughts?: string[];
+  common_thoughts_checked?: string[];
 }
 
 interface Props {
   workshopId: string;
-  savedData?: Partial<CoreBeliefExcavation>;
+  savedData?: unknown;
   mechanismInsights: unknown;
   mechanismAnalysis: unknown;
 }
-
-const EMPTY_ANSWERS: Answers = {
-  selected_hot_thought: "",
-  q1_selected: [],
-  q1_custom: "",
-  q2_selected: [],
-  q2_custom: "",
-  q3_selected: [],
-  q3_custom: "",
-  q4_origin: "",
-  q5_compassion: "",
-};
-
-function asStringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
-}
-
-function migrateAnswers(
-  saved: Record<string, unknown> | undefined
-): Partial<Answers> {
-  if (!saved) return {};
-  // 레거시 자유텍스트 필드(q1_consequence, q1_meaning 등)는 q1_custom으로 이관해
-  // 기존 진행 중 사용자의 답을 잃지 않도록 함.
-  const legacyQ1 =
-    (saved.q1_consequence as string) ?? (saved.q1_meaning as string) ?? "";
-  const legacyQ2 =
-    (saved.q2_fear as string) ?? (saved.q2_about_self as string) ?? "";
-  const legacyQ3 =
-    (saved.q3_identity as string) ?? (saved.q3_core_sentence as string) ?? "";
-  return {
-    selected_hot_thought: (saved.selected_hot_thought as string) ?? "",
-    q1_selected: asStringArray(saved.q1_selected),
-    q1_custom: (saved.q1_custom as string) ?? legacyQ1 ?? "",
-    q2_selected: asStringArray(saved.q2_selected),
-    q2_custom: (saved.q2_custom as string) ?? legacyQ2 ?? "",
-    q3_selected: asStringArray(saved.q3_selected),
-    q3_custom: (saved.q3_custom as string) ?? legacyQ3 ?? "",
-    q4_origin: (saved.q4_origin as string) ?? "",
-    q5_compassion: (saved.q5_compassion as string) ?? "",
-  };
-}
-
-const Q4_EXAMPLES = [
-  "어릴 때 부모님이 성적으로만 저를 칭찬해 주셨어요",
-  "학창시절 성적이 곧 존재 가치였던 환경이 기억나요",
-  "첫 직장에서 '성과 없으면 쓸모없다'는 말을 자주 들었어요",
-  "(떠오르지 않으면 '모르겠어요'도 괜찮아요)",
-];
-
-const Q5_EXAMPLES = [
-  "너는 성과가 아니라 그냥 너여서 소중해",
-  "쉬는 게 뭐가 나빠, 기본이야",
-  "네가 어떤 모습이든 난 네 곁에 있을 거야",
-];
 
 /* ─────────────────────────────── 메인 ─────────────────────────────── */
 
 export function WorkshopExerciseStep5CoreBelief({
   workshopId,
   savedData,
-  mechanismInsights,
   mechanismAnalysis,
 }: Props) {
   const router = useRouter();
 
-  const report: AnalysisReport | null = isAnalysisReport(mechanismInsights)
-    ? mechanismInsights
-    : null;
-
   const mechanism = (mechanismAnalysis ?? {}) as MechanismAnalysisData;
-  const patternHeadline = report?.pattern_cycle.headline ?? "";
+  const hasMechanism =
+    !!mechanism.automatic_thought ||
+    (mechanism.candidate_thoughts?.length ?? 0) > 0 ||
+    (mechanism.common_thoughts_checked?.length ?? 0) > 0;
 
-  const migrated = migrateAnswers(
-    savedData?.answers as Record<string, unknown> | undefined
-  );
-  const [answers, setAnswers] = useState<Answers>({
-    ...EMPTY_ANSWERS,
-    ...migrated,
-  });
-  const [hypothesis, setHypothesis] = useState<MidHypothesis | undefined>(
-    savedData?.mid_hypothesis
-  );
-  const [synthesis, setSynthesis] = useState<Synthesis | undefined>(
-    savedData?.synthesis
+  const initial = useMemo<CoreBeliefExcavation>(
+    () => migrateLegacyExcavation(savedData),
+    [savedData]
   );
 
-  /* ── Phase 0: 뜨거운 생각 후보 ── */
-  const [candidates, setCandidates] = useState<string[]>([]);
-  const [candidatesLoading, setCandidatesLoading] = useState(false);
-  const [hotThoughtConfirmed, setHotThoughtConfirmed] = useState(
-    !!migrated.selected_hot_thought
-  );
-  const [customThought, setCustomThought] = useState("");
-  const [useCustom, setUseCustom] = useState(false);
-
-  /* ── Part 1: Q1~Q3 객관식 옵션 ── */
-  const [q1Options, setQ1Options] = useState<string[]>([]);
-  const [q2Options, setQ2Options] = useState<string[]>([]);
-  const [q3Options, setQ3Options] = useState<string[]>([]);
-  const [q1Loading, setQ1Loading] = useState(false);
-  const [q2Loading, setQ2Loading] = useState(false);
-  const [q3Loading, setQ3Loading] = useState(false);
-  const [q1UseCustom, setQ1UseCustom] = useState(
-    !!migrated.q1_custom && (migrated.q1_selected?.length ?? 0) === 0
-  );
-  const [q2UseCustom, setQ2UseCustom] = useState(
-    !!migrated.q2_custom && (migrated.q2_selected?.length ?? 0) === 0
-  );
-  const [q3UseCustom, setQ3UseCustom] = useState(
-    !!migrated.q3_custom && (migrated.q3_selected?.length ?? 0) === 0
-  );
-
-  const [hypothesizing, setHypothesizing] = useState(false);
-  const [synthesizing, setSynthesizing] = useState(false);
+  const [responses, setResponses] = useState<SctResponses>(initial.sct_responses);
+  const [advancing, setAdvancing] = useState(false);
   const [error, setError] = useState("");
-  const debounceRef = useRef<NodeJS.Timeout>(undefined);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  useEffect(() => {
-    if (hotThoughtConfirmed) return;
-    setCandidatesLoading(true);
-    fetch("/api/self-workshop/excavate-belief", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workshopId, phase: "generate-candidates" }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.candidates?.length) setCandidates(data.candidates);
-      })
-      .catch(() => {})
-      .finally(() => setCandidatesLoading(false));
-  }, [workshopId, hotThoughtConfirmed]);
-
-  const q1HasAnswer =
-    answers.q1_selected.length > 0 || answers.q1_custom.trim().length > 0;
-  const q2HasAnswer =
-    answers.q2_selected.length > 0 || answers.q2_custom.trim().length > 0;
-  const q3HasAnswer =
-    answers.q3_selected.length > 0 || answers.q3_custom.trim().length > 0;
-
-  const fetchQuestionOptions = useCallback(
-    async (q: "q1" | "q2" | "q3") => {
-      const setLoading =
-        q === "q1" ? setQ1Loading : q === "q2" ? setQ2Loading : setQ3Loading;
-      const setOptions =
-        q === "q1" ? setQ1Options : q === "q2" ? setQ2Options : setQ3Options;
-
-      setLoading(true);
-      try {
-        const res = await fetch("/api/self-workshop/excavate-belief", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            workshopId,
-            phase: `generate-options-${q}`,
-            hotThought: answers.selected_hot_thought,
-            q1Answer: joinAnswer(answers.q1_selected, answers.q1_custom),
-            q2Answer: joinAnswer(answers.q2_selected, answers.q2_custom),
-          }),
-        });
-        const data = await res.json();
-        if (Array.isArray(data.options) && data.options.length > 0) {
-          setOptions(data.options);
-        }
-      } catch {
-        /* 실패 시 options는 빈 상태로 유지 — UI가 "직접 쓰기" fallback 유도 */
-      } finally {
-        setLoading(false);
-      }
-    },
-    [
-      workshopId,
-      answers.selected_hot_thought,
-      answers.q1_selected,
-      answers.q1_custom,
-      answers.q2_selected,
-      answers.q2_custom,
-    ]
+  const answeredCount = useMemo(
+    () => countAnsweredResponses(responses),
+    [responses]
   );
-
-  // Q1 옵션: 뜨거운 생각 확정 직후 최초 1회만 생성
-  useEffect(() => {
-    if (!hotThoughtConfirmed) return;
-    if (q1Options.length > 0 || q1Loading) return;
-    fetchQuestionOptions("q1");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hotThoughtConfirmed]);
-
-  // Q2 옵션: Q1에 답이 있으면 최초 1회만 생성
-  useEffect(() => {
-    if (!hotThoughtConfirmed || !q1HasAnswer) return;
-    if (q2Options.length > 0 || q2Loading) return;
-    fetchQuestionOptions("q2");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hotThoughtConfirmed, q1HasAnswer]);
-
-  // Q3 옵션: Q2에 답이 있으면 최초 1회만 생성
-  useEffect(() => {
-    if (!hotThoughtConfirmed || !q2HasAnswer) return;
-    if (q3Options.length > 0 || q3Loading) return;
-    fetchQuestionOptions("q3");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hotThoughtConfirmed, q2HasAnswer]);
+  const canAdvance = answeredCount >= SCT_MIN_FOR_ANALYSIS;
 
   const autoSave = useCallback(
-    (updated: Answers) => {
+    (next: SctResponses) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
         await fetch("/api/self-workshop/save-progress", {
@@ -267,152 +75,99 @@ export function WorkshopExerciseStep5CoreBelief({
           body: JSON.stringify({
             workshopId,
             field: "core_belief_excavation",
-            data: { answers: updated },
+            data: {
+              sct_responses: next,
+              // 기존 synthesis/legacy_downward_arrow/belief_analysis는 보존
+              // (병합되지 않으면 다운스트림이 빈 값을 받아 회귀)
+              ...(initial.synthesis ? { synthesis: initial.synthesis } : {}),
+              ...(initial.belief_analysis
+                ? { belief_analysis: initial.belief_analysis }
+                : {}),
+              ...(initial.legacy_downward_arrow
+                ? { legacy_downward_arrow: initial.legacy_downward_arrow }
+                : {}),
+            },
           }),
         });
       }, 1000);
     },
-    [workshopId]
+    [
+      workshopId,
+      initial.synthesis,
+      initial.legacy_downward_arrow,
+      initial.belief_analysis,
+    ]
   );
 
-  function update<K extends keyof Answers>(key: K, value: Answers[K]) {
-    const next = { ...answers, [key]: value };
-    setAnswers(next);
+  function updateAnswer(code: string, answer: string) {
+    const next: SctResponses = {
+      ...responses,
+      [code]: {
+        answer,
+        skipped: false,
+        updated_at: new Date().toISOString(),
+      },
+    };
+    setResponses(next);
     autoSave(next);
   }
 
-  function confirmHotThought() {
-    const selected = useCustom ? customThought.trim() : answers.selected_hot_thought;
-    if (!selected) return;
-    const next = { ...answers, selected_hot_thought: selected };
-    setAnswers(next);
+  function toggleSkip(code: string) {
+    const current = responses[code];
+    const willSkip = !current?.skipped;
+    const next: SctResponses = {
+      ...responses,
+      [code]: {
+        answer: willSkip ? "" : (current?.answer ?? ""),
+        skipped: willSkip,
+        updated_at: new Date().toISOString(),
+      },
+    };
+    setResponses(next);
     autoSave(next);
-    setHotThoughtConfirmed(true);
   }
 
-  function returnToHotThoughtSelection() {
-    // 뜨거운 생각이 바뀌면 Q1~Q3 보기와 답이 맥락에 안 맞으므로 모두 초기화.
-    // mid_hypothesis/synthesis도 리셋해 Part 2 UI가 닫히도록.
-    const reset: Answers = {
-      ...answers,
-      selected_hot_thought: "",
-      q1_selected: [],
-      q1_custom: "",
-      q2_selected: [],
-      q2_custom: "",
-      q3_selected: [],
-      q3_custom: "",
-    };
-    setAnswers(reset);
-    autoSave(reset);
-    setQ1Options([]);
-    setQ2Options([]);
-    setQ3Options([]);
-    setQ1UseCustom(false);
-    setQ2UseCustom(false);
-    setQ3UseCustom(false);
-    setHypothesis(undefined);
-    setSynthesis(undefined);
-    setError("");
-    setCustomThought("");
-    setUseCustom(false);
-    setHotThoughtConfirmed(false);
-  }
-
-  function toggleQSelection(
-    key: "q1_selected" | "q2_selected" | "q3_selected",
-    option: string
-  ) {
-    const current = answers[key];
-    const next = current.includes(option)
-      ? current.filter((o) => o !== option)
-      : [...current, option];
-    update(key, next);
-  }
-
-  function joinAnswer(selected: string[], custom: string): string {
-    return [...selected, custom.trim()].filter((s) => s.length > 0).join(" / ");
-  }
-
-  const part1Complete = q1HasAnswer && q2HasAnswer && q3HasAnswer;
-
-  const part2Complete =
-    part1Complete &&
-    !!hypothesis &&
-    answers.q4_origin.trim().length > 0 &&
-    answers.q5_compassion.trim().length > 0;
-
-  // LLM이 기대하는 기존 스키마(q1_consequence/q2_fear/q3_identity)로
-  // 다중 선택 + 직접 입력을 합본해 전달.
-  function buildApiAnswers() {
-    return {
-      selected_hot_thought: answers.selected_hot_thought,
-      q1_consequence: joinAnswer(answers.q1_selected, answers.q1_custom),
-      q2_fear: joinAnswer(answers.q2_selected, answers.q2_custom),
-      q3_identity: joinAnswer(answers.q3_selected, answers.q3_custom),
-      q4_origin: answers.q4_origin,
-      q5_compassion: answers.q5_compassion,
-    };
-  }
-
-  async function handleHypothesize() {
-    setHypothesizing(true);
+  async function handleNext() {
+    setAdvancing(true);
     setError("");
     try {
-      const res = await fetch("/api/self-workshop/excavate-belief", {
-        method: "POST",
+      // pending debounce가 있으면 즉시 flush — 마지막 응답이 누락되지 않도록
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = undefined;
+      }
+      const res = await fetch("/api/self-workshop/save-progress", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workshopId,
-          phase: "hypothesize",
-          answers: buildApiAnswers(),
+          field: "core_belief_excavation",
+          advanceStep: 5,
+          data: {
+            sct_responses: responses,
+            ...(initial.synthesis ? { synthesis: initial.synthesis } : {}),
+            ...(initial.belief_analysis
+              ? { belief_analysis: initial.belief_analysis }
+              : {}),
+            ...(initial.legacy_downward_arrow
+              ? { legacy_downward_arrow: initial.legacy_downward_arrow }
+              : {}),
+          },
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "가설 생성에 실패했어요");
-      setHypothesis(data.hypothesis as MidHypothesis);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "저장에 실패했어요");
+      }
+      router.push("/dashboard/self-workshop/step/5");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "오류가 발생했어요");
-    } finally {
-      setHypothesizing(false);
+      setAdvancing(false);
     }
   }
 
-  async function handleSynthesize() {
-    setSynthesizing(true);
-    setError("");
-    try {
-      const res = await fetch("/api/self-workshop/excavate-belief", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workshopId,
-          phase: "synthesize",
-          answers: buildApiAnswers(),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "종합에 실패했어요");
-      setSynthesis(data.synthesis as Synthesis);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "오류가 발생했어요");
-    } finally {
-      setSynthesizing(false);
-    }
-  }
+  /* ─────────────────────────── 가드 ─────────────────────────── */
 
-  function handleNext() {
-    router.push("/dashboard/self-workshop/step/5");
-  }
-
-  /* ─────────────────────────── 렌더 ─────────────────────────── */
-
-  // 새 흐름: 트리거-자동사고 실습(FIND_OUT 1)이 선행 조건.
-  // mechanism_analysis가 비어 있으면 그 단계로 돌려보냄.
-  const hasMechanism =
-    !!mechanism.automatic_thought ||
-    (mechanism.candidate_thoughts?.length ?? 0) > 0 ||
-    (mechanism.common_thoughts_checked?.length ?? 0) > 0;
   if (!hasMechanism) {
     return (
       <div className="mx-auto max-w-lg py-20 text-center">
@@ -429,859 +184,496 @@ export function WorkshopExerciseStep5CoreBelief({
     );
   }
 
+  /* ─────────────────────────── 렌더 ─────────────────────────── */
+
+  const categoryCodes: SctCategoryCode[] = ["A", "B", "C", "D"];
+
   return (
     <div className="mx-auto max-w-lg space-y-8 pb-20">
-      {hotThoughtConfirmed ? (
-        <button
-          type="button"
-          onClick={returnToHotThoughtSelection}
-          className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
-        >
-          ← 뜨거운 생각 다시 선택하기
-        </button>
-      ) : (
-        <Link
-          href="/dashboard/self-workshop/step/3"
-          className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
-        >
-          ← 자동사고 실습 다시 보기
-        </Link>
-      )}
+      <Link
+        href="/dashboard/self-workshop/step/3"
+        className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
+      >
+        ← 자동사고 실습 다시 보기
+      </Link>
 
-      {/* ── Phase 0: 뜨거운 생각 선택 ── */}
-      {!hotThoughtConfirmed ? (
-        <>
-          {/* 설명 카드 */}
-          <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
-              Step 5 시작하기
-            </p>
-            <p className="mt-3 text-base font-bold leading-snug text-[var(--foreground)]">
-              성취 중독을 해결하는 첫 번째 열쇠
-            </p>
+      <SctIntroCard />
+      <SctHowToFindCard />
+      <SctBeforeStartCard />
 
-            <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
-              Step 4에서 우리는 성취 중독이 작동하는 순간을 살펴봤어요.
-              어떤 상황이 불안을 촉발하고, 그때 어떤 감정이 올라오며,
-              &ldquo;나만 뒤처졌어&rdquo;, &ldquo;더 해야 해&rdquo; 같은
-              생각이 자동으로 떠오르는 것까지요.
-            </p>
-
-            <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
-              그런데 이 자동적 사고는 혼자서 갑자기 생겨난 게 아니에요.
-              그 밑에는 오랜 시간에 걸쳐 형성된, 나 자신에 대한
-              깊은 믿음이 있어요. 심리학에서는 이것을 <strong>핵심 신념</strong>이라고 불러요.
-            </p>
-
-            {/* 도식 */}
-            <div className="mt-5 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-4">
-              <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/40">
-                예시
-              </p>
-              <div className="flex flex-col items-center gap-1">
-                <div className="w-full rounded-lg border-2 border-[var(--foreground)] bg-white px-4 py-2.5 text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
-                    핵심 신념
-                  </p>
-                  <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-                    &ldquo;나는 충분하지 않은 사람이다&rdquo;
-                  </p>
-                </div>
-                <span className="text-[var(--foreground)]/30 text-lg leading-none">↓</span>
-                <div className="w-full rounded-lg border border-[var(--foreground)]/25 bg-white px-4 py-2 text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
-                    중간 신념 (규칙)
-                  </p>
-                  <p className="mt-0.5 text-xs text-[var(--foreground)]/70">
-                    &ldquo;성과로 증명하지 않으면 인정받을 수 없어&rdquo;
-                  </p>
-                </div>
-                <span className="text-[var(--foreground)]/30 text-lg leading-none">↓</span>
-                <div className="w-full rounded-lg border border-[var(--foreground)]/25 bg-white px-4 py-2 text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
-                    자동적 사고
-                  </p>
-                  <p className="mt-0.5 text-xs text-[var(--foreground)]/70">
-                    &ldquo;나만 뒤처졌어&rdquo; &ldquo;더 해야 해&rdquo;
-                  </p>
-                </div>
-                <span className="text-[var(--foreground)]/30 text-lg leading-none">↓</span>
-                <div className="flex w-full gap-2">
-                  <div className="flex-1 rounded-lg border border-[var(--foreground)]/15 bg-white px-3 py-2 text-center">
-                    <p className="text-[10px] font-semibold text-[var(--foreground)]/45">감정</p>
-                    <p className="mt-0.5 text-xs text-[var(--foreground)]/60">불안, 자책</p>
-                  </div>
-                  <div className="flex-1 rounded-lg border border-[var(--foreground)]/15 bg-white px-3 py-2 text-center">
-                    <p className="text-[10px] font-semibold text-[var(--foreground)]/45">행동</p>
-                    <p className="mt-0.5 text-xs text-[var(--foreground)]/60">과몰두, 비교</p>
-                  </div>
-                </div>
-              </div>
-              <p className="mt-3 text-center text-xs text-[var(--foreground)]/50">
-                Step 4에서 본 것은 아래쪽이에요. 이제 위로 올라가 볼 거예요.
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <p className="text-sm leading-relaxed text-[var(--foreground)]/75">
-                핵심 신념은 보통 어린 시절이나 중요한 관계에서 만들어져요.
-                그리고 안경처럼 세상을 바라보는 방식 전체에 영향을 줘요.
-                같은 상황에서도 누군가는 &ldquo;괜찮아, 다음에 하면 되지&rdquo;라고 생각하고,
-                누군가는 &ldquo;역시 나는 안 돼&rdquo;라고 느끼는 이유가 바로 이 핵심 신념의 차이예요.
-              </p>
-
-              <p className="text-sm font-semibold leading-relaxed text-[var(--foreground)]">
-                핵심 신념을 발견하면 무엇이 달라질까요?
-              </p>
-
-              {/* Before / After */}
-              <div className="space-y-3">
-                <div className="rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/40">
-                    Before — 핵심 신념을 모를 때
-                  </p>
-                  <ul className="mt-2 space-y-1.5">
-                    <li className="text-sm leading-relaxed text-[var(--foreground)]/60">
-                      &ldquo;왜 나는 항상 이럴까&rdquo; — 원인을 모른 채 같은 패턴 반복
-                    </li>
-                    <li className="text-sm leading-relaxed text-[var(--foreground)]/60">
-                      자동적 사고에 그대로 휩쓸려 감정과 행동이 연쇄 반응
-                    </li>
-                    <li className="text-sm leading-relaxed text-[var(--foreground)]/60">
-                      &ldquo;나는 원래 이런 사람이야&rdquo; — 바꿀 수 없다고 느낌
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="rounded-lg border-2 border-[var(--foreground)] bg-white p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
-                    After — 핵심 신념을 발견한 뒤
-                  </p>
-                  <ul className="mt-2 space-y-1.5">
-                    <li className="text-sm leading-relaxed text-[var(--foreground)]">
-                      반복되는 감정과 행동의 진짜 원인이 보이기 시작해요
-                    </li>
-                    <li className="text-sm leading-relaxed text-[var(--foreground)]">
-                      &ldquo;아, 또 그 믿음이 작동하고 있구나&rdquo; — 한 발짝 물러서서 바라볼 수 있어요
-                    </li>
-                    <li className="text-sm leading-relaxed text-[var(--foreground)]">
-                      사실이 아니라 학습된 것임을 알면, 다르게 생각하고 행동할 여지가 생겨요
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/75">
-                지금부터 Step 4에서 발견한 자동적 사고 하나를 골라,
-                그 생각의 뿌리까지 한 겹씩 따라가 볼 거예요.
-              </p>
-            </div>
-          </div>
-
-          {/* 뜨거운 생각 고르기 */}
-          <PartHeader num="Step 5-1" title="뜨거운 생각 고르기" />
-
-          <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5">
-            <p className="text-sm leading-relaxed text-[var(--foreground)]/75">
-              <strong className="text-[var(--foreground)]">뜨거운 생각</strong>이란,
-              스트레스 상황에서 순간적으로 떠오르면서 감정을 가장 강하게 흔드는 생각이에요.
-              여러 생각 중 하나를 골라 깊이 따라가 보면, 그 밑에 있는 핵심 신념에 닿을 수 있어요.
-            </p>
-
-            <p className="mt-4 text-sm font-semibold text-[var(--foreground)]">
-              아래 중 <strong>가장 마음이 불편해지는 생각</strong>을 골라주세요.
-            </p>
-
-            {candidatesLoading ? (
-              <div className="mt-4 flex items-center gap-2 text-sm text-[var(--foreground)]/50">
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--foreground)]/30 border-t-transparent" />
-                Step 4의 생각들을 정리하고 있어요…
-              </div>
-            ) : (
-              <div className="mt-4 space-y-2">
-                {candidates.map((thought) => {
-                  const selected =
-                    !useCustom && answers.selected_hot_thought === thought;
-                  return (
-                    <button
-                      key={thought}
-                      type="button"
-                      onClick={() => {
-                        setUseCustom(false);
-                        update("selected_hot_thought", thought);
-                      }}
-                      className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
-                        selected
-                          ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
-                          : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
-                      }`}
-                    >
-                      <span
-                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                          selected
-                            ? "border-[var(--foreground)] bg-[var(--foreground)]"
-                            : "border-[var(--foreground)]/30"
-                        }`}
-                      >
-                        {selected && (
-                          <span className="h-2 w-2 rounded-full bg-white" />
-                        )}
-                      </span>
-                      <span
-                        className={`min-w-0 break-words leading-relaxed ${
-                          selected
-                            ? "font-semibold text-[var(--foreground)]"
-                            : "text-[var(--foreground)]/80"
-                        }`}
-                      >
-                        {thought}
-                      </span>
-                    </button>
-                  );
-                })}
-
-                {/* 직접 쓰기 */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUseCustom(true);
-                    update("selected_hot_thought", "");
-                  }}
-                  className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
-                    useCustom
-                      ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
-                      : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
-                  }`}
-                >
-                  <span
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                      useCustom
-                        ? "border-[var(--foreground)] bg-[var(--foreground)]"
-                        : "border-[var(--foreground)]/30"
-                    }`}
-                  >
-                    {useCustom && (
-                      <span className="h-2 w-2 rounded-full bg-white" />
-                    )}
-                  </span>
-                  <span
-                    className={`leading-relaxed ${
-                      useCustom
-                        ? "font-semibold text-[var(--foreground)]"
-                        : "text-[var(--foreground)]/80"
-                    }`}
-                  >
-                    직접 쓸게요
-                  </span>
-                </button>
-
-                {useCustom && (
-                  <input
-                    type="text"
-                    value={customThought}
-                    onChange={(e) => setCustomThought(e.target.value)}
-                    placeholder="떠오르는 생각을 적어주세요"
-                    className="mt-2 w-full rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors"
-                  />
-                )}
-              </div>
-            )}
-
-            <div className="mt-5 text-center">
-              <button
-                onClick={confirmHotThought}
-                disabled={
-                  useCustom
-                    ? customThought.trim().length === 0
-                    : answers.selected_hot_thought.trim().length === 0
-                }
-                className="inline-flex items-center gap-2 rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                이 생각으로 시작하기 →
-              </button>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* ── 선택된 뜨거운 생각 컨텍스트 ── */}
-          <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
-              Step 4에서 발견한 패턴
-            </p>
-            {patternHeadline && (
-              <p className="mt-2 text-base font-bold leading-snug text-[var(--foreground)]">
-                {patternHeadline}
-              </p>
-            )}
-            <div className="mt-4 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-3">
-              <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-                내가 고른 뜨거운 생각
-              </p>
-              <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">
-                &ldquo;{answers.selected_hot_thought}&rdquo;
-              </p>
-            </div>
-            <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
-              이 생각을 한 겹씩 따라가면서, 그 밑에 숨어 있는
-              <strong> 오래된 믿음</strong>을 찾아볼게요.
-              정답은 없어요. 떠오르는 대로 솔직하게 적어주세요.
-            </p>
-          </div>
-
-          {/* ── Part 1: 한 겹씩 따라가 보기 ── */}
-          <PartHeader num="Part 1" title="한 겹씩 따라가 보기" />
-
-          <QuestionBlockMultiSelect
-            step={1}
-            label="내가 고른 뜨거운 생각이 사실이라면, 어떤 일이 벌어지나요?"
-            guide="해당되는 걸 모두 골라주세요. 직접 적어도 좋아요."
-            options={q1Options}
-            loading={q1Loading}
-            selected={answers.q1_selected}
-            onToggle={(opt) => toggleQSelection("q1_selected", opt)}
-            useCustom={q1UseCustom}
-            onToggleCustom={() => setQ1UseCustom((v) => !v)}
-            customValue={answers.q1_custom}
-            onCustomChange={(v) => update("q1_custom", v)}
-            customPlaceholder="예: 결국 아무도 나를 필요로 하지 않게 돼요"
-          />
-
-          <QuestionBlockMultiSelect
-            step={2}
-            label={
-              <>
-                {q1HasAnswer ? (
-                  <>
-                    <span className="text-[var(--foreground)]/55">
-                      &ldquo;
-                      {truncate(
-                        joinAnswer(answers.q1_selected, answers.q1_custom),
-                        40
-                      )}
-                      &rdquo;
-                    </span>
-                    {" "}— 이게 진짜 일어난다면,
-                    <br />
-                  </>
-                ) : null}
-                가장 두려운 건 뭔가요?
-              </>
-            }
-            guide="가슴으로 느껴지는 두려움을 모두 골라주세요. 직접 적어도 좋아요."
-            options={q2Options}
-            loading={q2Loading}
-            selected={answers.q2_selected}
-            onToggle={(opt) => toggleQSelection("q2_selected", opt)}
-            useCustom={q2UseCustom}
-            onToggleCustom={() => setQ2UseCustom((v) => !v)}
-            customValue={answers.q2_custom}
-            onCustomChange={(v) => update("q2_custom", v)}
-            disabled={!q1HasAnswer}
-            customPlaceholder="예: 혼자 남겨지는 게 가장 무서워요"
-          />
-
-          <QuestionBlockMultiSelect
-            step={3}
-            label="그 두려움은 결국, 당신이 어떤 사람이라고 말하고 있나요?"
-            guide="해당되는 문장을 모두 골라주세요. 직접 적어도 좋아요."
-            options={q3Options}
-            loading={q3Loading}
-            selected={answers.q3_selected}
-            onToggle={(opt) => toggleQSelection("q3_selected", opt)}
-            useCustom={q3UseCustom}
-            onToggleCustom={() => setQ3UseCustom((v) => !v)}
-            customValue={answers.q3_custom}
-            onCustomChange={(v) => update("q3_custom", v)}
-            disabled={!q2HasAnswer}
-            prefix="나는 "
-            customPlaceholder="예: 증명하지 않으면 사랑받을 수 없는 사람이다"
-          />
-
-          {/* 가설 생성 버튼 또는 가설 카드 */}
-          {!hypothesis ? (
-            <div className="text-center">
-              <button
-                onClick={handleHypothesize}
-                disabled={!part1Complete || hypothesizing}
-                className="inline-flex items-center gap-2 rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                {hypothesizing ? (
-                  <>
-                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    핵심 믿음을 찾는 중…
-                  </>
-                ) : (
-                  "내 답에서 핵심 믿음 찾기 →"
-                )}
-              </button>
-              {!part1Complete && (
-                <p className="mt-2 text-xs text-[var(--foreground)]/50">
-                  세 질문을 모두 답하면 활성화돼요
-                </p>
-              )}
-            </div>
-          ) : (
-            <HypothesisCard
-              hotThought={hypothesis.hot_thought}
-              belief={hypothesis.core_belief}
-            />
-          )}
-
-          {/* ── Part 2 — 가설이 있어야만 렌더 ── */}
-          {hypothesis && (
-            <>
-              <PartHeader num="Part 2" title="이 믿음은 어디서 왔을까" />
-
-              <QuestionBlock
-                step={4}
-                label="이 믿음이 처음 생긴 순간이 떠오르세요? 어떤 경험·관계에서 배운 것 같나요?"
-                examples={Q4_EXAMPLES}
-                value={answers.q4_origin}
-                onChange={(v) => update("q4_origin", v)}
-                placeholder="예: 어릴 때 …"
-              />
-
-              <QuestionBlock
-                step={5}
-                label={
-                  <>
-                    사랑하는 친구가 <strong>똑같은 믿음</strong>을 갖고 있다면,
-                    <br />
-                    당신은 뭐라고 말해주고 싶으세요?
-                  </>
-                }
-                examples={Q5_EXAMPLES}
-                value={answers.q5_compassion}
-                onChange={(v) => update("q5_compassion", v)}
-                disabled={!answers.q4_origin.trim()}
-                placeholder="친구에게 건네는 한 문장"
-                extraAbove={
-                  <div className="mb-3 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/60 p-3">
-                    <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-                      다시 마주하는 핵심 믿음
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">
-                      &ldquo;{hypothesis.core_belief}&rdquo;
-                    </p>
-                  </div>
-                }
-              />
-
-              {!synthesis ? (
-                <div className="text-center">
-                  <button
-                    onClick={handleSynthesize}
-                    disabled={!part2Complete || synthesizing}
-                    className="inline-flex items-center gap-2 rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
-                  >
-                    {synthesizing ? (
-                      <>
-                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        마지막 정리 중…
-                      </>
-                    ) : (
-                      "마지막 정리 보기 →"
-                    )}
-                  </button>
-                </div>
-              ) : (
-                <SynthesisCard data={synthesis} />
-              )}
-            </>
-          )}
-
-          {error && (
-            <p className="rounded-lg border border-red-300 bg-red-50 p-3 text-center text-sm text-red-700">
-              {error}
-            </p>
-          )}
-
-          {/* 다음 단계 버튼 — synthesis 완료 후에만 */}
-          {synthesis && (
-            <div className="text-center pt-4">
-              <button
-                onClick={handleNext}
-                className="inline-flex rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                다음 단계로 →
-              </button>
-            </div>
-          )}
-
-          <p className="text-center text-xs text-[var(--foreground)]/40">
-            작성 내용은 자동으로 저장됩니다
-          </p>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ─────────────────────────── 하위 컴포넌트 ─────────────────────────── */
-
-function PartHeader({ num, title }: { num: string; title: string }) {
-  return (
-    <div className="flex items-center gap-3 pt-2">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/45">
-        {num}
-      </span>
-      <span className="h-px flex-1 bg-[var(--foreground)]/15" />
-      <span className="text-sm font-bold text-[var(--foreground)]">{title}</span>
-    </div>
-  );
-}
-
-function QuestionBlock({
-  step,
-  label,
-  guide,
-  examples,
-  value,
-  onChange,
-  placeholder,
-  disabled,
-  prefix,
-  extraAbove,
-}: {
-  step: number;
-  label: ReactNode;
-  guide?: string;
-  examples: string[];
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  prefix?: string;
-  extraAbove?: ReactNode;
-}) {
-  return (
-    <div
-      className={`rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5 transition-opacity ${
-        disabled ? "opacity-40" : ""
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
-          {step}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold leading-relaxed text-[var(--foreground)]">
-            {label}
-          </p>
-          {guide && (
-            <p className="mt-1 text-xs leading-relaxed text-[var(--foreground)]/55">
-              {guide}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-lg border border-[var(--foreground)]/10 bg-[var(--surface)]/40 p-3">
-        <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-          이렇게 적어볼 수 있어요
-        </p>
-        <ul className="mt-2 space-y-1.5">
-          {examples.map((ex) => (
-            <li
-              key={ex}
-              className="flex items-start gap-2 text-xs leading-relaxed text-[var(--foreground)]/65"
-            >
-              <span
-                aria-hidden
-                className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-[var(--foreground)]/40"
-              />
-              <span>{ex}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {extraAbove}
-
-      {prefix ? (
-        <div className="mt-4 flex items-baseline gap-1.5 rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-3 focus-within:border-[var(--foreground)]">
-          <span className="text-base font-medium text-[var(--foreground)]/80">
-            {prefix}
-          </span>
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            disabled={disabled}
-            className="min-w-0 flex-1 bg-transparent text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:outline-none"
-          />
-        </div>
-      ) : (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          disabled={disabled}
-          rows={3}
-          className="mt-4 w-full resize-none rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors"
+      {categoryCodes.map((code, idx) => (
+        <SctCategorySection
+          key={code}
+          index={idx + 1}
+          categoryCode={code}
+          responses={responses}
+          onAnswerChange={updateAnswer}
+          onToggleSkip={toggleSkip}
         />
-      )}
-    </div>
-  );
-}
+      ))}
 
-function QuestionBlockMultiSelect({
-  step,
-  label,
-  guide,
-  options,
-  loading,
-  selected,
-  onToggle,
-  useCustom,
-  onToggleCustom,
-  customValue,
-  onCustomChange,
-  disabled,
-  prefix,
-  customPlaceholder,
-}: {
-  step: number;
-  label: ReactNode;
-  guide?: string;
-  options: string[];
-  loading: boolean;
-  selected: string[];
-  onToggle: (option: string) => void;
-  useCustom: boolean;
-  onToggleCustom: () => void;
-  customValue: string;
-  onCustomChange: (v: string) => void;
-  disabled?: boolean;
-  prefix?: string;
-  customPlaceholder?: string;
-}) {
-  return (
-    <div
-      className={`rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5 transition-opacity ${
-        disabled ? "opacity-40 pointer-events-none" : ""
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-xs font-bold">
-          {step}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold leading-relaxed text-[var(--foreground)]">
-            {label}
+      {/* 진행 카드 — 응답 작성 후 다음 단계로 */}
+      <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
+          작성 완료 후
+        </p>
+        <p className="mt-2 text-base font-bold leading-snug text-[var(--foreground)]">
+          다음 단계에서 함께 분석할게요
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
+          여기서 적은 응답들은 다음 단계에서 Step 3의 자동사고와 함께 묶여,
+          당신의 핵심 신념과 성취 중독 패턴이 어떻게 연결되는지 통합으로
+          분석돼요.
+        </p>
+        <div className="mt-4 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-3">
+          <p className="text-xs text-[var(--foreground)]/65">
+            {answeredCount}문항 작성됨 · 최소 {SCT_MIN_FOR_ANALYSIS}문항 이상이면
+            다음으로 넘어갈 수 있어요
           </p>
-          {guide && (
-            <p className="mt-1 text-xs leading-relaxed text-[var(--foreground)]/55">
-              {guide}
-            </p>
-          )}
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--foreground)]/10">
+            <div
+              className="h-full bg-[var(--foreground)] transition-all"
+              style={{
+                width: `${Math.min(100, (answeredCount / SCT_TOTAL_COUNT) * 100)}%`,
+              }}
+            />
+          </div>
         </div>
+
+        <div className="mt-5 text-center">
+          <button
+            onClick={handleNext}
+            disabled={!canAdvance || advancing}
+            className="inline-flex items-center gap-2 rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {advancing ? (
+              <>
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                저장하는 중…
+              </>
+            ) : (
+              "다음 단계로 →"
+            )}
+          </button>
+        </div>
+
+        {error && (
+          <p className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-center text-sm text-red-700">
+            {error}
+          </p>
+        )}
       </div>
 
-      {loading ? (
-        <div className="mt-4 flex items-center gap-2 text-sm text-[var(--foreground)]/50">
-          <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--foreground)]/30 border-t-transparent" />
-          내 뜨거운 생각에 맞춘 보기를 만드는 중…
-        </div>
-      ) : (
-        <div className="mt-4 space-y-2">
-          {options.map((opt) => {
-            const isChecked = selected.includes(opt);
-            return (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => onToggle(opt)}
-                className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
-                  isChecked
-                    ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
-                    : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
-                }`}
-              >
-                <span
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
-                    isChecked
-                      ? "border-[var(--foreground)] bg-[var(--foreground)]"
-                      : "border-[var(--foreground)]/30"
-                  }`}
-                >
-                  {isChecked && (
-                    <svg
-                      viewBox="0 0 12 12"
-                      className="h-3 w-3"
-                      aria-hidden
-                    >
-                      <path
-                        d="M2.5 6.5l2.2 2.2 4.8-4.8"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </span>
-                <span
-                  className={`min-w-0 break-words leading-relaxed ${
-                    isChecked
-                      ? "font-semibold text-[var(--foreground)]"
-                      : "text-[var(--foreground)]/80"
-                  }`}
-                >
-                  {prefix ? (
-                    <>
-                      <span className="text-[var(--foreground)]/55">
-                        {prefix}
-                      </span>
-                      {opt}
-                    </>
-                  ) : (
-                    opt
-                  )}
-                </span>
-              </button>
-            );
-          })}
-
-          {/* 직접 입력 토글 */}
-          <button
-            type="button"
-            onClick={onToggleCustom}
-            className={`flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors ${
-              useCustom
-                ? "border-[var(--foreground)] bg-[var(--foreground)]/5"
-                : "border-[var(--foreground)]/15 bg-white hover:border-[var(--foreground)]/40"
-            }`}
-          >
-            <span
-              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
-                useCustom
-                  ? "border-[var(--foreground)] bg-[var(--foreground)]"
-                  : "border-[var(--foreground)]/30"
-              }`}
-            >
-              {useCustom && (
-                <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
-                  <path
-                    d="M2.5 6.5l2.2 2.2 4.8-4.8"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </span>
-            <span
-              className={`leading-relaxed ${
-                useCustom
-                  ? "font-semibold text-[var(--foreground)]"
-                  : "text-[var(--foreground)]/80"
-              }`}
-            >
-              직접 적기
-            </span>
-          </button>
-
-          {useCustom &&
-            (prefix ? (
-              <div className="mt-2 flex items-baseline gap-1.5 rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-3 focus-within:border-[var(--foreground)]">
-                <span className="text-base font-medium text-[var(--foreground)]/80">
-                  {prefix}
-                </span>
-                <input
-                  type="text"
-                  value={customValue}
-                  onChange={(e) => onCustomChange(e.target.value)}
-                  placeholder={customPlaceholder}
-                  className="min-w-0 flex-1 bg-transparent text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:outline-none"
-                />
-              </div>
-            ) : (
-              <textarea
-                value={customValue}
-                onChange={(e) => onCustomChange(e.target.value)}
-                placeholder={customPlaceholder}
-                rows={3}
-                className="mt-2 w-full resize-none rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors"
-              />
-            ))}
-        </div>
-      )}
+      <p className="text-center text-xs text-[var(--foreground)]/40">
+        작성 내용은 자동으로 저장됩니다
+      </p>
     </div>
   );
 }
 
-function HypothesisCard({
-  hotThought,
-  belief,
-}: {
-  hotThought: string;
-  belief: string;
-}) {
+/* ─────────────────────────── 인트로 카드 ─────────────────────────── */
+
+function SctIntroCard() {
   return (
     <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/55">
-        지금까지 따라온 결과
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
+        Step 4 시작하기
+      </p>
+      <p className="mt-3 text-base font-bold leading-snug text-[var(--foreground)]">
+        성취 중독 아래에 있는 핵심 신념 찾기
+      </p>
+
+      <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
+        Step 3에서는 성취 중독 패턴이 <strong>트리거된 한 상황</strong>과
+        그때 따라온 감정·생각·신체·행동 반응을 살펴봤어요. 표면에서 일어난
+        한 번의 사건을 분석한 거예요.
+      </p>
+
+      <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
+        이제는 그 패턴 <strong>아래에 깔려 있는 핵심 신념</strong>을 찾아볼
+        차례예요.{" "}
+        <span className="box-decoration-clone rounded-sm bg-sky-100 px-1 py-0.5">
+          핵심 신념은 내가 살아오면서 만들어온{" "}
+          <strong>오래된 안경</strong> 같은 거예요.
+        </span>{" "}
+        같은 상황에서도 누군가는 &ldquo;괜찮아, 다음에 잘하면 되지&rdquo;라고
+        보고, 누군가는 &ldquo;역시 나는 안 돼&rdquo;라고 느끼는 차이가 바로
+        이 안경에서 나와요.
+      </p>
+
+      <SameSceneTwoLensesAnimation />
+
+      <p className="mt-5 text-sm leading-relaxed text-[var(--foreground)]/75">
+        보통 어린 시절이나 중요한 관계에서 학습되어 자리잡고, 이후엔 의식하지
+        않아도 자동으로 작동해요. 그래서 같은 트리거에 같은 반응이 반복되는
+        거예요.
+      </p>
+    </div>
+  );
+}
+
+function SctHowToFindCard() {
+  return (
+    <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
+        어떻게 찾을까요?
       </p>
       <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
-        나의 <strong className="text-[var(--foreground)]">&ldquo;{hotThought}&rdquo;</strong>
-        이라는 뜨거운 생각은
-        <br />
-        이 핵심 믿음에 기반하고 있을지도 몰라요:
+        핵심 신념은 평소엔 의식 밖에 있어서 직접 묻기 어려워요. 그래서
+        심리학에서는 미완성 문장을 짧게 채우게 해서, 떠오르는 첫 문장으로
+        그 사람의 신념 구조를 추정하는{" "}
+        <strong>문장 완성검사(SCT)</strong>를 자주 써요.
       </p>
-      <blockquote className="mt-4 rounded-lg border-l-4 border-[var(--foreground)] bg-[var(--surface)]/40 p-4">
-        <p className="text-base font-semibold leading-relaxed text-[var(--foreground)]">
-          &ldquo;{belief}&rdquo;
-        </p>
-      </blockquote>
-      <p className="mt-4 text-xs text-[var(--foreground)]/55">
-        이제 이 믿음을 조금 더 깊이 들여다볼까요?
+      <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/75">
+        이 방식을 워크북 톤으로 변형해 {SCT_TOTAL_COUNT}개의 미완성 문장을
+        준비했어요. 자기 가치 · 성취·인정 · 관계 · 통제 네 영역에서 짧게
+        답해주시면 돼요.
       </p>
     </div>
   );
 }
 
-function SynthesisCard({ data }: { data: Synthesis }) {
+function SctBeforeStartCard() {
   return (
-    <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/55 text-center">
-        당신이 발견한 오래된 믿음
+    <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
+        시작하기 전에
       </p>
-      <blockquote className="mt-4 border-l-2 border-[var(--foreground)] pl-5">
-        <p className="text-lg font-bold leading-relaxed text-[var(--foreground)]">
-          &ldquo;{data.belief_line}&rdquo;
+      <ul className="mt-3 space-y-1.5">
+        <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
+          <Bullet />
+          정답이 없어요
+        </li>
+        <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
+          <Bullet />
+          떠오르는 첫 문장이 가장 솔직해요
+        </li>
+        <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
+          <Bullet />
+          어려운 문항은 건너뛰어도 괜찮아요
+        </li>
+        <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
+          <Bullet />
+          결과는 진단이 아니라 가설이에요
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+/* ─────────────────────────── 안경 비유 모션 ───────────────────────────
+ * "같은 상황도 어떤 안경으로 보느냐에 따라 다른 의미가 된다"는
+ * 핵심 신념의 작동 방식을 시각화한다. 같은 사건 카드 1개에서 좌우 두
+ * 안경이 펼쳐지고, 각각의 해석 말풍선이 따라 등장한다.
+ */
+function SameSceneTwoLensesAnimation() {
+  const container = {
+    hidden: {},
+    show: {
+      transition: { staggerChildren: 0.35, delayChildren: 0.1 },
+    },
+  };
+  const fadeUp = {
+    hidden: { opacity: 0, y: 8 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.45 } },
+  };
+  const fromLeft = {
+    hidden: { opacity: 0, x: -16 },
+    show: { opacity: 1, x: 0, transition: { duration: 0.5 } },
+  };
+  const fromRight = {
+    hidden: { opacity: 0, x: 16 },
+    show: { opacity: 1, x: 0, transition: { duration: 0.5 } },
+  };
+
+  return (
+    <motion.div
+      variants={container}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.4 }}
+      className="mt-5 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/30 p-5"
+    >
+      <motion.p
+        variants={fadeUp}
+        className="text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/50"
+      >
+        같은 상황, 다른 안경
+      </motion.p>
+
+      {/* 같은 상황 */}
+      <motion.div
+        variants={fadeUp}
+        className="mx-auto mt-3 max-w-[220px] rounded-lg border-2 border-[var(--foreground)] bg-white px-4 py-2.5 text-center"
+      >
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
+          같은 사건
         </p>
-      </blockquote>
-      <div className="mt-5 space-y-4">
-        <div>
-          <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-            이 믿음이 당신에게 하는 일
+        <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
+          &ldquo;쉬는 주말이 생겼어요&rdquo;
+        </p>
+      </motion.div>
+
+      {/* 분기 화살표 */}
+      <motion.div
+        variants={fadeUp}
+        aria-hidden
+        className="my-2 flex justify-center"
+      >
+        <svg
+          width="120"
+          height="24"
+          viewBox="0 0 120 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-[var(--foreground)]/35"
+        >
+          <path d="M60 0 L20 22" />
+          <path d="M60 0 L100 22" />
+          <path d="M14 16 L20 22 L26 18" />
+          <path d="M94 18 L100 22 L106 16" />
+        </svg>
+      </motion.div>
+
+      {/* 두 안경 — 렌즈 안에 인용문, 프레임 아래에 라벨 */}
+      <div className="grid grid-cols-2 gap-4">
+        <motion.div variants={fromLeft} className="px-1">
+          <Glasses
+            tint="light"
+            leftText="대박이다!"
+            rightText="푹 쉬어야지!"
+          />
+          <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
+            핵심 믿음 A
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/80">
-            {data.how_it_works}
+        </motion.div>
+        <motion.div variants={fromRight} className="px-1">
+          <Glasses
+            tint="dark"
+            leftText="쉬면 안돼,"
+            rightText="뭐라도 해야해"
+          />
+          <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/55">
+            핵심 믿음 B
           </p>
-        </div>
-        <div>
-          <p className="text-[11px] font-semibold text-[var(--foreground)]/55">
-            다시 바라보기
+        </motion.div>
+      </div>
+
+      <motion.p
+        variants={fadeUp}
+        className="mt-4 text-center text-xs leading-relaxed text-[var(--foreground)]/55"
+      >
+        같은 사건도 어떤 안경으로 보느냐에 따라 의미가 달라져요.
+        <br />
+        Step 4에서 찾는 건 바로 그 <strong className="text-[var(--foreground)]/75">안경</strong>이에요.
+      </motion.p>
+    </motion.div>
+  );
+}
+
+/**
+ * 렌즈 안에 인용문이 들어가는 안경 모양.
+ * 좌우 두 정사각 렌즈(rounded-full)와 짧은 다리·브릿지로 구성.
+ * tint=dark는 안경 B 강조용 — 더 진한 테두리와 살짝 어둑한 배경.
+ */
+function Glasses({
+  tint,
+  leftText,
+  rightText,
+}: {
+  tint: "light" | "dark";
+  leftText: string;
+  rightText: string;
+}) {
+  const isDark = tint === "dark";
+  const lensClass = isDark
+    ? "border-2 border-[var(--foreground)] bg-[var(--foreground)]/[0.06]"
+    : "border-2 border-[var(--foreground)]/35 bg-white";
+  const textClass = isDark
+    ? "font-semibold text-[var(--foreground)]"
+    : "text-[var(--foreground)]/70";
+  const lineClass = isDark
+    ? "bg-[var(--foreground)]"
+    : "bg-[var(--foreground)]/35";
+
+  return (
+    <div className="flex w-full items-center">
+      {/* 왼쪽 다리 */}
+      <span
+        aria-hidden
+        className={`h-0.5 w-2 shrink-0 rounded-full ${lineClass}`}
+      />
+      {/* 좌 렌즈 */}
+      <div
+        className={`flex aspect-square flex-1 items-center justify-center rounded-full px-1.5 ${lensClass}`}
+      >
+        <p
+          className={`text-center text-[10px] leading-[1.25] ${textClass}`}
+        >
+          &ldquo;{leftText}&rdquo;
+        </p>
+      </div>
+      {/* 브릿지 */}
+      <span
+        aria-hidden
+        className={`h-0.5 w-2 shrink-0 rounded-full ${lineClass}`}
+      />
+      {/* 우 렌즈 */}
+      <div
+        className={`flex aspect-square flex-1 items-center justify-center rounded-full px-1.5 ${lensClass}`}
+      >
+        <p
+          className={`text-center text-[10px] leading-[1.25] ${textClass}`}
+        >
+          &ldquo;{rightText}&rdquo;
+        </p>
+      </div>
+      {/* 오른쪽 다리 */}
+      <span
+        aria-hidden
+        className={`h-0.5 w-2 shrink-0 rounded-full ${lineClass}`}
+      />
+    </div>
+  );
+}
+
+function Bullet() {
+  return (
+    <span
+      aria-hidden
+      className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-[var(--foreground)]/40"
+    />
+  );
+}
+
+/* ─────────────────────────── 카테고리 섹션 ─────────────────────────── */
+
+function SctCategorySection({
+  index,
+  categoryCode,
+  responses,
+  onAnswerChange,
+  onToggleSkip,
+}: {
+  index: number;
+  categoryCode: SctCategoryCode;
+  responses: SctResponses;
+  onAnswerChange: (code: string, answer: string) => void;
+  onToggleSkip: (code: string) => void;
+}) {
+  const category = SCT_CATEGORIES[categoryCode];
+  const questions = SCT_QUESTIONS.filter((q) => q.category === categoryCode);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-3">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-sm font-bold">
+          {index}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-[var(--foreground)]">
+            {category.labelKo}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-[var(--foreground)]/80">
-            {data.reframe_invitation}
+          <p className="text-xs text-[var(--foreground)]/55">
+            {category.introKo}
           </p>
         </div>
       </div>
+
+      <div className="space-y-3">
+        {questions.map((q) => (
+          <SctItem
+            key={q.code}
+            question={q}
+            response={responses[q.code]}
+            onChange={(value) => onAnswerChange(q.code, value)}
+            onToggleSkip={() => onToggleSkip(q.code)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────── 단일 SCT 문항 ─────────────────────────── */
+
+function SctItem({
+  question,
+  response,
+  onChange,
+  onToggleSkip,
+}: {
+  question: SctQuestion;
+  response: { answer: string; skipped: boolean } | undefined;
+  onChange: (value: string) => void;
+  onToggleSkip: () => void;
+}) {
+  const skipped = response?.skipped ?? false;
+  const value = response?.answer ?? "";
+
+  return (
+    <div
+      className={`rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5 transition-opacity ${
+        skipped ? "opacity-60" : ""
+      }`}
+    >
+      <div className="flex items-baseline gap-2">
+        <span className="text-[11px] font-semibold text-[var(--foreground)]/50">
+          {question.code}
+        </span>
+        <p className="min-w-0 flex-1 text-sm font-semibold leading-relaxed text-[var(--foreground)]">
+          {question.prompt}{" "}
+          <span className="text-[var(--foreground)]/40">_______</span>
+        </p>
+      </div>
+
+      {question.examples.length > 0 && (
+        <p className="mt-1.5 ml-7 text-xs leading-relaxed text-[var(--foreground)]/55">
+          {question.examples.join(" · ")}
+        </p>
+      )}
+
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={skipped}
+        maxLength={200}
+        placeholder="여기에 짧게 적어주세요"
+        className="mt-3 w-full rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors disabled:cursor-not-allowed disabled:bg-[var(--surface)]/40"
+      />
+
+      <button
+        type="button"
+        onClick={onToggleSkip}
+        className="mt-2 inline-flex items-center gap-1.5 text-xs text-[var(--foreground)]/55 hover:text-[var(--foreground)] hover:underline"
+      >
+        <span
+          className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors ${
+            skipped
+              ? "border-[var(--foreground)] bg-[var(--foreground)]"
+              : "border-[var(--foreground)]/30"
+          }`}
+        >
+          {skipped && (
+            <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" aria-hidden>
+              <path
+                d="M2.5 6.5l2.2 2.2 4.8-4.8"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </span>
+        {skipped ? "건너뛰는 중 — 다시 답할게요" : "이 문항은 건너뛸게요"}
+      </button>
     </div>
   );
 }
 
-/* ─────────────────────────── 유틸 ─────────────────────────── */
-
-function truncate(s: string, n: number): string {
-  const clean = s.trim();
-  return clean.length <= n ? clean : clean.slice(0, n) + "…";
-}

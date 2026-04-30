@@ -5,6 +5,8 @@ import {
   isProfessionalReport,
   type ProfessionalReport,
 } from "@/lib/self-workshop/professional-report";
+import { STAGE_06_CARDS } from "@/lib/self-workshop/belief-verification-copy";
+import type { PrimaryKeyword, RewriteCardId } from "@/lib/self-workshop/belief-verification";
 
 /**
  * POST /api/self-workshop/generate-summary
@@ -102,7 +104,7 @@ export async function POST(req: Request) {
 - DO/DONT 각 **정확히 5개**. 4개도 6개도 아님.
 - DO와 DONT는 짝을 이루지 않아도 됨. 각각 독립적인 5개 항목.
 - title 12자 이내. description 60~120자. 일반 처방 금지("운동하세요", "쉬세요" 같은 무차별적 조언 금지). 이 사람의 데이터에서만 도출된 행동.
-- "이 사람만의" 처방을 위해, mechanism_analysis.resulting_behavior, coping_plan.behavioral_experiment.experiment_situation, belief_destroy의 4기법 응답을 적극 인용·활용.
+- "이 사람만의" 처방을 위해, mechanism_analysis.resulting_behavior, coping_plan.alternative_thought(=새 신념을 떠받칠 근거 모음), belief_destroy의 4기법 응답을 적극 인용·활용.
 - DO는 새 핵심 신념(new_belief.new_core_belief)과 일관된 행동.
 - DONT는 옛 핵심 신념(synthesis.belief_line)을 강화하던 행동.
 - 사용자가 belief_destroy / new_belief / coping_plan 일부를 비웠어도 데이터가 있는 부분만으로 작성. 비어있다고 명시하지 말 것.`;
@@ -155,21 +157,124 @@ export async function POST(req: Request) {
       double_standard?: { letter_to_friend?: string };
       evidence_review?: { supporting?: string; refuting?: string };
       cost_benefit?: { benefits?: string; costs?: string };
+      // v2 — 6스테이지 검증 흐름
+      belief_verification?: {
+        primary_keyword?: string;
+        stage_02_origin?: { when_first_arose?: string; how_it_protected?: string };
+        stage_03_evidence?: {
+          // v2 신규 — 신념별 phase별
+          beliefs?: Array<{
+            belief_key?: string;
+            support?: string[];
+            counter?: string[];
+            status?: string;
+          }>;
+          // v1 레거시 — 단일 batch
+          supporting?: string[];
+          counter?: string[];
+        };
+        stage_04_perspective?: { friend_response?: string };
+        stage_05_spectrum?: { self_value?: number; loved_value?: number };
+        stage_06_rewrite?: {
+          // v2 신규 — 다중 선택
+          chosen_cards?: string[];
+          // v1 레거시 — 단일 선택
+          chosen_card?: string;
+          chosen_text?: string;
+          edited_text?: string;
+        };
+      };
     } | null;
     if (!bd) return "(작성 안 함)";
+
     const lines: string[] = [];
-    if (bd.triple_column?.rational_response?.trim()) {
-      lines.push(`- 합리적 반응: "${bd.triple_column.rational_response}"`);
+
+    // v2 (신규 — 6스테이지) 우선
+    const v2 = bd.belief_verification;
+    if (v2) {
+      if (v2.stage_02_origin?.how_it_protected?.trim()) {
+        lines.push(`- 신념의 보호 기능: "${v2.stage_02_origin.how_it_protected}"`);
+      }
+      // [v2 신규 — 신념별 phase별] beliefs[].counter를 모두 모음
+      const perBeliefCounters = (v2.stage_03_evidence?.beliefs ?? [])
+        .flatMap((b) => b?.counter ?? [])
+        .filter((s) => typeof s === "string" && s.trim().length > 0);
+      // [v2 레거시 — 단일 batch] supporting/counter — 하위 호환
+      const legacyCounter = (v2.stage_03_evidence?.counter ?? []).filter(
+        (s) => typeof s === "string" && s.trim().length > 0
+      );
+      const counter =
+        perBeliefCounters.length > 0 ? perBeliefCounters : legacyCounter;
+      if (counter.length > 0) {
+        lines.push(`- 사실이 아닐 수도 있는 증거: ${counter.map((s) => `"${s}"`).join(", ")}`);
+      }
+      if (v2.stage_04_perspective?.friend_response?.trim()) {
+        lines.push(
+          `- 친구에게 해줄 말: "${v2.stage_04_perspective.friend_response}"`
+        );
+      }
+      if (
+        typeof v2.stage_05_spectrum?.self_value === "number" &&
+        typeof v2.stage_05_spectrum?.loved_value === "number"
+      ) {
+        const diff =
+          v2.stage_05_spectrum.loved_value - v2.stage_05_spectrum.self_value;
+        lines.push(
+          `- 자신/사랑하는 사람 가치 점수: ${v2.stage_05_spectrum.self_value}점 / ${v2.stage_05_spectrum.loved_value}점 (격차 ${diff})`
+        );
+      }
+      // [v2 신규 — 다중 선택] chosen_cards를 PrimaryKeyword 기반으로 텍스트 변환
+      const isCardId = (x: unknown): x is RewriteCardId =>
+        x === "soften" || x === "reframe" || x === "decouple";
+      const isKeyword = (x: unknown): x is PrimaryKeyword =>
+        x === "P0" || x === "P1" || x === "P2";
+      const keyword: PrimaryKeyword = isKeyword(v2.primary_keyword)
+        ? v2.primary_keyword
+        : "P0";
+      const cardSet = STAGE_06_CARDS[keyword];
+
+      const chosenCardIds: RewriteCardId[] = Array.isArray(v2.stage_06_rewrite?.chosen_cards)
+        ? v2.stage_06_rewrite!.chosen_cards.filter(isCardId)
+        : isCardId(v2.stage_06_rewrite?.chosen_card)
+          ? [v2.stage_06_rewrite!.chosen_card as RewriteCardId]
+          : [];
+
+      const chosenTexts = chosenCardIds
+        .map((id) => cardSet.find((c) => c.id === id)?.body ?? "")
+        .filter(Boolean);
+
+      const editedText = v2.stage_06_rewrite?.edited_text?.trim();
+      const legacyChosen = v2.stage_06_rewrite?.chosen_text?.trim();
+
+      if (chosenTexts.length > 0) {
+        lines.push(
+          chosenTexts.length === 1
+            ? `- 더 정확한 버전(선택): "${chosenTexts[0]}"`
+            : `- 더 정확한 버전(${chosenTexts.length}개 선택): ${chosenTexts.map((t) => `"${t}"`).join(", ")}`
+        );
+      } else if (editedText) {
+        lines.push(`- 더 정확한 버전(직접 편집): "${editedText}"`);
+      } else if (legacyChosen) {
+        lines.push(`- 더 정확한 버전(선택): "${legacyChosen}"`);
+      }
     }
-    if (bd.double_standard?.letter_to_friend?.trim()) {
-      lines.push(`- 친구에게 해줄 말: "${bd.double_standard.letter_to_friend}"`);
+
+    // v1 (레거시 4기법) — v2가 비어있는 사용자 보호용 폴백
+    if (lines.length === 0) {
+      if (bd.triple_column?.rational_response?.trim()) {
+        lines.push(`- 합리적 반응: "${bd.triple_column.rational_response}"`);
+      }
+      if (bd.double_standard?.letter_to_friend?.trim()) {
+        lines.push(`- 친구에게 해줄 말: "${bd.double_standard.letter_to_friend}"`);
+      }
+      if (bd.evidence_review?.refuting?.trim()) {
+        lines.push(`- 사실이 아닐 수도 있는 증거: "${bd.evidence_review.refuting}"`);
+      }
+      if (bd.cost_benefit?.costs?.trim()) {
+        lines.push(`- 이 믿음의 비용: "${bd.cost_benefit.costs}"`);
+      }
     }
-    if (bd.evidence_review?.refuting?.trim()) {
-      lines.push(`- 반박 증거: "${bd.evidence_review.refuting}"`);
-    }
-    if (bd.cost_benefit?.costs?.trim()) {
-      lines.push(`- 이 믿음의 비용: "${bd.cost_benefit.costs}"`);
-    }
+
     return lines.length > 0 ? lines.join("\n") : "(작성 안 함)";
   })();
 
@@ -188,6 +293,17 @@ export async function POST(req: Request) {
 
   const copingBlock = (() => {
     const cp = coping_plan as {
+      version?: number;
+      // v2: 새 신념 떠받치기
+      alternative_thought?: string;        // derived: 모든 답변·자유 근거 합본
+      evidence_against?: string;           // derived: 카테고리별 답변
+      new_core_belief_snapshot?: string;
+      entries?: Array<{
+        classification?: string;
+        new_belief_text?: string;
+        reinforced_strength?: number | null;
+      }>;
+      // v1: 자동사고 대체 + 행동 실험 + 자기 돌봄 (legacy)
       cognitive_restructuring?: {
         alternative_thought?: string;
         evidence_against?: string;
@@ -204,6 +320,29 @@ export async function POST(req: Request) {
     } | null;
     if (!cp) return "(작성 안 함)";
     const lines: string[] = [];
+
+    // v2 분기 — 새 신념 떠받치기 데이터를 우선 표기
+    if (cp.version === 2) {
+      const altSrc =
+        cp.alternative_thought?.trim() ||
+        cp.cognitive_restructuring?.alternative_thought?.trim() ||
+        "";
+      if (altSrc) {
+        lines.push(`- 새 신념을 떠받칠 근거 모음:\n${altSrc}`);
+      }
+      const strengths = (cp.entries ?? [])
+        .map((e) => e?.reinforced_strength)
+        .filter((v): v is number => typeof v === "number");
+      if (strengths.length > 0) {
+        const avg = Math.round(
+          strengths.reduce((a, b) => a + b, 0) / strengths.length
+        );
+        lines.push(`- 새 신념의 단단함(작성 후 평균): ${avg}%`);
+      }
+      return lines.length > 0 ? lines.join("\n") : "(작성 안 함)";
+    }
+
+    // v1 fallback — 옛 자동사고 대체 + 행동 실험 + 자기 돌봄
     if (cp.cognitive_restructuring?.alternative_thought?.trim()) {
       lines.push(
         `- 대체 사고: "${cp.cognitive_restructuring.alternative_thought}"`
@@ -268,7 +407,7 @@ ${userName}님
 - 인지 오류 해석:
 ${cognitiveErrorsBlock}
 
-## SOFTEN 1: 핵심 믿음 반박 (4기법)
+## SOFTEN 1: 핵심 믿음 다시 보기 (6스테이지 검증)
 ${beliefDestroyBlock}
 
 ## SOLUTION 1: 새 핵심 신념

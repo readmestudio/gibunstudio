@@ -21,8 +21,6 @@ export function Footer() {
             <p>올핸즈라운지 | 대표 김지안</p>
             <p>사업자등록번호 : 335-25-01567</p>
             <p>통신판매업신고 : 2024-서울은평-0870</p>
-            <p>ADD 서울특별시 은평구 가좌로7나길 30, 103동 806층(응암동, 응암우성아파트)</p>
-            <p>TEL 070-7954-9188</p>
             <p>E-MAIL allhandslounge@gmail.com</p>
             <div className="flex gap-3 mt-3">
               <Link href="/privacy" className="underline hover:text-white/60">

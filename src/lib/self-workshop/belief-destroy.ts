@@ -1,18 +1,24 @@
 /**
- * DESTROY · 1단계: 핵심 믿음 반박하기
- * 기분 다스리기(Burns, Feeling Good) 기반 4가지 인지 왜곡 반박 기법.
+ * SOFTEN · 1단계: 핵심 믿음 다시 보기 (DB 컬럼: belief_destroy)
+ *
+ * - v1 (레거시): 4가지 인지 왜곡 반박 기법 (삼중 컬럼/이중 표준/증거/비용편익)
+ *   현재 UI는 더 이상 안 쓰지만, 이미 데이터를 입력한 사용자 보존을 위해 타입 유지.
+ * - v2 (현재): 6스테이지 검증 흐름 (RECOGNIZE → REWRITE) — `belief_verification` 서브키.
+ *
+ * 신규 사용자는 `belief_verification`만 채우고, v1 필드들은 EMPTY_BELIEF_DESTROY 기본값으로 둔다.
  */
 
 import {
   isCognitiveErrorId,
   type CognitiveErrorId,
 } from "./cognitive-errors";
+import type { BeliefVerificationData } from "./belief-verification";
 
 export interface BeliefDestroyData {
-  /** FIND_OUT 2단계 synthesis.belief_line 스냅샷 (반박 대상) */
+  /** FIND_OUT 2단계 synthesis.belief_line 스냅샷 */
   input_belief_line: string;
 
-  /** 삼중 컬럼 기법 */
+  /** [레거시 v1] 삼중 컬럼 기법 */
   triple_column: {
     /** Step 3 mechanism_analysis.automatic_thought prefill (수정 가능) */
     automatic_thought: string;
@@ -22,21 +28,21 @@ export interface BeliefDestroyData {
     rational_response: string;
   };
 
-  /** 이중 표준 기법 */
+  /** [레거시 v1] 이중 표준 기법 */
   double_standard: {
     /** "사랑하는 친구가 같은 믿음을 갖고 있다면 뭐라고 말해줄까?" */
     letter_to_friend: string;
   };
 
-  /** 증거 검토 */
+  /** [레거시 v1] 증거 검토 */
   evidence_review: {
     /** 그 믿음을 뒷받침하는 증거 */
     supporting: string;
-    /** 그 믿음을 반박하는 증거 */
+    /** 그 믿음이 사실이 아닐 수도 있는 증거 */
     refuting: string;
   };
 
-  /** 비용-편익 분석 */
+  /** [레거시 v1] 비용-편익 분석 */
   cost_benefit: {
     /** 이 믿음을 계속 갖고 있을 때의 장점 */
     benefits: string;
@@ -44,11 +50,14 @@ export interface BeliefDestroyData {
     costs: string;
   };
 
-  /** (선택) LLM이 제시한 추가 반박 포인트 */
+  /** [레거시 v1] LLM이 제시한 추가 포인트 */
   ai_extra_points?: {
     items: string[];
     generated_at: string;
   };
+
+  /** [v2] 6스테이지 검증 흐름 — 신규 UI는 이 필드만 채운다 */
+  belief_verification?: BeliefVerificationData;
 }
 
 export const EMPTY_BELIEF_DESTROY: BeliefDestroyData = {

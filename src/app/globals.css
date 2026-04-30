@@ -1,3 +1,8 @@
+/* Clinical report fonts — Section 02/03/04 시각화에서만 사용.
+   CSS 사양: @import는 @charset/@layer 외 모든 룰보다 먼저 와야 한다.
+   fontsource 패키지의 @import는 빌드 시 @font-face 룰로 펼쳐지므로,
+   외부 @import는 반드시 그보다 위에 두어야 Turbopack 파싱 에러를 피한다. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap");
 @import "tailwindcss";
 @import "@fontsource/pretendard/400.css";
 @import "@fontsource/pretendard/500.css";
@@ -27,6 +32,33 @@
   --border-dark: #d4d4d4;
   --surface: #fafafa;
   --surface-hover: #f5f5f5;
+
+  /* Clinical report tokens — 임상 리포트 시각화 전용 */
+  --ink: #0A0A0B;
+  --ink-soft: #4A4C52;
+  --mute: #8C8E95;
+  --line-clinical: #E5E5E8;
+  --line-clinical-2: #EFEFF1;
+  --paper: #FFFFFF;
+  --paper-2: #FAFAFB;
+  --font-clinical-eyebrow: "Inter", system-ui, sans-serif;
+  --font-clinical-mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  --font-clinical-body: "Noto Sans KR", "Pretendard", -apple-system, sans-serif;
+
+  /* V2 인스펙터 톤 (Section 01 / 02 / 05 전용) — cool ink */
+  --v2-ink: #0B0D10;
+  --v2-ink2: #15171C;
+  --v2-body: #3A3D44;
+  --v2-body2: #5A5D66;
+  --v2-mute: #8B8E96;
+  --v2-mute2: #A8ABB2;
+  --v2-line: #E2E3E7;
+  --v2-line2: #EDEEF1;
+  --v2-line3: #F5F6F8;
+  --v2-paper: #FFFFFF;
+  --v2-bg: #F7F7F9;
+  --v2-accent: #FF5C2A;
+  --v2-accent-soft: #FFEFE8;
 
   /* Workbook redesign tokens (워크북 목록·챕터 헤더 전용)
      "테크 / 애플 제품 페이지" 톤 — 헤어라인 + 풍부한 여백 + 모노 메타.
@@ -66,6 +98,71 @@ body {
 /* 스크롤바 숨기기 유틸리티 */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─────────────────────────────────────────────────────────
+   Clinical report 키프레임 — Section 01/03/04 시각화 전용
+   ───────────────────────────────────────────────────────── */
+@keyframes pulseRing {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes nodeGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(10, 10, 11, 0); }
+  50%      { box-shadow: 0 0 0 6px rgba(10, 10, 11, 0.10); }
+}
+@keyframes flowDot {
+  0%   { top: 0%;   opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+@keyframes flowDotX {
+  0%   { left: 0%;   opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+@keyframes sweepX {
+  0%   { transform: translateX(-30%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+@keyframes blink {
+  0%, 60%, 100% { opacity: 1; }
+  30%           { opacity: 0.15; }
+}
+@keyframes chip {
+  0%, 100% { background: #FFFFFF; color: #0A0A0B; }
+  50%      { background: #0A0A0B; color: #FFFFFF; }
+}
+@keyframes gridDrift {
+  from { background-position: 0 0; }
+  to   { background-position: 40px 40px; }
+}
+@keyframes barFill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+/* V2 키프레임 (Section 01 FLOW 헤더 칩 깜박, V2 cascade dot pulse) */
+@keyframes cascDotPulse {
+  0%   { opacity: 0.7; transform: translateX(-50%) scale(0.9); }
+  70%  { opacity: 0;   transform: translateX(-50%) scale(1.6); }
+  100% { opacity: 0;   transform: translateX(-50%) scale(1.6); }
+}
+@keyframes cascHintBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* prefers-reduced-motion 가드 — 위 모든 임상 모션 비활성 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
 
 /* ─────────────────────────────────────────────────────────
    Workbook redesign — 반응형 (목록 페이지·챕터 헤더 공용)
@@ -109,12 +206,4 @@ body {
   .wb-ch-hero { grid-template-columns: 1fr !important; gap: 16px !important; }
   .wb-ch-pager { flex-direction: column; gap: 16px; align-items: stretch !important; }
   .wb-ch-pager > button { width: 100%; }
-}
-
-/* prefers-reduced-motion: 워크북 리뱀프의 모든 트랜지션 비활성 */
-@media (prefers-reduced-motion: reduce) {
-  .wb-container *, .wb-container *::before, .wb-container *::after {
-    transition-duration: 0.001ms !important;
-    animation-duration: 0.001ms !important;
-  }
 }
