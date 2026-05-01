@@ -42,6 +42,7 @@ export function WorkshopAIAnalysis({
     <WorkshopProfessionalReport
       workshopId={workshopId}
       savedReport={savedCards ?? null}
+      userName={userName}
     />
   );
 }

@@ -1,27 +1,50 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Body,
+  COL,
+  D,
+  EditorialInput,
+  Headline,
+  Mono,
+  SectionHeader,
+} from "@/components/self-workshop/clinical-report/v3-shared";
 
 interface Reflections {
-  new_insight: string;
-  action_plan: string;
+  reflection: string;
   self_message: string;
+}
+
+// 기존 3필드(new_insight/action_plan/self_message) 저장본을 2필드 모델로 합친다.
+// 기존 사용자가 step 10 을 다시 열 때 데이터 손실이 없도록.
+function migrateLegacyReflections(saved?: Record<string, unknown>): Reflections {
+  if (!saved) return { reflection: "", self_message: "" };
+
+  const reflection =
+    typeof saved.reflection === "string" && saved.reflection.length > 0
+      ? saved.reflection
+      : [saved.new_insight, saved.action_plan]
+          .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+          .join("\n\n");
+
+  const self_message =
+    typeof saved.self_message === "string" ? saved.self_message : "";
+
+  return { reflection, self_message };
 }
 
 interface Props {
   workshopId: string;
-  savedData?: Partial<Reflections>;
+  savedData?: Record<string, unknown>;
 }
 
 export function WorkshopReflectionContent({ workshopId, savedData }: Props) {
   const router = useRouter();
-  const [data, setData] = useState<Reflections>({
-    new_insight: "",
-    action_plan: "",
-    self_message: "",
-    ...savedData,
-  });
+  const [data, setData] = useState<Reflections>(() =>
+    migrateLegacyReflections(savedData)
+  );
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState("");
@@ -75,75 +98,89 @@ export function WorkshopReflectionContent({ workshopId, savedData }: Props) {
 
   if (completed) {
     return (
-      <div className="mx-auto max-w-lg text-center py-16">
-        <div className="mb-6 text-6xl">*</div>
-        <h2 className="mb-4 text-2xl font-bold text-[var(--foreground)]">
-          워크북을 완료했습니다
-        </h2>
-        <p className="mb-2 text-base text-[var(--foreground)]/70">
+      <div
+        className="space-y-6 text-center"
+        style={{ maxWidth: COL + 96, margin: "0 auto", padding: "64px 48px" }}
+      >
+        <SectionHeader
+          kicker="● COMPLETE · 워크북 종료"
+          rightLabel="THANK YOU"
+        />
+        <Headline size="h1">워크북을 완료했습니다</Headline>
+        <Body muted style={{ textAlign: "center", marginTop: 12 }}>
           용기 있게 자신의 내면을 들여다본 당신, 정말 대단합니다.
-        </p>
-        <p className="mb-8 text-sm text-[var(--foreground)]/50">
+        </Body>
+        <Body small muted style={{ textAlign: "center" }}>
           오늘 발견한 것들이 내일의 작은 변화가 되기를 바랍니다.
-        </p>
-        <button
-          onClick={() => router.push("/dashboard/self-workshop")}
-          className="inline-flex rounded-xl border-2 border-[var(--foreground)] px-8 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
-        >
-          대시보드로 돌아가기
-        </button>
+        </Body>
+        <div className="pt-2">
+          <button
+            onClick={() => router.push("/dashboard/self-workshop")}
+            className="inline-flex rounded-xl border-2 border-[var(--foreground)] px-8 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
+          >
+            대시보드로 돌아가기
+          </button>
+        </div>
       </div>
     );
   }
 
   const FIELDS = [
     {
-      key: "new_insight" as const,
-      label: "이 워크북을 통해 새롭게 알게 된 것",
-      placeholder: "나에 대해 처음 발견한 것, 또는 알고 있었지만 직면하게 된 것...",
-      rows: 4,
-    },
-    {
-      key: "action_plan" as const,
-      label: "앞으로 내가 시도해 볼 한 가지",
-      placeholder: "오늘부터, 또는 이번 주부터 해볼 수 있는 작은 변화...",
-      rows: 3,
+      key: "reflection" as const,
+      label: "워크북을 하는 동안 느낀 점",
+      engCode: "REFLECTION",
+      placeholder:
+        "이 여정을 지나오는 동안 떠올랐던 생각·감정·발견을 자유롭게 적어보세요.",
+      rows: 6,
     },
     {
       key: "self_message" as const,
-      label: "나에게 하고 싶은 말",
+      label: "나에게 한 마디",
+      engCode: "MESSAGE TO SELF",
       placeholder: "지금의 나에게 건네고 싶은 한마디...",
       rows: 4,
     },
   ];
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
-      <div className="rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-4">
-        <p className="text-sm text-[var(--foreground)]/60">
-          긴 여정을 함께해 주셔서 감사합니다.
-          마지막으로, 이 워크북을 통해 느낀 점을 자유롭게 적어보세요.
-        </p>
-      </div>
+    <div
+      className="space-y-10 pb-20"
+      style={{ maxWidth: COL + 96, margin: "0 auto", padding: "0 48px" }}
+    >
+      {/* 인트로 — 박스 없이 메타 헤더 + 본문 */}
+      <section className="space-y-5">
+        <SectionHeader kicker="● PART A · STEP 10" rightLabel="CLOSING" />
+        <Headline>긴 여정의 마지막</Headline>
+        <Body muted style={{ marginTop: 12 }}>
+          여기까지 함께해 주셔서 감사해요. 마지막으로, 이 워크북을 통해
+          느낀 점과 지금의 나에게 건네고 싶은 한마디를 자유롭게 적어 보세요.
+        </Body>
+      </section>
 
-      {FIELDS.map((f) => (
-        <div key={f.key}>
-          <label className="mb-2 block text-base font-semibold text-[var(--foreground)]">
-            {f.label}
-          </label>
-          <textarea
-            value={data[f.key]}
-            onChange={(e) => updateField(f.key, e.target.value)}
-            placeholder={f.placeholder}
-            rows={f.rows}
-            className="w-full resize-none rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-base text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors"
+      {FIELDS.map((f, i) => (
+        <section key={f.key} className="space-y-3">
+          <SectionHeader
+            kicker={`● ${String(i + 1).padStart(2, "0")} · ${f.label}`}
+            rightLabel={f.engCode}
+            accent
           />
-        </div>
+          <EditorialInput
+            multiline
+            rows={f.rows}
+            value={data[f.key]}
+            onChange={(next) => updateField(f.key, next)}
+            placeholder={f.placeholder}
+            ariaLabel={f.label}
+          />
+        </section>
       ))}
 
-      <p className="text-center text-xs text-[var(--foreground)]/40">
-        작성 내용은 자동으로 저장됩니다
-      </p>
+      <div className="text-center">
+        <Mono size={10} weight={500} color={D.text3} tracking={0.16}>
+          작성 내용은 자동으로 저장됩니다
+        </Mono>
+      </div>
 
       {error && <p className="text-center text-sm text-red-600">{error}</p>}
 
@@ -151,7 +188,7 @@ export function WorkshopReflectionContent({ workshopId, savedData }: Props) {
         <button
           onClick={handleComplete}
           disabled={submitting}
-          className="inline-flex rounded-xl border-2 border-[var(--foreground)] px-8 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)] disabled:opacity-30"
+          className="inline-flex rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-8 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
         >
           {submitting ? "저장 중..." : "워크북 완료하기"}
         </button>

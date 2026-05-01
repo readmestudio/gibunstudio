@@ -6,6 +6,13 @@ import {
   DIAGNOSIS_QUESTIONS,
   LIKERT_OPTIONS,
 } from "@/lib/self-workshop/diagnosis";
+import {
+  Body,
+  COL,
+  D,
+  Mono,
+  TS,
+} from "@/components/self-workshop/clinical-report/v3-shared";
 
 const TOTAL = DIAGNOSIS_QUESTIONS.length;
 
@@ -106,28 +113,40 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div style={{ maxWidth: COL + 96, margin: "0 auto", padding: "0 48px" }}>
       {/* 재진입 안내 배너 */}
       {hasPreviousSubmission && (
-        <div className="mb-6 rounded-xl border-2 border-[var(--foreground)]/20 bg-[var(--surface)]/50 p-4">
-          <p className="text-sm font-semibold text-[var(--foreground)]">
+        <div className="mb-6 rounded-xl border-2 border-[var(--foreground)]/20 bg-[var(--surface)]/50 p-5">
+          <p
+            style={{
+              margin: 0,
+              fontFamily: D.font,
+              fontSize: TS.body,
+              fontWeight: 600,
+              color: D.ink,
+            }}
+          >
             이미 진단을 완료하셨어요
           </p>
-          <p className="mt-1.5 text-xs leading-relaxed text-[var(--foreground)]/70">
-            답을 <strong>그대로 두고 결과 보기</strong>를 누르면 이후 단계의 진행 상태가
-            그대로 유지돼요. 답을 바꾸시면 진단 결과가 달라지기 때문에
-            Step 2부터 다시 짚어봐야 해요.
-          </p>
+          <div style={{ marginTop: 8 }}>
+            <Body small muted>
+              답을 <strong style={{ color: D.ink }}>그대로 두고 결과 보기</strong>를 누르면 이후 단계의 진행 상태가
+              그대로 유지돼요. 답을 바꾸시면 진단 결과가 달라지기 때문에
+              Step 2부터 다시 짚어봐야 해요.
+            </Body>
+          </div>
         </div>
       )}
 
       {/* 프로그레스 바 */}
       <div className="mb-8">
-        <div className="mb-2 flex items-center justify-between text-xs text-[var(--foreground)]/60">
-          <span>
-            {currentIndex + 1} / {TOTAL}
-          </span>
-          <span>{answeredCount}개 답변 완료</span>
+        <div className="mb-2 flex items-center justify-between">
+          <Mono size={11} weight={500} color={D.text2} tracking={0.16}>
+            {String(currentIndex + 1).padStart(2, "0")} / {String(TOTAL).padStart(2, "0")}
+          </Mono>
+          <Mono size={11} weight={500} color={D.text3} tracking={0.16}>
+            {answeredCount} ANSWERED
+          </Mono>
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-[var(--foreground)]/10">
           <div
@@ -139,7 +158,16 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
 
       {/* 문항 */}
       <div className="mb-8">
-        <p className="text-lg font-medium leading-relaxed text-[var(--foreground)]">
+        <p
+          style={{
+            margin: 0,
+            fontFamily: D.font,
+            fontSize: TS.lede,
+            fontWeight: 500,
+            lineHeight: 1.55,
+            color: D.ink,
+          }}
+        >
           {question.text}
         </p>
       </div>
@@ -194,9 +222,11 @@ export function WorkshopDiagnosisContent({ workshopId, savedAnswers }: Props) {
       </div>
 
       {currentIndex === TOTAL - 1 && !allAnswered && (
-        <p className="mt-4 text-center text-xs text-[var(--foreground)]/50">
-          아직 {TOTAL - answeredCount}개 문항이 남아 있습니다.
-        </p>
+        <div className="mt-4 text-center">
+          <Mono size={11} weight={500} color={D.text3} tracking={0.16}>
+            아직 {TOTAL - answeredCount}개 문항이 남아 있습니다
+          </Mono>
+        </div>
       )}
 
       {error && (

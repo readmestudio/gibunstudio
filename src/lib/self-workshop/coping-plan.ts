@@ -14,6 +14,7 @@ import {
   type NewBeliefData,
   joinChosenBeliefTexts,
 } from "@/lib/self-workshop/new-belief";
+import type { BeliefNarrativeReport } from "@/lib/self-workshop/belief-narrative-report";
 
 /* ─────────────────── 상수 ─────────────────── */
 
@@ -137,6 +138,9 @@ export interface CopingPlanV2 {
   evidence_against: string;
   /** Step 8 신념 본문을 합친 스냅샷 */
   new_core_belief_snapshot: string;
+
+  /** AllDone에서 보여줄 5단계 상담사 narrative 리포트 — coping_plan 안에 nested 캐시 */
+  narrative_report?: BeliefNarrativeReport;
 }
 
 export const EMPTY_COPING_PLAN_V2: CopingPlanV2 = {

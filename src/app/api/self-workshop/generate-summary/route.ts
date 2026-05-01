@@ -294,7 +294,7 @@ export async function POST(req: Request) {
   const copingBlock = (() => {
     const cp = coping_plan as {
       version?: number;
-      // v2: 새 신념 떠받치기
+      // v2: 새 신념 강화하기
       alternative_thought?: string;        // derived: 모든 답변·자유 근거 합본
       evidence_against?: string;           // derived: 카테고리별 답변
       new_core_belief_snapshot?: string;
@@ -321,7 +321,7 @@ export async function POST(req: Request) {
     if (!cp) return "(작성 안 함)";
     const lines: string[] = [];
 
-    // v2 분기 — 새 신념 떠받치기 데이터를 우선 표기
+    // v2 분기 — 새 신념 강화하기 데이터를 우선 표기
     if (cp.version === 2) {
       const altSrc =
         cp.alternative_thought?.trim() ||

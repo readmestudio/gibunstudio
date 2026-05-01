@@ -18,6 +18,28 @@ import {
   type CoreBeliefExcavation,
   type SctResponses,
 } from "@/lib/self-workshop/core-belief-excavation";
+import {
+  Body,
+  COL,
+  D,
+  EditorialFrame,
+  EditorialInput,
+  EditorialItem,
+  Headline,
+  Mono,
+  SectionHeader,
+  SkipToggle,
+  TS,
+} from "@/components/self-workshop/clinical-report/v3-shared";
+
+// 카테고리 코드 → 메타 라벨용 영문 코드 매핑.
+// SCT_CATEGORIES 에는 한글 라벨만 있어서 여기서만 보조로 갖는다.
+const SCT_CATEGORY_EN: Record<SctCategoryCode, string> = {
+  A: "SELF-VALUE",
+  B: "ACHIEVEMENT",
+  C: "TRUST",
+  D: "CONTROL",
+};
 
 /* ─────────────────────────────── Props ─────────────────────────────── */
 
@@ -170,7 +192,10 @@ export function WorkshopExerciseStep5CoreBelief({
 
   if (!hasMechanism) {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
+      <div
+        className="py-20 text-center"
+        style={{ maxWidth: COL + 96, margin: "0 auto", padding: "80px 48px" }}
+      >
         <p className="text-sm text-[var(--foreground)]/60">
           먼저 트리거 → 자동사고 실습을 완료해 주세요.
         </p>
@@ -189,7 +214,10 @@ export function WorkshopExerciseStep5CoreBelief({
   const categoryCodes: SctCategoryCode[] = ["A", "B", "C", "D"];
 
   return (
-    <div className="mx-auto max-w-lg space-y-8 pb-20">
+    <div
+      className="space-y-8 pb-20"
+      style={{ maxWidth: COL + 96, margin: "0 auto", padding: "0 48px" }}
+    >
       <Link
         href="/dashboard/self-workshop/step/3"
         className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
@@ -212,35 +240,40 @@ export function WorkshopExerciseStep5CoreBelief({
         />
       ))}
 
-      {/* 진행 카드 — 응답 작성 후 다음 단계로 */}
-      <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
-          작성 완료 후
-        </p>
-        <p className="mt-2 text-base font-bold leading-snug text-[var(--foreground)]">
-          다음 단계에서 함께 분석할게요
-        </p>
-        <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
+      {/* 진행 카드 — 박스 없이 메타 라벨 + 진행률 줄 + CTA */}
+      <section className="space-y-5 pt-4">
+        <SectionHeader kicker="● 작성 완료 후" rightLabel="PROGRESS" />
+
+        <Headline size="h3">다음 단계에서 함께 분석할게요</Headline>
+        <Body muted style={{ marginTop: 12 }}>
           여기서 적은 응답들은 다음 단계에서 Step 3의 자동사고와 함께 묶여,
           당신의 핵심 신념과 성취 중독 패턴이 어떻게 연결되는지 통합으로
           분석돼요.
-        </p>
-        <div className="mt-4 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/40 p-3">
-          <p className="text-xs text-[var(--foreground)]/65">
-            {answeredCount}문항 작성됨 · 최소 {SCT_MIN_FOR_ANALYSIS}문항 이상이면
-            다음으로 넘어갈 수 있어요
-          </p>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--foreground)]/10">
+        </Body>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--foreground)]/65">
+            <Mono size={10} weight={500} color={D.text3} tracking={0.16}>
+              {String(answeredCount).padStart(2, "0")} / {String(SCT_TOTAL_COUNT).padStart(2, "0")} 답변됨
+            </Mono>
+            <Mono size={10} weight={500} color={D.text3} tracking={0.16}>
+              MIN {SCT_MIN_FOR_ANALYSIS}
+            </Mono>
+          </div>
+          <div className="h-px w-full bg-[var(--foreground)]/10" />
+          <div className="h-px w-full overflow-hidden">
             <div
-              className="h-full bg-[var(--foreground)] transition-all"
+              className="h-px transition-all"
               style={{
                 width: `${Math.min(100, (answeredCount / SCT_TOTAL_COUNT) * 100)}%`,
+                background: D.accent,
+                marginTop: -1,
               }}
             />
           </div>
         </div>
 
-        <div className="mt-5 text-center">
+        <div className="pt-2 text-center">
           <button
             onClick={handleNext}
             disabled={!canAdvance || advancing}
@@ -258,11 +291,9 @@ export function WorkshopExerciseStep5CoreBelief({
         </div>
 
         {error && (
-          <p className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-center text-sm text-red-700">
-            {error}
-          </p>
+          <p className="text-center text-sm text-red-600">{error}</p>
         )}
-      </div>
+      </section>
 
       <p className="text-center text-xs text-[var(--foreground)]/40">
         작성 내용은 자동으로 저장됩니다
@@ -275,22 +306,19 @@ export function WorkshopExerciseStep5CoreBelief({
 
 function SctIntroCard() {
   return (
-    <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground)]/50">
-        Step 4 시작하기
-      </p>
-      <p className="mt-3 text-base font-bold leading-snug text-[var(--foreground)]">
-        성취 중독 아래에 있는 핵심 신념 찾기
-      </p>
+    <section className="space-y-5">
+      <SectionHeader kicker="● PART A · STEP 4" rightLabel="OPENING" />
 
-      <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/75">
-        Step 3에서는 성취 중독 패턴이 <strong>트리거된 한 상황</strong>과
+      <Headline>성취 중독 아래에 있는 핵심 신념 찾기</Headline>
+
+      <Body muted style={{ marginTop: 12 }}>
+        Step 3에서는 성취 중독 패턴이 <strong style={{ color: D.ink }}>트리거된 한 상황</strong>과
         그때 따라온 감정·생각·신체·행동 반응을 살펴봤어요. 표면에서 일어난
         한 번의 사건을 분석한 거예요.
-      </p>
+      </Body>
 
-      <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
-        이제는 그 패턴 <strong>아래에 깔려 있는 핵심 신념</strong>을 찾아볼
+      <Body muted>
+        이제는 그 패턴 <strong style={{ color: D.ink }}>아래에 깔려 있는 핵심 신념</strong>을 찾아볼
         차례예요.{" "}
         <span className="box-decoration-clone rounded-sm bg-sky-100 px-1 py-0.5">
           핵심 신념은 내가 살아오면서 만들어온{" "}
@@ -299,65 +327,65 @@ function SctIntroCard() {
         같은 상황에서도 누군가는 &ldquo;괜찮아, 다음에 잘하면 되지&rdquo;라고
         보고, 누군가는 &ldquo;역시 나는 안 돼&rdquo;라고 느끼는 차이가 바로
         이 안경에서 나와요.
-      </p>
+      </Body>
 
       <SameSceneTwoLensesAnimation />
 
-      <p className="mt-5 text-sm leading-relaxed text-[var(--foreground)]/75">
+      <Body muted>
         보통 어린 시절이나 중요한 관계에서 학습되어 자리잡고, 이후엔 의식하지
         않아도 자동으로 작동해요. 그래서 같은 트리거에 같은 반응이 반복되는
         거예요.
-      </p>
-    </div>
+      </Body>
+    </section>
   );
 }
 
 function SctHowToFindCard() {
   return (
-    <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
-        어떻게 찾을까요?
-      </p>
-      <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]/75">
+    <section className="space-y-4">
+      <SectionHeader kicker="● PART B · 어떻게 찾을까요" rightLabel="METHOD" />
+      <Body muted style={{ marginTop: 8 }}>
         핵심 신념은 평소엔 의식 밖에 있어서 직접 묻기 어려워요. 그래서
         심리학에서는 미완성 문장을 짧게 채우게 해서, 떠오르는 첫 문장으로
         그 사람의 신념 구조를 추정하는{" "}
-        <strong>문장 완성검사(SCT)</strong>를 자주 써요.
-      </p>
-      <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]/75">
+        <strong style={{ color: D.ink }}>문장 완성검사(SCT)</strong>를 자주 써요.
+      </Body>
+      <Body muted>
         이 방식을 워크북 톤으로 변형해 {SCT_TOTAL_COUNT}개의 미완성 문장을
         준비했어요. 자기 가치 · 성취·인정 · 관계 · 통제 네 영역에서 짧게
         답해주시면 돼요.
-      </p>
-    </div>
+      </Body>
+    </section>
   );
 }
 
 function SctBeforeStartCard() {
+  const items = [
+    "정답이 없어요",
+    "떠오르는 첫 문장이 가장 솔직해요",
+    "어려운 문항은 건너뛰어도 괜찮아요",
+    "결과는 진단이 아니라 가설이에요",
+  ];
   return (
-    <div className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]/50">
-        시작하기 전에
-      </p>
-      <ul className="mt-3 space-y-1.5">
-        <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
-          <Bullet />
-          정답이 없어요
-        </li>
-        <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
-          <Bullet />
-          떠오르는 첫 문장이 가장 솔직해요
-        </li>
-        <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
-          <Bullet />
-          어려운 문항은 건너뛰어도 괜찮아요
-        </li>
-        <li className="flex items-start gap-2 text-sm leading-relaxed text-[var(--foreground)]/75">
-          <Bullet />
-          결과는 진단이 아니라 가설이에요
-        </li>
+    <section className="space-y-4">
+      <SectionHeader kicker="● PART C · 시작하기 전에" rightLabel="GUIDELINES" />
+      <ul className="space-y-2">
+        {items.map((it, i) => (
+          <li
+            key={it}
+            className="flex items-start gap-3"
+            style={{ fontFamily: D.font, fontSize: TS.body, lineHeight: 1.7, color: D.text2 }}
+          >
+            <span style={{ minWidth: 24 }}>
+              <Mono size={11} weight={500} color={D.text3} tracking={0.16}>
+                {String(i + 1).padStart(2, "0")}
+              </Mono>
+            </span>
+            <span>{it}</span>
+          </li>
+        ))}
       </ul>
-    </div>
+    </section>
   );
 }
 
@@ -392,84 +420,94 @@ function SameSceneTwoLensesAnimation() {
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.4 }}
-      className="mt-5 rounded-lg border border-[var(--foreground)]/15 bg-[var(--surface)]/30 p-5"
     >
-      <motion.p
-        variants={fadeUp}
-        className="text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]/50"
-      >
-        같은 상황, 다른 안경
-      </motion.p>
+      <EditorialFrame label="FIG. 04-A · SAME EVENT → DIFFERENT LENS">
+        {/* 같은 사건 — EditorialItem 으로 정렬 */}
+        <motion.div variants={fadeUp}>
+          <EditorialItem label="STEP 01 · 같은 사건" kind="EVENT">
+            <p
+              style={{
+                margin: 0,
+                fontFamily: D.font,
+                fontSize: TS.lede,
+                fontWeight: 700,
+                lineHeight: 1.5,
+                color: D.ink,
+              }}
+            >
+              &ldquo;쉬는 주말이 생겼어요&rdquo;
+            </p>
+          </EditorialItem>
+        </motion.div>
 
-      {/* 같은 상황 */}
-      <motion.div
-        variants={fadeUp}
-        className="mx-auto mt-3 max-w-[220px] rounded-lg border-2 border-[var(--foreground)] bg-white px-4 py-2.5 text-center"
-      >
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
-          같은 사건
-        </p>
-        <p className="mt-0.5 text-sm font-bold text-[var(--foreground)]">
-          &ldquo;쉬는 주말이 생겼어요&rdquo;
-        </p>
-      </motion.div>
-
-      {/* 분기 화살표 */}
-      <motion.div
-        variants={fadeUp}
-        aria-hidden
-        className="my-2 flex justify-center"
-      >
-        <svg
-          width="120"
-          height="24"
-          viewBox="0 0 120 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-[var(--foreground)]/35"
+        {/* 분기 화살표 */}
+        <motion.div
+          variants={fadeUp}
+          aria-hidden
+          className="my-3 flex justify-center"
         >
-          <path d="M60 0 L20 22" />
-          <path d="M60 0 L100 22" />
-          <path d="M14 16 L20 22 L26 18" />
-          <path d="M94 18 L100 22 L106 16" />
-        </svg>
-      </motion.div>
-
-      {/* 두 안경 — 렌즈 안에 인용문, 프레임 아래에 라벨 */}
-      <div className="grid grid-cols-2 gap-4">
-        <motion.div variants={fromLeft} className="px-1">
-          <Glasses
-            tint="light"
-            leftText="대박이다!"
-            rightText="푹 쉬어야지!"
-          />
-          <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/45">
-            핵심 믿음 A
-          </p>
+          <svg
+            width="120"
+            height="24"
+            viewBox="0 0 120 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-[var(--foreground)]/35"
+          >
+            <path d="M60 0 L20 22" />
+            <path d="M60 0 L100 22" />
+            <path d="M14 16 L20 22 L26 18" />
+            <path d="M94 18 L100 22 L106 16" />
+          </svg>
         </motion.div>
-        <motion.div variants={fromRight} className="px-1">
-          <Glasses
-            tint="dark"
-            leftText="쉬면 안돼,"
-            rightText="뭐라도 해야해"
-          />
-          <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[var(--foreground)]/55">
-            핵심 믿음 B
-          </p>
-        </motion.div>
-      </div>
 
-      <motion.p
-        variants={fadeUp}
-        className="mt-4 text-center text-xs leading-relaxed text-[var(--foreground)]/55"
-      >
-        같은 사건도 어떤 안경으로 보느냐에 따라 의미가 달라져요.
-        <br />
-        Step 4에서 찾는 건 바로 그 <strong className="text-[var(--foreground)]/75">안경</strong>이에요.
-      </motion.p>
+        {/* 두 안경 — 박스 없이 안경 일러스트 + Mono 라벨만 */}
+        <div className="grid grid-cols-2 gap-4">
+          <motion.div variants={fromLeft} className="px-1">
+            <Glasses
+              tint="light"
+              leftText="대박이다!"
+              rightText="푹 쉬어야지!"
+            />
+            <p className="mt-3 text-center">
+              <Mono size={10} weight={600} color={D.text3} tracking={0.18}>
+                핵심 믿음 A
+              </Mono>
+            </p>
+          </motion.div>
+          <motion.div variants={fromRight} className="px-1">
+            <Glasses
+              tint="dark"
+              leftText="쉬면 안돼,"
+              rightText="뭐라도 해야해"
+            />
+            <p className="mt-3 text-center">
+              <Mono size={10} weight={600} color={D.accent} tracking={0.18}>
+                핵심 믿음 B
+              </Mono>
+            </p>
+          </motion.div>
+        </div>
+
+        <motion.p
+          variants={fadeUp}
+          style={{
+            margin: "16px 0 0",
+            textAlign: "center",
+            fontFamily: D.font,
+            fontSize: TS.bodySm,
+            lineHeight: 1.6,
+            color: D.text2,
+          }}
+        >
+          같은 사건도 어떤 안경으로 보느냐에 따라 의미가 달라져요.
+          <br />
+          Step 4에서 찾는 건 바로 그 <strong style={{ color: D.ink }}>안경</strong>이에요.
+        </motion.p>
+      </EditorialFrame>
     </motion.div>
   );
 }
@@ -540,15 +578,6 @@ function Glasses({
   );
 }
 
-function Bullet() {
-  return (
-    <span
-      aria-hidden
-      className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-[var(--foreground)]/40"
-    />
-  );
-}
-
 /* ─────────────────────────── 카테고리 섹션 ─────────────────────────── */
 
 function SctCategorySection({
@@ -566,28 +595,21 @@ function SctCategorySection({
 }) {
   const category = SCT_CATEGORIES[categoryCode];
   const questions = SCT_QUESTIONS.filter((q) => q.category === categoryCode);
+  const sectionLabel = `● ${String(index).padStart(2, "0")} · ${category.labelKo}`;
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center gap-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)] text-sm font-bold">
-          {index}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-[var(--foreground)]">
-            {category.labelKo}
-          </p>
-          <p className="text-xs text-[var(--foreground)]/55">
-            {category.introKo}
-          </p>
-        </div>
-      </div>
+      <SectionHeader kicker={sectionLabel} rightLabel={SCT_CATEGORY_EN[categoryCode]} accent />
+      <Body muted small>
+        {category.introKo}
+      </Body>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {questions.map((q) => (
           <SctItem
             key={q.code}
             question={q}
+            categoryEn={SCT_CATEGORY_EN[categoryCode]}
             response={responses[q.code]}
             onChange={(value) => onAnswerChange(q.code, value)}
             onToggleSkip={() => onToggleSkip(q.code)}
@@ -602,78 +624,67 @@ function SctCategorySection({
 
 function SctItem({
   question,
+  categoryEn,
   response,
   onChange,
   onToggleSkip,
 }: {
   question: SctQuestion;
+  categoryEn: string;
   response: { answer: string; skipped: boolean } | undefined;
   onChange: (value: string) => void;
   onToggleSkip: () => void;
 }) {
   const skipped = response?.skipped ?? false;
   const value = response?.answer ?? "";
+  const hasValue = value.trim().length > 0;
 
   return (
-    <div
-      className={`rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-5 transition-opacity ${
-        skipped ? "opacity-60" : ""
-      }`}
+    <EditorialItem
+      label={`FIG. SCT-${question.code} · ${categoryEn}`}
+      kind={skipped ? "SKIPPED" : hasValue ? "ACTIVE" : "EMPTY"}
+      accent={hasValue}
+      style={skipped ? { opacity: 0.6 } : undefined}
     >
-      <div className="flex items-baseline gap-2">
-        <span className="text-[11px] font-semibold text-[var(--foreground)]/50">
-          {question.code}
-        </span>
-        <p className="min-w-0 flex-1 text-sm font-semibold leading-relaxed text-[var(--foreground)]">
-          {question.prompt}{" "}
-          <span className="text-[var(--foreground)]/40">_______</span>
-        </p>
-      </div>
+      <p
+        style={{
+          margin: 0,
+          fontFamily: D.font,
+          fontSize: TS.body,
+          fontWeight: 600,
+          lineHeight: 1.6,
+          color: D.ink,
+        }}
+      >
+        {question.prompt}{" "}
+        <span style={{ color: D.text4 }}>_______</span>
+      </p>
 
       {question.examples.length > 0 && (
-        <p className="mt-1.5 ml-7 text-xs leading-relaxed text-[var(--foreground)]/55">
+        <p
+          style={{
+            margin: "6px 0 0",
+            fontFamily: D.font,
+            fontSize: TS.bodySm,
+            lineHeight: 1.6,
+            color: D.text2,
+          }}
+        >
           {question.examples.join(" · ")}
         </p>
       )}
 
-      <input
-        type="text"
+      <EditorialInput
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         disabled={skipped}
         maxLength={200}
         placeholder="여기에 짧게 적어주세요"
-        className="mt-3 w-full rounded-xl border-2 border-[var(--foreground)]/20 px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground)]/30 focus:border-[var(--foreground)] focus:outline-none transition-colors disabled:cursor-not-allowed disabled:bg-[var(--surface)]/40"
+        ariaLabel={`${question.code} 답변`}
       />
 
-      <button
-        type="button"
-        onClick={onToggleSkip}
-        className="mt-2 inline-flex items-center gap-1.5 text-xs text-[var(--foreground)]/55 hover:text-[var(--foreground)] hover:underline"
-      >
-        <span
-          className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors ${
-            skipped
-              ? "border-[var(--foreground)] bg-[var(--foreground)]"
-              : "border-[var(--foreground)]/30"
-          }`}
-        >
-          {skipped && (
-            <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" aria-hidden>
-              <path
-                d="M2.5 6.5l2.2 2.2 4.8-4.8"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
-        </span>
-        {skipped ? "건너뛰는 중 — 다시 답할게요" : "이 문항은 건너뛸게요"}
-      </button>
-    </div>
+      <SkipToggle skipped={skipped} onToggle={onToggleSkip} />
+    </EditorialItem>
   );
 }
 

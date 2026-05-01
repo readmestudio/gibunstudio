@@ -11,6 +11,7 @@ import {
   deriveLegacySummaryFields,
   isBeliefAnswerComplete,
 } from "@/lib/self-workshop/new-belief";
+import { COL as PAGE_COL, TS } from "@/components/self-workshop/clinical-report/v3-shared";
 
 /* ──────────────────────────────────────────────────────────
  * 디자인 토큰(매핑)
@@ -409,7 +410,12 @@ export function WorkshopNewBeliefContent(props: Props) {
           /* 폴백 없음 — 사용자는 직접 쓰기로 진행 가능 */
         });
     }
-    const needOptions = (cur.options?.length ?? 0) < 3 && pristine;
+    // 옵션(균형 신념 후보)은 시나리오와 달리 사용자 답변과 의존성이 없으므로
+    // pristine 보호 및 chosen_options 가드를 적용하지 않는다. options 배열이
+    // 비어 있으면 후보 카드 UI 자체가 안 그려지므로(로딩 메시지만 표시),
+    // 이미 일부 후보를 고른 사용자라도 options가 < 3이면 다시 채워야 한다.
+    // API는 항상 0개 또는 3개로만 응답하므로 인덱스 미스매치 위험 없음.
+    const needOptions = (cur.options?.length ?? 0) < 3;
     if (needOptions) {
       void fetchOptions(cur)
         .then((r) => {
@@ -499,7 +505,10 @@ export function WorkshopNewBeliefContent(props: Props) {
   /* 선행 데이터 가드 */
   if (!props.recentSituation || data.beliefs.length === 0) {
     return (
-      <div className="mx-auto max-w-lg py-20 text-center">
+      <div
+        className="text-center"
+        style={{ maxWidth: PAGE_COL + 96, margin: "0 auto", padding: "80px 48px" }}
+      >
         <p className="text-sm text-[var(--foreground)]/60">
           이 단계로 오기 전 단계들이 비어 있어요. FIND OUT 단계부터 다시 진행해
           주세요.
@@ -530,6 +539,9 @@ export function WorkshopNewBeliefContent(props: Props) {
       className="ncb-root"
       style={{
         width: "100%",
+        maxWidth: PAGE_COL + 96,
+        margin: "0 auto",
+        padding: "0 48px",
         background: T.surface,
         color: T.text,
         fontFamily: T.font,
@@ -870,7 +882,7 @@ function Intro({
           margin: "20px 0 0",
           fontFamily: T.font,
           fontWeight: 700,
-          fontSize: 38,
+          fontSize: TS.h1,
           lineHeight: 1.2,
           letterSpacing: "-0.025em",
           color: T.ink,
@@ -883,8 +895,8 @@ function Intro({
       </h2>
       <p
         style={{
-          margin: "16px 0 0",
-          fontSize: 16,
+          margin: "32px 0 0",
+          fontSize: TS.body,
           lineHeight: 1.7,
           color: T.text2,
           maxWidth: 600,
@@ -2451,7 +2463,7 @@ function AllDone({
           margin: "20px 0 0",
           fontFamily: T.font,
           fontWeight: 700,
-          fontSize: 38,
+          fontSize: TS.h1,
           lineHeight: 1.2,
           letterSpacing: "-0.025em",
           color: T.ink,
@@ -2464,8 +2476,8 @@ function AllDone({
       </h2>
       <p
         style={{
-          margin: "16px 0 0",
-          fontSize: 16,
+          margin: "32px 0 0",
+          fontSize: TS.body,
           lineHeight: 1.7,
           color: T.text2,
           maxWidth: 600,
@@ -2477,8 +2489,8 @@ function AllDone({
       </p>
       <p
         style={{
-          margin: "12px 0 0",
-          fontSize: 16,
+          margin: "16px 0 0",
+          fontSize: TS.body,
           lineHeight: 1.7,
           color: T.text2,
           maxWidth: 600,
@@ -2629,7 +2641,7 @@ function AllDone({
           }}
         >
           <span>
-            {submitting ? "저장 중…" : "새 신념 떠받치러 가기"}
+            {submitting ? "저장 중…" : "새 신념 강화하러 가기"}
           </span>
           {!submitting && (
             <span style={{ fontFamily: T.mono, fontSize: 14 }}>→</span>

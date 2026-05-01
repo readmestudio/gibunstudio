@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
+import {
+  deriveExpectedMinStep,
+  needsRecovery,
+} from "@/lib/self-workshop/progress-recovery";
 import { WorkshopDiagnosisContent } from "@/components/self-workshop/WorkshopDiagnosisContent";
 import { WorkshopResultContent } from "@/components/self-workshop/WorkshopResultContent";
 import { WorkshopExerciseStep4 } from "@/components/self-workshop/WorkshopExerciseStep4";
@@ -83,19 +87,19 @@ export default async function WorkshopStepPage({ params }: Props) {
   // 진행 데이터가 없으면 대시보드로
   if (!progress) redirect("/dashboard/self-workshop");
 
-  // [마이그레이션] 옛 11단계 → 새 10단계 구조로 시프트.
-  // current_step >= 7 (옛 7~11) 이었던 사용자는 한 칸씩 앞으로 당겨준다.
-  // 옛 6 (핵심 믿음 다시 보기)에 멈춰있던 사용자는 그 자리(=새 6 대안 자동사고)에 그대로 두고,
-  // 빈 belief_destroy 데이터는 미사용 상태로 자동 무시된다.
-  if (typeof progress.current_step === "number" && progress.current_step >= 7) {
-    const migrated = Math.min(progress.current_step - 1, 10);
+  // 자가 회복: 작성된 컬럼으로부터 "도달했어야 할 최소 step" 을 derive 해서
+  // current_step 이 그보다 낮으면 위로만 보정.
+  // 옛 11→10 마이그레이션 코드가 idempotency 가드 없이 매 방문마다 step 을 깎아
+  // 내려 사용자의 실제 진행보다 뒤처진 케이스를 자동 회복하기 위함.
+  if (needsRecovery(progress)) {
+    const expected = deriveExpectedMinStep(progress);
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const admin = createAdminClient();
     await admin
       .from("workshop_progress")
-      .update({ current_step: migrated })
+      .update({ current_step: expected })
       .eq("id", progress.id);
-    progress.current_step = migrated;
+    progress.current_step = expected;
   }
 
   // Step 2+ 접근 시 구매 확인 (테스트 유저 제외)
@@ -192,6 +196,11 @@ export default async function WorkshopStepPage({ params }: Props) {
           workshopId={workshopId}
           cachedProfile={progress.diagnosis_profile ?? null}
           mechanismAlreadySaved={progress.mechanism_analysis !== null}
+          userName={
+            (user.user_metadata?.name as string | undefined) ??
+            (user.user_metadata?.full_name as string | undefined) ??
+            null
+          }
         />
       )}
 
@@ -248,13 +257,19 @@ export default async function WorkshopStepPage({ params }: Props) {
         />
       )}
 
-      {/* RESHAPE · 3단계: 새 신념 떠받치기 (근거 모으기 실습) */}
+      {/* RESHAPE · 3단계: 새 신념 강화하기 (근거 모으기 실습) */}
       {stepNumber === 8 && (
         <WorkshopBeliefEvidenceContent
           workshopId={workshopId}
           savedData={progress.coping_plan ?? undefined}
           newBelief={progress.new_belief ?? null}
           beliefAnalysis={extractBeliefAnalysis(progress.core_belief_excavation)}
+          mechanism={extractMechanismSnapshot(progress.mechanism_analysis)}
+          userName={
+            (user.user_metadata?.name as string | undefined) ??
+            (user.user_metadata?.full_name as string | undefined) ??
+            null
+          }
         />
       )}
 
@@ -264,6 +279,11 @@ export default async function WorkshopStepPage({ params }: Props) {
           workshopId={workshopId}
           step={9}
           savedCards={progress.summary_cards ?? undefined}
+          userName={
+            (user.user_metadata?.name as string | undefined) ??
+            (user.user_metadata?.full_name as string | undefined) ??
+            null
+          }
         />
       )}
 
@@ -328,12 +348,27 @@ function extractMechanismSnapshot(mechanism: unknown): {
   automatic_thought: string;
   emotion: string;
   behavior: string;
+  /** Step 8 보호 루프 다이어그램용 — 감정 단어 배열만 따로 */
+  emotion_words: string[];
+  /** Step 8 보호 루프 다이어그램용 — 신체감각/세부 감정 묘사 */
+  body_text: string;
+  /** Step 8 보호 루프 다이어그램용 — 최악 시나리오 (두려움 본문에 활용) */
+  worst_case: string;
 } {
-  const empty = { situation: "", automatic_thought: "", emotion: "", behavior: "" };
+  const empty = {
+    situation: "",
+    automatic_thought: "",
+    emotion: "",
+    behavior: "",
+    emotion_words: [] as string[],
+    body_text: "",
+    worst_case: "",
+  };
   if (!mechanism || typeof mechanism !== "object") return empty;
   const m = mechanism as {
     recent_situation?: unknown;
     automatic_thought?: unknown;
+    worst_case_result?: unknown;
     emotions_body?: { emotions?: unknown; body_text?: unknown };
     resulting_behavior?: unknown;
   };
@@ -353,5 +388,9 @@ function extractMechanismSnapshot(mechanism: unknown): {
     emotion: emotionParts.join(" · "),
     behavior:
       typeof m.resulting_behavior === "string" ? m.resulting_behavior : "",
+    emotion_words: emotions,
+    body_text: body,
+    worst_case:
+      typeof m.worst_case_result === "string" ? m.worst_case_result.trim() : "",
   };
 }

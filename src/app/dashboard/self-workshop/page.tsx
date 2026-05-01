@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WorkbookIndex } from "@/components/self-workshop/workbook-redesign/WorkbookIndex";
 import { WORKSHOP_STEPS } from "@/lib/self-workshop/diagnosis";
+import {
+  deriveExpectedMinStep,
+  needsRecovery,
+} from "@/lib/self-workshop/progress-recovery";
 
 export default async function SelfWorkshopDashboardPage() {
   const supabase = await createClient();
@@ -43,6 +47,19 @@ export default async function SelfWorkshopDashboardPage() {
       .select()
       .single();
     progress = created;
+  }
+
+  // 자가 회복: 인덱스 진입 시점에도 stale current_step 을 보정.
+  // (스텝 페이지 page.tsx 와 동일한 로직 — 사용자가 인덱스를 먼저 열어도
+  //  바로 정확한 진행 상태가 보이도록.)
+  if (progress && needsRecovery(progress)) {
+    const expected = deriveExpectedMinStep(progress);
+    const admin = createAdminClient();
+    await admin
+      .from("workshop_progress")
+      .update({ current_step: expected })
+      .eq("id", progress.id);
+    progress.current_step = expected;
   }
 
   const hasPurchase = !!progress;

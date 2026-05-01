@@ -196,13 +196,12 @@ export { COGNITIVE_ERRORS } from "./cognitive-errors";
 // 4섹션 구조: TEST → FIND_OUT → RESHAPE → SUMMARY
 //
 // 옛 SOFTEN("핵심 믿음 다시 보기" + "대안 자동사고 시뮬레이션") 섹션과
-// 옛 SOLUTION("새 핵심 신념 찾기" + "새 신념 떠받치기") 섹션을 하나의
+// 옛 SOLUTION("새 핵심 신념 찾기" + "새 신념 강화하기") 섹션을 하나의
 // RESHAPE로 통합. 옛 CH6 "핵심 믿음 다시 보기"는 CH8 "새 핵심 신념 찾기"와
 // 작업 본질이 같아 삭제. 옛 7~11 → 새 6~10.
 //
-// `DESTROY` / `SOLUTION` 옛 union 멤버는 외부 코드(예:
-// AchievementAddictionExplanation 라이브러리 내 PRACTICE_STEPS) 호환을 위해
-// 유지하되 신규 WORKSHOP_STEPS에서는 사용하지 않는다.
+// `DESTROY` / `SOLUTION` 옛 union 멤버는 DB에 잔존할 가능성이 있는 옛 데이터의
+// 타입 호환을 위해 유지하되, 신규 WORKSHOP_STEPS 에서는 사용하지 않는다.
 
 export type WorkshopSection =
   | "TEST"
@@ -266,7 +265,7 @@ export const WORKSHOP_STEPS: WorkshopStep[] = [
     title: "새 핵심 신념 찾기", subtitle: "리프레임 작성",
     type: "new_belief", estimatedMinutes: [10, 15], hasUserInput: true },
   { step: 8, section: "RESHAPE", sectionLabel: "RESHAPE", sectionStepNumber: 3,
-    title: "새 신념 떠받치기", subtitle: "근거 모으기 실습",
+    title: "새 신념 강화하기", subtitle: "근거 모으기 실습",
     type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
 
   // ── SUMMARY ──

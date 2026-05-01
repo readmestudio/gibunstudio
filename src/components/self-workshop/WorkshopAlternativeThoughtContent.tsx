@@ -16,6 +16,7 @@ import {
   type TutorialEmotionId,
 } from "@/lib/self-workshop/alternative-thought-simulation";
 import { Mono } from "@/components/self-workshop/clinical-report/shared/Mono";
+import { COL, TS } from "@/components/self-workshop/clinical-report/v3-shared";
 
 const ACCENT = "#FF5A1F";
 const ACCENT_SOFT = "rgba(255,90,31,0.08)";
@@ -110,8 +111,12 @@ export function WorkshopAlternativeThoughtContent({
 
   return (
     <div
-      className="mx-auto flex flex-col gap-12 px-5"
-      style={{ maxWidth: 760 }}
+      className="flex flex-col gap-12"
+      style={{
+        maxWidth: COL + 96,
+        margin: "0 auto",
+        padding: "0 48px",
+      }}
     >
       <PartATutorial
         state={data.tutorial ?? {}}
@@ -252,7 +257,7 @@ function PartATutorial({
         style={{
           margin: "20px 0 0",
           fontWeight: 700,
-          fontSize: 32,
+          fontSize: TS.h2,
           lineHeight: 1.15,
           letterSpacing: "-0.025em",
           color: "var(--v2-ink)",
@@ -264,8 +269,8 @@ function PartATutorial({
       </h2>
       <p
         style={{
-          margin: "14px 0 0",
-          fontSize: 15,
+          margin: "32px 0 0",
+          fontSize: TS.body,
           lineHeight: 1.7,
           color: "var(--v2-body)",
           maxWidth: 640,
@@ -698,7 +703,7 @@ function PartBYourTurn({
         style={{
           margin: "20px 0 0",
           fontWeight: 700,
-          fontSize: 32,
+          fontSize: TS.h2,
           lineHeight: 1.15,
           letterSpacing: "-0.025em",
           color: "var(--v2-ink)",
@@ -710,8 +715,8 @@ function PartBYourTurn({
       </h2>
       <p
         style={{
-          margin: "14px 0 0",
-          fontSize: 15,
+          margin: "32px 0 0",
+          fontSize: TS.body,
           lineHeight: 1.7,
           color: "var(--v2-body)",
           maxWidth: 640,
@@ -1279,7 +1284,7 @@ function DoneSection({
         >
           {[
             { code: "07·NEW BELIEF", label: "새 핵심 신념 찾기" },
-            { code: "08·EVIDENCE", label: "새 신념 떠받치기" },
+            { code: "08·EVIDENCE", label: "새 신념 강화하기" },
           ].map((p) => (
             <div
               key={p.code}
