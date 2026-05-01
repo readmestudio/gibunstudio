@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export default function FinalCtaSection() {
   return (
     <section className="py-24 text-center">
@@ -17,23 +15,14 @@ export default function FinalCtaSection() {
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <Link
-          href="/husband-match/birth-info"
-          className="inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
+        <button
+          type="button"
+          disabled
+          className="inline-flex items-center gap-2 px-8 py-3 text-base font-medium rounded-lg cursor-not-allowed border-2 border-[var(--foreground)]/30 text-[var(--foreground)]/50"
         >
-          무료 분석 시작하기 →
-        </Link>
-        <a
-          href="#pricing"
-          className="inline-flex items-center px-5 py-3 text-sm font-medium text-[var(--foreground)]/60 border-2 border-[var(--foreground)]/20 rounded-lg hover:border-[var(--foreground)] hover:text-[var(--foreground)] transition-colors"
-        >
-          요금 보기
-        </a>
+          알림 신청
+        </button>
       </div>
-
-      <p className="mt-8 text-xs text-[var(--foreground)]/40">
-        ✦ 결제 없이 9장 무료 · 유튜브 채널만 있으면 시작
-      </p>
     </section>
   );
 }

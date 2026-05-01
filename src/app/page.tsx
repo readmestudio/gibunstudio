@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ProgramCards } from "@/components/ProgramCards";
 import { ComparisonSection } from "@/components/ComparisonSection";
 import { FeatureTwo } from "@/components/FeatureTwo";
@@ -31,16 +30,6 @@ export default function Home() {
               심리학 기반 분석으로 나의 기질, 감정, 관계 패턴을 탐색하고
               더 기분 좋은 나로 나아가세요.
             </p>
-          </div>
-          <div className="flex w-full mt-6 justify-center">
-            <div className="mt-3 rounded-lg sm:mt-0">
-              <Link
-                href="/self-hacking/detail/husband-match"
-                className="inline-flex items-center gap-2 px-8 py-3 text-lg font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all duration-300 hover:bg-[var(--accent-hover)]"
-              >
-                무료 검사 리포트 받기
-              </Link>
-            </div>
           </div>
         </div>
       </section>

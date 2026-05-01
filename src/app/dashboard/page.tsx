@@ -2,11 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import {
-  PROGRAMS,
-  getDashboardDiscoverPrograms,
-  getComingSoonPrograms,
-} from "@/lib/programs/registry";
 import { DoodleDecoration } from "@/components/DoodleDecoration";
 
 /* ─── 남편상 분석 상태 판별 ─── */
@@ -213,17 +208,6 @@ function StatusBadge({ text }: { text: string }) {
   );
 }
 
-/* ─── 프로그램 배경 이미지 ─── */
-
-const PROGRAM_BG = [
-  "/program-bg/program-bg-1.png",
-  "/program-bg/program-bg-2.png",
-  "/program-bg/program-bg-3.png",
-  "/program-bg/program-bg-4.png",
-  "/program-bg/program-bg-5.png",
-  "/program-bg/program-bg-6.png",
-];
-
 /* ─── 메인 페이지 ─── */
 
 export default async function DashboardPage() {
@@ -331,20 +315,7 @@ export default async function DashboardPage() {
     TEST_EMAILS.includes(user.email ?? "")
   );
 
-  // 참여 중인 프로그램 ID
-  const participatedIds = new Set<string>();
-  if (husbandMatch) participatedIds.add("husband-match");
-  if (counseling) participatedIds.add("counseling");
-  if (workshopProgress) participatedIds.add("self-workshop");
-
-  const hasMyPrograms = participatedIds.size > 0;
-
-  // 둘러보기: 미참여 활성 프로그램 + Coming Soon
-  const discoverActive = getDashboardDiscoverPrograms().filter(
-    (p) => !participatedIds.has(p.id)
-  );
-  const comingSoon = getComingSoonPrograms();
-  const discoverAll = [...discoverActive, ...comingSoon];
+  const hasMyPrograms = !!husbandMatch || !!counseling || !!workshopProgress;
 
   return (
     <div className="relative mx-auto max-w-6xl px-4 py-12">
@@ -438,64 +409,6 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             )}
-          </div>
-        </section>
-      )}
-
-      {/* ─── 다른 프로그램 둘러보기 ─── */}
-      {discoverAll.length > 0 && (
-        <section className={`relative ${hasMyPrograms ? "mt-16" : "mt-12"}`}>
-          <DoodleDecoration
-            name="plant-doodle"
-            sizeClass="w-20 h-20"
-            positionClass="bottom-0 right-4"
-            opacity={0.06}
-            rotate="-8deg"
-          />
-          <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
-            {hasMyPrograms ? "다른 프로그램 둘러보기" : "프로그램 둘러보기"}
-          </h2>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {discoverAll.map((program, index) => {
-              const bg = PROGRAM_BG[index % PROGRAM_BG.length];
-              const isComingSoon = program.comingSoon;
-
-              return (
-                <div
-                  key={program.id}
-                  className={`relative aspect-[4/5] overflow-hidden rounded-xl border-2 border-[var(--foreground)] bg-white ${
-                    isComingSoon ? "opacity-80" : ""
-                  }`}
-                >
-                  {/* 수채화 배경 */}
-                  <div
-                    className="absolute inset-0 bg-cover bg-center opacity-45"
-                    style={{ backgroundImage: `url('${bg}')` }}
-                  />
-                  {/* 콘텐츠 (하단 정렬) */}
-                  <div className="relative z-10 flex flex-col justify-end h-full p-6">
-                    <h3 className="text-base font-semibold text-[var(--foreground)] mb-2">
-                      {program.title}
-                    </h3>
-                    <p className="text-sm text-[var(--foreground)]/60 mb-4">
-                      {program.description}
-                    </p>
-                    {isComingSoon ? (
-                      <span className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)]/30 bg-white/80 px-4 py-2 text-sm font-medium text-[var(--foreground)]/40 cursor-default">
-                        Coming Soon
-                      </span>
-                    ) : (
-                      <Link
-                        href={program.href}
-                        className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)] bg-white/80 px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-white transition-colors"
-                      >
-                        시작하기
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </section>
       )}

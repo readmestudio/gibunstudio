@@ -11,6 +11,8 @@ interface ProgramCardData {
   href: string;
   cta: string;
   illustration: string; // /public/doodles/ 내 파일명 (확장자 제외)
+  /** true 면 카드 클릭 비활성, CTA 자리에 "알림 신청" 라벨이 노출됩니다. */
+  notifyOnly?: boolean;
 }
 
 const PROGRAMS: ProgramCardData[] = [
@@ -22,6 +24,7 @@ const PROGRAMS: ProgramCardData[] = [
     href: "/self-hacking",
     cta: "검사 선택하기 →",
     illustration: "brain-mind",
+    notifyOnly: true,
   },
   {
     id: "self-workshop",
@@ -40,6 +43,7 @@ const PROGRAMS: ProgramCardData[] = [
     href: "/#pricing",
     cta: "자세히 보기 →",
     illustration: "chat-bubble",
+    notifyOnly: true,
   },
 ];
 
@@ -47,37 +51,53 @@ const PROGRAMS: ProgramCardData[] = [
    일러스트 카드 컴포넌트
    ────────────────────────────────────────────── */
 function ProgramCard({ program }: { program: ProgramCardData }) {
-  return (
-    <Link href={program.href}>
-      <div className="flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow hover:shadow-[4px_4px_0_var(--foreground)]">
-        {/* 일러스트 영역 */}
-        <div className="flex items-center justify-center py-10 px-6">
-          <Image
-            src={`/doodles/${program.illustration}.svg`}
-            alt={program.title}
-            width={96}
-            height={96}
-            className="w-24 h-24 opacity-80"
-          />
-        </div>
+  const cardBody = (
+    <div
+      className={`flex flex-col h-full overflow-hidden bg-white border-2 border-[var(--foreground)] rounded-2xl transition-shadow ${
+        program.notifyOnly
+          ? "opacity-70"
+          : "hover:shadow-[4px_4px_0_var(--foreground)]"
+      }`}
+    >
+      {/* 일러스트 영역 */}
+      <div className="flex items-center justify-center py-10 px-6">
+        <Image
+          src={`/doodles/${program.illustration}.svg`}
+          alt={program.title}
+          width={96}
+          height={96}
+          className="w-24 h-24 opacity-80"
+        />
+      </div>
 
-        {/* 텍스트 영역 */}
-        <div className="flex flex-col flex-grow p-5 border-t border-[var(--foreground)]/10">
-          <h4 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-            {program.title}
-          </h4>
-          <p className="text-sm leading-relaxed text-[var(--foreground)]/60 flex-grow line-clamp-2">
-            {program.description}
-          </p>
+      {/* 텍스트 영역 */}
+      <div className="flex flex-col flex-grow p-5 border-t border-[var(--foreground)]/10">
+        <h4 className="text-lg font-semibold text-[var(--foreground)] mb-1">
+          {program.title}
+        </h4>
+        <p className="text-sm leading-relaxed text-[var(--foreground)]/60 flex-grow line-clamp-2">
+          {program.description}
+        </p>
 
-          {/* CTA */}
+        {/* CTA */}
+        {program.notifyOnly ? (
+          <span className="mt-4 inline-flex w-fit items-center rounded-md border border-[var(--foreground)]/30 bg-[var(--foreground)]/5 px-2.5 py-1 text-xs font-semibold text-[var(--foreground)]/60">
+            알림 신청
+          </span>
+        ) : (
           <span className="mt-4 inline-flex items-center text-sm font-semibold text-[var(--foreground)]">
             {program.cta}
           </span>
-        </div>
+        )}
       </div>
-    </Link>
+    </div>
   );
+
+  if (program.notifyOnly) {
+    return <div className="cursor-default">{cardBody}</div>;
+  }
+
+  return <Link href={program.href}>{cardBody}</Link>;
 }
 
 /* ──────────────────────────────────────────────

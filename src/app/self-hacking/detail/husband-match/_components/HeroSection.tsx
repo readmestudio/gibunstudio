@@ -1,4 +1,3 @@
-import Link from "next/link";
 import SampleCardSlider from "./SampleCardSlider";
 
 export default function HeroSection() {
@@ -23,12 +22,13 @@ export default function HeroSection() {
       >
         {"결혼은 하고 싶은데\n어떤 사람과 해야할지 모르겠다면 지금 리포트를 받아보세요"}
       </p>
-      <Link
-        href="/husband-match/birth-info"
-        className="mt-8 inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
+      <button
+        type="button"
+        disabled
+        className="mt-8 inline-flex items-center gap-2 px-8 py-3 text-base font-medium rounded-lg cursor-not-allowed border-2 border-[var(--foreground)]/30 text-[var(--foreground)]/50"
       >
-        카카오로 무료로 시작하기 →
-      </Link>
+        알림 신청
+      </button>
     </section>
   );
 }

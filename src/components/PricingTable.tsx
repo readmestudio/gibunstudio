@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { COUNSELING_TYPES } from "@/lib/counseling/types";
 
 /**
@@ -117,16 +116,17 @@ export function PricingTable() {
                   ))}
                 </ul>
 
-                <Link
-                  href={`/booking/${plan.id}`}
-                  className={`inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg transition-colors ${
+                <button
+                  type="button"
+                  disabled
+                  className={`inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg cursor-not-allowed ${
                     isPopular
-                      ? "bg-[var(--foreground)] text-white hover:bg-[var(--foreground)]/80"
-                      : "border-2 border-[var(--foreground)] text-[var(--foreground)] hover:bg-[var(--surface)]"
+                      ? "bg-[var(--foreground)]/40 text-white"
+                      : "border-2 border-[var(--foreground)]/30 text-[var(--foreground)]/50"
                   }`}
                 >
-                  예약하기
-                </Link>
+                  알림 신청
+                </button>
               </div>
             );
           })}

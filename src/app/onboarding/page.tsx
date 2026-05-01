@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   EMOTION_WORDS,
   WORD_TO_BASIC,
@@ -184,20 +183,6 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <div className="mt-12 rounded-xl border-2 border-[var(--accent)] bg-[var(--accent-muted)] p-6">
-        <h2 className="text-lg font-bold text-[var(--foreground)]">
-          왜 이 감정이 반복될까?
-        </h2>
-        <p className="mt-2 text-[var(--foreground)]/70">
-          7일 내면 아이 찾기 프로그램으로 반복되는 패턴을 찾아보세요.
-        </p>
-        <Link
-          href="/programs/7day"
-          className="mt-6 inline-flex rounded-lg bg-[var(--accent)] px-6 py-3 font-semibold text-[var(--foreground)] hover:bg-[var(--accent-hover)]"
-        >
-          7일 프로그램 알아보기
-        </Link>
-      </div>
     </div>
   );
 }
