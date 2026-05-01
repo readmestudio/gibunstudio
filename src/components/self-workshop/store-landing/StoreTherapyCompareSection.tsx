@@ -1,104 +1,199 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { THERAPY_COMPARISON_ROWS } from "./content";
 
 /**
- * [03] 상담 vs 워크북 비교 표
+ * [03] 상담 vs 워크북 비교 — 좌우 카드 대비
  *
- * 7개 항목 비교. 표 아래에 핵심 효용 3가지는 유지된다는 강조 메시지 포함.
+ * 좌측: 일반 상담 (흐린 톤, X 마커)
+ * 우측: 마음 챙김 워크북 (검정 fill + 흰 글자, ✓ 마커) — 시각적 강조
+ * 사이: 화살표 (모바일↓ / 데스크톱→)
  */
 export function StoreTherapyCompareSection() {
   return (
-    <section className="mx-auto max-w-4xl px-4 py-20">
+    <section className="mx-auto max-w-5xl px-4 py-20">
       <p className="text-center text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/40 mb-3">
         THERAPY VS WORKBOOK
       </p>
-      <h2 className="text-center text-2xl sm:text-3xl font-bold text-[var(--foreground)] break-keep">
+      <h2 className="text-center text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--foreground)] break-keep leading-[1.3]">
         상담의 장점은 그대로,
         <br className="sm:hidden" /> 단점만 덜어냈습니다
       </h2>
       <p className="mt-4 text-center text-sm sm:text-base text-[var(--foreground)]/60 max-w-xl mx-auto break-keep">
-        상담의 본질적 효용은 유지하되, 현실적 부담(비용·반복성·상담사 의존·종결 부담)을 해결합니다.
+        1:1 심리 상담에서 오는 부담은 최소화하고, 효용은 극대화했습니다.
       </p>
 
-      {/* 데스크톱: 3열 테이블 / 모바일: 카드형 */}
-      <div className="mt-10">
-        {/* 데스크톱 테이블 */}
-        <div className="hidden md:block overflow-hidden rounded-2xl border-2 border-[var(--foreground)]">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-[var(--foreground)] text-white">
-                <th className="p-4 text-sm font-semibold w-[18%]">항목</th>
-                <th className="p-4 text-sm font-semibold w-[41%]">일반 상담</th>
-                <th className="p-4 text-sm font-semibold w-[41%] bg-[var(--foreground)]">
-                  마음 챙김 워크북
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {THERAPY_COMPARISON_ROWS.map((row, idx) => (
-                <tr
-                  key={row.label}
-                  className={
-                    idx % 2 === 0
-                      ? "bg-white"
-                      : "bg-[var(--surface)]"
-                  }
-                >
-                  <td className="p-4 text-sm font-semibold text-[var(--foreground)] border-t border-[var(--foreground)]/10">
-                    {row.label}
-                  </td>
-                  <td className="p-4 text-sm text-[var(--foreground)]/60 break-keep border-t border-[var(--foreground)]/10">
-                    {row.therapy}
-                  </td>
-                  <td className="p-4 text-sm text-[var(--foreground)] font-semibold break-keep border-t border-[var(--foreground)]/10">
-                    {row.workbook}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* 좌·우 카드 비교 */}
+      <div className="mt-14 sm:mt-16 grid gap-5 sm:gap-0 sm:grid-cols-[1fr_auto_1fr] items-stretch">
+        {/* 좌측 — 일반 상담 (Before) */}
+        <ComparisonCard
+          eyebrow="지금까지"
+          title="일반 상담"
+          isPositive={false}
+          rows={THERAPY_COMPARISON_ROWS.map((r) => ({
+            label: r.label,
+            value: r.therapy,
+          }))}
+          delay={0}
+        />
+
+        {/* 사이 화살표 */}
+        <div className="flex items-center justify-center sm:px-3 md:px-5">
+          <ArrowMark />
         </div>
 
-        {/* 모바일 카드형 */}
-        <ul className="md:hidden space-y-3">
-          {THERAPY_COMPARISON_ROWS.map((row) => (
-            <li
-              key={row.label}
-              className="rounded-xl border-2 border-[var(--foreground)]/15 bg-white p-4"
-            >
-              <p className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/50 mb-3">
-                {row.label}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-[var(--foreground)]/40 flex-shrink-0 w-14">
-                    일반 상담
-                  </span>
-                  <span className="text-sm text-[var(--foreground)]/60 break-keep">
-                    {row.therapy}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold text-[var(--foreground)] flex-shrink-0 w-14">
-                    워크북
-                  </span>
-                  <span className="text-sm font-semibold text-[var(--foreground)] break-keep">
-                    {row.workbook}
-                  </span>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* 핵심 효용 유지 메시지 */}
-      <div className="mt-10 rounded-2xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-10 sm:py-14 text-center text-white">
-        <p className="text-xl sm:text-2xl md:text-3xl font-bold leading-[1.4] break-keep">
-          심리 상담의 장점은 취하고
-          <br />
-          단점은 완벽하게 덜어냈습니다
-        </p>
+        {/* 우측 — 마음 챙김 워크북 (After, 강조) */}
+        <ComparisonCard
+          eyebrow="마음 챙김 워크북과 함께"
+          title="마음 챙김 워크북"
+          isPositive
+          rows={THERAPY_COMPARISON_ROWS.map((r) => ({
+            label: r.label,
+            value: r.workbook,
+          }))}
+          delay={0.2}
+        />
       </div>
     </section>
+  );
+}
+
+/* ── 좌/우 비교 카드 ── */
+function ComparisonCard({
+  eyebrow,
+  title,
+  isPositive,
+  rows,
+  delay,
+}: {
+  eyebrow: string;
+  title: string;
+  isPositive: boolean;
+  rows: { label: string; value: string }[];
+  delay: number;
+}) {
+  return (
+    <motion.div
+      className={`relative rounded-2xl p-7 sm:p-8 md:p-9 h-full flex flex-col ${
+        isPositive
+          ? "bg-[var(--foreground)] text-white shadow-[6px_6px_0_var(--foreground)]"
+          : "bg-white border-2 border-[var(--foreground)]/12"
+      }`}
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.55, delay, ease: "easeOut" }}
+    >
+      {/* 헤더 */}
+      <p
+        className={`text-[10px] sm:text-xs font-semibold tracking-widest uppercase ${
+          isPositive ? "text-white/55" : "text-[var(--foreground)]/40"
+        }`}
+      >
+        {eyebrow}
+      </p>
+      <h3
+        className={`mt-2 text-xl sm:text-2xl md:text-[26px] font-bold leading-tight break-keep ${
+          isPositive ? "text-white" : "text-[var(--foreground)]/55"
+        }`}
+      >
+        {title}
+      </h3>
+
+      {/* 구분선 */}
+      <div
+        className={`mt-6 mb-6 sm:mt-7 sm:mb-7 h-px ${
+          isPositive ? "bg-white/15" : "bg-[var(--foreground)]/10"
+        }`}
+      />
+
+      {/* 항목 리스트 */}
+      <ul className="space-y-4 sm:space-y-5">
+        {rows.map((row) => (
+          <li key={row.label} className="flex items-start gap-3 sm:gap-4">
+            <Marker positive={isPositive} />
+            <p
+              className={`flex-1 min-w-0 text-base sm:text-lg font-semibold leading-relaxed break-keep ${
+                isPositive ? "text-white" : "text-[var(--foreground)]/65"
+              }`}
+            >
+              {row.value}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </motion.div>
+  );
+}
+
+/* ── X / ✓ 마커 ── */
+function Marker({ positive }: { positive: boolean }) {
+  if (positive) {
+    return (
+      <span
+        aria-hidden
+        className="mt-0.5 inline-flex h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 items-center justify-center rounded-full bg-white text-[var(--foreground)]"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-3.5 w-3.5 sm:h-4 sm:w-4"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </span>
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      className="mt-0.5 inline-flex h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 items-center justify-center rounded-full border-2 border-[var(--foreground)]/20 text-[var(--foreground)]/40"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-3 w-3 sm:h-3.5 sm:w-3.5"
+      >
+        <line x1="6" y1="6" x2="18" y2="18" />
+        <line x1="18" y1="6" x2="6" y2="18" />
+      </svg>
+    </span>
+  );
+}
+
+/* ── 두 카드 사이 화살표 ── */
+function ArrowMark() {
+  return (
+    <div className="rotate-90 sm:rotate-0 text-white">
+      <motion.span
+        className="inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-[var(--foreground)]"
+        animate={{ x: [0, 4, 0] }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        aria-hidden
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </motion.span>
+    </div>
   );
 }

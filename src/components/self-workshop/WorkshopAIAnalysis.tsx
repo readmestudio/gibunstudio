@@ -11,8 +11,16 @@ interface Props {
   /** FIND_OUT 3(step 5): mechanism_insights */
   savedReport?: unknown;
   mechanismAnalysis?: unknown;
-  /** FIND_OUT 3(step 5): core_belief_excavation (SCT 응답 + 기존 belief_analysis) */
+  /** Step 9 BeliefShiftCards 가 사용 — mechanism_insights 원본 (cognitive_errors 포함) */
+  mechanismInsights?: unknown;
+  /** FIND_OUT 3(step 5) / SUMMARY(step 9): core_belief_excavation */
   coreBeliefExcavation?: unknown;
+  /** Step 9 BeliefShiftCards 가 사용 — belief_destroy(검증 데이터) */
+  beliefDestroy?: unknown;
+  /** Step 9 BeliefShiftCards 가 사용 — new_belief(새 핵심 신념) */
+  newBelief?: unknown;
+  /** Step 9 BeliefShiftCards 가 사용 — coping_plan(대체 사고/실천) */
+  copingPlan?: unknown;
   userName?: string | null;
 }
 
@@ -22,7 +30,11 @@ export function WorkshopAIAnalysis({
   savedCards,
   savedReport,
   mechanismAnalysis,
+  mechanismInsights,
   coreBeliefExcavation,
+  beliefDestroy,
+  newBelief,
+  copingPlan,
   userName,
 }: Props) {
   if (step === 5) {
@@ -42,6 +54,12 @@ export function WorkshopAIAnalysis({
     <WorkshopProfessionalReport
       workshopId={workshopId}
       savedReport={savedCards ?? null}
+      mechanismAnalysis={mechanismAnalysis ?? null}
+      mechanismInsights={mechanismInsights ?? null}
+      coreBeliefExcavation={coreBeliefExcavation ?? null}
+      beliefDestroy={beliefDestroy ?? null}
+      newBelief={newBelief ?? null}
+      copingPlan={copingPlan ?? null}
       userName={userName}
     />
   );

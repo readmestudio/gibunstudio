@@ -279,6 +279,12 @@ export default async function WorkshopStepPage({ params }: Props) {
           workshopId={workshopId}
           step={9}
           savedCards={progress.summary_cards ?? undefined}
+          mechanismAnalysis={progress.mechanism_analysis ?? null}
+          mechanismInsights={progress.mechanism_insights ?? null}
+          coreBeliefExcavation={progress.core_belief_excavation ?? null}
+          beliefDestroy={progress.belief_destroy ?? null}
+          newBelief={progress.new_belief ?? null}
+          copingPlan={progress.coping_plan ?? null}
           userName={
             (user.user_metadata?.name as string | undefined) ??
             (user.user_metadata?.full_name as string | undefined) ??

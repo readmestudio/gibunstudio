@@ -1,3 +1,5 @@
+import { NotifyButton } from "@/components/NotifyButton";
+
 const TCI_AXES = [
   { name: "자극추구", score: 44, desc: "새로운 자극을 찾는 정도" },
   { name: "위험회피", score: 17, desc: "불확실성을 피하는 정도" },
@@ -191,13 +193,13 @@ export default function HowItWorks() {
 
         {/* CTA */}
         <div className="text-center">
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center gap-2 px-8 py-3 text-base font-medium rounded-lg cursor-not-allowed border-2 border-[var(--foreground)]/30 text-[var(--foreground)]/50"
-          >
-            알림 신청
-          </button>
+          <NotifyButton
+            programId="husband-match"
+            programTitle="내면 분석 리포트 — 남편상 분석"
+            label="알림 신청 →"
+            triggerClassName="inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
+            doneLabel="알림 신청 완료"
+          />
         </div>
       </section>
     </>

@@ -9,7 +9,7 @@ export function StoreCreatorStorySection() {
   return (
     <section className="mx-auto max-w-3xl px-4 py-20">
       <p className="text-center text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/40 mb-3">
-        MIND FIRST
+        FROM THE MAKER
       </p>
       <h2 className="text-center text-2xl sm:text-3xl font-bold leading-[1.35] text-[var(--foreground)] break-keep">
         결국 퍼포먼스를 잘 내기 위해서는
@@ -28,10 +28,6 @@ export function StoreCreatorStorySection() {
             {paragraph.text}
           </p>
         ))}
-
-        <p className="mt-8 text-right text-sm text-[var(--foreground)]/50">
-          — 기분 스튜디오 창작자 드림
-        </p>
       </div>
     </section>
   );

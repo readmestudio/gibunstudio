@@ -275,11 +275,19 @@ function CascadeSection({ summary }: { summary: SituationSummary }) {
   const [ref, seen] = useInView<HTMLDivElement>(0.2);
   const cascade = summary.cascade;
   const N = cascade.length;
-  // 노드 N개를 순환하는 ~ (N * 1.6)s 사이클
-  const cycle = Math.max(8000, N * 1600);
-  const t = useTimeline(seen, cycle, 0, true);
+  // 노드 N개를 순환하는 ~ (N * 3.2)s 사이클 — 한 노드를 충분히 읽을 시간 확보
+  const cycle = Math.max(18000, N * 3200);
+  // 선택된 노드가 있으면 자동 재생 정지하고 해당 노드 강조
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const tRaw = useTimeline(seen && selectedIndex === null, cycle, 0, true);
+  // 펄스 위치 — 선택된 노드가 있으면 그 노드 중앙으로 고정
+  const t =
+    selectedIndex !== null ? (selectedIndex + 0.5) / N : tRaw;
 
   function nodeActivation(i: number) {
+    if (selectedIndex !== null) {
+      return selectedIndex === i ? 1 : 0.18;
+    }
     const phaseStart = i / N;
     const phaseEnd = (i + 1) / N;
     const center = (phaseStart + phaseEnd) / 2;
@@ -287,6 +295,10 @@ function CascadeSection({ summary }: { summary: SituationSummary }) {
     const wrapped = Math.min(dist, 1 - dist);
     const span = (1 / N) * 0.7;
     return clamp(1 - wrapped / span, 0, 1);
+  }
+
+  function handleSelect(i: number) {
+    setSelectedIndex((prev) => (prev === i ? null : i));
   }
 
   return (
@@ -382,10 +394,23 @@ function CascadeSection({ summary }: { summary: SituationSummary }) {
           </div>
         </Reveal>
 
+        {/* 노드 클릭 안내 */}
+        <Reveal delay={360}>
+          <div style={{ marginTop: 32 }}>
+            <Mono size={10} color={D.text3} tracking={0.18}>
+              {selectedIndex === null
+                ? "↳ 노드를 클릭하면 그 단계에서 멈춰서 자세히 볼 수 있어요"
+                : `↳ ${String(selectedIndex + 1).padStart(2, "0")} ${
+                    cascade[selectedIndex]?.label ?? ""
+                  } 에서 정지 · 다시 클릭하면 재생`}
+            </Mono>
+          </div>
+        </Reveal>
+
         {/* 노드 cascade — 수직 척추 + 이동 펄스 */}
         <div
           style={{
-            marginTop: 80,
+            marginTop: 48,
             position: "relative",
             display: "flex",
             flexDirection: "column",
@@ -428,12 +453,26 @@ function CascadeSection({ summary }: { summary: SituationSummary }) {
           {cascade.map((node: CascadeNode, i) => {
             const a = nodeActivation(i);
             const isActive = a > 0.4;
+            const isSelected = selectedIndex === i;
             const textCol = i % 2 === 0 ? ("1 / 2" as const) : ("3 / 4" as const);
             const transitionCol =
               i % 2 === 0 ? ("3 / 4" as const) : ("1 / 2" as const);
             return (
               <div
                 key={i}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                aria-label={`${String(i + 1).padStart(2, "0")} ${node.label} ${
+                  isSelected ? "선택됨 (다시 클릭하면 재생)" : "클릭하면 정지"
+                }`}
+                onClick={() => handleSelect(i)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSelect(i);
+                  }
+                }}
                 style={{
                   display: "grid",
                   gridTemplateColumns:
@@ -442,6 +481,8 @@ function CascadeSection({ summary }: { summary: SituationSummary }) {
                   alignItems: "center",
                   padding: "32px 0",
                   position: "relative",
+                  cursor: "pointer",
+                  outline: "none",
                 }}
               >
                 <div
@@ -798,12 +839,19 @@ function KeywordsSection({ keywords }: { keywords: BeliefKeyword[] }) {
 // ───────── ACHIEVEMENT LOOP (DARK) ───────── //
 function AchievementLoopSection({ loop }: { loop: AchievementLoop }) {
   const [ref, seen] = useInView<HTMLDivElement>(0.25);
-  const cycleMs = 9000;
-  const t = useTimeline(seen, cycleMs, 0, true);
+  // 한 바퀴 도는 시간을 늘려 각 노드의 의미를 충분히 읽을 수 있게
+  const cycleMs = 20000;
   const stages = loop.stages;
   const N = stages.length;
+  // 클릭 시 해당 노드에서 정지하고 자세히 보여주기 위한 상태
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const tRaw = useTimeline(seen && selectedIndex === null, cycleMs, 0, true);
+  const t = selectedIndex !== null ? selectedIndex / N : tRaw;
 
   function nodeActivation(i: number) {
+    if (selectedIndex !== null) {
+      return selectedIndex === i ? 1 : 0.18;
+    }
     const phaseStart = i / N;
     const phaseEnd = (i + 1) / N;
     const center = (phaseStart + phaseEnd) / 2;
@@ -811,6 +859,10 @@ function AchievementLoopSection({ loop }: { loop: AchievementLoop }) {
     const wrapped = Math.min(dist, 1 - dist);
     const span = (1 / N) * 0.7;
     return clamp(1 - wrapped / span, 0, 1);
+  }
+
+  function handleSelect(i: number) {
+    setSelectedIndex((prev) => (prev === i ? null : i));
   }
 
   const introParas = splitParagraphs(loop.intro);
@@ -931,8 +983,28 @@ function AchievementLoopSection({ loop }: { loop: AchievementLoop }) {
           ))}
         </div>
 
+        {/* 노드 클릭 안내 */}
+        <Reveal delay={360}>
+          <div style={{ marginTop: 32 }}>
+            <Mono size={10} color="rgba(255,255,255,0.45)" tracking={0.18}>
+              {selectedIndex === null
+                ? "↳ 노드를 클릭하면 그 단계에서 멈춰 자세히 볼 수 있어요"
+                : `↳ STEP ${String(selectedIndex + 1).padStart(2, "0")} · ${
+                    stages[selectedIndex]?.name ?? ""
+                  } 에서 정지 · 다시 클릭하면 재생`}
+            </Mono>
+          </div>
+        </Reveal>
+
         {/* Loop diagram — 원형 6-노드 패턴 (펄스 시계방향 orbit) */}
-        <CircularLoop stages={stages} t={t} seen={seen} nodeActivation={nodeActivation} />
+        <CircularLoop
+          stages={stages}
+          t={t}
+          seen={seen}
+          nodeActivation={nodeActivation}
+          selectedIndex={selectedIndex}
+          onSelect={handleSelect}
+        />
 
         {/* loopback 표시 */}
         <Reveal delay={520}>
@@ -1001,11 +1073,15 @@ function CircularLoop({
   t,
   seen,
   nodeActivation,
+  selectedIndex,
+  onSelect,
 }: {
   stages: AchievementLoop["stages"];
   t: number;
   seen: boolean;
   nodeActivation: (i: number) => number;
+  selectedIndex: number | null;
+  onSelect: (i: number) => void;
 }) {
   const N = stages.length;
   const VB = 540; // viewBox 한 변
@@ -1105,8 +1181,27 @@ function CircularLoop({
           const a = nodeActivation(i);
           const isActive = a > 0.4;
           const ringR = 28 + a * 4;
+          const isSelected = selectedIndex === i;
           return (
-            <g key={i}>
+            <g
+              key={i}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isSelected}
+              aria-label={`STEP ${String(s.step).padStart(2, "0")} ${
+                s.name
+              } ${isSelected ? "선택됨 (다시 클릭하면 재생)" : "클릭하면 정지"}`}
+              onClick={() => onSelect(i)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(i);
+                }
+              }}
+              style={{ cursor: "pointer", outline: "none" }}
+            >
+              {/* 클릭 영역 확장용 투명 hit-area */}
+              <circle cx={x} cy={y} r={ringR + 18} fill="rgba(0,0,0,0)" />
               {isActive && (
                 <circle
                   cx={x}
@@ -1116,7 +1211,7 @@ function CircularLoop({
                   stroke={D.accent}
                   strokeWidth="1"
                   opacity={a * 0.5}
-                  style={{ transition: "none" }}
+                  style={{ transition: "none", pointerEvents: "none" }}
                 />
               )}
               <circle
@@ -1131,6 +1226,7 @@ function CircularLoop({
                   filter: isActive
                     ? `drop-shadow(0 0 16px ${D.accent})`
                     : "none",
+                  pointerEvents: "none",
                 }}
               />
               <text
@@ -1142,7 +1238,7 @@ function CircularLoop({
                 fontWeight="700"
                 letterSpacing="1.4"
                 fill={isActive ? "#fff" : "rgba(255,255,255,0.55)"}
-                style={{ transition: "fill 380ms ease" }}
+                style={{ transition: "fill 380ms ease", pointerEvents: "none" }}
               >
                 {String(s.step).padStart(2, "0")}
               </text>
@@ -1196,9 +1292,23 @@ function CircularLoop({
         }
         const a = nodeActivation(i);
         const isActive = a > 0.4;
+        const isSelected = selectedIndex === i;
         return (
           <div
             key={i}
+            role="button"
+            tabIndex={0}
+            aria-pressed={isSelected}
+            aria-label={`STEP ${String(s.step).padStart(2, "0")} ${
+              s.name
+            } ${isSelected ? "선택됨 (다시 클릭하면 재생)" : "클릭하면 정지"}`}
+            onClick={() => onSelect(i)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(i);
+              }
+            }}
             style={{
               position: "absolute",
               left: `${xPct}%`,
@@ -1206,7 +1316,8 @@ function CircularLoop({
               transform: `translate(${translateX}%, ${translateY}%)`,
               textAlign,
               maxWidth: 140,
-              pointerEvents: "none",
+              cursor: "pointer",
+              outline: "none",
               opacity: lerp(0.55, 1, a),
               transition: "opacity 380ms ease",
             }}

@@ -1,4 +1,5 @@
 import { COUNSELING_TYPES } from "@/lib/counseling/types";
+import { NotifyButton } from "@/components/NotifyButton";
 
 /**
  * 프라이싱 섹션 (Monotone 스타일)
@@ -116,17 +117,17 @@ export function PricingTable() {
                   ))}
                 </ul>
 
-                <button
-                  type="button"
-                  disabled
-                  className={`inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg cursor-not-allowed ${
+                <NotifyButton
+                  programId={`counseling-${plan.id}`}
+                  programTitle={`1:1 심리 상담 — ${plan.title}`}
+                  label="알림 신청"
+                  triggerClassName={`inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg transition-colors ${
                     isPopular
-                      ? "bg-[var(--foreground)]/40 text-white"
-                      : "border-2 border-[var(--foreground)]/30 text-[var(--foreground)]/50"
+                      ? "bg-[var(--foreground)] text-white hover:bg-[var(--foreground)]/80"
+                      : "border-2 border-[var(--foreground)] text-[var(--foreground)] hover:bg-[var(--surface)]"
                   }`}
-                >
-                  알림 신청
-                </button>
+                  doneLabel="알림 신청 완료"
+                />
               </div>
             );
           })}

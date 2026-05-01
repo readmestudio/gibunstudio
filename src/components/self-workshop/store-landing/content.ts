@@ -3,45 +3,61 @@
  * (성취 중독 서브 랜딩(`landing-data.ts`)과는 다른 전체 랜딩 관점 콘텐츠)
  */
 
-/* ── Hero 공감 체크리스트 (6문항) ── */
-export const HERO_CHECK_ITEMS = [
-  "회당 8~15만원, 매주 가는 건 현실적으로 부담된다",
-  "몇 회차 다녀봤지만 같은 얘기만 맴돌고 있다",
-  "상담사와 맞지 않는 것 같은데 바꾸기도 애매하다",
-  "상담실 가기 전 \"오늘 뭐 말하지?\" 고민부터 된다",
-  "듣고 공감은 받았지만 일상에서 뭐가 달라졌는지 모르겠다",
-  "약속한 회차가 끝나가는데, \"이제 그만 올게요\"라고 말하기가 뻘쭘하다",
+/* ── Hero — 1:1 심리 상담의 한계 (4가지) ── */
+export type TherapyPainPointIcon = "coin" | "loop" | "mismatch" | "empty";
+
+export interface TherapyPainPoint {
+  icon: TherapyPainPointIcon;
+  title: string;
+  description: string;
+}
+
+export const THERAPY_PAIN_POINTS: TherapyPainPoint[] = [
+  {
+    icon: "coin",
+    title: "가격이 부담돼요",
+    description: "회당 8~15만원, 매주 가는 건 현실적으로 부담돼요.",
+  },
+  {
+    icon: "loop",
+    title: "같은 얘기만 반복하게 돼요",
+    description:
+      "상담이 여러 회차 진행되면 어느 순간 같은 문제, 같은 이야기를 반복하고 있는 것 같아요.",
+  },
+  {
+    icon: "mismatch",
+    title: "상담사가 잘 맞지 않아요",
+    description:
+      "상담사가 나와 잘 맞냐 안 맞냐에 따라 심리 상담의 만족도가 달라지더라구요.",
+  },
+  {
+    icon: "empty",
+    title: "상담이 끝나고 남는 게 없어요",
+    description: "이야기할 땐 신나게 떠들었는데, 끝나고 남는 게 없어요.",
+  },
 ];
 
-/* ── 한 줄 정의 + 3줄 요약 ── */
-export const DEFINITION_ONE_LINER =
-  "상담심리학 이론에 따라 설계된, 스스로 진행하는 셀프 상담 워크북";
-
+/* ── 4가지 차별점 ── */
 export const SOLUTION_HIGHLIGHTS = [
   {
-    title: "문제별로 명확한 과제가 있습니다",
+    title: "유형 진단 + 문장 완성 검사로 내 상태를 측정합니다",
     description:
-      "성취 중독, 불안 등 주제별 워크북이 분리되어 있어요. 내 문제에 맞춘 질문과 실습이 순서대로 준비되어 있습니다.",
+      "리커트 5점 척도 20문항으로 자기 가치의 조건화 · 과잉 추동 · 실패 공포 · 정서적 회피 4개 축을 점수화하고, 문장 완성 검사(SCT) 14문항으로 그 아래 숨은 신념까지 함께 들여다봅니다.",
   },
   {
-    title: "20문항 진단으로 내 상태를 측정합니다",
+    title: "진단에서 절대 끝나지 않습니다",
     description:
-      "리커트 5점 척도 자가 진단으로, 내 마음의 어느 축이 흔들리고 있는지 4개 하위 영역별 점수로 객관적으로 확인합니다.",
+      "기질 분석이나 자가 진단처럼 결과 화면 하나로 멈추지 않아요. 5영역 모델로 내 패턴을 직접 추적하고, 인지 오류 13종을 짚어내고, 반복되는 핵심 믿음을 다시 보는 단계까지 이어집니다.",
   },
   {
-    title: "인지 오류와 핵심 믿음까지 분석합니다",
+    title: "심리 상담사가 따라가는 단계, 그대로",
     description:
-      "자동적 사고 뒤에 숨은 인지 오류 10종과, 반복 패턴을 만드는 핵심 믿음을 구조적으로 분석합니다. 스스로는 보이지 않던 패턴이 드러납니다.",
+      "CBT(인지행동치료) 기반의 5영역 모델 · 하향 화살표 · 인지 재구조화. 혼자서는 떠올리기도, 스스로에게 던지기도 어려운 질문들을 워크북이 순서대로 안내해 드립니다.",
   },
   {
-    title: "과제를 따라가며 원인과 대처법을 스스로 찾게 됩니다",
+    title: "총 3개의 분석 리포트가 남습니다",
     description:
-      "상담심리학의 대표 프레임(CBT)을 그대로 따라, 진단 → 분석 → 핵심 믿음 → 대처 계획으로 단계별로 이어집니다.",
-  },
-  {
-    title: "감정 해소에서 끝나지 않고, 실전 대처법까지 도달합니다",
-    description:
-      "\"후련하다\"로 끝나지 않아요. 직장·관계에서 바로 쓸 수 있는 DO & DON'T, 행동 실험 계획으로 마무리됩니다.",
+      "진단 결과 리포트, 인지 패턴 통합 분석 리포트, 전문가 형식의 마무리 리포트까지. 워크북을 마치고 나면, 내 안의 패턴이 한 장씩 정리된 세 개의 기록이 손에 남아요.",
   },
 ];
 
@@ -51,13 +67,12 @@ export const THERAPY_COMPARISON_ROWS: {
   therapy: string;
   workbook: string;
 }[] = [
-  { label: "비용", therapy: "회당 8~15만원", workbook: "1회 구매로 반복 사용" },
+  { label: "비용", therapy: "회당 8~15만원", workbook: "한 번 구매 3만원대" },
   { label: "시간", therapy: "매주 예약·이동·50분", workbook: "내가 원할 때, 원하는 속도로" },
   { label: "반복성", therapy: "같은 이야기 맴돌기 쉬움", workbook: "구조화된 단계로 진전" },
-  { label: "주도성", therapy: "상담사가 이끈다", workbook: "내가 주도한다" },
   { label: "상담사", therapy: "맞고 안 맞음이 큼", workbook: "변수 없음" },
   { label: "시작과 끝", therapy: "연장·종결 얘기 꺼내기 부담", workbook: "내가 원할 때 시작하고 멈춘다" },
-  { label: "결과물", therapy: "기억·메모에 의존", workbook: "내 손으로 쓴 기록이 남음" },
+  { label: "결과물", therapy: "기억·메모에 의존", workbook: "분석 리포트 3종이 남음" },
 ];
 
 /* ── 창작자 스토리 ── */
@@ -73,106 +88,9 @@ export const CREATOR_STORY_PARAGRAPHS: { text: string; highlight?: boolean }[] =
     highlight: true,
   },
   {
-    text: "마음 챙김 워크북은 실습을 통해 문제 상황을 발견하고, 인지행동 이론에 따라 분석함으로써 그 함정에서 빠져나오는 법을 배울 수 있습니다. 몇 번의 훈련을 거치면 스스로도 할 수 있어요. 마음 챙김 워크북이 당신의 비즈니스 퍼포먼스의 한계를 없애고, 일을 끝내주게 잘 하도록 도와드립니다.",
+    text: "마음 챙김 워크북은 실습을 통해 문제 상황을 발견하고, 인지행동 이론에 따라 분석함으로써 그 함정에서 빠져나오는 법을 배울 수 있습니다. 몇 번의 훈련을 거치면 스스로도 할 수 있어요. 이 워크북이 퍼포먼스의 한계를 없애고, 새로운 세계를 열어주는 문이 되길 바랍니다.",
   },
 ];
-
-/* ── 워크북 진행 8단계 (diagnosis.ts 의 WORKSHOP_STEPS와 동일 흐름) ── */
-export interface HowItWorksStep {
-  step: number;
-  phase: string;
-  title: string;
-  description: string;
-  technique?: string;
-  minutes: string;
-}
-
-export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
-  {
-    step: 1,
-    phase: "진단",
-    title: "나의 성취 패턴 진단",
-    description:
-      "리커트 5점 척도 20문항으로, 자기 가치의 조건화 · 과잉 추동 · 실패 공포 · 정서적 회피 4개 영역을 측정합니다.",
-    technique: "표준화된 자기 보고식 척도",
-    minutes: "7~10분",
-  },
-  {
-    step: 2,
-    phase: "분석",
-    title: "나의 진단 결과",
-    description:
-      "총점 기반 4단계 수준과 4개 하위 영역별 점수를 확인합니다. 어느 축이 과활성화되어 있는지 구체적으로 드러납니다.",
-    minutes: "5~8분",
-  },
-  {
-    step: 3,
-    phase: "패턴 찾기",
-    title: "나의 성취 중독 패턴 찾기",
-    description:
-      "최근 상황을 직접 써 내려가며, 상황 → 자동적 사고 → 감정 → 행동의 순환을 본인이 직접 추적합니다.",
-    technique: "CBT 5영역 모델 (Padesky)",
-    minutes: "20~30분",
-  },
-  {
-    step: 4,
-    phase: "패턴 해석",
-    title: "당신의 패턴은 이렇습니다",
-    description:
-      "작성한 기록을 바탕으로 자동적 사고 속 인지적 오류(과잉 일반화 · 파국화 · 흑백 사고 등)를 식별합니다.",
-    technique: "인지적 오류 10종 매핑",
-    minutes: "3~5분",
-  },
-  {
-    step: 5,
-    phase: "핵심 믿음",
-    title: "패턴을 만드는 핵심 믿음 찾기",
-    description:
-      "반복되는 생각 뒤에 숨은 핵심 믿음을 문답 형식으로 파헤칩니다. \"나는 ___여야 한다\"의 빈칸을 찾아가는 과정입니다.",
-    technique: "하향 화살표 기법 (Downward Arrow)",
-    minutes: "15~20분",
-  },
-  {
-    step: 6,
-    phase: "대처 계획",
-    title: "나만의 대처 계획 세우기",
-    description:
-      "인지 재구조화 · 행동 실험 · 자기 돌봄 세 축으로 나만의 DO & DON'T를 직접 설계합니다.",
-    technique: "인지 재구조화 + 행동 실험",
-    minutes: "15~20분",
-  },
-  {
-    step: 7,
-    phase: "요약",
-    title: "나의 워크북 요약",
-    description:
-      "전체 여정에서 가장 중요한 통찰과 대처 전략을 한 장의 요약 리포트로 정리합니다.",
-    minutes: "3~5분",
-  },
-  {
-    step: 8,
-    phase: "마무리",
-    title: "워크북을 마치며",
-    description:
-      "작성하며 느낀 변화와 다짐을 직접 씁니다. 나중에 흔들릴 때 돌아올 수 있는 닻(anchor)이 됩니다.",
-    technique: "라이팅 테라피 (Writing Therapy)",
-    minutes: "5~10분",
-  },
-];
-
-/* ── 전문가 해석 상담 ── */
-export const EXPERT_CONSULT = {
-  tagline: "워크북만으로 충분하지만, 전문가의 시선이 필요할 때",
-  credential: "한국상담심리학회 1급 심리상담사가 직접 해석",
-  bullets: [
-    "내가 작성한 워크북을 기반으로 상담이 진행돼, \"오늘 뭐 얘기하지\" 고민이 없습니다",
-    "핵심 믿음 · 인지 오류 · 대처 계획을 전문가 관점으로 한 번 더 검증합니다",
-    "1회성 단기 해석 상담이므로, 종결 부담 없이 필요한 만큼만 사용할 수 있습니다",
-  ],
-  format: "온라인 · 오프라인 선택 가능",
-  duration: "50분",
-  priceLabel: "비용 안내 예정",
-} as const;
 
 /* ── 후기 (구조: 시작 전 → 진행 중 → 현재) ── */
 export interface LandingReview {

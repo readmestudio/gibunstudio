@@ -3,17 +3,36 @@
 import { useState } from "react";
 
 interface NotifyButtonProps {
+  /** open_notifications.program_type 으로 그대로 저장됩니다. 운영자가 어떤 상품에 대한 신청인지 식별하는 키. */
   programId: string;
+  /** 모달 헤더에 노출되는 사용자용 라벨 */
   programTitle: string;
+  /** 트리거 버튼 라벨 (기본: "알림신청하기 →") */
+  label?: string;
+  /** 트리거 버튼의 className 오버라이드 — 위치마다 디자인이 달라서 외부 주입 */
+  triggerClassName?: string;
+  /** 신청 완료 후 트리거 자리에 노출될 라벨 (기본: "알림 신청 완료!") */
+  doneLabel?: string;
 }
 
-export function NotifyButton({ programId, programTitle }: NotifyButtonProps) {
+const DEFAULT_TRIGGER_CLASS =
+  "mt-4 inline-flex items-center text-sm font-semibold text-[var(--foreground)] hover:opacity-70 transition-opacity";
+
+export function NotifyButton({
+  programId,
+  programTitle,
+  label = "알림신청하기 →",
+  triggerClassName,
+  doneLabel = "알림 신청 완료!",
+}: NotifyButtonProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+
+  const triggerClass = triggerClassName ?? DEFAULT_TRIGGER_CLASS;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +61,7 @@ export function NotifyButton({ programId, programTitle }: NotifyButtonProps) {
       }
 
       setDone(true);
+      setOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "알림 신청에 실패했습니다.");
     } finally {
@@ -51,20 +71,16 @@ export function NotifyButton({ programId, programTitle }: NotifyButtonProps) {
 
   if (done) {
     return (
-      <span className="mt-4 inline-flex items-center text-sm font-semibold text-[var(--foreground)]/60">
-        알림 신청 완료!
-      </span>
+      <button type="button" disabled className={`${triggerClass} cursor-default opacity-70`}>
+        {doneLabel}
+      </button>
     );
   }
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mt-4 inline-flex items-center text-sm font-semibold text-[var(--foreground)] hover:opacity-70 transition-opacity"
-      >
-        알림신청하기 →
+      <button type="button" onClick={() => setOpen(true)} className={triggerClass}>
+        {label}
       </button>
 
       {/* 모달 */}
@@ -77,9 +93,7 @@ export function NotifyButton({ programId, programTitle }: NotifyButtonProps) {
             className="w-full max-w-sm mx-4 rounded-2xl border-2 border-[var(--foreground)] bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-[var(--foreground)] mb-1">
-              알림 신청
-            </h3>
+            <h3 className="text-lg font-bold text-[var(--foreground)] mb-1">알림 신청</h3>
             <p className="text-sm text-[var(--foreground)]/60 mb-5">
               <strong>{programTitle}</strong> 오픈 시 알려드릴게요.
             </p>
@@ -100,9 +114,7 @@ export function NotifyButton({ programId, programTitle }: NotifyButtonProps) {
                 className="w-full rounded-lg border-2 border-[var(--foreground)]/20 px-4 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground)]/40 focus:border-[var(--foreground)] focus:outline-none"
               />
 
-              {error && (
-                <p className="text-xs text-red-500">{error}</p>
-              )}
+              {error && <p className="text-xs text-red-500">{error}</p>}
 
               <div className="flex gap-2 mt-1">
                 <button

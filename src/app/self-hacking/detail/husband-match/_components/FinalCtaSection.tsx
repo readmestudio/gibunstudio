@@ -1,3 +1,5 @@
+import { NotifyButton } from "@/components/NotifyButton";
+
 export default function FinalCtaSection() {
   return (
     <section className="py-24 text-center">
@@ -15,13 +17,13 @@ export default function FinalCtaSection() {
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <button
-          type="button"
-          disabled
-          className="inline-flex items-center gap-2 px-8 py-3 text-base font-medium rounded-lg cursor-not-allowed border-2 border-[var(--foreground)]/30 text-[var(--foreground)]/50"
-        >
-          알림 신청
-        </button>
+        <NotifyButton
+          programId="husband-match"
+          programTitle="내면 분석 리포트 — 남편상 분석"
+          label="알림 신청 →"
+          triggerClassName="inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
+          doneLabel="알림 신청 완료"
+        />
       </div>
     </section>
   );

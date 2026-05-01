@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
+  extractBeforeAfterSnapshot,
+  hasBeliefShiftSummary,
   isProfessionalReport,
+  type BeforeAfterSnapshot,
+  type BeliefShiftSummary,
   type ProfessionalReport,
 } from "@/lib/self-workshop/professional-report";
 import { deriveCaseId } from "./clinical-report/shared/deriveCaseId";
@@ -12,60 +17,23 @@ import {
   D,
   Mono,
   Reveal,
-  clamp,
   formatDate,
-  lerp,
   splitParagraphs,
   useInView,
-  useTimeline,
 } from "./clinical-report/v3-shared";
 
 interface Props {
   workshopId: string;
   savedReport?: unknown;
+  /** Step 9 BeliefShiftCards 가 사용 — 1~8단계 사용자 원본 답변들 */
+  mechanismAnalysis?: unknown;
+  mechanismInsights?: unknown;
+  coreBeliefExcavation?: unknown;
+  beliefDestroy?: unknown;
+  newBelief?: unknown;
+  copingPlan?: unknown;
   userName?: string | null;
 }
-
-// ───────── 변화 여정 5-노드 (Escape Loop) ───────── //
-// Step 2 의 4-노드 닫힌 고리에 EXIT 노드를 추가해 펄스가 빠져나가는 경로를 만든다.
-// 의미: 같은 회로 + 다른 출구.
-const ESCAPE_STAGES = [
-  {
-    stage: "01",
-    label: "TRIGGER",
-    ko: "트리거",
-    hint: "같은 신호가 들어와도",
-    detail: "발표 전, 마감 직전, 평가 시즌 — 익숙한 신호는 여전히 들어옵니다.",
-  },
-  {
-    stage: "02",
-    label: "AUTO-THOUGHT",
-    ko: "자동사고",
-    hint: "옛 사고가 먼저 떠오르더라도",
-    detail: '"이번에도 못 해내면…"이 1초 안에 떠올라도, 더 이상 그게 끝이 아닙니다.',
-  },
-  {
-    stage: "03",
-    label: "PATTERN",
-    ko: "행동 패턴",
-    hint: "옛 패턴이 손을 뻗어와도",
-    detail: "더 무리해서 일하기 · 잠 줄이기 — 익숙한 손짓을 알아챕니다.",
-  },
-  {
-    stage: "04",
-    label: "CORE BELIEF",
-    ko: "옛 핵심 믿음",
-    hint: "여기서 멈추지 않고",
-    detail: '"내 가치는 결과로만 증명된다" — 이 자리에서 한 번 더 쓰지 않습니다.',
-  },
-  {
-    stage: "EX",
-    label: "EXIT",
-    ko: "새 신념",
-    hint: "다른 출구로 빠져나갑니다",
-    detail: "옛 고리를 인지하고, 새 핵심 신념과 일관된 행동을 한 가지 골라 둡니다.",
-  },
-] as const;
 
 const HERO_SUB =
   "지금까지 적어 주신 모든 흐름을 한 분의 상담사가 모아 정리해 드린 리포트예요. 당신의 언어 그대로, 그러나 한 발짝 떨어져서 본 흐름입니다.";
@@ -452,25 +420,21 @@ function AnalysisSection({ report }: { report: ProfessionalReport }) {
   );
 }
 
-// ───────── TRANSFORMATION (Escape Loop) ───────── //
-function TransformationSection({ report }: { report: ProfessionalReport }) {
-  const [ref, seen] = useInView<HTMLDivElement>(0.25);
-  const t = useTimeline(seen, 10000, 0, true); // 10s 사이클
+// ───────── TRANSFORMATION (BEFORE / AFTER 신념 비교) ───────── //
+// 옛 cascade(ESCAPE_STAGES)를 폐기하고, 사용자가 1~8단계에서 직접 적은
+// 답변을 BEFORE/AFTER 두 카드로 대비해서 보여준다. Step 9는 정리 화면이므로
+// 가공 없이 원문 그대로 노출하는 것이 핵심.
+function TransformationSection({
+  report,
+  snapshot,
+  summary,
+}: {
+  report: ProfessionalReport;
+  snapshot: BeforeAfterSnapshot;
+  summary: BeliefShiftSummary | null;
+}) {
+  const [ref] = useInView<HTMLDivElement>(0.25);
   const bodyParas = splitParagraphs(report.transformation.body);
-  const N = ESCAPE_STAGES.length; // 5
-
-  function nodeActivation(i: number) {
-    // 마지막(i = N-1)은 EXIT — 펄스가 잠시 머무는 구간을 길게
-    const phaseStart = i / N;
-    const phaseEnd = (i + 1) / N;
-    const center = (phaseStart + phaseEnd) / 2;
-    const dist = Math.abs(t - center);
-    const wrapped = Math.min(dist, 1 - dist);
-    const span = (1 / N) * (i === N - 1 ? 0.95 : 0.7);
-    return clamp(1 - wrapped / span, 0, 1);
-  }
-
-  const pulse = t;
 
   return (
     <section
@@ -581,231 +545,8 @@ function TransformationSection({ report }: { report: ProfessionalReport }) {
           ))}
         </div>
 
-        {/* Escape Loop diagram */}
-        <div
-          style={{
-            marginTop: 96,
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            gap: 0,
-          }}
-        >
-          {/* 중앙 척추 — 04 까지 점선, EXIT 까지는 solid accent */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: 28,
-              bottom: "calc(20% + 28px)",
-              width: 1,
-              marginLeft: -0.5,
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.18) 8%, rgba(255,255,255,0.18) 92%, rgba(255,255,255,0.02) 100%)",
-              pointerEvents: "none",
-            }}
-          />
-          {/* 04 → EXIT 구간만 solid accent — "출구" 의미 강조 */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              bottom: 28,
-              width: 1,
-              marginLeft: -0.5,
-              height: "20%",
-              background: `linear-gradient(180deg, rgba(255,90,31,0.0) 0%, ${D.accent} 50%, rgba(255,90,31,0.0) 100%)`,
-              boxShadow: `0 0 12px ${D.accent}`,
-              pointerEvents: "none",
-            }}
-          />
-
-          {/* 이동하는 펄스 */}
-          {seen && (
-            <div
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: `${pulse * 100}%`,
-                width: 10,
-                height: 10,
-                marginLeft: -5,
-                marginTop: -5,
-                borderRadius: 5,
-                background: D.accent,
-                boxShadow: `0 0 0 4px rgba(255,90,31,0.18), 0 0 24px ${D.accent}`,
-                pointerEvents: "none",
-                transition: "none",
-              }}
-            />
-          )}
-
-          {ESCAPE_STAGES.map((s, i) => {
-            const a = nodeActivation(i);
-            const isActive = a > 0.4;
-            const isExit = i === N - 1;
-            const textCol = i % 2 === 0 ? ("1 / 2" as const) : ("3 / 4" as const);
-            const hintCol = i % 2 === 0 ? ("3 / 4" as const) : ("1 / 2" as const);
-            return (
-              <div
-                key={i}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr clamp(180px, 24vw, 220px) 1fr",
-                  gap: 32,
-                  alignItems: "center",
-                  padding: "36px 0",
-                  position: "relative",
-                }}
-              >
-                <div
-                  style={{
-                    textAlign: i % 2 === 0 ? "right" : "left",
-                    gridColumn: textCol,
-                    gridRow: 1,
-                    opacity: lerp(0.35, 1, a),
-                    transform: `translateX(${(i % 2 === 0 ? -1 : 1) * (1 - a) * 10}px)`,
-                  }}
-                >
-                  <Mono
-                    size={10}
-                    color={isActive ? D.accent : "rgba(255,255,255,0.4)"}
-                    tracking={0.22}
-                  >
-                    {isExit ? "EXIT" : `STEP ${s.stage}`} · {s.label}
-                  </Mono>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      fontSize: "clamp(22px, 3vw, 32px)",
-                      fontWeight: 700,
-                      color: isExit && isActive ? D.accent : "#fff",
-                      letterSpacing: "-0.025em",
-                      lineHeight: 1.1,
-                      transition: "color 380ms ease",
-                    }}
-                  >
-                    {s.ko}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      fontSize: 14,
-                      color: "rgba(255,255,255,0.55)",
-                      fontWeight: 400,
-                      lineHeight: 1.55,
-                      letterSpacing: "-0.005em",
-                      maxWidth: 280,
-                      marginLeft: i % 2 === 0 ? "auto" : 0,
-                    }}
-                  >
-                    {s.detail}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    gridColumn: "2 / 3",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "relative",
-                      width: isExit ? 76 : 64,
-                      height: isExit ? 76 : 64,
-                      borderRadius: isExit ? 38 : 32,
-                      background: isActive
-                        ? D.accent
-                        : isExit
-                          ? "rgba(255,90,31,0.12)"
-                          : "rgba(255,255,255,0.04)",
-                      border: `1.5px solid ${
-                        isActive
-                          ? D.accent
-                          : isExit
-                            ? "rgba(255,90,31,0.45)"
-                            : "rgba(255,255,255,0.20)"
-                      }`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition:
-                        "background 380ms ease, border-color 380ms ease, box-shadow 380ms ease",
-                      boxShadow: isActive
-                        ? `0 0 0 ${a * 12}px rgba(255,90,31,0.10), 0 0 ${
-                            isExit ? 60 : 40
-                          }px ${D.accent}`
-                        : "0 0 0 0 transparent",
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: -10,
-                        borderRadius: 50,
-                        border: `1px solid ${D.accent}`,
-                        opacity: isActive ? a * 0.6 : 0,
-                        transform: `scale(${1 + a * 0.4})`,
-                        transition: "none",
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontFamily: D.mono,
-                        fontWeight: 700,
-                        fontSize: isExit ? 12 : 14,
-                        color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      {isExit ? "EXIT" : s.stage}
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    textAlign: i % 2 === 0 ? "left" : "right",
-                    gridColumn: hintCol,
-                    gridRow: 1,
-                    opacity: lerp(0.3, 0.9, a),
-                    fontSize: 13,
-                    color: isExit && isActive ? D.accent : "rgba(255,255,255,0.5)",
-                    fontStyle: "italic",
-                    letterSpacing: "-0.005em",
-                    transform: `translateX(${(i % 2 === 0 ? 1 : -1) * (1 - a) * 10}px)`,
-                    transition: "color 380ms ease",
-                  }}
-                >
-                  {s.hint}
-                </div>
-
-                {/* 노드 사이 화살표 — 04 → EXIT 는 accent 컬러 */}
-                {i < ESCAPE_STAGES.length - 1 && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: "50%",
-                      bottom: -12,
-                      transform: "translateX(-50%)",
-                      color:
-                        i === ESCAPE_STAGES.length - 2
-                          ? D.accent
-                          : "rgba(255,255,255,0.25)",
-                      fontFamily: D.mono,
-                      fontSize: 14,
-                    }}
-                  >
-                    ↓
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {/* BEFORE / AFTER 비교 카드 — LLM 한 줄 요약 + 클릭 시 원문 펼침 */}
+        <BeliefShiftCards snapshot={snapshot} summary={summary} />
 
         <Reveal delay={400}>
           <div
@@ -830,6 +571,600 @@ function TransformationSection({ report }: { report: ProfessionalReport }) {
         </Reveal>
       </div>
     </section>
+  );
+}
+
+// ───────── BELIEF SHIFT CARDS — BEFORE / AFTER ───────── //
+// 좌(옛 회로) / 우(새 회로) 두 카드 + 항목별 클릭 펼침 disclosure.
+// 모든 텍스트는 사용자가 1~8단계에서 직접 적은 답을 그대로(원문) 노출한다.
+// 데이터가 비어있는 항목은 회색 hint 로 "(아직 작성하지 않은 답)" 표시.
+
+type ShiftKey =
+  | "before-core"
+  | "before-trigger"
+  | "before-thought"
+  | "before-behavior"
+  | "after-core"
+  | "after-thought"
+  | "after-behavior"
+  | "after-evidence";
+
+interface ShiftItem {
+  key: ShiftKey;
+  /** 라벨 — 카드 내 작은 mono */
+  label: string;
+  /** 사용자가 어느 단계에서 적은 답인지 — 출처 메타 */
+  source: string;
+  /** 카드 표면에 노출되는 LLM 한 줄 요약 (30~60자). 빈 문자열이면 미작성. */
+  summary: string;
+  /** 펼침 시 보여줄 사용자 원문 — 가공 없이 작성한 그대로. */
+  fullText: string | null;
+  /** 펼침 시 추가로 보여줄 부가 텍스트(감정/신체/검증 증거 등) */
+  detail?: ReactNode;
+  /** 핵심 신념 항목인지 (시각 강조) */
+  isCore?: boolean;
+}
+
+function emptyHint() {
+  return "(아직 작성하지 않은 답)";
+}
+
+function BeliefShiftCards({
+  snapshot,
+  summary,
+}: {
+  snapshot: BeforeAfterSnapshot;
+  summary: BeliefShiftSummary | null;
+}) {
+  const [open, setOpen] = useState<ShiftKey | null>(null);
+  const toggle = (k: ShiftKey) => setOpen((prev) => (prev === k ? null : k));
+
+  const { before, after } = snapshot;
+  // LLM 요약이 없으면(옛 캐시) 원문을 폴백으로 그대로 표면에 노출.
+  const sb = summary?.before;
+  const sa = summary?.after;
+
+  const pickSummary = (llm: string | undefined, fallback: string | null): string => {
+    if (typeof llm === "string" && llm.trim().length > 0) return llm.trim();
+    return fallback ?? "";
+  };
+
+  const beforeItems: ShiftItem[] = [
+    {
+      key: "before-core",
+      label: "옛 핵심 신념",
+      source: "Step 4 · 핵심 신념 찾기",
+      summary: pickSummary(sb?.core_belief, before.coreBeliefLine),
+      fullText: before.coreBeliefLine,
+      isCore: true,
+      detail: before.howBeliefWorks ? (
+        <p style={detailParaStyle}>
+          이 신념은 이렇게 작동했어요 — &ldquo;{before.howBeliefWorks}&rdquo;
+        </p>
+      ) : null,
+    },
+    {
+      key: "before-trigger",
+      label: "트리거 (시작 상황)",
+      source: "Step 3 · 트리거 → 자동사고",
+      summary: pickSummary(sb?.trigger, before.trigger),
+      fullText: before.trigger,
+      detail: (
+        <>
+          {before.emotion.primary && (
+            <p style={detailParaStyle}>
+              감정: <strong>{before.emotion.primary}</strong>
+              {before.emotion.intensity != null
+                ? ` (강도 ${before.emotion.intensity}/10)`
+                : ""}
+            </p>
+          )}
+          {before.emotion.body && (
+            <p style={detailParaStyle}>신체 반응: {before.emotion.body}</p>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "before-thought",
+      label: "옛 자동사고",
+      source: "Step 3 · 트리거 → 자동사고",
+      summary: pickSummary(sb?.old_thought, before.oldAutoThought),
+      fullText: before.oldAutoThought,
+      detail: (
+        <>
+          {before.worstCase && (
+            <p style={detailParaStyle}>
+              최악 시나리오 — &ldquo;{before.worstCase}&rdquo;
+            </p>
+          )}
+          {before.cognitiveErrors.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              {before.cognitiveErrors.map((err, idx) => (
+                <p key={idx} style={detailParaStyle}>
+                  · <strong>{err.name}</strong>
+                  {err.interpretation ? ` — ${err.interpretation}` : ""}
+                </p>
+              ))}
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "before-behavior",
+      label: "옛 행동 패턴",
+      source: "Step 3 · 트리거 → 자동사고",
+      summary: pickSummary(sb?.old_behavior, before.oldBehavior),
+      fullText: before.oldBehavior,
+    },
+  ];
+
+  const afterItems: ShiftItem[] = [
+    {
+      key: "after-core",
+      label: "새 핵심 신념",
+      source: "Step 7 · 새 핵심 신념 찾기",
+      summary: pickSummary(sa?.new_core_belief, after.newCoreBelief),
+      fullText: after.newCoreBelief,
+      isCore: true,
+      detail: after.whyNewBeliefWorks ? (
+        <p style={detailParaStyle}>
+          왜 이 신념이 맞나요 — &ldquo;{after.whyNewBeliefWorks}&rdquo;
+        </p>
+      ) : null,
+    },
+    {
+      key: "after-thought",
+      label: "대체 사고",
+      source: "Step 8 · 새 신념 강화하기",
+      summary: pickSummary(sa?.alternative_thought, after.alternativeThought),
+      fullText: after.alternativeThought,
+      detail:
+        after.counterEvidences.length > 0 ? (
+          <div>
+            <p style={detailParaStyle}>
+              검증 단계에서 모은 반대 증거:
+            </p>
+            {after.counterEvidences.slice(0, 5).map((ev, idx) => (
+              <p key={idx} style={detailParaStyle}>
+                · &ldquo;{ev}&rdquo;
+              </p>
+            ))}
+          </div>
+        ) : null,
+    },
+    {
+      key: "after-behavior",
+      label: "새 행동 · 대처 계획",
+      source: "Step 8 · 대처 계획",
+      summary: pickSummary(sa?.new_behavior, after.newBehavior),
+      fullText: after.newBehavior,
+    },
+    {
+      key: "after-evidence",
+      label: "강화 근거",
+      source: "Step 8 · 새 신념 강화하기",
+      summary: pickSummary(sa?.reinforcement, after.reinforcement),
+      fullText: after.reinforcement,
+      detail:
+        after.avgReinforcedStrength != null ? (
+          <p style={detailParaStyle}>
+            새 신념의 단단함 (평균): <strong>{after.avgReinforcedStrength}%</strong>
+          </p>
+        ) : null,
+    },
+  ];
+
+  return (
+    <div style={{ marginTop: 96 }}>
+      <Reveal>
+        <Mono size={10} color="rgba(255,255,255,0.45)" tracking={0.2}>
+          ↳ 한 줄 요약이에요. 항목을 클릭하면 그 단계에서 직접 적은 원문이 펼쳐져요
+        </Mono>
+      </Reveal>
+      <div
+        style={{
+          marginTop: 24,
+          display: "grid",
+          gridTemplateColumns: "1fr",
+          gap: 24,
+          alignItems: "stretch",
+        }}
+        className="belief-shift-grid"
+      >
+        <ShiftCard
+          variant="before"
+          title="BEFORE"
+          subtitle="옛 신념"
+          items={beforeItems}
+          openKey={open}
+          onToggle={toggle}
+        />
+        <ShiftCard
+          variant="after"
+          title="AFTER"
+          subtitle="새 신념"
+          items={afterItems}
+          openKey={open}
+          onToggle={toggle}
+        />
+      </div>
+      <style jsx>{`
+        @media (min-width: 880px) {
+          .belief-shift-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 24px !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+const detailParaStyle: CSSProperties = {
+  margin: "6px 0 0",
+  fontSize: 13,
+  lineHeight: 1.6,
+  color: "rgba(255,255,255,0.7)",
+  letterSpacing: "-0.005em",
+};
+
+function ShiftCard({
+  variant,
+  title,
+  subtitle,
+  items,
+  openKey,
+  onToggle,
+}: {
+  variant: "before" | "after";
+  title: string;
+  subtitle: string;
+  items: ShiftItem[];
+  openKey: ShiftKey | null;
+  onToggle: (k: ShiftKey) => void;
+}) {
+  const isAfter = variant === "after";
+  const accentColor = isAfter ? D.accent : "rgba(255,255,255,0.55)";
+  return (
+    <div
+      style={{
+        border: `1px solid ${
+          isAfter ? "rgba(255,90,31,0.45)" : "rgba(255,255,255,0.12)"
+        }`,
+        background: isAfter ? "rgba(255,90,31,0.04)" : "rgba(255,255,255,0.02)",
+        borderRadius: 12,
+        padding: "32px 28px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: 12,
+          marginBottom: 24,
+        }}
+      >
+        <Mono size={11} color={accentColor} tracking={0.24}>
+          {title}
+        </Mono>
+        <span
+          style={{
+            fontSize: 12,
+            color: "rgba(255,255,255,0.45)",
+            letterSpacing: "-0.005em",
+          }}
+        >
+          · {subtitle}
+        </span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        {items.map((it, idx) => (
+          <ShiftRow
+            key={it.key}
+            item={it}
+            isOpen={openKey === it.key}
+            isAfter={isAfter}
+            onToggle={() => onToggle(it.key)}
+            isFirst={idx === 0}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ShiftRow({
+  item,
+  isOpen,
+  isAfter,
+  onToggle,
+  isFirst,
+}: {
+  item: ShiftItem;
+  isOpen: boolean;
+  isAfter: boolean;
+  onToggle: () => void;
+  isFirst: boolean;
+}) {
+  const hasSummary = item.summary.trim().length > 0;
+  const hasFullText = !!(item.fullText && item.fullText.trim().length > 0);
+  const hasDetail = !!item.detail;
+  // 펼칠 거리가 있을 때만 클릭 가능 — 원문이 요약과 다르거나, 부가 정보가 있을 때.
+  const fullTextDiffersFromSummary =
+    hasFullText && item.fullText!.trim() !== item.summary.trim();
+  const isClickable = hasSummary && (fullTextDiffersFromSummary || hasDetail);
+  const summaryColor = item.isCore
+    ? isAfter
+      ? D.accent
+      : "#fff"
+    : "rgba(255,255,255,0.85)";
+  const summarySize = item.isCore
+    ? "clamp(18px, 2vw, 22px)"
+    : "clamp(14px, 1.45vw, 16px)";
+  const summaryWeight = item.isCore ? 700 : 500;
+
+  return (
+    <div
+      style={{
+        borderTop: isFirst ? "none" : "1px solid rgba(255,255,255,0.06)",
+        padding: item.isCore ? "20px 0 24px" : "16px 0",
+      }}
+    >
+      <div
+        role={isClickable ? "button" : undefined}
+        tabIndex={isClickable ? 0 : -1}
+        aria-expanded={isClickable ? isOpen : undefined}
+        aria-label={
+          isClickable
+            ? `${item.label} ${isOpen ? "접기" : "원문 펼쳐서 자세히 보기"}`
+            : undefined
+        }
+        onClick={isClickable ? onToggle : undefined}
+        onKeyDown={(e) => {
+          if (!isClickable) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        style={{
+          cursor: isClickable ? "pointer" : "default",
+          outline: "none",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <Mono size={10} color="rgba(255,255,255,0.55)" tracking={0.2}>
+            {item.label}
+          </Mono>
+          {isClickable && (
+            <span
+              aria-hidden
+              style={{
+                fontFamily: D.mono,
+                fontSize: 11,
+                color: "rgba(255,255,255,0.4)",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {isOpen ? "접기 ▾" : "원문 보기 ▸"}
+            </span>
+          )}
+        </div>
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: summarySize,
+            fontWeight: summaryWeight,
+            color: hasSummary ? summaryColor : "rgba(255,255,255,0.35)",
+            fontStyle: hasSummary ? "normal" : "italic",
+            lineHeight: 1.45,
+            letterSpacing: "-0.015em",
+            wordBreak: "keep-all",
+            // 좌우 카드의 같은 행이 시각적으로 대칭이 되도록 min-height 강제.
+            // 요약은 짧은 한 줄이라 line-clamp 가 거의 안 걸리지만, 안전장치로 둠.
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical" as const,
+            WebkitLineClamp: item.isCore ? 3 : 2,
+            overflow: "hidden",
+            minHeight: item.isCore ? 100 : 52,
+          }}
+        >
+          {hasSummary ? item.summary : emptyHint()}
+        </div>
+      </div>
+      {isOpen && (
+        <div
+          style={{
+            marginTop: 14,
+            padding: "12px 14px",
+            borderLeft: `2px solid ${
+              isAfter ? D.accent : "rgba(255,255,255,0.25)"
+            }`,
+            background: "rgba(255,255,255,0.03)",
+            borderRadius: 4,
+          }}
+        >
+          <Mono size={9} color="rgba(255,255,255,0.4)" tracking={0.22}>
+            {item.source} · 직접 적은 답
+          </Mono>
+          {fullTextDiffersFromSummary && (
+            <p
+              style={{
+                margin: "8px 0 0",
+                fontSize: 14,
+                lineHeight: 1.6,
+                color: "rgba(255,255,255,0.85)",
+                letterSpacing: "-0.005em",
+                whiteSpace: "pre-line",
+                wordBreak: "keep-all",
+              }}
+            >
+              &ldquo;{item.fullText}&rdquo;
+            </p>
+          )}
+          {hasDetail && <div style={{ marginTop: 10 }}>{item.detail}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ───────── AFFIRMATION CARDS · 캡쳐해서 마음에 새길 10문장 ───────── //
+// 사용자가 한 달 동안 자주 꺼내 보도록 디자인 — 각 카드는 캡쳐 시 단독으로
+// 잘라내도 의미가 통하게 워터마크/번호/큰 인용부호를 모두 카드 내부에 배치한다.
+function AffirmationCards({ items }: { items: string[] }) {
+  return (
+    <div style={{ marginTop: 80 }}>
+      <Reveal>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span
+            aria-hidden
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              background: D.accentSoft,
+              border: `1px solid ${D.accent}`,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                background: D.accent,
+                display: "inline-block",
+              }}
+            />
+          </span>
+          <Mono size={11} color={D.accent} tracking={0.2}>
+            AFFIRMATIONS · 마음에 새길 10문장
+          </Mono>
+        </div>
+      </Reveal>
+
+      <Reveal delay={80}>
+        <p
+          style={{
+            margin: "16px 0 0",
+            fontSize: "clamp(15px, 1.45vw, 17px)",
+            lineHeight: 1.7,
+            color: D.text2,
+            letterSpacing: "-0.005em",
+            maxWidth: 640,
+          }}
+        >
+          마음에 닿는 카드를 길게 눌러 저장하거나 화면을 캡쳐해 두세요. 한 달
+          동안 트리거가 들어올 때마다 한 번씩 꺼내 읽어 보면, 새 신념이 일상의
+          언어로 스며듭니다.
+        </p>
+      </Reveal>
+
+      <div
+        style={{
+          marginTop: 40,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))",
+          gap: 16,
+        }}
+      >
+        {items.map((text, i) => (
+          <Reveal key={i} delay={i * 50}>
+            <article
+              style={{
+                position: "relative",
+                aspectRatio: "1 / 1",
+                background: D.paper,
+                border: `1px solid ${D.hair2}`,
+                borderRadius: 20,
+                padding: "28px 24px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                overflow: "hidden",
+                boxShadow:
+                  "0 1px 0 rgba(0,0,0,0.02), 0 18px 36px -28px rgba(0,0,0,0.18)",
+              }}
+            >
+              {/* 좌상단 큰 인용부호 — 캡쳐했을 때 "확언 카드" 라는 시각적 단서 */}
+              <span
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  left: 18,
+                  fontFamily: D.font,
+                  fontSize: 56,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  color: D.accent,
+                  opacity: 0.18,
+                  letterSpacing: "-0.04em",
+                  pointerEvents: "none",
+                }}
+              >
+                &ldquo;
+              </span>
+
+              {/* 본문 — 카드 중앙에 큰 글씨로 */}
+              <p
+                style={{
+                  margin: 0,
+                  paddingTop: 24,
+                  fontSize: "clamp(18px, 2.1vw, 22px)",
+                  lineHeight: 1.5,
+                  color: D.ink,
+                  letterSpacing: "-0.02em",
+                  fontWeight: 600,
+                  textWrap: "balance",
+                  wordBreak: "keep-all",
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {text}
+              </p>
+
+              {/* 하단 메타 — 일련번호 + 워크북 워터마크 */}
+              <div
+                style={{
+                  marginTop: 16,
+                  paddingTop: 14,
+                  borderTop: `1px solid ${D.hair3}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <Mono size={10} color={D.text3} tracking={0.18}>
+                  NO. {String(i + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}
+                </Mono>
+                <Mono size={10} color={D.text3} tracking={0.22}>
+                  GIBUN · 새 신념
+                </Mono>
+              </div>
+            </article>
+          </Reveal>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1037,6 +1372,12 @@ function PracticeSection({ report }: { report: ProfessionalReport }) {
           ))}
         </div>
       </div>
+
+      {/* AFFIRMATIONS — 행동 처방(DO/DON'T) 다음, 마음의 처방으로 마무리.
+          새 핵심 신념을 1인칭 짧은 문장 10개로 변주해 캡쳐 친화적 카드로 노출. */}
+      {Array.isArray(report.affirmations) && report.affirmations.length > 0 && (
+        <AffirmationCards items={report.affirmations} />
+      )}
     </section>
   );
 }
@@ -1276,10 +1617,20 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 export function WorkshopProfessionalReport({
   workshopId,
   savedReport,
+  mechanismAnalysis,
+  mechanismInsights,
+  coreBeliefExcavation,
+  beliefDestroy,
+  newBelief,
+  copingPlan,
   userName,
 }: Props) {
   const router = useRouter();
-  const initial = isProfessionalReport(savedReport) ? savedReport : null;
+  // 옛 캐시(belief_shift_summary 부재) 는 무효 처리해서 새 요약을 가져오게 한다.
+  const initial =
+    isProfessionalReport(savedReport) && hasBeliefShiftSummary(savedReport)
+      ? savedReport
+      : null;
   const [report, setReport] = useState<ProfessionalReport | null>(initial);
   const [loading, setLoading] = useState(!initial);
   const [error, setError] = useState("");
@@ -1340,6 +1691,17 @@ export function WorkshopProfessionalReport({
   const displayName = (userName ?? "").trim();
   const generatedAt = formatDate(report.generated_at);
 
+  // 1~8단계에서 사용자가 직접 적은 답을 BEFORE/AFTER 묶음으로 추출.
+  // LLM 재요약 없이 원문 그대로 — Step 9 정리 화면의 핵심 가치.
+  const snapshot = extractBeforeAfterSnapshot({
+    mechanism_analysis: mechanismAnalysis,
+    mechanism_insights: mechanismInsights,
+    core_belief_excavation: coreBeliefExcavation,
+    belief_destroy: beliefDestroy,
+    new_belief: newBelief,
+    coping_plan: copingPlan,
+  });
+
   return (
     <div
       style={{
@@ -1351,7 +1713,11 @@ export function WorkshopProfessionalReport({
       <Hero caseId={caseId} userName={displayName} generatedAt={generatedAt} />
       <IntroSection report={report} />
       <AnalysisSection report={report} />
-      <TransformationSection report={report} />
+      <TransformationSection
+        report={report}
+        snapshot={snapshot}
+        summary={report.belief_shift_summary ?? null}
+      />
       <PracticeSection report={report} />
       <ClosingSection
         onNext={() => router.push("/dashboard/self-workshop/step/10")}

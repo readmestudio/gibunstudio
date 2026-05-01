@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { NotifyButton } from "@/components/NotifyButton";
 
 /* ──────────────────────────────────────────────
    프로그램 카드 데이터
@@ -81,9 +82,13 @@ function ProgramCard({ program }: { program: ProgramCardData }) {
 
         {/* CTA */}
         {program.notifyOnly ? (
-          <span className="mt-4 inline-flex w-fit items-center rounded-md border border-[var(--foreground)]/30 bg-[var(--foreground)]/5 px-2.5 py-1 text-xs font-semibold text-[var(--foreground)]/60">
-            알림 신청
-          </span>
+          <NotifyButton
+            programId={program.id}
+            programTitle={program.title}
+            label="알림 신청 →"
+            triggerClassName="mt-4 inline-flex w-fit items-center rounded-md border border-[var(--foreground)]/30 bg-[var(--foreground)]/5 px-2.5 py-1 text-xs font-semibold text-[var(--foreground)]/60 hover:bg-[var(--foreground)]/10 transition-colors"
+            doneLabel="알림 신청 완료"
+          />
         ) : (
           <span className="mt-4 inline-flex items-center text-sm font-semibold text-[var(--foreground)]">
             {program.cta}
