@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { WorkshopNotifyButton } from "./WorkshopNotifyButton";
 
 /* ============================================================
  * PricingSection — 좌(포함) + 우(검정 가격 카드)
@@ -58,10 +59,10 @@ export function PricingSection() {
             <p className="lr-pdesc lr-pdesc-w">
               한 번 결제로 워크북 + 3가지 리포트 영구 보관
             </p>
-            <a href="#waitlist" className="lr-cta-pill">
+            <WorkshopNotifyButton className="lr-cta-pill">
               출시 알림신청하고 할인받기
               <span className="lr-arrow">→</span>
-            </a>
+            </WorkshopNotifyButton>
           </div>
         </div>
         <div className="lr-price-foot lr-f-up">
@@ -390,10 +391,10 @@ export function FinalCTA() {
           <p className="lr-sub">
             정식 오픈 시 알림과 함께 얼리 액세스 특별가를 보내드릴게요.
           </p>
-          <a href="#waitlist" className="lr-cta-pill lr-invert">
+          <WorkshopNotifyButton className="lr-cta-pill lr-invert">
             출시 알림신청하고 할인받기
             <span className="lr-arrow">→</span>
-          </a>
+          </WorkshopNotifyButton>
         </div>
       </div>
     </section>

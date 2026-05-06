@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { WorkshopNotifyButton } from "./WorkshopNotifyButton";
 
 /* ── 최상단 띠 배너 ── */
 export function SoftLaunchBanner() {
@@ -31,9 +32,9 @@ export function TopBar() {
           <a href="#price">가격</a>
           <a href="#faq">FAQ</a>
         </nav>
-        <a href="#waitlist" className="lr-cta-mini">
+        <WorkshopNotifyButton className="lr-cta-mini">
           알림 신청
-        </a>
+        </WorkshopNotifyButton>
       </div>
     </header>
   );
@@ -50,10 +51,10 @@ export function StickyCTA() {
   }, []);
   return (
     <div className={`lr-sticky-cta ${show ? "lr-show" : ""}`}>
-      <a href="#waitlist" className="lr-cta-pill lr-accent">
+      <WorkshopNotifyButton className="lr-cta-pill lr-accent">
         출시 알림신청하고 할인받기
         <span className="lr-arrow">→</span>
-      </a>
+      </WorkshopNotifyButton>
     </div>
   );
 }

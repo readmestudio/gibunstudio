@@ -32,6 +32,7 @@ import {
 } from "./RestSections";
 import { SlideshowWrap } from "./SlideshowWrap";
 import { useFadeIn } from "./useFadeIn";
+import { WorkshopNotifyProvider } from "./WorkshopNotifyContext";
 
 /**
  * /payment/self-workshop 새 디자인 — Apple-style 마케팅 랜딩.
@@ -53,28 +54,30 @@ export function RedesignLandingPage({
   useFadeIn();
 
   return (
-    <div className="lr">
-      <SoftLaunchBanner />
-      <HeroSection />
-      <SlideshowWrap demoResult={demoResult} />
-      <ProblemsSection />
-      <BigQuestionSection />
-      <IntroSection />
-      <Divider />
-      <CompareSection />
-      <Divider />
-      <MaySection />
-      <CycleSection />
-      <SlideshowWrap demoResult={demoResult} />
-      <PointsSection />
-      <PricingSection />
-      <PrivacySection />
-      <TestimonialsSection />
-      <CreatorSection />
-      <FaqSection />
-      <FinalCTA />
-      <Footer />
-      <StickyCTA />
-    </div>
+    <WorkshopNotifyProvider>
+      <div className="lr">
+        <SoftLaunchBanner />
+        <HeroSection />
+        <SlideshowWrap demoResult={demoResult} />
+        <ProblemsSection />
+        <BigQuestionSection />
+        <IntroSection />
+        <Divider />
+        <CompareSection />
+        <Divider />
+        <MaySection />
+        <CycleSection />
+        <SlideshowWrap demoResult={demoResult} />
+        <PointsSection />
+        <PricingSection />
+        <PrivacySection />
+        <TestimonialsSection />
+        <CreatorSection />
+        <FaqSection />
+        <FinalCTA />
+        <Footer />
+        <StickyCTA />
+      </div>
+    </WorkshopNotifyProvider>
   );
 }

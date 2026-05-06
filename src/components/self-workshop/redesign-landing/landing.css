@@ -1675,3 +1675,69 @@
   max-width: 560px; margin: 0 auto 40px;
   line-height: 1.65;
 }
+
+/* ============================================================
+ * 알림 신청 버튼 — <button> 으로 렌더되므로 폰트/리셋 보강.
+ * 신청 완료(disabled) 상태는 호버 모션을 끄고 살짝 흐리게.
+ * ============================================================ */
+.lr button.lr-cta-pill,
+.lr button.lr-cta-mini { font-family: inherit; }
+.lr button.lr-cta-pill:disabled,
+.lr button.lr-cta-mini:disabled { cursor: default; opacity: 0.65; }
+.lr button.lr-cta-pill:disabled:hover { transform: none; box-shadow: none; }
+.lr button.lr-cta-pill:disabled::before { opacity: 0; }
+
+/* ============================================================
+ * 토스트 — 화면 우하단 고정. 4.5초 자동 사라짐(JS 제어).
+ * 모바일에서는 가로 가득 차게.
+ * ============================================================ */
+.lr-toast {
+  position: fixed;
+  right: 24px; bottom: 24px;
+  z-index: 200;
+  display: inline-flex; align-items: center; gap: 12px;
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 14px 16px 14px 18px;
+  border-radius: 14px;
+  font-size: 14px; line-height: 1.5; font-weight: 500;
+  letter-spacing: -0.01em;
+  background: #0a0a0b; color: #fff;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 24px 48px -12px rgba(10,10,11,0.45);
+  animation: lr-toast-in 0.32s cubic-bezier(0.34,1.56,0.64,1);
+}
+.lr-toast.lr-toast-success {
+  background: #0a0a0b;
+  border-color: rgba(255,90,31,0.5);
+  box-shadow: 0 24px 48px -12px rgba(255,90,31,0.35);
+}
+.lr-toast.lr-toast-info { background: #1a1a1c; }
+.lr-toast.lr-toast-error {
+  background: #2a0d0d;
+  border-color: rgba(239,68,68,0.5);
+}
+.lr-toast .lr-toast-text { flex: 1; word-break: keep-all; }
+.lr-toast .lr-toast-close {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  background: transparent; border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 20px; line-height: 1; cursor: pointer;
+  transition: color 0.15s ease;
+  font-family: inherit;
+}
+.lr-toast .lr-toast-close:hover { color: #fff; }
+
+@keyframes lr-toast-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 560px) {
+  .lr-toast {
+    right: 16px; left: 16px; bottom: 16px;
+    max-width: none;
+  }
+}
+
