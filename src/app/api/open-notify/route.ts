@@ -1,6 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { sendSlackMessage, SLACK_OPEN_NOTIFY_CHANNEL } from "@/lib/slack";
+
+interface SlackNotifyPayload {
+  programType: string;
+  source: "kakao-login" | "anonymous-form";
+  /** 사용자가 보고 식별할 수 있는 이름(있을 때만) */
+  name: string | null;
+  /** 익명 폼 흐름에서만 채워짐 */
+  phone: string | null;
+  /** 로그인 흐름에서만 채워짐 — 카카오 로그인 사용자의 이메일 */
+  email: string | null;
+  /** Supabase auth user id — 로그인 흐름에서만 */
+  userId: string | null;
+}
+
+/** 운영자 채널에 신규 알림 신청을 알린다. await 하지 말고 fire-and-forget. */
+function notifyOperatorsAboutNewSignup(payload: SlackNotifyPayload): void {
+  const sourceLabel =
+    payload.source === "kakao-login" ? "카카오 로그인" : "익명 폼";
+
+  const fields: Array<{ type: string; text: string }> = [
+    { type: "mrkdwn", text: `*프로그램*\n\`${payload.programType}\`` },
+    { type: "mrkdwn", text: `*경로*\n${sourceLabel}` },
+  ];
+  if (payload.name) {
+    fields.push({ type: "mrkdwn", text: `*이름*\n${payload.name}` });
+  }
+  if (payload.email) {
+    fields.push({ type: "mrkdwn", text: `*이메일*\n${payload.email}` });
+  }
+  if (payload.phone) {
+    fields.push({ type: "mrkdwn", text: `*전화*\n${payload.phone}` });
+  }
+  if (payload.userId) {
+    fields.push({
+      type: "mrkdwn",
+      text: `*user_id*\n\`${payload.userId.slice(0, 8)}…\``,
+    });
+  }
+
+  void sendSlackMessage({
+    channel: SLACK_OPEN_NOTIFY_CHANNEL,
+    text: `🔔 새 알림 신청: ${payload.programType} (${sourceLabel})`,
+    blocks: [
+      {
+        type: "header",
+        text: { type: "plain_text", text: "🔔 새 알림 신청이 들어왔어요" },
+      },
+      { type: "section", fields },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `📅 ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST)`,
+          },
+        ],
+      },
+    ],
+  });
+}
 
 /**
  * 알림 신청 등록.
@@ -72,7 +133,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      // UNIQUE 위반은 idempotent 하게 success 처리
+      // UNIQUE 위반은 idempotent 하게 success 처리 (이미 알린 신청이므로 Slack 추가 호출 X)
       if (error.code === "23505") {
         return NextResponse.json({ success: true, alreadyRegistered: true });
       }
@@ -82,6 +143,15 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    notifyOperatorsAboutNewSignup({
+      programType,
+      source: "kakao-login",
+      name: resolvedName,
+      phone: resolvedPhone,
+      email: user.email ?? null,
+      userId: user.id,
+    });
 
     return NextResponse.json({ success: true });
   }
@@ -99,9 +169,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const trimmedName = name.trim();
+  const trimmedPhone = phone.trim();
+
   const { error } = await supabase.from("open_notifications").insert({
-    name: name.trim(),
-    phone: phone.trim(),
+    name: trimmedName,
+    phone: trimmedPhone,
     program_type: programType,
   });
 
@@ -112,6 +185,15 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  notifyOperatorsAboutNewSignup({
+    programType,
+    source: "anonymous-form",
+    name: trimmedName,
+    phone: trimmedPhone,
+    email: null,
+    userId: null,
+  });
 
   return NextResponse.json({ success: true });
 }
