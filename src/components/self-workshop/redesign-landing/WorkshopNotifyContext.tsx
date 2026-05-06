@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -44,12 +45,13 @@ export function useWorkshopNotify() {
 
 export function WorkshopNotifyProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [registered, setRegistered] = useState(false);
   const [pending, setPending] = useState(false);
   const [toast, setToast] = useState<{ tone: ToastTone; text: string } | null>(
     null
   );
+  // 자동 등록 진입 신호 — `?notify=workshop` 감지 시 true 로 전환
+  const [autoIntent, setAutoIntent] = useState(false);
   // 자동 등록을 한 번만 트리거하기 위한 가드 (StrictMode 이중 effect 방어)
   const autoRegisteredRef = useRef(false);
 
@@ -124,10 +126,10 @@ export function WorkshopNotifyProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // 2) 카카오 OAuth 콜백 후 ?notify=workshop 감지 → 자동 등록 + URL 정리
+  // 2) 카카오 OAuth 콜백 후 자동 등록 트리거 (autoIntent 는 SearchParamsBridge 가 켠다)
   useEffect(() => {
+    if (!autoIntent) return;
     if (autoRegisteredRef.current) return;
-    if (searchParams.get(NOTIFY_INTENT_KEY) !== NOTIFY_INTENT_VALUE) return;
     autoRegisteredRef.current = true;
 
     (async () => {
@@ -135,7 +137,7 @@ export function WorkshopNotifyProvider({ children }: { children: ReactNode }) {
       // 의도 파라미터 제거 — 새로고침 시 다시 트리거되는 것을 막음
       router.replace(RETURN_PATH);
     })();
-  }, [searchParams, performRegister, router]);
+  }, [autoIntent, performRegister, router]);
 
   const requestNotify = useCallback(async () => {
     if (pending) return;
@@ -160,10 +162,42 @@ export function WorkshopNotifyProvider({ children }: { children: ReactNode }) {
     <WorkshopNotifyContext.Provider
       value={{ registered, pending, requestNotify }}
     >
+      {/*
+        useSearchParams 는 prerender 시 Suspense 바운더리를 요구한다 (Next.js 16).
+        검색 파라미터를 읽는 부분만 분리해서 Suspense 안쪽에 둔다 — 본 트리는
+        그대로 SSR/SSG 되고, 자동 등록 트리거는 클라이언트 hydration 직후 동작.
+      */}
+      <Suspense fallback={null}>
+        <SearchParamsBridge
+          intentKey={NOTIFY_INTENT_KEY}
+          intentValue={NOTIFY_INTENT_VALUE}
+          onIntent={() => setAutoIntent(true)}
+        />
+      </Suspense>
       {children}
       <WorkshopNotifyToast toast={toast} onDismiss={() => setToast(null)} />
     </WorkshopNotifyContext.Provider>
   );
+}
+
+/**
+ * `?notify=workshop` 같은 의도 파라미터만 감지해서 콜백을 호출하는 얇은 다리.
+ * 렌더 산출물은 없다 — 부모(Provider)의 state 만 바꾼다.
+ */
+function SearchParamsBridge({
+  intentKey,
+  intentValue,
+  onIntent,
+}: {
+  intentKey: string;
+  intentValue: string;
+  onIntent: () => void;
+}) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get(intentKey) === intentValue) onIntent();
+  }, [searchParams, intentKey, intentValue, onIntent]);
+  return null;
 }
 
 /**
