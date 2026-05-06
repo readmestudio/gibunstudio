@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
+import { requireWorkshopAccess } from "@/lib/self-workshop/api-guard";
 
 /**
  * Stage 03 EVIDENCE — AI 도움 받기.
@@ -10,13 +10,8 @@ import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
  * 서버는 호출마다 응답을 만들어주되, 사용 카운트는 클라이언트 state(stage_03_evidence)에 기록.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const guard = await requireWorkshopAccess(request);
+  if (!guard.ok) return guard.response;
 
   const body = (await request.json().catch(() => ({}))) as {
     belief?: unknown;

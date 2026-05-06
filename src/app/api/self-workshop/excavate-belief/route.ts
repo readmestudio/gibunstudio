@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
+import { requireWorkshopAccess } from "@/lib/self-workshop/api-guard";
 import {
   isAnalysisReport,
   type AnalysisReport,
@@ -50,14 +50,9 @@ interface MechanismAnalysis {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
-  }
+  const guard = await requireWorkshopAccess(req);
+  if (!guard.ok) return guard.response;
+  const { user, supabase } = guard;
 
   const body = await req.json();
   const {

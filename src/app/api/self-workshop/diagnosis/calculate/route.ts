@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { calculateDiagnosisScores } from "@/lib/self-workshop/diagnosis";
+import { requireWorkshopAccess } from "@/lib/self-workshop/api-guard";
 
 /**
  * POST /api/self-workshop/diagnosis/calculate
@@ -11,14 +11,11 @@ import { calculateDiagnosisScores } from "@/lib/self-workshop/diagnosis";
  * Body: { workshopId, answers: { "1": 3, "2": 5, ... } }
  */
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
-  }
+  // Step 1(진단)은 결제 전에도 호출되므로 구매 검증은 생략.
+  // Rate Limit + 인증 + 입력 길이는 그대로 적용.
+  const guard = await requireWorkshopAccess(req, { skipPurchaseCheck: true });
+  if (!guard.ok) return guard.response;
+  const { user, supabase } = guard;
 
   const body = await req.json();
   const { workshopId, answers } = body;

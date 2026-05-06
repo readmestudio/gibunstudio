@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
+import { requireWorkshopAccess } from "@/lib/self-workshop/api-guard";
 
 /**
  * POST /api/self-workshop/new-belief-options
@@ -22,14 +22,8 @@ import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
  *   { scenario, old_outcome_hint, new_outcome_hint, options }
  */
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
-  }
+  const guard = await requireWorkshopAccess(req);
+  if (!guard.ok) return guard.response;
 
   const body = await req.json().catch(() => ({}));
   const mode: "scenario" | "options" | "all" =

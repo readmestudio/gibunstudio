@@ -17,6 +17,7 @@ import { WorkshopReflectionContent } from "@/components/self-workshop/WorkshopRe
 import { WorkshopPaymentGate } from "@/components/self-workshop/WorkshopPaymentGate";
 import { WorkshopAlternativeThoughtContent } from "@/components/self-workshop/WorkshopAlternativeThoughtContent";
 import { WorkshopNewBeliefContent } from "@/components/self-workshop/WorkshopNewBeliefContent";
+import { isWorkshopTestUser } from "@/lib/self-workshop/test-users";
 
 interface Props {
   params: Promise<{ step: string }>;
@@ -63,8 +64,7 @@ export default async function WorkshopStepPage({ params }: Props) {
 
   // Step 1(진단)은 progress 없어도 접근 가능 → 자동 생성
   // Step 2+는 progress + 구매 확인 필요
-  const TEST_EMAILS: string[] = ["mingle22@hanmail.net"];
-  const isTestUser = TEST_EMAILS.includes(user.email ?? "");
+  const isTestUser = isWorkshopTestUser(user.email);
 
   if (!progress && stepNumber === 1) {
     // Step 1 접근 시 progress 없으면 자동 생성 (진단은 무료)
@@ -103,16 +103,24 @@ export default async function WorkshopStepPage({ params }: Props) {
   }
 
   // Step 2+ 접근 시 구매 확인 (테스트 유저 제외)
+  // expires_at(결제 후 90일) 만료된 결제는 hasPurchase=false로 처리.
   let hasPurchase = isTestUser;
   if (!hasPurchase && stepNumber >= 2) {
     const { data: purchase } = await supabase
       .from("workshop_purchases")
-      .select("id")
+      .select("id, expires_at")
       .eq("user_id", user.id)
       .eq("workshop_type", "achievement-addiction")
       .eq("status", "confirmed")
       .maybeSingle();
-    hasPurchase = !!purchase;
+    if (purchase) {
+      const expiresAtRaw = (purchase as { expires_at?: string | null })
+        .expires_at;
+      const isExpired = expiresAtRaw
+        ? new Date(expiresAtRaw).getTime() < Date.now()
+        : false;
+      hasPurchase = !isExpired;
+    }
   }
 
   // 잠금 확인: 현재 step보다 앞선 step만 접근 가능
