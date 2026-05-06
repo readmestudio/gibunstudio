@@ -1,0 +1,422 @@
+/* ============================================================
+   기분 스튜디오 — 인스타그램 카드뉴스 공통 스타일
+   ------------------------------------------------------------
+   캔버스: 1080 × 1350 px (4:5 비율)
+   디자인 토큰: _design-reference/design-tokens.md 참고
+   ============================================================ */
+
+:root {
+  --bg: #0e0e10;
+  --accent: #e85d3a;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.82);
+  --text-tertiary: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --divider: rgba(255, 255, 255, 0.1);
+  --dot-pattern: rgba(255, 255, 255, 0.05);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #1a1a1a;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    system-ui, sans-serif;
+}
+
+/* 단일 카드 페이지: 1080×1350 카드 1개를 가운데 정렬해서 보여줌 */
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+/* ───────────── 미리보기 페이지 ─────────────
+   여러 카드를 한 페이지에 모아 보여줌. body에 class="preview" 부여.
+   PNG 캡처 시에는 단일 카드 HTML을 사용 (preview 클래스 없음).
+   ------------------------------------------- */
+body.preview {
+  flex-direction: column;
+  gap: 32px;
+  padding: 40px 20px;
+}
+body.preview .card-wrap {
+  width: 540px;
+  height: 675px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+body.preview .card-wrap > .card {
+  transform: scale(0.5);
+  transform-origin: top left;
+}
+
+/* ───────────── 1080×1350 카드 본체 ───────────── */
+.card {
+  width: 1080px;
+  height: 1350px;
+  background: var(--bg);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.card.cover-bg {
+  background-image: radial-gradient(
+    circle,
+    var(--dot-pattern) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
+}
+
+.accent {
+  color: var(--accent);
+}
+
+/* ───────────── 메타 바 (상단/하단) ───────────── */
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.meta-label {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--text-tertiary);
+}
+.meta-muted {
+  font-size: 22px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.meta-muted.next {
+  color: var(--accent);
+  font-weight: 700;
+}
+.meta-muted.swipe {
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+.dot-lg {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ───────────── COVER 카드 ───────────── */
+.cover {
+  padding: 72px 80px;
+}
+.cover .center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cover .subtitle {
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  margin-bottom: 56px;
+  line-height: 1.5;
+}
+.cover .title {
+  font-size: 92px;
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: -0.045em;
+  margin-bottom: 80px;
+}
+.cover .arrow {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ───────────── BODY 카드 (공통) ───────────── */
+.body {
+  padding: 96px 88px;
+}
+.body .category {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 64px;
+}
+.body .category .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.body .category .text {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--text-tertiary);
+}
+.body .headline {
+  font-size: 68px;
+  font-weight: 800;
+  line-height: 1.28;
+  letter-spacing: -0.035em;
+  margin-bottom: 64px;
+}
+.body .divider {
+  height: 2px;
+  background: var(--divider);
+  margin-bottom: 56px;
+}
+.body .text {
+  font-size: 46px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  letter-spacing: -0.015em;
+  text-wrap: pretty;
+}
+.body .text + .text {
+  margin-top: 36px;
+}
+.body .text .strong {
+  color: #fff;
+  font-weight: 700;
+}
+.body .text .hl {
+  color: var(--accent);
+  font-weight: 700;
+}
+.body .footer {
+  margin-top: auto;
+}
+
+/* ───────────── 변형 1: 체크리스트 ───────────── */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.check-item {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  font-size: 40px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  letter-spacing: -0.015em;
+}
+.check-item .check {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+/* ───────────── 변형 2: 단계(STEPS) ───────────── */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-bottom: 56px;
+}
+.step {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  font-size: 42px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  letter-spacing: -0.015em;
+}
+.step .num {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+}
+.step .strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ───────────── 변형 3: 루프 다이어그램 ───────────── */
+.cycle {
+  position: relative;
+  width: 100%;
+  height: 700px;
+  margin: -8px 0 32px;
+}
+.cycle svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cycle-node {
+  position: absolute;
+  width: 320px;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.cycle-node .num {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.cycle-node .label {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  letter-spacing: -0.015em;
+}
+.cycle-node.highlight .num {
+  background: var(--accent);
+  color: #fff;
+}
+.cycle-node.highlight .label {
+  color: #fff;
+  font-weight: 800;
+}
+.cycle-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+.cycle-center .icon {
+  font-size: 64px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.cycle-center .word {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  color: var(--text-tertiary);
+}
+
+/* ───────────── 변형 4: 인용구 (MOMENT) ───────────── */
+.quote-block {
+  border-left: 3px solid var(--accent);
+  padding: 12px 0 12px 36px;
+  margin: 8px 0 48px;
+  font-size: 50px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #fff;
+  letter-spacing: -0.03em;
+}
+
+/* ───────────── 변형 5: 감정 리스트 (HIDDEN) ─────────────
+   "바쁨 뒤에 숨은 감정들" 같은 카드에서 N개의 감정 이름 + 짧은 설명을
+   왼쪽 액센트 보더와 함께 세로로 나열. quote-block의 보더 패턴 재사용.
+   ------------------------------------------------------ */
+.emotion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+.emotion-item {
+  padding-left: 28px;
+  border-left: 3px solid var(--accent);
+}
+.emotion-item .emotion-name {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 52px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 14px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.emotion-item .emotion-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.emotion-item .emotion-desc {
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  letter-spacing: -0.015em;
+}
+
+/* ───────────── 변형 6: 질문 리스트 (REFLECT) ─────────────
+   마무리 카드용. Q1/Q2 라벨(액센트 컬러) + 큰 질문 텍스트.
+   --------------------------------------------------------- */
+.question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+.question-item {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.question-item .q-label {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+  padding-top: 14px;
+}
+.question-item .q-text {
+  font-size: 46px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.45;
+  letter-spacing: -0.025em;
+}
