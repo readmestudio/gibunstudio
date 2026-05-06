@@ -58,29 +58,33 @@ const CURRICULUM = [
 
 function ChevronRight() {
   return (
-    <svg
-      className="hidden lg:block w-6 h-6 text-[var(--foreground)]/30 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" />
-    </svg>
+    <div className="hidden lg:flex items-center shrink-0">
+      <svg
+        className="w-5 h-5 text-[var(--foreground)]/25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" />
+      </svg>
+    </div>
   );
 }
 
 function ChevronDown() {
   return (
-    <svg
-      className="block lg:hidden w-6 h-6 text-[var(--foreground)]/30 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
-    </svg>
+    <div className="flex lg:hidden justify-center shrink-0">
+      <svg
+        className="w-5 h-5 text-[var(--foreground)]/25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+      </svg>
+    </div>
   );
 }
 
@@ -103,30 +107,31 @@ export function SelfHackingElements() {
           </p>
         </div>
 
-        {/* 커리큘럼 플로우: 4단계 카드 */}
-        <div className="flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-2 max-w-5xl mx-auto">
+        {/* 커리큘럼 플로우: 4단계 카드 + 화살표 구분자 */}
+        <div className="flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-3 max-w-6xl mx-auto">
           {CURRICULUM.map((step, i) => {
             const isLast = i === CURRICULUM.length - 1;
             return (
               <Fragment key={step.number}>
-                <div
-                  className="flex flex-col items-center p-6 text-center rounded-2xl border border-[var(--border)] w-full lg:flex-1 min-h-[200px] justify-center"
-                >
-                  <div className="flex items-center justify-center w-14 h-14 mb-4 rounded-full bg-[var(--surface)] text-[var(--foreground)]">
+                {/* 카드: 위쪽 정렬 + 칩은 mt-auto 로 바닥 고정 → 4번째 카드(칩 없음)도 시각 균형 유지 */}
+                <div className="flex flex-col items-center px-6 py-10 text-center rounded-2xl border border-[var(--border)] bg-white w-full lg:flex-1 min-h-[280px]">
+                  <div className="flex items-center justify-center w-14 h-14 mb-6 rounded-full bg-[var(--surface)] text-[var(--foreground)]">
                     {step.icon}
                   </div>
-                  <h3 className="mb-2 text-lg font-semibold text-[var(--foreground)]">
+                  <h3 className="mb-3 text-lg font-semibold text-[var(--foreground)]">
                     {step.title}
                   </h3>
                   <p
-                    className="text-sm leading-relaxed text-[var(--foreground)]/70"
+                    className="text-sm leading-[1.65] text-[var(--foreground)]/65 max-w-[200px]"
                     style={{ wordBreak: "keep-all" }}
                   >
                     {step.description}
                   </p>
                   {step.tag && (
-                    <span className="mt-3 inline-block text-xs text-[var(--foreground)]/50 border border-[var(--foreground)]/20 rounded-full px-3 py-0.5">
-                      {step.tag}
+                    <span className="mt-auto pt-6 inline-block">
+                      <span className="inline-block text-xs text-[var(--foreground)]/55 border border-[var(--foreground)]/15 rounded-full px-3.5 py-1">
+                        {step.tag}
+                      </span>
                     </span>
                   )}
                 </div>

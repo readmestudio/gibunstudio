@@ -1,6 +1,6 @@
+import { HeroManifesto } from "@/components/HeroManifesto";
 import { ProgramCards } from "@/components/ProgramCards";
 import { ComparisonSection } from "@/components/ComparisonSection";
-import { FeatureTwo } from "@/components/FeatureTwo";
 import { SelfHackingElements } from "@/components/SelfHackingElements";
 import { Testimonials } from "@/components/Testimonials";
 import { PricingTable } from "@/components/PricingTable";
@@ -8,40 +8,14 @@ import { PricingTable } from "@/components/PricingTable";
 export default function Home() {
   return (
     <div>
-      {/* Hero Section — Monotone 스타일 */}
-      <section
-        className="relative w-full h-screen overflow-hidden bg-center bg-no-repeat bg-cover"
-        style={{ backgroundImage: "url('/patterns/patternTop.svg')" }}
-      >
-        <div className="container relative w-full px-8 pt-32 pb-24 mx-auto lg:px-4">
-          <div className="flex flex-col w-full mb-12 text-center">
-            <strong className="mb-4 text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/70">
-              심리학 기반 셀프 해킹 플랫폼
-            </strong>
-            <h1
-              className="mb-6 font-bold text-[var(--foreground)] leading-[1.15]"
-              style={{ fontSize: 'clamp(2rem, 5vw, 3.75rem)', wordBreak: 'keep-all' }}
-            >
-              인생은 결국 기분 관리,
-              <br />
-              나를 아는 순간 시작됩니다
-            </h1>
-            <p className="mx-auto text-lg leading-snug text-[var(--foreground)]/70 lg:w-1/2" style={{ wordBreak: 'keep-all' }}>
-              심리학 기반 분석으로 나의 기질, 감정, 관계 패턴을 탐색하고
-              더 기분 좋은 나로 나아가세요.
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* 히어로 — 매니페스토 (Hack yourself. Stay in good vibes.) */}
+      <HeroManifesto />
+
+      {/* "AI 시대에 가장 중요한 건 나를 알아가는 것입니다" + 3스텝/폰 목업 */}
+      <ComparisonSection />
 
       {/* 프로그램 카드 */}
       <ProgramCards />
-
-      {/* 기존 상담 vs 셀프 해킹 비교 */}
-      <ComparisonSection />
-
-      {/* 브랜드 선언문 + 폰 목업 */}
-      <FeatureTwo />
 
       {/* 셀프 해킹 구성요소 4카드 */}
       <SelfHackingElements />
