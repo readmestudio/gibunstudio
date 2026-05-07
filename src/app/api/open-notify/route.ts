@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { sendSlackMessage, SLACK_OPEN_NOTIFY_CHANNEL } from "@/lib/slack";
@@ -16,8 +16,16 @@ interface SlackNotifyPayload {
   userId: string | null;
 }
 
-/** 운영자 채널에 신규 알림 신청을 알린다. await 하지 말고 fire-and-forget. */
-function notifyOperatorsAboutNewSignup(payload: SlackNotifyPayload): void {
+/**
+ * 운영자 채널에 신규 알림 신청을 알린다.
+ *
+ * `next/server` 의 `after()` 안에서 호출돼야 한다 — Vercel 서버리스 함수는
+ * 응답을 보낸 직후 컨텍스트를 종료해서 await 안 한 fetch 가 시작 전에 잘린다.
+ * after() 는 응답 후 백그라운드 작업이 안전하게 끝까지 실행되도록 보장한다.
+ */
+async function notifyOperatorsAboutNewSignup(
+  payload: SlackNotifyPayload
+): Promise<void> {
   const sourceLabel =
     payload.source === "kakao-login" ? "카카오 로그인" : "익명 폼";
 
@@ -41,7 +49,7 @@ function notifyOperatorsAboutNewSignup(payload: SlackNotifyPayload): void {
     });
   }
 
-  void sendSlackMessage({
+  await sendSlackMessage({
     channel: SLACK_OPEN_NOTIFY_CHANNEL,
     text: `🔔 새 알림 신청: ${payload.programType} (${sourceLabel})`,
     blocks: [
@@ -144,14 +152,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    notifyOperatorsAboutNewSignup({
-      programType,
-      source: "kakao-login",
-      name: resolvedName,
-      phone: resolvedPhone,
-      email: user.email ?? null,
-      userId: user.id,
-    });
+    after(() =>
+      notifyOperatorsAboutNewSignup({
+        programType,
+        source: "kakao-login",
+        name: resolvedName,
+        phone: resolvedPhone,
+        email: user.email ?? null,
+        userId: user.id,
+      })
+    );
 
     return NextResponse.json({ success: true });
   }
@@ -186,14 +196,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  notifyOperatorsAboutNewSignup({
-    programType,
-    source: "anonymous-form",
-    name: trimmedName,
-    phone: trimmedPhone,
-    email: null,
-    userId: null,
-  });
+  after(() =>
+    notifyOperatorsAboutNewSignup({
+      programType,
+      source: "anonymous-form",
+      name: trimmedName,
+      phone: trimmedPhone,
+      email: null,
+      userId: null,
+    })
+  );
 
   return NextResponse.json({ success: true });
 }
