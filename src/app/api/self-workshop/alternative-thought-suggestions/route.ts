@@ -104,7 +104,10 @@ async function runGenerateCards(
     {
       model: "gemini-2.5-flash",
       temperature: 0.7,
-      max_tokens: 4096,
+      // 카드 3장(각 text 25~70자 + why 15~45자)이라 출력은 짧음. thinking_budget을 끄지
+      // 않으면 2.5 Flash의 reasoning 토큰이 max_tokens를 잠식해 JSON이 비거나 잘린다.
+      max_tokens: 2048,
+      thinking_budget: 0,
       response_format: { type: "json_object" },
     }
   );
