@@ -11,11 +11,11 @@ export default function Home() {
       {/* 히어로 — 매니페스토 (Hack yourself. Stay in good vibes.) */}
       <HeroManifesto />
 
-      {/* "AI 시대에 가장 중요한 건 나를 알아가는 것입니다" + 3스텝/폰 목업 */}
-      <ComparisonSection />
-
       {/* 프로그램 카드 */}
       <ProgramCards />
+
+      {/* "AI 시대에 가장 중요한 건 나를 알아가는 것입니다" + 3스텝/폰 목업 */}
+      <ComparisonSection />
 
       {/* 셀프 해킹 구성요소 4카드 */}
       <SelfHackingElements />
