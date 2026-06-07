@@ -69,3 +69,6 @@ supabase/.temp/
 
 # 기타 로컬 파일
 /page
+
+# Claude Code 로컬 설정
+.claude/
