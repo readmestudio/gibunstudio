@@ -12,6 +12,7 @@ import { approveNicepayPayment } from "@/lib/nicepay/approve";
  *   HM- → husband_match_payments
  *   WB- → workshop_purchases (단일 워크북)
  *   CT- → cart_orders (장바구니 통합 결제, 여러 상품)
+ *   MS- → mind_spill_report_purchases (Mind Spill 리포트 1건)
  */
 export async function POST(request: NextRequest) {
   if (!isNicepayEnabled()) {
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
   // orderId prefix로 결제 유형 분기
   const isWorkshop = orderId.startsWith("WB-");
   const isCart = orderId.startsWith("CT-");
+  const isMindSpill = orderId.startsWith("MS-");
 
   // 1. 인증 실패 시 실패 페이지로 리다이렉트
   if (resultCode !== "0000") {
@@ -58,6 +60,8 @@ export async function POST(request: NextRequest) {
       failUrl = `/cart?error=${encodeURIComponent(resultMsg)}`;
     } else if (isWorkshop) {
       failUrl = `/payment/self-workshop?error=${encodeURIComponent(resultMsg)}`;
+    } else if (isMindSpill) {
+      failUrl = `/dashboard/mind-spill?error=${encodeURIComponent(resultMsg)}`;
     } else {
       failUrl = `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
     }
@@ -76,6 +80,16 @@ export async function POST(request: NextRequest) {
     return handleWorkshopPayment(supabase, { tid, orderId, amount, baseUrl });
   }
 
+  // ── Mind Spill 리포트 결제 처리 ──
+  if (isMindSpill) {
+    return handleMindSpillReportPayment(supabase, {
+      tid,
+      orderId,
+      amount,
+      baseUrl,
+    });
+  }
+
   // ── 남편상 분석 결제 처리 (기존 로직) ──
   return handleHusbandMatchPayment(supabase, {
     tid,
@@ -83,6 +97,79 @@ export async function POST(request: NextRequest) {
     amount,
     baseUrl,
   });
+}
+
+/* ── Mind Spill Period(3일치 종합) 결제 처리 ── */
+
+async function handleMindSpillReportPayment(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: { tid: string; orderId: string; amount: number; baseUrl: string }
+) {
+  const { tid, orderId, amount, baseUrl } = params;
+  const failUrl = `${baseUrl}/dashboard/mind-spill?error=${encodeURIComponent("결제 처리 중 오류가 발생했습니다")}`;
+
+  // period_purchase 조회 — period_report_id로 리다이렉트 경로 결정.
+  const { data: purchase, error: queryError } = await supabase
+    .from("mind_spill_period_purchases")
+    .select("id, user_id, period_report_id, amount, status")
+    .eq("order_id", orderId)
+    .single();
+
+  if (queryError || !purchase) {
+    console.error("Mind Spill period 결제 레코드 조회 실패:", { orderId, queryError });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 결제 후 리다이렉트 — period 리포트 페이지에서 LLM 자동 트리거.
+  const reportUrl = `${baseUrl}/dashboard/mind-spill/period/${purchase.period_report_id}`;
+
+  // 이미 confirmed → 리포트 페이지로 직행 (멱등성).
+  if (purchase.status === "confirmed") {
+    return NextResponse.redirect(reportUrl);
+  }
+
+  if (purchase.status !== "pending") {
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 금액 검증.
+  if (purchase.amount !== amount) {
+    console.error("Mind Spill period 결제 금액 불일치:", {
+      dbAmount: purchase.amount,
+      nicepayAmount: amount,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // NicePay 승인.
+  const approval = await approveNicepayPayment(tid, amount);
+  if (!approval.success) {
+    console.error("Mind Spill period NicePay 승인 실패:", {
+      resultCode: approval.resultCode,
+      resultMsg: approval.resultMsg,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // pending → confirmed (optimistic concurrency + partial unique index).
+  const { error: updateError } = await supabase
+    .from("mind_spill_period_purchases")
+    .update({
+      status: "confirmed",
+      payment_key: tid,
+      paid_at: new Date().toISOString(),
+    })
+    .eq("id", purchase.id)
+    .eq("status", "pending");
+
+  if (updateError) {
+    console.error("Mind Spill period 결제 상태 업데이트 실패:", { updateError, orderId });
+    return NextResponse.redirect(failUrl);
+  }
+
+  return NextResponse.redirect(reportUrl);
 }
 
 /* ── 워크북 결제 처리 ── */

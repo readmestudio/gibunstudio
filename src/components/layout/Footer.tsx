@@ -1,6 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { isImmersiveRoute } from "@/lib/mind-spill/immersive-route";
 
 export function Footer() {
+  const pathname = usePathname();
+  if (isImmersiveRoute(pathname)) return null;
   return (
     <footer className="bg-[var(--foreground)]">
       <div className="px-5 py-12 mx-auto max-w-7xl sm:px-6 lg:px-12">

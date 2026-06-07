@@ -94,6 +94,25 @@ export const COUNSELING_TYPES: CounselingType[] = [
     ],
     notifyOnly: false,
   },
+  {
+    id: "mind-spill",
+    title: "마음 정리 50분 상담",
+    price: 99000,
+    priceLabel: "99,000",
+    duration: "50분",
+    requirement: "Mind Spill 워크북 작성자",
+    description:
+      "Mind Spill 워크북에서 발견한 마음의 주제를 한국상담심리학회 1급 심리 상담사와 50분 동안 깊이 다루는 1:1 상담입니다.",
+    recommended: "워크북을 쓰며 반복되는 패턴을 발견했고, 혼자가 아니라 전문가와 함께 짚어보고 싶은 분",
+    features: [
+      { text: "워크북 리포트 기반 1:1 Zoom 상담", included: true },
+      { text: "코치 리포트에서 짚은 주제 심층 탐색", included: true },
+      { text: "반복되는 생각·감정 패턴 분석", included: true },
+      { text: "맞춤 성장 방향 제시", included: true },
+      { text: "심리검사 포함", included: false },
+    ],
+    notifyOnly: false,
+  },
 ];
 
 export type CounselingTypeId = (typeof COUNSELING_TYPES)[number]["id"];

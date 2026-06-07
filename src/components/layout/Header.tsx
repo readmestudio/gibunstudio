@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { signOut } from "@/app/actions/auth";
+import { isImmersiveRoute } from "@/lib/mind-spill/immersive-route";
 
 export function Header() {
   const pathname = usePathname();
@@ -20,6 +21,8 @@ export function Header() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  if (isImmersiveRoute(pathname)) return null;
 
   return (
     <header className={isHome ? "absolute top-0 w-full z-50" : "sticky top-0 z-50 border-b border-[var(--border)] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80"}>

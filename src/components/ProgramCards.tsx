@@ -19,13 +19,12 @@ interface ProgramCardData {
 const PROGRAMS: ProgramCardData[] = [
   {
     id: "self-report",
-    title: "내면 분석 리포트",
+    title: "무료 상담 리포트",
     description:
-      "가치관, 사고 패턴, 감정 반응을 분석해 리포트를 만들어요. 셀프 해킹 테스트는 무료예요.",
-    href: "/self-hacking",
-    cta: "검사 선택하기 →",
+      "남편상 분석과 데일리 체크인 리포트를 한 곳에서 확인해요. 셀프 진단은 무료예요.",
+    href: "/dashboard/reports",
+    cta: "리포트 보기 →",
     illustration: "brain-mind",
-    notifyOnly: true,
   },
   {
     id: "self-workshop",
