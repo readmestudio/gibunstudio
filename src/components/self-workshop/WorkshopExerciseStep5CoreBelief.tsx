@@ -18,6 +18,15 @@ import {
   type CoreBeliefExcavation,
   type SctResponses,
 } from "@/lib/self-workshop/core-belief-excavation";
+import { WorkshopConversation } from "@/components/self-workshop/conversation/WorkshopConversation";
+import { WorkshopCoreBeliefDone } from "@/components/self-workshop/conversation/WorkshopCoreBeliefDone";
+import {
+  readDialogue,
+  readDialogueRecap,
+  type ConversationTranscript,
+  type ExplorePoint,
+  type StepRecap,
+} from "@/lib/self-workshop/conversation";
 import {
   Body,
   COL,
@@ -54,6 +63,12 @@ interface Props {
   savedData?: unknown;
   mechanismInsights: unknown;
   mechanismAnalysis: unknown;
+  /** Step 3(IFS PART 찾기) 결과. adaptive 흐름에서 선행 단계 완료 가드에 사용. */
+  partsDiscovery?: unknown;
+  /** done 화면 상담사 코멘트 호칭용 사용자 이름. */
+  userName?: string | null;
+  /** true면 IFS 상담사형 적응형 대화로 렌더 (플래그). 기본 false = 기존 SCT 폼. */
+  adaptive?: boolean;
 }
 
 /* ─────────────────────────────── 메인 ─────────────────────────────── */
@@ -62,14 +77,62 @@ export function WorkshopExerciseStep5CoreBelief({
   workshopId,
   savedData,
   mechanismAnalysis,
+  partsDiscovery,
+  userName,
+  adaptive = false,
 }: Props) {
-  const router = useRouter();
-
   const mechanism = (mechanismAnalysis ?? {}) as MechanismAnalysisData;
   const hasMechanism =
     !!mechanism.automatic_thought ||
     (mechanism.candidate_thoughts?.length ?? 0) > 0 ||
     (mechanism.common_thoughts_checked?.length ?? 0) > 0;
+
+  // 디스패처: hook을 호출하지 않고 분기만 한다 (rules-of-hooks 준수).
+  // 플래그 ON → 적응형 대화, OFF → 기존 SCT 폼.
+  if (adaptive) {
+    // adaptive 흐름에서 Step 3는 mechanism_analysis가 아니라 parts_discovery에
+    // 대화를 저장한다. 그래서 선행 단계 완료 가드는 parts_discovery의 dialogue
+    // 존재로 판단해야 한다 (옛 hasMechanism은 IFS 흐름에서 항상 false라 Step 4가
+    // 영구히 잠기는 버그가 있었다).
+    const priorDialogue = readDialogue(partsDiscovery);
+    const hasPriorStep =
+      hasMechanism ||
+      (!!priorDialogue &&
+        priorDialogue.turns.some((t) => t.answer.trim().length > 0));
+    // Step 3에서 포착한 마음 이름·자동사고를 이어받아 Step 4 대화 맥락으로 전달.
+    const partProfile = readDialogueRecap(partsDiscovery)?.part_profile;
+    return (
+      <AdaptiveCoreBelief
+        savedData={savedData}
+        hasMechanism={hasPriorStep}
+        automaticThought={
+          partProfile?.automatic_thought || mechanism.automatic_thought || ""
+        }
+        partName={partProfile?.name ?? ""}
+        workshopId={workshopId}
+        userName={userName}
+      />
+    );
+  }
+  return (
+    <ClassicCoreBelief
+      workshopId={workshopId}
+      savedData={savedData}
+      hasMechanism={hasMechanism}
+    />
+  );
+}
+
+function ClassicCoreBelief({
+  workshopId,
+  savedData,
+  hasMechanism,
+}: {
+  workshopId: string;
+  savedData?: unknown;
+  hasMechanism: boolean;
+}) {
+  const router = useRouter();
 
   const initial = useMemo<CoreBeliefExcavation>(
     () => migrateLegacyExcavation(savedData),
@@ -685,6 +748,222 @@ function SctItem({
 
       <SkipToggle skipped={skipped} onToggle={onToggleSkip} />
     </EditorialItem>
+  );
+}
+
+/* ═════════════════ 적응형(IFS 상담사형 대화) 버전 ═════════════════ */
+
+// 4개 탐색 주제 = SCT 카테고리 A(자기가치)/B(성취)/C(관계)/D(통제)에 대응.
+// 첫 주제(self_value)는 이전 답이 없어 고정 opening, 그 외 3개는 topic 기반으로
+// LLM이 직전 답에 흐르는 시작 질문을 동적 생성한다.
+const CORE_BELIEF_POINTS: ExplorePoint[] = [
+  {
+    id: "self_value",
+    opening: "있는 그대로의 나에 대해, 요즘 솔직히 어떤 느낌이 드는지 들려줄래요?",
+  },
+  {
+    id: "achievement",
+    opening: "성과를 내지 못한 나는, 어떤 사람처럼 느껴지나요?",
+    topic: "성과를 못 냈을 때 자신에 대해 느끼는 신념·평가",
+  },
+  {
+    id: "trust",
+    opening: "사람들은 결국 나를 어떻게 대한다고 느끼나요?",
+    topic: "사람들과의 관계에서 작동하는 신념 (믿을 수 있는지, 어떻게 대하는지)",
+  },
+  {
+    id: "control",
+    opening: "마음대로 통제할 수 없는 상황에 놓이면, 가장 먼저 어떤 마음이 드나요?",
+    topic: "통제할 수 없는 상황에서 일어나는 내면 반응",
+  },
+];
+
+/** savedData(core_belief_excavation)에서 대화 transcript만 안전하게 추출. */
+function extractDialogue(savedData: unknown): ConversationTranscript | undefined {
+  if (!savedData || typeof savedData !== "object") return undefined;
+  const d = (savedData as { dialogue?: unknown }).dialogue;
+  if (
+    d &&
+    typeof d === "object" &&
+    (d as ConversationTranscript).version === 1 &&
+    Array.isArray((d as ConversationTranscript).turns)
+  ) {
+    return d as ConversationTranscript;
+  }
+  return undefined;
+}
+
+function AdaptiveCoreBelief({
+  workshopId,
+  savedData,
+  hasMechanism,
+  automaticThought,
+  partName,
+  userName,
+}: {
+  workshopId: string;
+  savedData?: unknown;
+  hasMechanism: boolean;
+  automaticThought: string;
+  /** Step 3에서 붙인 마음 이름 (priorSummary 맥락용). */
+  partName?: string;
+  userName?: string | null;
+}) {
+  const router = useRouter();
+  const initial = useMemo<CoreBeliefExcavation>(
+    () => migrateLegacyExcavation(savedData),
+    [savedData]
+  );
+  const initialDialogue = useMemo(() => extractDialogue(savedData), [savedData]);
+  const [completing, setCompleting] = useState(false);
+  const [error, setError] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
+
+  // 기존 구조화 필드 보존 (다운스트림 회귀 방지) — 저장 시 항상 함께 보냄.
+  const preserved = useMemo(
+    () => ({
+      ...(initial.synthesis ? { synthesis: initial.synthesis } : {}),
+      ...(initial.belief_analysis
+        ? { belief_analysis: initial.belief_analysis }
+        : {}),
+      ...(initial.legacy_downward_arrow
+        ? { legacy_downward_arrow: initial.legacy_downward_arrow }
+        : {}),
+    }),
+    [initial]
+  );
+
+  const handleTranscriptChange = useCallback(
+    (t: ConversationTranscript) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        // 진행 중: dialogue만 저장(이어하기용). advanceStep 보내지 않음.
+        void fetch("/api/self-workshop/save-progress", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workshopId,
+            field: "core_belief_excavation",
+            data: {
+              sct_responses: initial.sct_responses,
+              dialogue: t,
+              ...preserved,
+            },
+          }),
+        });
+      }, 1000);
+    },
+    [workshopId, initial.sct_responses, preserved]
+  );
+
+  // 완료 처리는 done 화면(WorkshopCoreBeliefDone)이 직접 소유한다(renderDone).
+  // 이 핸들러는 renderDone이 켜져 있으면 호출되지 않는 안전망 — dialogue만 저장하고 진행.
+  const handleComplete = useCallback(
+    async (t: ConversationTranscript, _recap: StepRecap | null) => {
+      void _recap;
+      setCompleting(true);
+      setError("");
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = undefined;
+      }
+      try {
+        const saveRes = await fetch("/api/self-workshop/save-progress", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workshopId,
+            field: "core_belief_excavation",
+            advanceStep: 5,
+            data: {
+              sct_responses: initial.sct_responses,
+              dialogue: t,
+              ...preserved,
+            },
+          }),
+        });
+        if (!saveRes.ok) throw new Error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+        router.push("/dashboard/self-workshop/step/5");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "오류가 발생했어요");
+        setCompleting(false);
+      }
+    },
+    [workshopId, preserved, initial.sct_responses, router]
+  );
+
+  if (!hasMechanism) {
+    return (
+      <div
+        className="py-20 text-center"
+        style={{ maxWidth: COL + 96, margin: "0 auto", padding: "80px 48px" }}
+      >
+        <p className="text-sm text-[var(--foreground)]/60">
+          먼저 Step 3 — 마음 안의 다른 존재들 만나기를 완료해 주세요.
+        </p>
+        <Link
+          href="/dashboard/self-workshop/step/3"
+          className="mt-4 inline-block text-sm font-medium text-[var(--foreground)] underline"
+        >
+          이전 단계로 돌아가기 →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="space-y-8 pb-20"
+      style={{ maxWidth: COL + 96, margin: "0 auto", padding: "0 48px" }}
+    >
+      <Link
+        href="/dashboard/self-workshop/step/3"
+        className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
+      >
+        ← Step 3 다시 보기
+      </Link>
+
+      <section className="space-y-5">
+        <SectionHeader kicker="● PART A · STEP 4" rightLabel="OPENING" />
+        <Headline>성취 중독 아래에 있는 핵심 신념 찾기</Headline>
+        <Body muted style={{ marginTop: 12 }}>
+          이번엔 묻는 말에 차례로 답하면서, 상담사와 이야기하듯 마음속 깊은 곳을
+          함께 들여다볼 거예요. 정답은 없어요.{" "}
+          <strong style={{ color: D.ink }}>
+            떠오르는 대로 답하면, 답에 따라 다음 질문이 이어져요.
+          </strong>
+        </Body>
+      </section>
+
+      <WorkshopConversation
+        stepKey="core_belief"
+        explorePoints={CORE_BELIEF_POINTS}
+        initialTranscript={initialDialogue}
+        userName={userName}
+        priorSummary={
+          automaticThought
+            ? `Step 3에서 만난 마음${
+                partName ? ` '${partName}'` : ""
+              }의 자동사고: ${automaticThought}`.slice(0, 200)
+            : ""
+        }
+        onTranscriptChange={handleTranscriptChange}
+        onComplete={handleComplete}
+        completing={completing}
+        renderDone={({ transcript }) => (
+          <WorkshopCoreBeliefDone
+            workshopId={workshopId}
+            transcript={transcript}
+            priorAutomaticThought={automaticThought}
+            savedData={savedData}
+          />
+        )}
+      />
+
+      {error && <p className="text-center text-sm text-red-600">{error}</p>}
+    </div>
   );
 }
 

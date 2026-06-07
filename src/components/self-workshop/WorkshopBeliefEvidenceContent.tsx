@@ -27,6 +27,14 @@ import {
   isBeliefNarrativeReport,
 } from "@/lib/self-workshop/belief-narrative-report";
 import { COL as PAGE_COL, TS } from "@/components/self-workshop/clinical-report/v3-shared";
+import { InlineReflection } from "@/components/self-workshop/conversation/InlineReflection";
+import {
+  emptyTranscript,
+  readDialogue,
+  turnsForPoint,
+  type ConversationTranscript,
+  type ConversationTurn,
+} from "@/lib/self-workshop/conversation";
 
 /* ──────────────────────────────────────────────────────────
  * 디자인 토큰 — Step 8과 동일한 wb-* 매핑.
@@ -141,6 +149,11 @@ export function WorkshopBeliefEvidenceContent(props: Props) {
   const [error, setError] = useState("");
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 입구 reflection 대화 transcript. data 타입을 건드리지 않으려고 ref로 들고,
+  // 저장 시 coping_plan.dialogue 로 합친다.
+  const dialogueRef = useRef<ConversationTranscript>(
+    readDialogue(props.savedData) ?? emptyTranscript("belief_evidence")
+  );
 
   const persist = useCallback(
     (next: CopingPlanV2) => {
@@ -155,7 +168,7 @@ export function WorkshopBeliefEvidenceContent(props: Props) {
             body: JSON.stringify({
               workshopId: props.workshopId,
               field: "coping_plan",
-              data: payload,
+              data: { ...payload, dialogue: dialogueRef.current },
             }),
           });
           setSaveStatus("saved");
@@ -165,6 +178,24 @@ export function WorkshopBeliefEvidenceContent(props: Props) {
       }, 600);
     },
     [props.workshopId]
+  );
+
+  /** 신념별 입구 reflection turns를 dialogue에 병합하고 저장 트리거. */
+  const handleReflectionTurns = useCallback(
+    (source: CoreBeliefSource, turns: ConversationTurn[]) => {
+      const dlg = dialogueRef.current;
+      const others = dlg.turns.filter((t) => t.explore_point_id !== source);
+      dialogueRef.current = {
+        ...dlg,
+        turns: [...others, ...turns],
+        updated_at: new Date().toISOString(),
+      };
+      setData((cur) => {
+        persist(cur);
+        return cur;
+      });
+    },
+    [persist]
   );
 
   const update = useCallback(
@@ -323,7 +354,7 @@ export function WorkshopBeliefEvidenceContent(props: Props) {
         body: JSON.stringify({
           workshopId: props.workshopId,
           field: "coping_plan",
-          data: payload,
+          data: { ...payload, dialogue: dialogueRef.current },
           advanceStep: 9,
         }),
       });
@@ -418,6 +449,14 @@ export function WorkshopBeliefEvidenceContent(props: Props) {
               isLast={isLast}
               onChange={(patch) => updateEntry(idx, patch)}
               onComplete={completeCurrentEntry}
+              reflectionTurns={turnsForPoint(dialogueRef.current, cur.source)}
+              onReflectionTurnsChange={(turns) =>
+                handleReflectionTurns(cur.source, turns)
+              }
+              reflectionPrior={`이번에 떠받칠 새 신념: ${cur.new_belief_text}`.slice(
+                0,
+                200
+              )}
             />
           );
         })()}
@@ -1223,6 +1262,9 @@ function WritingPhase({
   isLast,
   onChange,
   onComplete,
+  reflectionTurns,
+  onReflectionTurnsChange,
+  reflectionPrior,
 }: {
   entry: BeliefEvidenceEntry;
   cursor: number;
@@ -1230,6 +1272,9 @@ function WritingPhase({
   isLast: boolean;
   onChange: (patch: Partial<BeliefEvidenceEntry>) => void;
   onComplete: () => void;
+  reflectionTurns: ConversationTurn[];
+  onReflectionTurnsChange: (turns: ConversationTurn[]) => void;
+  reflectionPrior: string;
 }) {
   const filledAnswers = useMemo(
     () =>
@@ -1330,6 +1375,20 @@ function WritingPhase({
           </div>
         )}
       </SectionCard>
+
+      {/* 입구 IFS 성찰 — 근거 모으기 전 한 번 짚기 */}
+      <div style={{ marginTop: 14 }}>
+        <SectionCard label="● PAUSE · 잠깐 짚어볼게요" tone="neutral">
+          <InlineReflection
+            stepKey="belief_evidence"
+            pointId={entry.source}
+            opening="이 새 신념이 정말 내 것이 된다면, 지금의 나에게 무엇이 가장 달라질까요?"
+            priorSummary={reflectionPrior}
+            initialTurns={reflectionTurns}
+            onTurnsChange={onReflectionTurnsChange}
+          />
+        </SectionCard>
+      </div>
 
       {/* 안내문 */}
       <p

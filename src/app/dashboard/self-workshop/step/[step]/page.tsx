@@ -17,7 +17,9 @@ import { WorkshopReflectionContent } from "@/components/self-workshop/WorkshopRe
 import { WorkshopPaymentGate } from "@/components/self-workshop/WorkshopPaymentGate";
 import { WorkshopAlternativeThoughtContent } from "@/components/self-workshop/WorkshopAlternativeThoughtContent";
 import { WorkshopNewBeliefContent } from "@/components/self-workshop/WorkshopNewBeliefContent";
+import { WorkshopPartsDiscovery } from "@/components/self-workshop/WorkshopPartsDiscovery";
 import { isWorkshopTestUser } from "@/lib/self-workshop/test-users";
+import { isAdaptiveStepsEnabled } from "@/lib/self-workshop/feature-flags";
 
 interface Props {
   params: Promise<{ step: string }>;
@@ -65,6 +67,7 @@ export default async function WorkshopStepPage({ params }: Props) {
   // Step 1(진단)은 progress 없어도 접근 가능 → 자동 생성
   // Step 2+는 progress + 구매 확인 필요
   const isTestUser = isWorkshopTestUser(user.email);
+  const adaptiveEnabled = isAdaptiveStepsEnabled(user.email);
 
   if (!progress && stepNumber === 1) {
     // Step 1 접근 시 progress 없으면 자동 생성 (진단은 무료)
@@ -212,13 +215,25 @@ export default async function WorkshopStepPage({ params }: Props) {
         />
       )}
 
-      {/* FIND OUT · 1단계: 트리거 → 자동사고 찾기 (5-Part Model) */}
-      {stepNumber === 3 && (
-        <WorkshopExerciseStep4
-          workshopId={workshopId}
-          savedData={progress.mechanism_analysis ?? undefined}
-        />
-      )}
+      {/* FIND OUT · 1단계: adaptive=ON → PART 찾기 (IFS), OFF → 기존 5-Part 폼 */}
+      {stepNumber === 3 &&
+        (adaptiveEnabled ? (
+          <WorkshopPartsDiscovery
+            workshopId={workshopId}
+            savedData={progress.parts_discovery ?? undefined}
+            userName={
+              (user.user_metadata?.name as string | undefined) ??
+              (user.user_metadata?.full_name as string | undefined) ??
+              null
+            }
+          />
+        ) : (
+          <WorkshopExerciseStep4
+            workshopId={workshopId}
+            savedData={progress.mechanism_analysis ?? undefined}
+            adaptive={false}
+          />
+        ))}
 
       {/* FIND OUT · 2단계: 핵심 신념 찾기 (Downward Arrow) */}
       {stepNumber === 4 && (
@@ -227,6 +242,13 @@ export default async function WorkshopStepPage({ params }: Props) {
           savedData={progress.core_belief_excavation ?? undefined}
           mechanismInsights={progress.mechanism_insights ?? null}
           mechanismAnalysis={progress.mechanism_analysis ?? null}
+          partsDiscovery={progress.parts_discovery ?? null}
+          userName={
+            (user.user_metadata?.name as string | undefined) ??
+            (user.user_metadata?.full_name as string | undefined) ??
+            null
+          }
+          adaptive={adaptiveEnabled}
         />
       )}
 
@@ -251,7 +273,10 @@ export default async function WorkshopStepPage({ params }: Props) {
         <WorkshopAlternativeThoughtContent
           workshopId={workshopId}
           savedData={progress.alternative_thought_simulation ?? undefined}
-          mechanism={extractMechanismSnapshot(progress.mechanism_analysis)}
+          mechanism={withSelectedThought(
+            extractMechanismSnapshot(progress.mechanism_analysis),
+            progress.core_belief_excavation
+          )}
         />
       )}
 
@@ -325,7 +350,24 @@ function extractBeliefAnalysis(excavation: unknown): {
       belief_about_world?: unknown;
     };
     synthesis?: { belief_line?: unknown };
+    selected_beliefs?: unknown;
   };
+
+  // 1순위: Step 4 완료 화면에서 사용자가 *고른* 핵심신념 — 수정 실습의 대상.
+  const selected = Array.isArray(r.selected_beliefs)
+    ? r.selected_beliefs
+        .filter((x): x is string => typeof x === "string")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+    : [];
+  if (selected.length > 0) {
+    return {
+      belief_about_self: selected[0],
+      ...(selected[1] ? { belief_about_others: selected[1] } : {}),
+      ...(selected[2] ? { belief_about_world: selected[2] } : {}),
+    };
+  }
+
   const ba = r.belief_analysis;
   const out: {
     belief_about_self?: string;
@@ -355,6 +397,22 @@ function extractBeliefAnalysis(excavation: unknown): {
   }
 
   return out;
+}
+
+/**
+ * Step 4 완료 화면에서 사용자가 *고른* 자동사고가 있으면, Step 6 대안 자동사고 실습의
+ * 원본(automatic_thought)을 그 선택값으로 덮어쓴다. (없으면 mechanism 그대로)
+ */
+function withSelectedThought<T extends { automatic_thought: string }>(
+  snapshot: T,
+  excavation: unknown
+): T {
+  if (!excavation || typeof excavation !== "object") return snapshot;
+  const sel = (excavation as { selected_thoughts?: unknown }).selected_thoughts;
+  const first = Array.isArray(sel)
+    ? sel.find((x): x is string => typeof x === "string" && x.trim().length > 0)
+    : undefined;
+  return first ? { ...snapshot, automatic_thought: first.trim() } : snapshot;
 }
 
 function extractMechanismSnapshot(mechanism: unknown): {

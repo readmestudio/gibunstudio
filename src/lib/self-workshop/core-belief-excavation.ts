@@ -67,6 +67,16 @@ export interface CoreBeliefExcavation {
   belief_analysis?: BeliefAnalysis;
   synthesis?: Synthesis; // 다운스트림 호환을 위해 belief_analysis와 함께 채움
   legacy_downward_arrow?: LegacyDownwardArrow;
+
+  /* Step 4 완료 화면에서 사용자가 고른 "수정 대상" (2026-06-06 추가, 모두 optional) */
+  /** 사용자가 고른 자동사고들 — Step 6 대안 자동사고 실습의 원본. */
+  selected_thoughts?: string[];
+  /** 사용자가 고른 핵심신념들 — Step 7 새 신념 실습의 수정 대상. */
+  selected_beliefs?: string[];
+  /** LLM이 제시한 후보 캐시(이어하기 시 재호출 최소화). */
+  belief_candidates?: { thoughts: string[]; beliefs: string[] };
+  /** 선택 완료 시각(ISO). */
+  selection_made_at?: string;
 }
 
 /* ─────────────────────────── 마이그레이션 ─────────────────────────── */
@@ -114,6 +124,14 @@ export function migrateLegacyExcavation(
       legacy_downward_arrow: isLegacy(obj.legacy_downward_arrow)
         ? obj.legacy_downward_arrow
         : undefined,
+      // Step 4 선택 결과 보존(이어하기).
+      selected_thoughts: toStringArray(obj.selected_thoughts),
+      selected_beliefs: toStringArray(obj.selected_beliefs),
+      belief_candidates: readBeliefCandidates(obj.belief_candidates),
+      selection_made_at:
+        typeof obj.selection_made_at === "string"
+          ? obj.selection_made_at
+          : undefined,
     };
   }
 
@@ -188,6 +206,27 @@ function isSynthesis(v: unknown): v is Synthesis {
 function isLegacy(v: unknown): v is LegacyDownwardArrow {
   if (!v || typeof v !== "object") return false;
   return typeof (v as Record<string, unknown>).archived_at === "string";
+}
+
+/** 문자열 배열만 추려서 반환. 없거나 비면 undefined. */
+function toStringArray(v: unknown): string[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out = v
+    .filter((x): x is string => typeof x === "string")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  return out.length > 0 ? out : undefined;
+}
+
+function readBeliefCandidates(
+  v: unknown
+): { thoughts: string[]; beliefs: string[] } | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as { thoughts?: unknown; beliefs?: unknown };
+  const thoughts = toStringArray(o.thoughts) ?? [];
+  const beliefs = toStringArray(o.beliefs) ?? [];
+  if (thoughts.length === 0 && beliefs.length === 0) return undefined;
+  return { thoughts, beliefs };
 }
 
 /* ─────────────────────────── 유틸 ─────────────────────────── */

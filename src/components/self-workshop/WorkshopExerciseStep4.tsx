@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EMOTION_CHIPS } from "@/lib/self-workshop/diagnosis";
@@ -14,6 +14,13 @@ import {
   SectionHeader,
   TS,
 } from "@/components/self-workshop/clinical-report/v3-shared";
+import { WorkshopConversation } from "@/components/self-workshop/conversation/WorkshopConversation";
+import {
+  readDialogue,
+  type ConversationTranscript,
+  type ExplorePoint,
+  type StepRecap,
+} from "@/lib/self-workshop/conversation";
 
 interface MechanismAnalysis {
   recent_situation: string;
@@ -44,6 +51,8 @@ const MAX_CANDIDATE_THOUGHTS = 5;
 interface Props {
   workshopId: string;
   savedData?: Partial<MechanismAnalysis>;
+  /** true면 IFS 상담사형 적응형 대화로 렌더. 기본 false = 기존 5-Part 폼. */
+  adaptive?: boolean;
 }
 
 const COMMON_ACHIEVEMENT_THOUGHTS = [
@@ -129,7 +138,25 @@ function mergeEmotions(primary: string, extras: string[]): string[] {
   return out;
 }
 
-export function WorkshopExerciseStep4({ workshopId, savedData }: Props) {
+export function WorkshopExerciseStep4({
+  workshopId,
+  savedData,
+  adaptive = false,
+}: Props) {
+  // 디스패처: hook 호출 없이 분기만 (rules-of-hooks 준수).
+  if (adaptive) {
+    return <AdaptiveMechanism workshopId={workshopId} savedData={savedData} />;
+  }
+  return <ClassicMechanism workshopId={workshopId} savedData={savedData} />;
+}
+
+function ClassicMechanism({
+  workshopId,
+  savedData,
+}: {
+  workshopId: string;
+  savedData?: Partial<MechanismAnalysis>;
+}) {
   const router = useRouter();
   const [data, setData] = useState<MechanismAnalysis>(() => mergeSaved(savedData));
   const [submitting, setSubmitting] = useState(false);
@@ -806,6 +833,188 @@ function SubField({
         </p>
       )}
       {children}
+    </div>
+  );
+}
+
+/* ═════════════════ 적응형(IFS 상담사형 대화) 버전 ═════════════════ */
+
+// 6개 탐색 주제 → mechanism_analysis 필드. 첫 주제(situation)는 이전 답이
+// 없으므로 고정 opening, 그 외 5개는 topic 기반으로 LLM이 직전 답에 흐르는
+// 시작 질문을 매번 동적 생성한다. opening은 동적 생성 실패 시 폴백.
+const MECHANISM_POINTS: ExplorePoint[] = [
+  {
+    id: "situation",
+    opening:
+      "최근 성취 때문에 마음이 무거웠던 순간 하나를 떠올려볼까요? 무슨 일이 있었는지 들려주세요.",
+  },
+  {
+    id: "emotion",
+    opening: "그 순간, 마음에 어떤 감정들이 올라왔나요?",
+    topic: "이 순간에 올라온 감정과 신체 반응 (어떤 감정이 어떻게)",
+  },
+  {
+    id: "automatic_thought",
+    opening: "그때 머릿속에 가장 먼저 스친 말은 뭐였나요?",
+    topic: "그 순간 떠오른 자동사고 (1인칭으로 머릿속에 스친 말 한 줄)",
+  },
+  {
+    id: "body",
+    opening:
+      "그 마음이 올라올 때, 몸에서는 어떤 게 느껴졌나요? 어디에서 느껴졌는지도 좋아요.",
+    optional: true,
+    topic: "그 감정이 몸 어디에서 어떻게 느껴졌는지",
+  },
+  {
+    id: "worst_case",
+    opening: "그 생각이 사실이라면, 최악의 경우 어떤 일이 벌어질 것 같았나요?",
+    topic: "그 생각이 사실이라면 일어날 것 같은 최악의 시나리오",
+  },
+  {
+    id: "behavior",
+    opening: "그래서 그 상황에서, 실제로 어떻게 했나요?",
+    topic: "그 상황에서 실제로 한 행동 또는 반응",
+  },
+];
+
+interface MechanismExtractResult {
+  recent_situation: string;
+  emotions: string[];
+  body_text: string;
+  automatic_thought: string;
+  worst_case_result: string;
+  resulting_behavior: string;
+  about_self: string;
+}
+
+function AdaptiveMechanism({
+  workshopId,
+  savedData,
+}: {
+  workshopId: string;
+  savedData?: Partial<MechanismAnalysis>;
+}) {
+  const router = useRouter();
+  const initialDialogue = useMemo(() => readDialogue(savedData), [savedData]);
+  const [completing, setCompleting] = useState(false);
+  const [error, setError] = useState("");
+  const debounceRef = useRef<NodeJS.Timeout>(undefined);
+
+  const handleTranscriptChange = useCallback(
+    (t: ConversationTranscript) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        // 진행 중: 기존 mechanism 필드 보존 + dialogue. advanceStep 없음.
+        void fetch("/api/self-workshop/save-progress", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workshopId,
+            field: "mechanism_analysis",
+            data: { ...mergeSaved(savedData), dialogue: t },
+          }),
+        });
+      }, 1000);
+    },
+    [workshopId, savedData]
+  );
+
+  const handleComplete = useCallback(
+    async (t: ConversationTranscript, recap: StepRecap | null) => {
+      setCompleting(true);
+      setError("");
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = undefined;
+      }
+      try {
+        // 1) 대화 → mechanism 필드 추출 (route가 폴백 보장)
+        const exRes = await fetch("/api/self-workshop/explore-extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workshopId,
+            step_key: "mechanism",
+            transcript: t,
+          }),
+        });
+        if (!exRes.ok) throw new Error("정리에 실패했어요. 잠시 후 다시 시도해주세요.");
+        const { mechanism: ex } = (await exRes.json()) as {
+          mechanism: MechanismExtractResult;
+        };
+
+        // 2) 다운스트림이 기대하는 mechanism_analysis 형태로 조립
+        const base = mergeSaved(savedData);
+        const merged: MechanismAnalysis = {
+          ...base,
+          recent_situation: ex.recent_situation,
+          primary_emotion: ex.emotions[0] ?? "",
+          candidate_thoughts: ex.automatic_thought ? [ex.automatic_thought] : [],
+          automatic_thought: ex.automatic_thought,
+          emotions_body: { emotions: ex.emotions, body_text: ex.body_text },
+          worst_case_result: ex.worst_case_result,
+          resulting_behavior: ex.resulting_behavior,
+          core_beliefs: { ...base.core_beliefs, about_self: ex.about_self },
+        };
+
+        const saveRes = await fetch("/api/self-workshop/save-progress", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workshopId,
+            field: "mechanism_analysis",
+            advanceStep: 4,
+            data: {
+              ...merged,
+              dialogue: t,
+              ...(recap ? { dialogue_recap: recap } : {}),
+            },
+          }),
+        });
+        if (!saveRes.ok) throw new Error("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+        router.push("/dashboard/self-workshop/step/4");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "오류가 발생했어요");
+        setCompleting(false);
+      }
+    },
+    [workshopId, savedData, router]
+  );
+
+  return (
+    <div
+      className="space-y-8 pb-20"
+      style={{ maxWidth: COL + 96, margin: "0 auto", padding: "0 48px" }}
+    >
+      <Link
+        href="/dashboard/self-workshop/step/2"
+        className="inline-flex items-center text-sm text-[var(--foreground)]/60 hover:text-[var(--foreground)] hover:underline"
+      >
+        ← 진단 리포트 다시 보기
+      </Link>
+
+      <section className="space-y-5">
+        <SectionHeader kicker="● FIND OUT · STEP 3" rightLabel="OPENING" />
+        <Headline>최근 한 순간을 함께 들여다볼게요</Headline>
+        <Body muted style={{ marginTop: 12 }}>
+          성취 압박이 올라왔던 한 장면을 떠올리며, 상담사와 이야기하듯 답해보세요.
+          정답은 없어요.{" "}
+          <strong style={{ color: D.ink }}>
+            떠오르는 대로 답하면, 답에 따라 다음 질문이 이어져요.
+          </strong>
+        </Body>
+      </section>
+
+      <WorkshopConversation
+        stepKey="mechanism"
+        explorePoints={MECHANISM_POINTS}
+        initialTranscript={initialDialogue}
+        onTranscriptChange={handleTranscriptChange}
+        onComplete={handleComplete}
+        completing={completing}
+      />
+
+      {error && <p className="text-center text-sm text-red-600">{error}</p>}
     </div>
   );
 }

@@ -12,6 +12,14 @@ import {
   isBeliefAnswerComplete,
 } from "@/lib/self-workshop/new-belief";
 import { COL as PAGE_COL, TS } from "@/components/self-workshop/clinical-report/v3-shared";
+import { InlineReflection } from "@/components/self-workshop/conversation/InlineReflection";
+import {
+  emptyTranscript,
+  readDialogue,
+  turnsForPoint,
+  type ConversationTranscript,
+  type ConversationTurn,
+} from "@/lib/self-workshop/conversation";
 
 /* ──────────────────────────────────────────────────────────
  * 디자인 토큰(매핑)
@@ -189,6 +197,10 @@ export function WorkshopNewBeliefContent(props: Props) {
   const [error, setError] = useState("");
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 입구 reflection transcript — data 타입을 안 건드리려고 ref로 들고 저장 시 합침.
+  const dialogueRef = useRef<ConversationTranscript>(
+    readDialogue(props.savedData) ?? emptyTranscript("new_belief")
+  );
 
   const persist = useCallback(
     (next: NewBeliefData) => {
@@ -203,7 +215,7 @@ export function WorkshopNewBeliefContent(props: Props) {
             body: JSON.stringify({
               workshopId: props.workshopId,
               field: "new_belief",
-              data: { ...next, ...derived },
+              data: { ...next, ...derived, dialogue: dialogueRef.current },
             }),
           });
           setSaveStatus("saved");
@@ -213,6 +225,24 @@ export function WorkshopNewBeliefContent(props: Props) {
       }, 600);
     },
     [props.workshopId]
+  );
+
+  /** 신념별 입구 reflection turns를 dialogue에 병합하고 저장 트리거. */
+  const handleReflectionTurns = useCallback(
+    (source: CoreBeliefSource, turns: ConversationTurn[]) => {
+      const dlg = dialogueRef.current;
+      const others = dlg.turns.filter((t) => t.explore_point_id !== source);
+      dialogueRef.current = {
+        ...dlg,
+        turns: [...others, ...turns],
+        updated_at: new Date().toISOString(),
+      };
+      setData((cur) => {
+        persist(cur);
+        return cur;
+      });
+    },
+    [persist]
   );
 
   const update = useCallback(
@@ -490,7 +520,12 @@ export function WorkshopNewBeliefContent(props: Props) {
         body: JSON.stringify({
           workshopId: props.workshopId,
           field: "new_belief",
-          data: { ...data, ...derived, phase: "allDone" },
+          data: {
+            ...data,
+            ...derived,
+            phase: "allDone",
+            dialogue: dialogueRef.current,
+          },
           advanceStep: 8,
         }),
       });

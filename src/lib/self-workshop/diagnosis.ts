@@ -243,34 +243,31 @@ export const WORKSHOP_STEPS: WorkshopStep[] = [
     title: "진단 리포트", subtitle: "결과 분석 + 캐릭터 프로필",
     type: "result", estimatedMinutes: [5, 8], hasUserInput: false },
 
-  // ── FIND OUT ──
+  // ── FIND OUT ── (2026-05-31 IFS 모델로 재구성)
   { step: 3, section: "FIND_OUT", sectionLabel: "FIND OUT", sectionStepNumber: 1,
-    title: "트리거 → 자동사고 찾기", subtitle: "5-Part Model 실습",
-    type: "exercise", estimatedMinutes: [20, 30], hasUserInput: true },
+    title: "마음 안의 다른 존재들 만나기", subtitle: "한 사건 안의 여러 마음을 알아가기",
+    type: "exercise", estimatedMinutes: [15, 25], hasUserInput: true },
   { step: 4, section: "FIND_OUT", sectionLabel: "FIND OUT", sectionStepNumber: 2,
-    title: "핵심 신념 찾기", subtitle: "Downward Arrow 문답",
+    title: "마음의 패턴 발견하기", subtitle: "삶 전반에 작동하는 패턴 알아보기",
     type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
   { step: 5, section: "FIND_OUT", sectionLabel: "FIND OUT", sectionStepNumber: 3,
-    title: "통합 패턴 분석", subtitle: "6-Part 인지 사이클 + 인지 오류",
+    title: "마음과 패턴 잇기", subtitle: "발견한 마음들과 패턴이 어떻게 연결되는지",
     type: "ai_analysis", estimatedMinutes: [3, 5], hasUserInput: false },
 
-  // ── RESHAPE ──
-  // 옛 SOFTEN(핵심 믿음 다시 보기 + 대안 자동사고)와 옛 SOLUTION(새 핵심 신념 찾기 + 떠받치기)을
-  // 하나의 섹션으로 통합. 옛 6 "핵심 믿음 다시 보기"는 작업 본질이 새 7 "새 핵심 신념 찾기"와
-  // 같아서 삭제. 옛 7~9 → 새 6~8.
+  // ── RESHAPE ── (IFS: 관리자 발견·긍정 의도·역할 통찰)
   { step: 6, section: "RESHAPE", sectionLabel: "RESHAPE", sectionStepNumber: 1,
-    title: "대안 자동사고 시뮬레이션", subtitle: "같은 상황, 다른 사고였다면",
+    title: "안에서 지키는 마음 알아보기", subtitle: "통제·계획하는 마음들 만나기",
     type: "alternative_thought", estimatedMinutes: [10, 15], hasUserInput: true },
   { step: 7, section: "RESHAPE", sectionLabel: "RESHAPE", sectionStepNumber: 2,
-    title: "새 핵심 신념 찾기", subtitle: "리프레임 작성",
+    title: "그 마음의 본래 바람", subtitle: "이 마음이 진짜 원했던 것 발견하기",
     type: "new_belief", estimatedMinutes: [10, 15], hasUserInput: true },
   { step: 8, section: "RESHAPE", sectionLabel: "RESHAPE", sectionStepNumber: 3,
-    title: "새 신념 강화하기", subtitle: "근거 모으기 실습",
+    title: "마음의 역할과 건강한 활용", subtitle: "도움 된 순간·한계·앞으로의 활용법",
     type: "exercise", estimatedMinutes: [15, 20], hasUserInput: true },
 
   // ── SUMMARY ──
   { step: 9, section: "SUMMARY", sectionLabel: "SUMMARY", sectionStepNumber: 1,
-    title: "전문 상담사 리포트", subtitle: "DO & DON'T 포함 통합 정리",
+    title: "내 마음들의 이야기", subtitle: "발견한 마음들의 이름·특성·바람·역할",
     type: "ai_analysis", estimatedMinutes: [5, 8], hasUserInput: false },
   { step: 10, section: "SUMMARY", sectionLabel: "SUMMARY", sectionStepNumber: 2,
     title: "워크북을 마치며", subtitle: "마무리 성찰",

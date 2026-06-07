@@ -21,6 +21,10 @@ export interface WorkshopProgressFields {
   coping_plan?: unknown;
   summary_cards?: unknown;
   reflections?: unknown;
+  // IFS 재설계 신규 (2026-05-31)
+  parts_discovery?: unknown;
+  schema_assessment?: unknown;
+  parts_integration?: unknown;
 }
 
 /**
@@ -37,15 +41,19 @@ export interface WorkshopProgressFields {
 export function deriveExpectedMinStep(p: WorkshopProgressFields): number {
   let min = 1;
   if (p.diagnosis_scores != null) min = Math.max(min, 2);
+  // ── legacy CBT 컬럼 (2026-05-31 이전 사용자 잔존 데이터)
   if (p.mechanism_analysis != null) min = Math.max(min, 3);
   if (p.core_belief_excavation != null) min = Math.max(min, 5);
   if (p.mechanism_insights != null) min = Math.max(min, 6);
   if (p.alternative_thought_simulation != null) min = Math.max(min, 7);
   if (p.new_belief != null) min = Math.max(min, 8);
   if (p.coping_plan != null) min = Math.max(min, 9);
-  // summary_cards 는 step 9 페이지 진입 시 LLM 으로 생성·캐시되므로 도달 신호.
   if (p.summary_cards != null) min = Math.max(min, 9);
   if (p.reflections != null) min = Math.max(min, 10);
+  // ── IFS 재설계 신규 (2026-05-31)
+  if (p.parts_discovery != null) min = Math.max(min, 4); // Step 3 완료 → 4 도달
+  if (p.schema_assessment != null) min = Math.max(min, 5); // Step 4 완료 → 5 도달
+  if (p.parts_integration != null) min = Math.max(min, 7); // Step 6 시작/완료 → 7 도달
   return min;
 }
 

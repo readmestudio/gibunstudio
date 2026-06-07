@@ -6,6 +6,7 @@
  */
 export const WORKSHOP_TEST_EMAILS: readonly string[] = [
   "mingle22@hanmail.net",
+  "fibillionwave@gmail.com",
 ];
 
 export function isWorkshopTestUser(email: string | null | undefined): boolean {

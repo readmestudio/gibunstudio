@@ -30,6 +30,7 @@ export async function PATCH(req: Request) {
   // field만 화이트리스트로 제한 — 존재하지 않는 컬럼으로의 UPDATE는 Supabase 500.
   // step 이동/완료 처리만 하는 호출(field 없음)도 허용.
   const ALLOWED_FIELDS = new Set([
+    // 기존 (Step 1·2 + legacy CBT 컬럼)
     "diagnosis_answers",
     "diagnosis_scores",
     "mechanism_analysis",
@@ -41,6 +42,10 @@ export async function PATCH(req: Request) {
     "coping_plan",
     "summary_cards",
     "reflections",
+    // IFS 재설계 신규 (2026-05-31)
+    "parts_discovery", // Step 3 PART 찾기
+    "schema_assessment", // Step 4 18 도식 판별
+    "parts_integration", // Step 6·7·8 관리자·긍정 의도·역할 통찰
   ]);
 
   if (field !== undefined && !ALLOWED_FIELDS.has(field)) {

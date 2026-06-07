@@ -40,7 +40,7 @@ function cleanupStaleEntries(maxWindowMs: number) {
 /**
  * Rate Limit 설정 타입
  */
-interface RateLimitConfig {
+export interface RateLimitConfig {
   /** 윈도우 내 최대 요청 수 */
   limit: number;
   /** 윈도우 크기 (초 단위) */
@@ -51,12 +51,15 @@ interface RateLimitConfig {
  * 미리 정의된 Rate Limit 프리셋
  *
  * - general: 일반 API (IP당 60회/분)
- * - ai: AI 생성 API (IP당 5회/분) - OpenAI 호출이 비싸므로 엄격
+ * - ai: AI 생성 API (IP당 5회/분) - 무거운 1회성 LLM 호출이 비싸므로 엄격
+ * - conversation: 적응형 대화 API (IP당 20회/분) - 짧은 호출이 멀티턴으로
+ *   연달아 일어나므로 ai보다 완화. thinking_budget:0 flash라 호출당 비용이 작다.
  * - auth: 인증 API (IP당 5회/5분) - 브루트포스 방지
  */
 export const RATE_LIMITS = {
   general: { limit: 60, windowSeconds: 60 } as RateLimitConfig,
   ai: { limit: 5, windowSeconds: 60 } as RateLimitConfig,
+  conversation: { limit: 20, windowSeconds: 60 } as RateLimitConfig,
   auth: { limit: 5, windowSeconds: 300 } as RateLimitConfig,
 } as const;
 

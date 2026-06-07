@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { checkRateLimit, RATE_LIMITS, type RateLimitConfig } from "@/lib/rate-limit";
 import { isWorkshopTestUser } from "@/lib/self-workshop/test-users";
 
 const MAX_BODY_BYTES = 50_000;
@@ -26,6 +26,13 @@ interface GuardOptions {
    */
   skipPurchaseCheck?: boolean;
   workshopType?: string;
+  /**
+   * Rate Limit 프리셋 override. 미지정 시 RATE_LIMITS.ai (5회/분).
+   * 멀티턴 대화 라우트(explore-followup)는 RATE_LIMITS.conversation 사용.
+   * 주의: rate limit은 인증·테스트유저 판정보다 먼저 적용되므로
+   * 테스트 유저도 이 한도에 걸린다.
+   */
+  rateLimit?: RateLimitConfig;
 }
 
 /**
@@ -50,11 +57,12 @@ export async function requireWorkshopAccess(
   const {
     skipPurchaseCheck = false,
     workshopType = DEFAULT_WORKSHOP_TYPE,
+    rateLimit = RATE_LIMITS.ai,
   } = options;
 
   const rateLimitResponse = checkRateLimit(
     request as NextRequest,
-    RATE_LIMITS.ai
+    rateLimit
   );
   if (rateLimitResponse) return { ok: false, response: rateLimitResponse };
 
