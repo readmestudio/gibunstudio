@@ -55,12 +55,20 @@ export default async function AdminEssaysPage() {
               마음 구독 에세이를 이곳에서 직접 쓰고 수정하실 수 있어요.
             </p>
           </div>
-          <Link
-            href="/admin/essays/new"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[var(--foreground)] text-white text-sm font-semibold transition-opacity hover:opacity-90"
-          >
-            + 새 에세이 작성
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/waitlist"
+              className="text-xs font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] whitespace-nowrap"
+            >
+              워크북 대기신청 →
+            </Link>
+            <Link
+              href="/admin/essays/new"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[var(--foreground)] text-white text-sm font-semibold transition-opacity hover:opacity-90"
+            >
+              + 새 에세이 작성
+            </Link>
+          </div>
         </div>
 
         {essays.length === 0 ? (

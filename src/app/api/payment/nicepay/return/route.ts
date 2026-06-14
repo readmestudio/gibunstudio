@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { approveNicepayPayment } from "@/lib/nicepay/approve";
+import { MIND_SPILL_DAILY_SUB_DAYS } from "@/lib/mind-spill/constants";
 
 /**
  * POST /api/payment/nicepay/return
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
   const isWorkshop = orderId.startsWith("WB-");
   const isCart = orderId.startsWith("CT-");
   const isMindSpill = orderId.startsWith("MS-");
+  const isMindSpillDailySub = orderId.startsWith("MD-");
 
   // 1. 인증 실패 시 실패 페이지로 리다이렉트
   if (resultCode !== "0000") {
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
       failUrl = `/cart?error=${encodeURIComponent(resultMsg)}`;
     } else if (isWorkshop) {
       failUrl = `/payment/self-workshop?error=${encodeURIComponent(resultMsg)}`;
-    } else if (isMindSpill) {
+    } else if (isMindSpill || isMindSpillDailySub) {
       failUrl = `/dashboard/mind-spill?error=${encodeURIComponent(resultMsg)}`;
     } else {
       failUrl = `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
@@ -83,6 +85,16 @@ export async function POST(request: NextRequest) {
   // ── Mind Spill 리포트 결제 처리 ──
   if (isMindSpill) {
     return handleMindSpillReportPayment(supabase, {
+      tid,
+      orderId,
+      amount,
+      baseUrl,
+    });
+  }
+
+  // ── Mind Spill 데일리 구독 결제 처리 ──
+  if (isMindSpillDailySub) {
+    return handleMindSpillDailySubscription(supabase, {
       tid,
       orderId,
       amount,
@@ -170,6 +182,80 @@ async function handleMindSpillReportPayment(
   }
 
   return NextResponse.redirect(reportUrl);
+}
+
+/* ── Mind Spill 데일리 구독 결제 처리 ── */
+
+async function handleMindSpillDailySubscription(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: { tid: string; orderId: string; amount: number; baseUrl: string }
+) {
+  const { tid, orderId, amount, baseUrl } = params;
+  const successUrl = `${baseUrl}/dashboard/mind-spill?subscribed=1`;
+  const failUrl = `${baseUrl}/dashboard/mind-spill?error=${encodeURIComponent("결제 처리 중 오류가 발생했습니다")}`;
+
+  // pending 구독 레코드 조회.
+  const { data: sub, error: queryError } = await supabase
+    .from("mind_spill_daily_subscriptions")
+    .select("id, user_id, amount, status")
+    .eq("order_id", orderId)
+    .single();
+
+  if (queryError || !sub) {
+    console.error("Mind Spill 데일리 구독 레코드 조회 실패:", { orderId, queryError });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 이미 활성화됨 → 멱등성.
+  if (sub.status === "active") {
+    return NextResponse.redirect(successUrl);
+  }
+  if (sub.status !== "pending") {
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 금액 검증.
+  if (sub.amount !== amount) {
+    console.error("Mind Spill 데일리 구독 결제 금액 불일치:", {
+      dbAmount: sub.amount,
+      nicepayAmount: amount,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // NicePay 승인.
+  const approval = await approveNicepayPayment(tid, amount);
+  if (!approval.success) {
+    console.error("Mind Spill 데일리 구독 NicePay 승인 실패:", {
+      resultCode: approval.resultCode,
+      resultMsg: approval.resultMsg,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // pending → active. started_at = now, expires_at = now + 31일.
+  const now = new Date();
+  const expires = new Date(now.getTime() + MIND_SPILL_DAILY_SUB_DAYS * 24 * 60 * 60 * 1000);
+  const { error: updateError } = await supabase
+    .from("mind_spill_daily_subscriptions")
+    .update({
+      status: "active",
+      started_at: now.toISOString(),
+      expires_at: expires.toISOString(),
+      payment_key: tid,
+      paid_at: now.toISOString(),
+    })
+    .eq("id", sub.id)
+    .eq("status", "pending");
+
+  if (updateError) {
+    console.error("Mind Spill 데일리 구독 활성화 실패:", { updateError, orderId });
+    return NextResponse.redirect(failUrl);
+  }
+
+  return NextResponse.redirect(successUrl);
 }
 
 /* ── 워크북 결제 처리 ── */

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface NotifyButtonProps {
   /** open_notifications.program_type 으로 그대로 저장됩니다. 운영자가 어떤 상품에 대한 신청인지 식별하는 키. */
@@ -31,6 +32,10 @@ export function NotifyButton({
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  // SSR에서는 document 가 없으므로, 마운트 이후에만 Portal 을 그린다.
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const triggerClass = triggerClassName ?? DEFAULT_TRIGGER_CLASS;
 
@@ -83,8 +88,10 @@ export function NotifyButton({
         {label}
       </button>
 
-      {/* 모달 */}
-      {open && (
+      {/* 모달 — 부모 카드의 opacity-70 그룹 밖(document.body)으로 빼내 불투명하게 렌더 */}
+      {open &&
+        mounted &&
+        createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => setOpen(false)}
@@ -134,8 +141,9 @@ export function NotifyButton({
               </div>
             </form>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </>
   );
 }

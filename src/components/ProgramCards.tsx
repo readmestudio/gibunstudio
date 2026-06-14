@@ -21,10 +21,11 @@ const PROGRAMS: ProgramCardData[] = [
     id: "self-report",
     title: "무료 상담 리포트",
     description:
-      "남편상 분석과 데일리 체크인 리포트를 한 곳에서 확인해요. 셀프 진단은 무료예요.",
+      "남편상 분석과 데일리 체크인 리포트를 한 곳에서. 오픈 준비 중이에요.",
     href: "/dashboard/reports",
     cta: "리포트 보기 →",
     illustration: "brain-mind",
+    notifyOnly: true,
   },
   {
     id: "self-workshop",

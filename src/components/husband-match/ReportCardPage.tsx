@@ -1,11 +1,9 @@
 'use client';
 
-import Image from 'next/image';
-
 /**
- * 한 화면 완성형 리포트 카드 컴포넌트
- * 참고 디자인: 일러스트 + 로마숫자 챕터 + 제목 + blockquote 본문
- * 스크롤 없이 한 스크린에 전체 내용이 들어가는 구조
+ * 텍스트 리포트 카드 컴포넌트
+ * 구성: 로마숫자 챕터 + 제목 + 본문 (일러스트 없는 텍스트 전용)
+ * 내용 길이만큼 카드가 펼쳐지고, 페이지 스크롤로 전체를 읽는 구조
  */
 
 interface ReportCardPageProps {
@@ -23,8 +21,6 @@ interface ReportCardPageProps {
   pageNumber: number;
   /** 전체 페이지 수 */
   totalPages: number;
-  /** doodle 일러스트 경로 (예: "/doodles/star-sparkle.svg") */
-  illustration: string;
 }
 
 // 로마숫자 변환
@@ -45,7 +41,6 @@ export function ReportCardPage({
   arrowSummary,
   pageNumber,
   totalPages,
-  illustration,
 }: ReportCardPageProps) {
   const handleShare = async () => {
     if (navigator.share) {
@@ -65,21 +60,12 @@ export function ReportCardPage({
   };
 
   return (
-    <div className="bg-white rounded-2xl border-2 border-[var(--foreground)] overflow-hidden flex flex-col h-[calc(100dvh-160px)] max-h-[750px] min-h-[500px]">
-      {/* 일러스트 (중앙) + 페이지 번호 */}
-      <div className="flex-shrink-0 pt-6 px-8 relative">
+    <div className="bg-white rounded-2xl border-2 border-[var(--foreground)] overflow-hidden flex flex-col">
+      {/* 페이지 번호 */}
+      <div className="flex-shrink-0 pt-6 px-8 relative h-10">
         <span className="absolute top-6 right-8 text-xs font-medium text-[var(--foreground)]/40 tracking-wider">
           {pageNumber} / {totalPages}
         </span>
-        <div className="flex justify-center mb-2">
-          <Image
-            src={illustration}
-            alt=""
-            width={120}
-            height={120}
-            className="opacity-80"
-          />
-        </div>
       </div>
 
       {/* 로마숫자 + subtitle + 구분선 + title */}
@@ -99,28 +85,26 @@ export function ReportCardPage({
         </h2>
       </div>
 
-      {/* 본문 — blockquote 스타일 */}
-      <div className="flex-1 px-8 py-3 overflow-hidden">
-        <div className="h-full">
-          {arrowSummary && (
-            <p
-              className="text-xs font-medium text-[var(--foreground)]/50 mb-3 italic"
-              style={{ wordBreak: 'keep-all' }}
-            >
-              → {arrowSummary}
-            </p>
-          )}
+      {/* 본문 — 내용 길이만큼 펼쳐짐 (스크롤로 읽기) */}
+      <div className="px-8 py-3">
+        {arrowSummary && (
           <p
-            className="text-[13px] leading-[1.85] text-[var(--foreground)]/70 whitespace-pre-wrap"
+            className="text-xs font-medium text-[var(--foreground)]/50 mb-3 italic"
             style={{ wordBreak: 'keep-all' }}
           >
-            {body}
+            → {arrowSummary}
           </p>
-        </div>
+        )}
+        <p
+          className="text-[15px] leading-[1.9] text-[var(--foreground)]/80 whitespace-pre-wrap"
+          style={{ wordBreak: 'keep-all' }}
+        >
+          {body}
+        </p>
       </div>
 
       {/* 하단: 공유 버튼 + 워터마크 */}
-      <div className="flex-shrink-0 px-8 pb-6 pt-2 flex flex-col items-center gap-2">
+      <div className="flex-shrink-0 px-8 pb-6 pt-4 mt-2 flex flex-col items-center gap-2">
         <button
           onClick={handleShare}
           className="inline-flex items-center gap-2 px-6 py-2.5 bg-[var(--foreground)] text-white text-sm font-medium rounded-full hover:opacity-80 transition-opacity"

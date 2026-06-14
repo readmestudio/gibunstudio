@@ -68,7 +68,6 @@ export function Phase1ReportClient({ result }: Phase1ReportClientProps) {
         arrowSummary={page.arrowSummary}
         pageNumber={page.pageNumber}
         totalPages={page.totalPages + 1} // +1 for PaymentGate
-        illustration={page.illustration}
       />
     );
   });
