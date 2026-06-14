@@ -6,12 +6,20 @@
  * 기존 IntroSection은 성취 중독 한정 카피(자기 가치 조건화·과잉 추동 등)였다.
  * 여기서는 워크북 *전반*에 적용되는 4가지 차별점을 정리한다.
  */
-const FEATURES = [
+const FEATURES: {
+  num: string;
+  title: string;
+  desc: string;
+  /** 데스크탑에서만 보여주는 앞부분 (모바일에서는 desc만 노출해 간결하게) */
+  descLead?: string;
+}[] = [
   {
     num: "01",
     title: "마음을 하나로 보지 않습니다",
+    descLead:
+      "쉬고 싶은 마음, 더 잘해야 하는 마음, 다 그만두고 싶은 마음. 내면가족체계(IFS) 관점으로 한 사람 안의 여러 부분을 하나씩 알아보고, 그 부분이 나에게 어떤 역할을 해왔는지 정리합니다. ",
     desc:
-      "쉬고 싶은 마음, 더 잘해야 하는 마음, 다 그만두고 싶은 마음. 내면가족체계(IFS) 관점으로 한 사람 안의 여러 부분을 하나씩 알아보고, 그 부분이 나에게 어떤 역할을 해왔는지 정리합니다. 퍼포먼스를 가로막는 마음을 없애야 할 원인으로 보지 않아요. 대신 우리 마음속에 존재하는 다양한 부분과 자동적인 사고를 테스트로 진단하고 분석합니다.",
+      "퍼포먼스를 가로막는 마음을 없애야 할 원인으로 보지 않아요. 대신 우리 마음속에 존재하는 다양한 부분과 자동적인 사고를 테스트로 진단하고 분석합니다.",
   },
   {
     num: "02",
@@ -50,7 +58,7 @@ export function OverviewIntroSection() {
           <p className="lr-lede lr-f-up lr-d2">
             학습지 하듯 워크북을 따라가며
             <br />
-            진단부터 분석, 다음 한 달의 다른 행동까지 받아 보세요
+            진단부터 분석, 솔루션까지 받아보세요
           </p>
         </div>
         <div className="lr-feature-list lr-f-up">
@@ -71,7 +79,12 @@ export function OverviewIntroSection() {
               </div>
               <div>
                 <h3>{f.title}</h3>
-                <p>{f.desc}</p>
+                <p>
+                  {f.descLead && (
+                    <span className="lr-only-desktop">{f.descLead}</span>
+                  )}
+                  {f.desc}
+                </p>
               </div>
             </div>
           ))}

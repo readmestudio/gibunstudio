@@ -244,6 +244,52 @@
 }
 .lr .lr-hero-inner { position: relative; z-index: 1; }
 
+/* ── 다크 히어로 + 워크북 캡처 모자이크 배경 ── */
+.lr .lr-hero.lr-hero-dark {
+  background: #0E0D0C;
+}
+/* 캡처 타일을 화면보다 크게 깔고 살짝 기울여 '벽' 느낌을 낸다. */
+.lr .lr-hero .lr-hero-shots {
+  position: absolute; inset: 0; z-index: 0;
+  overflow: hidden; pointer-events: none;
+}
+.lr .lr-hero .lr-hero-shots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-auto-rows: 150px;
+  gap: 10px;
+  /* 화면을 넘치게 키우고 살짝 회전해 잘린 가장자리를 자연스럽게 */
+  position: absolute;
+  inset: -12% -6%;
+  transform: rotate(-4deg) scale(1.08);
+  transform-origin: center;
+  opacity: 0.42;
+}
+.lr .lr-hero .lr-hero-shots-grid img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: top center;
+  border-radius: 8px;
+  /* 모노톤 톤에 맞춰 채도를 낮춘다 */
+  filter: grayscale(0.35) brightness(0.85) contrast(1.02);
+}
+/* 가운데(텍스트 위치)를 가장 어둡게 — 가독성 확보 + 가장자리 자연 페이드 */
+.lr .lr-hero.lr-hero-dark .lr-hero-shots::after {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 42%, rgba(14,13,12,0.92) 0%, rgba(14,13,12,0.72) 45%, rgba(14,13,12,0.6) 100%),
+    linear-gradient(180deg, rgba(14,13,12,0.55) 0%, rgba(14,13,12,0.2) 30%, rgba(14,13,12,0.2) 70%, #0E0D0C 100%);
+}
+/* 다크 히어로용 텍스트 색 보정 */
+.lr .lr-hero.lr-hero-dark::before { display: none; }
+.lr .lr-hero.lr-hero-dark h1 { color: #FAFAF8; }
+.lr .lr-hero.lr-hero-dark .lr-sub { color: rgba(250,250,248,0.82); }
+.lr .lr-hero.lr-hero-dark .lr-hero-chips .lr-chip {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.18);
+  color: rgba(250,250,248,0.88);
+}
+.lr .lr-hero.lr-hero-dark .lr-scroll-cue { color: rgba(250,250,248,0.55); }
+
 .lr .lr-hero h1 {
   font-size: clamp(48px, 9vw, 112px);
   line-height: 0.95;
@@ -2423,10 +2469,34 @@
   .lr .lr-sticky-cta.lr-show { transform: translateY(0); }
   .lr .lr-sticky-cta .lr-cta-pill { width: 100%; max-width: none; }
 
-  /* ── 세로 리듬 정리 ──
-   * 전체 높이가 26,000px+로 매우 길어, 모바일 대응이 빠진 큰 여백들을 축소해
-   * 섹션 간 빈 공간과 과한 스크롤을 줄인다. */
-  .lr .lr-hero { padding: 80px 0 56px; }
+  /* ── 히어로 모바일 강화 ──
+   * 군더더기(#해시태그 칩)를 덜어내고 여백·줄간격을 키워 첫 화면이 더
+   * 돋보이게 한다. 서브 카피는 좁은 폭에서 "워크북으로"가 외톨이 줄로
+   * 떨어지던 문제를, 폭에 비례한 폰트(clamp)와 넉넉한 줄간격으로 정리. */
+  .lr .lr-hero { padding: 64px 0 52px; }
+
+  .lr .lr-hero h1 {
+    /* 2줄 한국어 헤드라인이 화면을 넘지 않으면서 충분히 크게 (320~430px 대응) */
+    font-size: clamp(36px, 10.5vw, 50px);
+    line-height: 1.12;
+    margin: 24px 0 22px;
+  }
+
+  .lr .lr-hero .lr-sub {
+    /* 19px → 폭에 맞춰 축소해 의도된 3줄이 외톨이 없이 들어가도록 */
+    font-size: clamp(14.5px, 4.2vw, 17px);
+    line-height: 1.85;
+    margin: 0 auto 40px;
+    max-width: 340px;
+    text-wrap: pretty;
+  }
+
+  /* 해시태그 칩: 모바일에서 숨겨 첫 화면을 간결하게 */
+  .lr .lr-hero .lr-hero-chips { display: none; }
+
+  /* 데스크탑 전용 텍스트: 모바일에서는 숨겨 본문을 간결하게 */
+  .lr .lr-only-desktop { display: none; }
+
   .lr .lr-s-header { margin-bottom: 44px; }   /* 데스크탑 80px → 모바일 44px */
 
   /* 인용 박스(제작 비하인드 도입부): 좌우/상하 패딩 + 큰 따옴표 축소 */

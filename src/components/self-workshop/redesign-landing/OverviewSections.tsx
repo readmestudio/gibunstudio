@@ -147,8 +147,8 @@ export function OverviewMethodSection() {
           </p>
         </div>
 
-        {/* Part A — 두 이론(IFS·CBT)이 무엇인지 설명 */}
-        <div className="lr-method-grid">
+        {/* Part A — 두 이론(IFS·CBT)이 무엇인지 설명 (모바일에서는 숨김) */}
+        <div className="lr-method-grid lr-only-desktop">
           {METHODS.map((m, i) => (
             <div
               className="lr-method-card lr-f-up"
@@ -382,7 +382,7 @@ export function OverviewJourneySection() {
             <em>두 개의 축</em>을 따라갑니다
           </h2>
         </div>
-        <p className="lr-empathy lr-f-up">
+        <p className="lr-empathy lr-f-up lr-only-desktop">
           먼저 <b>진단과 분석</b>으로 지금의 나와 그 뒤의 신념을 들여다보고,
           <br />
           이어 <b>탐색과 통찰</b>로 긍정적 의도와 강점을 찾아

@@ -9,13 +9,44 @@
  * - 과거 원인 분석보다 다음 한 달의 행동에 무게
  * - 힐링/위로보다 다음 시도할 수 있는 대안에 무게
  */
+/**
+ * 히어로 배경 모자이크에 깔 워크북 실제 화면 캡처들.
+ * WorkbookScreenshotSection과 동일한 에셋을 재사용해, 텍스트 뒤로 살짝
+ * 비치는 "워크북이 가득한 벽" 같은 분위기를 만든다. (장식용 — aria-hidden)
+ */
+const HERO_BG_SHOTS = [
+  "01-self-test",
+  "02-diagnosis",
+  "03-loop",
+  "05-inner-parts",
+  "06-core-wish",
+  "07-core-belief",
+  "08-keywords",
+  "09-cascade",
+  "10-cascade-timeline",
+  "11-cycle",
+  "12-distortions",
+  "13-reshape",
+].map((name) => `/images/workbook-preview/${name}.png`);
+
 export function OverviewHero() {
+  // 빈틈 없이 채우기 위해 캡처 목록을 두 번 이어 붙인다.
+  const tiles = [...HERO_BG_SHOTS, ...HERO_BG_SHOTS];
+
   return (
-    <section className="lr-hero">
-      <div className="lr-grid-bg" />
+    <section className="lr-hero lr-hero-dark">
+      {/* 텍스트 뒤 캡처 모자이크 — 어두운 오버레이로 가독성 확보 */}
+      <div className="lr-hero-shots" aria-hidden>
+        <div className="lr-hero-shots-grid">
+          {tiles.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={`${src}-${i}`} src={src} alt="" loading="lazy" />
+          ))}
+        </div>
+      </div>
       <div className="lr-wrap-6 lr-hero-inner">
         <div className="lr-f-up">
-          <span className="lr-eyebrow">
+          <span className="lr-eyebrow lr-dark">
             <span className="lr-dot" />
             SELF · MINDFULNESS · WORKBOOK
           </span>
