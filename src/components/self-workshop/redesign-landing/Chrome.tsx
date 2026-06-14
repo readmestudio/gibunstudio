@@ -9,8 +9,8 @@ export function SoftLaunchBanner() {
     <div className="lr-softlaunch">
       <span className="lr-pulse" />
       <span>
-        <b>SOFT LAUNCH</b> · 소수 인원 대상으로 운영 중. 정식 오픈 시
-        알림과 함께 특별가를 보내드려요.
+        <b>SOFT LAUNCH</b> · 정식 오픈 시 알림과 함께 특별가를
+        보내드려요.
       </span>
     </div>
   );

@@ -13,25 +13,29 @@
  * 히어로 배경 모자이크에 깔 워크북 실제 화면 캡처들.
  * WorkbookScreenshotSection과 동일한 에셋을 재사용해, 텍스트 뒤로 살짝
  * 비치는 "워크북이 가득한 벽" 같은 분위기를 만든다. (장식용 — aria-hidden)
+ *
+ * 어두운 배경 캡처(03-loop, 11-cycle)는 다크 히어로와 섞이면 칙칙해져
+ * 제외하고, 흰 배경 캡처만 사용해 종이 같은 질감이 은은히 드러나게 한다.
  */
 const HERO_BG_SHOTS = [
   "01-self-test",
   "02-diagnosis",
-  "03-loop",
   "05-inner-parts",
   "06-core-wish",
   "07-core-belief",
   "08-keywords",
   "09-cascade",
   "10-cascade-timeline",
-  "11-cycle",
   "12-distortions",
   "13-reshape",
 ].map((name) => `/images/workbook-preview/${name}.png`);
 
 export function OverviewHero() {
-  // 빈틈 없이 채우기 위해 캡처 목록을 두 번 이어 붙인다.
-  const tiles = [...HERO_BG_SHOTS, ...HERO_BG_SHOTS];
+  // 히어로 전체 높이를 빈틈 없이 채우려면 타일이 넉넉해야 한다. 특히 세로로
+  // 긴 모바일 히어로까지 덮으려면 여유가 필요해, 10장을 7번 이어 붙여 70타일을
+  // 깐다. 실제 이미지는 10장이라 브라우저가 캐시해 네트워크 다운로드는 10번뿐.
+  // (넘치는 타일은 overflow:hidden으로 잘림)
+  const tiles = Array.from({ length: 7 }, () => HERO_BG_SHOTS).flat();
 
   return (
     <section className="lr-hero lr-hero-dark">
