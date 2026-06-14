@@ -508,7 +508,7 @@ export function PointsSection() {
             HOW IT WORKS
           </span>
           <h2 className="lr-f-up lr-d1">
-            마음 챙김 워크북은
+            심리 상담 워크북은
             <br />
             <em>이렇게 작동</em>합니다
           </h2>

@@ -44,7 +44,7 @@ export const PROGRAMS: ProgramDefinition[] = [
   },
   {
     id: "self-workshop",
-    title: "마음 챙김 워크북",
+    title: "심리 상담 워크북",
     description: "나의 마음 패턴을 이해하고, 스스로 대처법을 찾아가는 CBT 기반 셀프 워크북",
     href: "/payment/self-workshop",
     dashboardHref: "/dashboard/self-workshop",

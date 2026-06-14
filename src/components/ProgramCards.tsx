@@ -29,7 +29,7 @@ const PROGRAMS: ProgramCardData[] = [
   },
   {
     id: "self-workshop",
-    title: "직장인을 위한 마음 챙김 워크북",
+    title: "직장인을 위한 심리 상담 워크북",
     description:
       "재능은 충분한데 마음 때문에 성과가 안 나는 직장인을 위한 CBT 기반 셀프 워크북",
     href: "/payment/self-workshop",

@@ -368,12 +368,12 @@ export default async function DashboardPage() {
               </div>
             )}
 
-            {/* 마음 챙김 워크북 */}
+            {/* 심리 상담 워크북 */}
             {workshopState && (
               <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-base font-semibold text-[var(--foreground)]">
-                    마음 챙김 워크북
+                    심리 상담 워크북
                   </h3>
                   <StatusBadge text={workshopState.badge} />
                 </div>

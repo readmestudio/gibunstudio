@@ -1,4 +1,4 @@
-// 마음챙김 워크북 대기신청 설문 — 선택지 정의.
+// 심리 상담 워크북 대기신청 설문 — 선택지 정의.
 // DB(workbook_waitlist)와 폼/검증 양쪽에서 같은 id를 쓰도록 단일 출처로 관리한다.
 
 export interface ChoiceOption {

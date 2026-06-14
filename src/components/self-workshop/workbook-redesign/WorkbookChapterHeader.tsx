@@ -70,7 +70,7 @@ export function WorkbookChapterHeader({
         style={{ gap: 16, marginBottom: 24 }}
       >
         <MonoTag size={11} tracking={0.18}>
-          WORKBOOK · 성취 중독 마음챙김
+          WORKBOOK · 성취 중독 심리 상담
         </MonoTag>
         <span
           aria-hidden="true"

@@ -7,7 +7,7 @@ import { THERAPY_COMPARISON_ROWS } from "./content";
  * [03] 상담 vs 워크북 비교 — 좌우 카드 대비
  *
  * 좌측: 일반 상담 (흐린 톤, X 마커)
- * 우측: 마음 챙김 워크북 (검정 fill + 흰 글자, ✓ 마커) — 시각적 강조
+ * 우측: 심리 상담 워크북 (검정 fill + 흰 글자, ✓ 마커) — 시각적 강조
  * 사이: 화살표 (모바일↓ / 데스크톱→)
  */
 export function StoreTherapyCompareSection() {
@@ -43,10 +43,10 @@ export function StoreTherapyCompareSection() {
           <ArrowMark />
         </div>
 
-        {/* 우측 — 마음 챙김 워크북 (After, 강조) */}
+        {/* 우측 — 심리 상담 워크북 (After, 강조) */}
         <ComparisonCard
-          eyebrow="마음 챙김 워크북과 함께"
-          title="마음 챙김 워크북"
+          eyebrow="심리 상담 워크북과 함께"
+          title="심리 상담 워크북"
           isPositive
           rows={THERAPY_COMPARISON_ROWS.map((r) => ({
             label: r.label,

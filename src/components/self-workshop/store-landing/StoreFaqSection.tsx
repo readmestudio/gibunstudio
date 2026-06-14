@@ -71,7 +71,7 @@ export function StoreFaqSection() {
       </ul>
 
       <p className="mt-8 text-center text-xs text-[var(--foreground)]/50 break-keep">
-        * 마음 챙김 워크북은 치료 목적이 아니며, 진단을 받은 경우 전문의 상담을 병행하시길
+        * 심리 상담 워크북은 치료 목적이 아니며, 진단을 받은 경우 전문의 상담을 병행하시길
         권합니다.
       </p>
     </section>

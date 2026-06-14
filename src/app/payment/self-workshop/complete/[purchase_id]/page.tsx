@@ -49,7 +49,7 @@ export default async function WorkshopPaymentCompletePage({ params }: Props) {
         결제가 완료되었습니다
       </h1>
       <p className="mt-3 text-sm text-[var(--foreground)]/60">
-        마음 챙김 워크북이 준비되었어요.
+        심리 상담 워크북이 준비되었어요.
         <br />
         지금 바로 시작해보세요.
       </p>

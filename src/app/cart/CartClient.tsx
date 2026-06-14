@@ -200,7 +200,7 @@ export function CartClient({ initialItems }: CartClientProps) {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-[var(--foreground)]/50 mb-1">
-                    {item.category === "workbook" ? "마음 챙김 워크북" : item.category}
+                    {item.category === "workbook" ? "심리 상담 워크북" : item.category}
                   </p>
                   <p className="text-base font-bold text-[var(--foreground)] mb-1 break-keep">
                     {item.name}

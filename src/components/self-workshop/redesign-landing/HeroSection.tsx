@@ -17,7 +17,7 @@ export function HeroSection() {
         <h1 className="lr-f-blur">
           비즈니스 퍼포먼스를 위한
           <br />
-          <span className="lr-accent-word">마음 챙김</span> 워크북
+          <span className="lr-accent-word">심리 상담</span> 워크북
         </h1>
         <p className="lr-sub lr-f-up lr-d1">
           비즈니스 퍼포먼스를 위한 라이팅 테라피
@@ -165,7 +165,7 @@ export function BigQuestionSection() {
             상담을 대신할 수 있는 워크북은 없을까?
           </h3>
           <div className="lr-footnote">
-            마음 챙김 워크북은 이 질문으로부터 시작되었습니다.
+            심리 상담 워크북은 이 질문으로부터 시작되었습니다.
           </div>
         </div>
       </div>

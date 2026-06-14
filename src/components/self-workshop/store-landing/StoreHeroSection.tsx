@@ -22,7 +22,7 @@ export function StoreHeroSection() {
       <h1 className="text-center text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.25] text-[var(--foreground)] break-keep">
         직장인을 위한
         <br />
-        마음 챙김 워크북
+        심리 상담 워크북
       </h1>
 
       <p className="mt-6 text-center text-base sm:text-lg leading-relaxed text-[var(--foreground)]/70 break-keep">
@@ -124,7 +124,7 @@ export function StoreHeroSection() {
           {" "}상담을 대신할 수 있는 워크북은 없을까?
         </p>
         <p className="mt-6 sm:mt-7 text-sm sm:text-base leading-relaxed text-white/60 break-keep">
-          마음 챙김 워크북은 이 질문으로부터 시작되었습니다.
+          심리 상담 워크북은 이 질문으로부터 시작되었습니다.
         </p>
       </div>
     </section>

@@ -24,8 +24,8 @@ import {
 } from "@/lib/self-workshop/landing-data";
 
 const PRODUCT_ID = "achievement-addiction";
-const PRODUCT_NAME = "마음 챙김 워크북 · 성취 중독";
-const GOODS_NAME = "마음 챙김 워크북 - 성취 중독";
+const PRODUCT_NAME = "심리 상담 워크북 · 성취 중독";
+const GOODS_NAME = "심리 상담 워크북 - 성취 중독";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =

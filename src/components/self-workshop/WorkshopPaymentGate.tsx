@@ -30,8 +30,8 @@ import { AddictionCycleDiagram } from "@/components/self-workshop/AddictionCycle
 import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 
 const PRODUCT_ID = "achievement-addiction";
-const PRODUCT_NAME = "마음 챙김 워크북 · 성취 중독";
-const GOODS_NAME = "마음 챙김 워크북 - 성취 중독";
+const PRODUCT_NAME = "심리 상담 워크북 · 성취 중독";
+const GOODS_NAME = "심리 상담 워크북 - 성취 중독";
 
 interface Props {
   scores?: DiagnosisScores;

@@ -244,7 +244,7 @@ export function TestimonialsSection() {
             먼저 해본 분들의 <em>후기</em>
           </h2>
           <p className="lr-lede lr-f-up lr-d2">
-            마음 챙김 워크북을 통해 변화된 후기를 만나 보세요
+            심리 상담 워크북을 통해 변화된 후기를 만나 보세요
           </p>
         </div>
         <div className="lr-testi-grid">

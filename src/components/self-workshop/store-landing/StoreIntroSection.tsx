@@ -1,7 +1,7 @@
 import { SOLUTION_HIGHLIGHTS } from "./content";
 
 /**
- * [02] 마음챙김 워크북 소개 — 한 줄 정의 + 3줄 요약
+ * [02] 심리 상담 워크북 소개 — 한 줄 정의 + 3줄 요약
  *
  * 공감이 아니라 '해결'에 초점. 제품의 기능적 가치가 한눈에 들어오도록.
  */
@@ -21,7 +21,7 @@ export function StoreIntroSection() {
 
       {/* 메인 제목 (제품명) */}
       <h2 className="mt-3 text-center text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.25] text-[var(--foreground)] break-keep">
-        마음 챙김 워크북
+        심리 상담 워크북
       </h2>
 
       {/* 사용 방식 한 줄 — 박스 강조 */}

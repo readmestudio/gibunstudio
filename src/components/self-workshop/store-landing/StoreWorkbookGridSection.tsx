@@ -24,7 +24,7 @@ export function StoreWorkbookGridSection() {
 
       {/* 월간 큐레이션 헤드라인 */}
       <h2 className="text-center text-2xl sm:text-3xl md:text-4xl font-bold leading-[1.35] text-[var(--foreground)] break-keep">
-        5월의 마음 챙김 워크북은
+        5월의 심리 상담 워크북은
         <br />
         &lsquo;성취 중독자&rsquo;들을 위한 워크북입니다
       </h2>

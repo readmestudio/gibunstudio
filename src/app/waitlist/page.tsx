@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { WaitlistForm } from "@/components/waitlist/WaitlistForm";
 
 export const metadata: Metadata = {
-  title: "마음챙김 워크북 대기신청 | GIBUN",
+  title: "심리 상담 워크북 대기신청 | GIBUN",
   description:
     "1급 심리상담사와 명상 디렉터가 만든 심리상담 워크북. 대기자 전용 최저가 할인 쿠폰과 정식 출시 소식을 가장 먼저 받아보세요.",
 };
@@ -17,7 +17,7 @@ export default function WaitlistPage() {
             1급 심리상담사 · 명상 디렉터가 만든 심리상담 워크북
           </p>
           <h1 className="text-3xl font-bold leading-tight text-[var(--foreground)] sm:text-4xl">
-            마음챙김 워크북,
+            심리 상담 워크북,
             <br />
             가장 먼저 만나보세요
           </h1>

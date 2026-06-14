@@ -86,7 +86,7 @@ export default async function SelfWorkshopDashboardPage() {
               워크북을 시작하세요
             </h2>
             <p className="mt-2 text-sm text-[var(--foreground)]/70">
-              마음 챙김 워크북을 구매하면 워크북을 진행할 수 있습니다.
+              심리 상담 워크북을 구매하면 워크북을 진행할 수 있습니다.
             </p>
             <Link
               href="/payment/self-workshop"

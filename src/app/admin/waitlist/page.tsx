@@ -281,7 +281,7 @@ export default async function AdminWaitlistPage() {
               워크북 대기신청
             </h1>
             <p className="mt-2 text-sm text-[var(--foreground)]/60">
-              마음챙김 워크북 대기신청 내역을 최신순으로 확인하실 수 있어요.
+              심리 상담 워크북 대기신청 내역을 최신순으로 확인하실 수 있어요.
             </p>
           </div>
           <Link

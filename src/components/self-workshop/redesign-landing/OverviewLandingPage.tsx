@@ -34,7 +34,7 @@ import {
 import { WorkshopNotifyProvider } from "./WorkshopNotifyContext";
 
 /**
- * `/payment/self-workshop` — 마음 챙김 워크북 *전반* 상세 페이지.
+ * `/payment/self-workshop` — 심리 상담 워크북 *전반* 상세 페이지.
  *
  * 같은 디자인 언어(lr-* CSS, fade-in 모션)를 유지하면서, 성취 중독 한정
  * 콘텐츠(MaySection·CycleSection·기존 TestimonialsSection·PointsSection의

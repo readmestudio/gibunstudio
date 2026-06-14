@@ -132,7 +132,7 @@ export const WORKSHOP_COMPARISON = {
     ],
   },
   workbook: {
-    label: "마음 챙김 워크북",
+    label: "심리 상담 워크북",
     summary: "진단 → 실습 → 실전 적용까지",
     points: [
       "직접 써 내려가는 라이팅 테라피로 마음이 정리됩니다",
