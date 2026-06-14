@@ -1,4 +1,3 @@
-import { getDemoWorkshopResult } from "@/lib/self-workshop/getDemoWorkshopResult";
 import { OverviewLandingPage } from "./redesign-landing/OverviewLandingPage";
 
 /**
@@ -8,7 +7,6 @@ import { OverviewLandingPage } from "./redesign-landing/OverviewLandingPage";
  * 공통 커리큘럼을 안내한다. 개별 워크북 상세는 하위 경로에서 다룬다.
  *  - 성취 중독 → `/payment/self-workshop/achievement-addiction`
  */
-export async function WorkbookOverviewPage() {
-  const demoResult = await getDemoWorkshopResult();
-  return <OverviewLandingPage demoResult={demoResult} />;
+export function WorkbookOverviewPage() {
+  return <OverviewLandingPage />;
 }

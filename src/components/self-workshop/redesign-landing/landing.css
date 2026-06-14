@@ -836,6 +836,7 @@
 }
 .lr .lr-cycle-section .lr-empathy b { color: var(--lr-ink); font-weight: 700; }
 
+/* ── 원형 순환 도식 (CycleSection — 성취 중독 순환) ── */
 .lr .lr-cycle-diagram {
   position: relative;
   width: 580px; height: 580px;
@@ -930,6 +931,199 @@
 
 .lr .lr-cycle-list { display: none; flex-direction: column; gap: 10px; }
 @media (max-width: 600px) { .lr .lr-cycle-list { display: flex; } }
+
+/* ── 두 축 트랙 도식 (진단과 분석 / 탐색과 통찰) ── */
+.lr .lr-track-diagram {
+  display: flex; align-items: stretch; justify-content: center;
+  gap: 0; margin: 0 auto; max-width: 920px;
+}
+@media (max-width: 720px) { .lr .lr-track-diagram { display: none; } }
+
+.lr .lr-track-col {
+  flex: 1 1 0; max-width: 380px;
+  border: 1.5px solid var(--lr-line);
+  border-radius: 24px;
+  padding: 28px 26px 30px;
+  background: var(--lr-paper);
+  transition: border-color .6s ease, box-shadow .6s ease, transform .6s ease;
+}
+.lr .lr-track-col.lr-track-on {
+  transform: translateY(-6px);
+}
+.lr .lr-track-ink.lr-track-on {
+  border-color: var(--lr-ink);
+  box-shadow: 0 34px 80px -30px rgba(10,10,11,0.32);
+}
+.lr .lr-track-warm.lr-track-on {
+  border-color: var(--lr-accent);
+  box-shadow: 0 34px 80px -28px var(--lr-accent-glow);
+}
+
+.lr .lr-track-head {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 4px; padding-bottom: 20px; margin-bottom: 22px;
+  border-bottom: 1px solid var(--lr-line-2);
+}
+.lr .lr-track-axis {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.16em;
+  color: var(--lr-mute);
+  transition: color .6s ease;
+}
+.lr .lr-track-ink.lr-track-on .lr-track-axis { color: var(--lr-ink); }
+.lr .lr-track-warm.lr-track-on .lr-track-axis { color: var(--lr-accent); }
+.lr .lr-track-label {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--lr-ink);
+}
+.lr .lr-track-en {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--lr-mute-2);
+}
+
+.lr .lr-track-rail {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.lr .lr-track-node {
+  display: grid; grid-template-columns: 44px 1fr; gap: 14px;
+  align-items: center;
+  padding: 12px 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  transition: background .5s ease, border-color .5s ease, transform .5s ease;
+}
+.lr .lr-track-node.lr-active {
+  border-color: var(--lr-line);
+  background: var(--lr-line-3);
+  transform: translateX(4px);
+}
+.lr .lr-track-warm .lr-track-node.lr-active {
+  border-color: var(--lr-accent-soft);
+  background: var(--lr-accent-bg);
+}
+.lr .lr-track-node .lr-tnum {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff;
+  border: 1.5px solid var(--lr-line);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 700; color: var(--lr-mute);
+  transition: background .5s ease, color .5s ease, border-color .5s ease, transform .5s ease;
+}
+.lr .lr-track-ink .lr-track-node.lr-active .lr-tnum {
+  background: var(--lr-ink); color: #fff; border-color: var(--lr-ink);
+  transform: scale(1.08);
+}
+.lr .lr-track-warm .lr-track-node.lr-active .lr-tnum {
+  background: var(--lr-grad-warm); color: #fff; border-color: transparent;
+  transform: scale(1.08);
+}
+.lr .lr-track-node .lr-tbody { display: flex; flex-direction: column; gap: 3px; }
+.lr .lr-track-node .lr-ttitle {
+  font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--lr-ink-soft);
+  transition: color .5s ease;
+}
+.lr .lr-track-node.lr-active .lr-ttitle { color: var(--lr-ink); }
+.lr .lr-track-node .lr-tdesc {
+  font-size: 12px; line-height: 1.45; color: var(--lr-mute);
+}
+
+.lr .lr-track-bridge {
+  flex: 0 0 64px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; gap: 8px;
+}
+.lr .lr-track-bridge .lr-bridge-line {
+  width: 100%; height: 1.5px;
+  background: var(--lr-line);
+  position: relative; overflow: hidden;
+}
+.lr .lr-track-bridge .lr-bridge-line::after {
+  content: ""; position: absolute; inset: 0;
+  background: var(--lr-grad-warm);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .7s cubic-bezier(0.22,1,0.36,1);
+}
+.lr .lr-track-bridge.lr-bridge-on .lr-bridge-line::after { transform: scaleX(1); }
+.lr .lr-track-bridge .lr-bridge-arrow {
+  font-size: 22px; font-weight: 700; line-height: 1;
+  color: var(--lr-mute-2);
+  transition: color .6s ease, transform .6s ease;
+}
+.lr .lr-track-bridge.lr-bridge-on .lr-bridge-arrow {
+  color: var(--lr-accent); transform: translateX(3px);
+}
+.lr .lr-track-bridge .lr-bridge-caption {
+  position: absolute; bottom: -26px; white-space: nowrap;
+  font-size: 10.5px; font-weight: 600; letter-spacing: -0.01em;
+  color: var(--lr-mute);
+}
+
+/* 모바일 리스트 (그룹 헤더 + 단계) */
+.lr .lr-track-list { display: none; flex-direction: column; gap: 22px; }
+@media (max-width: 720px) { .lr .lr-track-list { display: flex; } }
+.lr .lr-track-list-group { display: flex; flex-direction: column; gap: 10px; }
+.lr .lr-track-list-head {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px;
+}
+.lr .lr-track-list-head .lr-track-axis { font-size: 11px; }
+.lr .lr-track-list-head .lr-track-label { font-size: 18px; }
+.lr .lr-track-warm .lr-track-list-head .lr-track-axis { color: var(--lr-accent); }
+
+/* ── 두 축의 결과 (그래서 얻는 것) ── */
+.lr .lr-journey-outcome {
+  display: flex; flex-direction: column; align-items: center;
+  margin-top: 28px;
+}
+.lr .lr-journey-outcome .lr-outcome-connector {
+  width: 1.5px; height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--lr-accent-3));
+}
+.lr .lr-journey-outcome .lr-outcome-chev {
+  font-size: 18px; line-height: 1; color: var(--lr-accent);
+  margin: -2px 0 14px;
+  animation: lrOutcomeBob 2.4s ease-in-out infinite;
+}
+@keyframes lrOutcomeBob {
+  0%, 100% { transform: translateY(0); opacity: .65; }
+  50% { transform: translateY(4px); opacity: 1; }
+}
+.lr .lr-journey-outcome .lr-outcome-card {
+  width: 100%; max-width: 720px;
+  border: 1.5px solid var(--lr-accent-soft);
+  border-radius: 22px;
+  background: var(--lr-accent-bg);
+  padding: 34px 40px;
+  text-align: center;
+  box-shadow: 0 30px 70px -32px var(--lr-accent-glow);
+}
+.lr .lr-journey-outcome .lr-outcome-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  color: var(--lr-accent);
+  margin-bottom: 16px;
+}
+.lr .lr-journey-outcome .lr-outcome-eyebrow .lr-dot {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--lr-accent);
+}
+.lr .lr-journey-outcome .lr-outcome-text {
+  font-size: clamp(20px, 2.6vw, 27px);
+  font-weight: 800; letter-spacing: -0.025em;
+  line-height: 1.5; color: var(--lr-ink);
+}
+.lr .lr-journey-outcome .lr-outcome-text b { font-weight: 800; }
+.lr .lr-journey-outcome .lr-outcome-text em {
+  font-style: normal;
+  background: var(--lr-grad-warm);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@media (max-width: 600px) {
+  .lr .lr-journey-outcome .lr-outcome-card { padding: 26px 22px; }
+}
 .lr .lr-cycle-list-item {
   border: 1px solid var(--lr-line);
   border-radius: 14px;
@@ -1559,24 +1753,56 @@
   line-height: 1.6; margin: 10px 0 14px; letter-spacing: -0.005em;
 }
 .lr .lr-counsel-desc b { color: rgba(255,255,255,0.92); font-weight: 700; }
-.lr .lr-counsel-price {
-  display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px;
+/* 구성 가치 분해 표 (강조 카드: 워크북 + 상담 정가 합산) */
+.lr .lr-value-rows {
+  margin: 0 0 22px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+.lr .lr-value-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px; padding: 13px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.lr .lr-vr-label {
+  display: flex; flex-direction: column; gap: 3px;
+  font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.92);
+  letter-spacing: -0.01em;
+}
+.lr .lr-vr-label small {
+  font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.5);
+  letter-spacing: -0.005em;
+}
+.lr .lr-vr-price {
   font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
+  font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.85);
+  white-space: nowrap;
 }
-.lr .lr-counsel-strike {
-  font-size: 16px; color: rgba(255,255,255,0.4);
-  text-decoration: line-through; letter-spacing: 0.01em;
+.lr .lr-value-row.lr-value-sum .lr-vr-label {
+  font-size: 14px; color: rgba(255,255,255,0.6);
+  letter-spacing: 0.01em;
 }
-.lr .lr-counsel-arrow { color: rgba(255,255,255,0.5); font-size: 14px; }
-.lr .lr-counsel-now {
-  font-size: 24px; font-weight: 800; color: var(--lr-accent-2);
-  letter-spacing: -0.02em;
+.lr .lr-vr-strike {
+  text-decoration: line-through; color: rgba(255,255,255,0.45);
+  font-weight: 600;
 }
-.lr .lr-counsel-tag {
+
+/* 묶음 할인가 — 카드에서 단 하나의 큰 숫자 */
+.lr .lr-bundle-price { margin: 0 0 24px; }
+.lr .lr-bundle-label {
+  display: block; font-size: 13px; font-weight: 700;
+  color: var(--lr-accent-2); letter-spacing: 0.01em;
+  margin-bottom: 4px;
+}
+.lr .lr-bundle-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.lr .lr-price-card.lr-dark .lr-bundle-row .lr-big-price { margin: 0; }
+.lr .lr-save-tag {
   font-family: 'Pretendard', sans-serif;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.02em;
   color: #fff; background: var(--lr-accent);
-  padding: 3px 8px; border-radius: 999px; align-self: center;
+  padding: 6px 12px; border-radius: 999px;
+  white-space: nowrap;
 }
 
 .lr .lr-price-foot {
@@ -1819,6 +2045,13 @@
   line-height: 1.45; margin: 0;
 }
 .lr .lr-trust-h b { color: var(--lr-accent-2); font-weight: 800; }
+.lr .lr-trust-sub {
+  font-size: 15px; line-height: 1.7; letter-spacing: -0.01em;
+  color: rgba(255,255,255,0.72); margin: 14px 0 0; font-weight: 500;
+}
+@media (max-width: 800px) {
+  .lr .lr-trust-sub { font-size: 14px; }
+}
 /* 제작자 2인 프로필 (이름 + 자격 이력) */
 .lr .lr-trust-profiles {
   display: grid; grid-template-columns: 1fr; gap: 0;

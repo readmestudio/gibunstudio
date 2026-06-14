@@ -1,7 +1,5 @@
 "use client";
 
-import type { DemoWorkshopResult } from "@/lib/self-workshop/getDemoWorkshopResult";
-
 import "./landing.css";
 
 import {
@@ -28,8 +26,11 @@ import {
   PricingSection,
   PrivacySection,
 } from "./RestSections";
-import { SlideshowWrap } from "./SlideshowWrap";
 import { useFadeIn } from "./useFadeIn";
+import {
+  WorkbookScreenshotSection,
+  WorkbookScreenshotStrip,
+} from "./WorkbookScreenshotSection";
 import { WorkshopNotifyProvider } from "./WorkshopNotifyContext";
 
 /**
@@ -44,11 +45,7 @@ import { WorkshopNotifyProvider } from "./WorkshopNotifyContext";
  * - 과거 원인보다 다음 한 달의 행동
  * - 힐링/위로보다 다음 시도할 수 있는 대안
  */
-export function OverviewLandingPage({
-  demoResult,
-}: {
-  demoResult: DemoWorkshopResult | null;
-}) {
+export function OverviewLandingPage() {
   useFadeIn();
 
   return (
@@ -56,7 +53,7 @@ export function OverviewLandingPage({
       <div className="lr">
         <SoftLaunchBanner />
         <OverviewHero />
-        <SlideshowWrap demoResult={demoResult} />
+        <WorkbookScreenshotSection />
         <ProblemsSection />
         <OverviewBigQuestion />
         <OverviewIntroSection />
@@ -65,9 +62,9 @@ export function OverviewLandingPage({
         <Divider />
         <OverviewMethodSection />
         <OverviewJourneySection />
+        <WorkbookScreenshotStrip />
         <OverviewApproachSection />
         <OverviewLineupSection />
-        <SlideshowWrap demoResult={demoResult} />
         <PricingSection />
         <OverviewPointsSection />
         <PrivacySection />

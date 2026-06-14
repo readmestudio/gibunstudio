@@ -169,10 +169,13 @@ export function OverviewMethodSection() {
           ))}
         </div>
 
-        {/* Part B — 1급 심리 상담사 신뢰 배너 */}
-        <div className="lr-trust-band lr-f-up lr-d1">
+        {/* Part B — 1급 심리 상담사 신뢰 배너
+            주의: 배너 전체를 lr-f-up으로 묶으면 요소가 뷰포트보다 길어
+            IntersectionObserver의 threshold(0.18)에 도달하지 못해 영영 등장하지
+            않는다. 배너는 항상 보이게 두고 내부 요소만 개별 fade-in 처리. */}
+        <div className="lr-trust-band">
           <div className="lr-trust-grid-bg" />
-          <div className="lr-trust-head">
+          <div className="lr-trust-head lr-f-up">
             <span className="lr-trust-badge">
               <svg
                 width="20"
@@ -191,15 +194,24 @@ export function OverviewMethodSection() {
             <div>
               <div className="lr-trust-eyebrow">CLINICALLY DESIGNED</div>
               <h3 className="lr-trust-h">
-                검증된 이론을 <b>상담 현장의 순서</b> 그대로
+                회사 생활을 치열하게 해본 사람이
                 <br />
-                워크북 한 권에 옮겼습니다
+                제대로 <b>이해하고 상담</b>할 수 있을까요?
               </h3>
+              <p className="lr-trust-sub">
+                11년간 비즈니스를 성장시킨 명상 디렉터와
+                <br />
+                12년간 임상을 경험한 상담가가 만났습니다.
+              </p>
             </div>
           </div>
           <div className="lr-trust-profiles">
-            {CREATORS.map((c) => (
-              <div className="lr-trust-profile" key={c.name}>
+            {CREATORS.map((c, i) => (
+              <div
+                className="lr-trust-profile lr-f-up"
+                key={c.name}
+                style={{ transitionDelay: `${0.1 + i * 0.1}s` }}
+              >
                 <div className="lr-tp-head">
                   <div className="lr-tp-photo">
                     <Image
@@ -232,94 +244,122 @@ export function OverviewMethodSection() {
 }
 
 /* ============================================================
- * JourneySection — 워크북 공통 5단계 여정 (CycleSection 자리)
- * 순환 사이클(성취중독)이 아닌, "지금→다음 한 달"로 향하는 5단계 흐름
+ * JourneySection — 워크북 공통 여정 (CycleSection 자리)
+ * 두 개의 축으로 구성: ①진단과 분석 ②탐색과 통찰
+ * 각 축 안에 3단계씩, 강조 하이라이트가 6단계를 순회하는 모션
  * ============================================================ */
-const JOURNEY_NODES = [
+const JOURNEY_PHASES = [
   {
-    n: "01",
-    title: "지금의 나 진단",
-    desc: "자가 보고식 척도로 현재 상태 측정",
+    key: "A",
+    axis: "AXIS 01",
+    label: "진단과 분석",
+    en: "DIAGNOSE & ANALYZE",
+    tone: "ink" as const,
+    nodes: [
+      { n: "01", title: "진단 테스트", desc: "자가 보고식 척도로 현재 상태 측정" },
+      { n: "02", title: "내면 가족 시스템(IFS)", desc: "내 안의 여러 부분을 하나씩 만나기" },
+      { n: "03", title: "핵심 신념 발견", desc: "행동 뒤에서 작동하는 핵심 믿음 추적" },
+    ],
   },
   {
-    n: "02",
-    title: "안의 부분 만나기",
-    desc: "내 안의 여러 마음을 하나씩 알아보기",
-  },
-  {
-    n: "03",
-    title: "반복되는 신념 찾기",
-    desc: "행동 뒤에서 작동하는 핵심 믿음 추적",
-  },
-  {
-    n: "04",
-    title: "다른 가능성 그리기",
-    desc: "지금까지와 다른 반응·해석·선택의 시뮬레이션",
-  },
-  {
-    n: "05",
-    title: "다음 한 달 행동 계획",
-    desc: "구체적 DO & DON'T로 일상에 옮기기",
+    key: "B",
+    axis: "AXIS 02",
+    label: "탐색과 통찰",
+    en: "EXPLORE & INSIGHT",
+    tone: "warm" as const,
+    nodes: [
+      { n: "04", title: "긍정 의도 도출", desc: "그 반응이 지키려 했던 진짜 의도 찾기" },
+      { n: "05", title: "강점 발견", desc: "패턴 속에 숨어 있던 나의 자원 확인" },
+      { n: "06", title: "실전 전략 · 전체 리포트", desc: "구체적 행동 지침과 통합 리포트 제공" },
+    ],
   },
 ];
 
-const JOURNEY_POSITIONS = [
-  { top: "12%", left: "50%" },
-  { top: "32%", left: "88%" },
-  { top: "75%", left: "75%" },
-  { top: "75%", left: "25%" },
-  { top: "32%", left: "12%" },
-];
+const JOURNEY_TOTAL = JOURNEY_PHASES.reduce((s, p) => s + p.nodes.length, 0);
+
+function JourneyPhaseColumn({
+  phase,
+  phaseIndex,
+  active,
+}: {
+  phase: (typeof JOURNEY_PHASES)[number];
+  phaseIndex: number;
+  active: number;
+}) {
+  const activePhase = active < phase.nodes.length ? 0 : 1;
+  return (
+    <div
+      className={`lr-track-col lr-track-${phase.tone} ${
+        activePhase === phaseIndex ? "lr-track-on" : ""
+      }`}
+    >
+      <div className="lr-track-head">
+        <span className="lr-track-axis">{phase.axis}</span>
+        <span className="lr-track-label">{phase.label}</span>
+        <span className="lr-track-en">{phase.en}</span>
+      </div>
+      <div className="lr-track-rail">
+        {phase.nodes.map((node, ni) => {
+          const flatIdx = phaseIndex * phase.nodes.length + ni;
+          return (
+            <div
+              key={node.n}
+              className={`lr-track-node ${active === flatIdx ? "lr-active" : ""}`}
+            >
+              <span className="lr-tnum">{node.n}</span>
+              <span className="lr-tbody">
+                <span className="lr-ttitle">{node.title}</span>
+                <span className="lr-tdesc">{node.desc}</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function JourneyDiagram() {
   const [active, setActive] = useState(0);
   useEffect(() => {
     const timer = setInterval(
-      () => setActive((a) => (a + 1) % JOURNEY_NODES.length),
-      1800,
+      () => setActive((a) => (a + 1) % JOURNEY_TOTAL),
+      1600,
     );
     return () => clearInterval(timer);
   }, []);
+  const onSecondAxis = active >= JOURNEY_PHASES[0].nodes.length;
   return (
-    <div className="lr-cycle-diagram lr-f-up">
-      <div className="lr-cycle-ring-2" />
-      <div className="lr-cycle-ring" />
-      <div className="lr-cycle-center">
-        <div className="lr-core">
-          <div className="lr-core-inner">
-            <div className="lr-label">5단계</div>
-            <div className="lr-label-2">JOURNEY</div>
-          </div>
-        </div>
+    <div className="lr-track-diagram lr-f-up">
+      <JourneyPhaseColumn phase={JOURNEY_PHASES[0]} phaseIndex={0} active={active} />
+      <div className={`lr-track-bridge ${onSecondAxis ? "lr-bridge-on" : ""}`}>
+        <span className="lr-bridge-line" />
+        <span className="lr-bridge-arrow">→</span>
+        <span className="lr-bridge-caption">분석을 통찰로</span>
       </div>
-      {JOURNEY_NODES.map((node, i) => (
-        <div
-          key={node.n}
-          className={`lr-cycle-node ${active === i ? "lr-active" : ""}`}
-          style={{
-            top: JOURNEY_POSITIONS[i].top,
-            left: JOURNEY_POSITIONS[i].left,
-          }}
-        >
-          <div className="lr-ndot">{node.n}</div>
-          <div className="lr-ntitle">{node.title}</div>
-          <div className="lr-ndesc">{node.desc}</div>
-        </div>
-      ))}
+      <JourneyPhaseColumn phase={JOURNEY_PHASES[1]} phaseIndex={1} active={active} />
     </div>
   );
 }
 
 function JourneyList() {
   return (
-    <div className="lr-cycle-list">
-      {JOURNEY_NODES.map((node) => (
-        <div className="lr-cycle-list-item" key={node.n}>
-          <div className="lr-lnum">{node.n}</div>
-          <div>
-            <div className="lr-ltitle">{node.title}</div>
-            <div className="lr-ldesc">{node.desc}</div>
+    <div className="lr-track-list">
+      {JOURNEY_PHASES.map((phase) => (
+        <div className={`lr-track-list-group lr-track-${phase.tone}`} key={phase.key}>
+          <div className="lr-track-list-head">
+            <span className="lr-track-axis">{phase.axis}</span>
+            <span className="lr-track-label">{phase.label}</span>
           </div>
+          {phase.nodes.map((node) => (
+            <div className="lr-cycle-list-item" key={node.n}>
+              <div className="lr-lnum">{node.n}</div>
+              <div>
+                <div className="lr-ltitle">{node.title}</div>
+                <div className="lr-ldesc">{node.desc}</div>
+              </div>
+            </div>
+          ))}
         </div>
       ))}
     </div>
@@ -339,20 +379,35 @@ export function OverviewJourneySection() {
           <h2 className="lr-f-up lr-d1">
             어떤 주제의 워크북이든
             <br />
-            <em>같은 5단계 여정</em>을 따라갑니다
+            <em>두 개의 축</em>을 따라갑니다
           </h2>
         </div>
         <p className="lr-empathy lr-f-up">
-          <b>진단</b>에서 시작해 나의 퍼포먼스를 가로막는 <b>부분들</b>을 분석하고,
+          먼저 <b>진단과 분석</b>으로 지금의 나와 그 뒤의 신념을 들여다보고,
           <br />
-          실제 상담처럼 <b>문답</b>을 통해 개선점과 행동 지침을 도출한
+          이어 <b>탐색과 통찰</b>로 긍정적 의도와 강점을 찾아
           <br />
-          <b>최종 리포트</b>가 제공됩니다.
+          <b>실전 전략과 전체 리포트</b>까지 이어집니다.
         </p>
         <JourneyDiagram />
         <JourneyList />
+        <div className="lr-journey-outcome lr-f-up">
+          <span className="lr-outcome-connector" />
+          <span className="lr-outcome-chev">↓</span>
+          <div className="lr-outcome-card">
+            <span className="lr-outcome-eyebrow">
+              <span className="lr-dot" />
+              워크북을 마치고 나면
+            </span>
+            <p className="lr-outcome-text">
+              퍼포먼스를 망치는 <b>요인을 덜어내고</b>,
+              <br />
+              더 높은 <em>몰입과 퍼포먼스</em>를 낼 수 있습니다.
+            </p>
+          </div>
+        </div>
         <div className="lr-cycle-conclusion lr-f-up">
-          상담사가 따라가는 흐름을 워크북이 <b>한 단계씩 안내</b>합니다.
+          상담사가 따라가는 흐름을 워크북이 <b>두 축으로 안내</b>합니다.
           매번 같은 자리에 머무르지 않도록.
         </div>
       </div>

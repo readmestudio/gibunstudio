@@ -53,7 +53,7 @@ export function PricingSection() {
               ))}
             </div>
             <a className="lr-cta-pill lr-cta-ghost" href="/waitlist">
-              워크북만 신청하기
+              워크북만 대기신청하기
               <span className="lr-arrow">→</span>
             </a>
           </div>
@@ -63,29 +63,52 @@ export function PricingSection() {
             <div className="lr-badge">BEST · 심리 상담 포함</div>
             <div className="lr-ptag">WORKBOOK + 1:1 상담</div>
             <h3>워크북 + 심리 상담</h3>
-            <div className="lr-big-price">₩129,000</div>
-            <p className="lr-pdesc lr-pdesc-w">
-              워크북 전 과정에, 1급 심리 상담사의 1:1 상담까지 함께.
-            </p>
-            {/* 상담 하이라이트 박스 */}
+
+            {/* 구성 가치 분해 — 정가가 199,000원임을 한눈에 */}
+            <div className="lr-value-rows">
+              <div className="lr-value-row">
+                <span className="lr-vr-label">
+                  상담 워크북
+                  <small>10단계 전 과정 + 리포트 3종</small>
+                </span>
+                <span className="lr-vr-price">₩49,000</span>
+              </div>
+              <div className="lr-value-row">
+                <span className="lr-vr-label">
+                  1:1 심리 상담
+                  <small>1급 상담사 · Zoom 1회</small>
+                </span>
+                <span className="lr-vr-price">₩150,000</span>
+              </div>
+              <div className="lr-value-row lr-value-sum">
+                <span className="lr-vr-label">정가 합계</span>
+                <span className="lr-vr-price lr-vr-strike">₩199,000</span>
+              </div>
+            </div>
+
+            {/* 묶음 할인가 — 큰 숫자는 이 하나만 */}
+            <div className="lr-bundle-price">
+              <span className="lr-bundle-label">묶음가로 함께 받으면</span>
+              <div className="lr-bundle-row">
+                <div className="lr-big-price">₩129,000</div>
+                <span className="lr-save-tag">₩70,000 할인</span>
+              </div>
+            </div>
+
+            {/* 상담 하이라이트 박스 — 가격 없이 '무엇을 받는지'만 */}
             <div className="lr-counsel-box">
               <div className="lr-counsel-head">
                 <span className="lr-counsel-icon">＋</span>
-                <b>한국상담심리학회 상담심리사 1급</b> 1:1 상담
+                <b>한국상담심리학회 상담심리사 1급</b> 1:1 상담 포함
               </div>
               <p className="lr-counsel-desc">
                 자격을 갖춘 1급 심리 상담사가 직접 <b>줌(Zoom)</b>으로 진행하는
                 1:1 상담 1회. 워크북 결과를 바탕으로 더 깊이 들여다봅니다.
               </p>
-              <div className="lr-counsel-price">
-                <span className="lr-counsel-strike">₩150,000</span>
-                <span className="lr-counsel-arrow">→</span>
-                <span className="lr-counsel-now">₩89,000</span>
-                <span className="lr-counsel-tag">할인가</span>
-              </div>
             </div>
+
             <a className="lr-cta-pill" href="/waitlist">
-              상담까지 함께 신청하기
+              상담까지 함께 대기신청하기
               <span className="lr-arrow">→</span>
             </a>
           </div>
