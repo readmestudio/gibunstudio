@@ -2377,3 +2377,63 @@
   .lr .lr-lu-title { font-size: 21px; }
 }
 
+/* ============================================================
+ * 모바일 CTA 최적화
+ * 긴 한국어 버튼 문구("상담까지 함께 대기신청하기" 등)가 좁은 폭에서
+ * 두 줄로 줄바꿈되던 문제 해결.
+ *  - 버튼을 full-width + 중앙정렬해 가로 공간 확보
+ *  - 패딩/폰트를 clamp()로 화면 폭에 따라 축소 → 한 줄 유지
+ *  - 가격 카드 / FinalCTA 좌우 패딩 축소로 버튼 안쪽 폭 확보
+ *  - StickyCTA 를 화면 좌우 여백에 맞춰 폭 대응
+ * ============================================================ */
+@media (max-width: 600px) {
+  /* 공통 CTA pill: 폭 가득 + 한 줄 유지 */
+  .lr .lr-cta-pill {
+    width: 100%;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+    justify-content: center;
+    padding: 16px 18px;
+    gap: 7px;
+    /* 320px에서도 한 줄에 들어가도록 폭에 비례해 축소 (상한 15.5px) */
+    font-size: clamp(13.5px, 4vw, 15.5px);
+  }
+
+  /* Hero CTA row: 단일 버튼을 폭 가득 차게 */
+  .lr .lr-hero .lr-hero-cta-row {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 12px;
+  }
+
+  /* 가격 카드: 좌우 패딩을 줄여 내부 버튼 폭 확보 */
+  .lr .lr-price-card { padding: 30px 20px; }
+
+  /* FinalCTA: 모바일 좌우 패딩 축소 */
+  .lr .lr-final-cta { padding: 64px 22px; border-radius: 22px; }
+
+  /* StickyCTA: 화면 좌우 16px 여백에 맞춰 폭 대응 (중앙정렬 translateX 제거) */
+  .lr .lr-sticky-cta {
+    left: 16px;
+    right: 16px;
+    transform: translateY(8px);
+  }
+  .lr .lr-sticky-cta.lr-show { transform: translateY(0); }
+  .lr .lr-sticky-cta .lr-cta-pill { width: 100%; max-width: none; }
+
+  /* ── 세로 리듬 정리 ──
+   * 전체 높이가 26,000px+로 매우 길어, 모바일 대응이 빠진 큰 여백들을 축소해
+   * 섹션 간 빈 공간과 과한 스크롤을 줄인다. */
+  .lr .lr-hero { padding: 80px 0 56px; }
+  .lr .lr-s-header { margin-bottom: 44px; }   /* 데스크탑 80px → 모바일 44px */
+
+  /* 인용 박스(제작 비하인드 도입부): 좌우/상하 패딩 + 큰 따옴표 축소 */
+  .lr .lr-big-q { padding: 56px 24px; }
+  .lr .lr-big-q .lr-qmark { font-size: 68px; }
+
+  /* 순환 다이어그램 섹션(성취중독 상세 페이지 공용): 과한 상단 패딩 축소 */
+  .lr .lr-cycle-section { padding: 96px 0 0; }
+}
+
