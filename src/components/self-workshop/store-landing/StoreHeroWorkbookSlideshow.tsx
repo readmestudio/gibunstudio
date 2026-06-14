@@ -1,6 +1,5 @@
 "use client";
 
-import { Fragment } from "react";
 import { motion } from "framer-motion";
 import type { DemoWorkshopResult } from "@/lib/self-workshop/getDemoWorkshopResult";
 
@@ -20,10 +19,8 @@ interface ReportSlide {
   number: string;
   title: string;
   badge: string;
-  /** 단계 한 줄 설명 — 원본 이미지의 본문 큰 헤드라인을 통일 헤더로 덮을 때 사용 */
+  /** 단계 한 줄 설명 — 카드 제목 아래 보조 캡션으로 노출. */
   description: string;
-  /** 실제 페이지 스크린샷 경로 — 있으면 미니어처 대신 이미지 렌더 */
-  src?: string;
 }
 
 const REPORT_SLIDES: ReportSlide[] = [
@@ -32,70 +29,60 @@ const REPORT_SLIDES: ReportSlide[] = [
     title: "자가 진단",
     badge: "LIKERT",
     description: "Likert 5점 척도 20문항 검사",
-    src: "/workbook-preview/01.png",
   },
   {
     number: "02",
     title: "진단 결과",
     badge: "DIAGNOSIS",
     description: "4영역 위험군 + 총점 분석",
-    src: "/workbook-preview/02.png",
   },
   {
     number: "03",
-    title: "메커니즘 실습",
-    badge: "5-PART",
-    description: "상황·감정·생각·행동·신체 5축 추적",
-    src: "/workbook-preview/03.png",
+    title: "내 안의 마음들",
+    badge: "INNER PARTS",
+    description: "성취 앞에서 흔들리는 여러 마음 만나기",
   },
   {
     number: "04",
     title: "핵심 신념 찾기",
-    badge: "DOWNWARD",
-    description: "하향 화살표 문답으로 깊이 파고들기",
-    src: "/workbook-preview/04.png",
+    badge: "CORE BELIEF",
+    description: "자기·타인·세계, 세 갈래 핵심 신념",
   },
   {
     number: "05",
     title: "통합 패턴 분석",
     badge: "CASCADE",
     description: "1-2초 사이 일어난 인지 Cascade",
-    src: "/workbook-preview/05.png",
   },
   {
     number: "06",
     title: "대안 자동 사고",
     badge: "REFRAMING",
     description: "같은 상황, 다른 사고 시뮬레이션",
-    src: "/workbook-preview/06.png",
   },
   {
     number: "07",
     title: "새 핵심 신념",
     badge: "NEW BELIEF",
     description: "세 가지 신념을 다시 보기",
-    src: "/workbook-preview/07.png",
   },
   {
     number: "08",
     title: "근거 모으기",
     badge: "EVIDENCE",
     description: "새 신념을 떠받칠 작은 증거들",
-    src: "/workbook-preview/08.png",
   },
   {
     number: "09",
     title: "종합 가이드 리포트",
     badge: "DAILY",
     description: "한 달 동안의 DO & DON'T 가이드",
-    src: "/workbook-preview/09.png",
   },
   {
     number: "10",
     title: "마무리 성찰",
     badge: "REFLECTION",
     description: "워크북 완성, 나에게 한 마디",
-    src: "/workbook-preview/10.png",
   },
 ];
 
@@ -144,50 +131,8 @@ function ReportSlideCard({
   slide: ReportSlide;
   data: DemoWorkshopResult | null;
 }) {
-  // 실제 스크린샷이 있으면 이미지 카드 — 카드 위에 통일 헤더를 띄워서 각 이미지의
-  // 큰 숫자/제목 영역을 가린다. 결과적으로 *모든 카드가 동일한 헤더 위계* 를 갖게 됨.
-  if (slide.src) {
-    return (
-      <div className="relative flex-shrink-0 w-[300px] sm:w-[360px] aspect-[3/4] overflow-hidden rounded-2xl border-2 border-[var(--foreground)]/12 bg-white shadow-[3px_3px_0_rgba(0,0,0,0.06)]">
-        {/* 이미지 wrapper — 헤더 영역(top 180px) 만큼 띄우고, 좌우/하단에 흰 여백
-            패딩을 줘서 카드 가장자리에 본문이 붙지 않도록 통일. */}
-        <div className="absolute inset-0 px-6 sm:px-7 pt-[180px] pb-6 sm:pb-7">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={slide.src}
-            alt={`STEP ${slide.number} · ${slide.title} 실제 페이지`}
-            className="h-full w-full object-cover object-top"
-            loading="lazy"
-            draggable={false}
-          />
-        </div>
-
-        {/* 통일 헤더 — 영역 더 크게: STEP 라벨 + 큰 단계명 + 한 줄 설명까지 포함.
-            원본 이미지의 큰 숫자 + 본문 큰 헤드라인 영역을 모두 가려서, 카드마다
-            제각각인 위계를 *완전히 통일* 시킨다. */}
-        <div className="absolute top-0 left-0 right-0 z-10 bg-white px-6 sm:px-7 pt-6 sm:pt-7 pb-5">
-          <div className="flex items-center justify-between border-b border-[var(--foreground)]/10 pb-3">
-            <p className="text-[10px] sm:text-[11px] font-semibold tracking-[0.18em] uppercase text-[var(--foreground)]/55">
-              STEP {slide.number}
-            </p>
-            <p className="text-[9px] tracking-[0.18em] uppercase text-[var(--foreground)]/30 font-semibold">
-              {slide.badge}
-            </p>
-          </div>
-          {/* 큰 단계명 헤드라인 — 모든 카드가 동일 위계 */}
-          <h4 className="mt-4 text-lg sm:text-xl font-bold text-[var(--foreground)] break-keep leading-[1.3]">
-            {slide.title}
-          </h4>
-          {/* 한 줄 설명 — 헤더 영역을 자연스럽게 채워서 본문 큰 헤드라인까지 가림 */}
-          <p className="mt-2 text-[11px] sm:text-xs leading-[1.55] text-[var(--foreground)]/55 break-keep">
-            {slide.description}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // 스크린샷이 없는 단계는 미니어처 fallback
+  // 모든 카드는 코드 미니어처(목업)로 렌더 — 외부 스크린샷에 의존하지 않고
+  // 워크북이 바뀌면 이 파일에서 곧바로 반영한다.
   return (
     <article className="flex-shrink-0 w-[300px] sm:w-[360px] aspect-[3/4] overflow-hidden rounded-2xl border-2 border-[var(--foreground)]/12 bg-white shadow-[3px_3px_0_rgba(0,0,0,0.06)] p-6 sm:p-7 flex flex-col">
       {/* 헤더 */}
@@ -200,13 +145,16 @@ function ReportSlideCard({
         </p>
       </div>
 
-      {/* 제목 */}
+      {/* 제목 + 한 줄 설명 */}
       <h4 className="mt-3.5 text-base sm:text-lg font-bold text-[var(--foreground)] break-keep leading-tight">
         {slide.title}
       </h4>
+      <p className="mt-1 text-[10.5px] sm:text-[11px] leading-snug text-[var(--foreground)]/50 break-keep">
+        {slide.description}
+      </p>
 
       {/* 단계별 콘텐츠 */}
-      <div className="mt-4 flex-1 min-h-0 flex flex-col">
+      <div className="mt-3.5 flex-1 min-h-0 flex flex-col">
         {renderStepContent(slide.number, data)}
       </div>
     </article>
@@ -224,9 +172,9 @@ function renderStepContent(
     case "02":
       return <Step2Diagnosis data={data} />;
     case "03":
-      return <Step3Mechanism />;
+      return <Step3InnerParts />;
     case "04":
-      return <Step4DownwardArrow />;
+      return <Step4CoreBelief />;
     case "05":
       return <Step5Cascade />;
     case "06":
@@ -372,59 +320,79 @@ function Step2Diagnosis({ data }: { data: DemoWorkshopResult | null }) {
 }
 
 /* ============================================================
- * STEP 03 · 메커니즘 실습 (5-Part 모델)
+ * STEP 03 · 내 안의 마음들 (IFS 파츠 발견)
+ *  - 상황 속 여러 마음을 캐릭터로 만나고, 지금 앞에 나선 마음과
+ *    서로 부딪치는 마음을 알아본다.
  * ============================================================ */
-function Step3Mechanism() {
-  const PARTS = [
-    { label: "상황", v: "팀장이 보고서를 다시 쓰라 함" },
-    { label: "사고", v: "또 못했다. 나는 무능해" },
-    { label: "감정", v: "수치심 · 무력감" },
-    { label: "행동", v: "주말 출근해 처음부터" },
-    { label: "신체", v: "두통 · 불면" },
-  ];
+function Step3InnerParts() {
   return (
-    <ul className="space-y-1.5">
-      {PARTS.map((p) => (
-        <li key={p.label} className="flex items-start gap-2">
-          <span className="flex-shrink-0 inline-flex h-5 w-12 items-center justify-center rounded text-[8.5px] font-bold uppercase tracking-wide bg-[var(--foreground)]/[0.06] text-[var(--foreground)]/65">
-            {p.label}
+    <div className="flex-1 flex flex-col gap-2">
+      {/* 지금 가장 앞에 나선 마음 (강조) */}
+      <div className="rounded-lg border-2 border-[var(--foreground)] px-2.5 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[12.5px] font-bold text-[var(--foreground)]">
+            다그치는 나
           </span>
-          <p className="text-[11.5px] leading-snug text-[var(--foreground)]/85 break-keep">
-            {p.v}
-          </p>
-        </li>
-      ))}
-    </ul>
+          <span className="flex-shrink-0 rounded-full border border-[var(--foreground)] px-1.5 py-0.5 text-[7.5px] font-bold tracking-[0.1em] text-[var(--foreground)]">
+            앞에 나선 마음
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] italic leading-snug text-[var(--foreground)]/70 break-keep">
+          &ldquo;이 정도로는 부족해&rdquo;
+        </p>
+      </div>
+
+      {/* 그 옆의 다른 마음들 */}
+      <div className="grid grid-cols-2 gap-1.5">
+        {["불안이", "지친 나"].map((n) => (
+          <div
+            key={n}
+            className="rounded-lg border border-[var(--foreground)]/15 px-2 py-1.5 text-center text-[11px] font-semibold text-[var(--foreground)]/80"
+          >
+            {n}
+          </div>
+        ))}
+      </div>
+
+      {/* 서로 자주 부딪치는 두 마음 */}
+      <div className="mt-auto flex items-center gap-1.5 rounded-md bg-[var(--foreground)]/[0.04] px-2.5 py-1.5 text-[10.5px] text-[var(--foreground)]/75">
+        <span className="font-semibold">다그치는 나</span>
+        <span aria-hidden className="text-[var(--foreground)]/40">
+          ↔
+        </span>
+        <span className="font-semibold">지친 나</span>
+        <span className="ml-auto text-[9px] text-[var(--foreground)]/45">
+          서로 부딪쳐요
+        </span>
+      </div>
+    </div>
   );
 }
 
 /* ============================================================
- * STEP 04 · 핵심 신념 찾기 (하향 화살표 기법)
+ * STEP 04 · 핵심 신념 찾기 (자기·타인·세계 3축)
+ *  - SCT(문장 완성) 응답을 LLM이 분석해 세 갈래 핵심 신념을 도출.
  * ============================================================ */
-function Step4DownwardArrow() {
-  const STAIRS = [
-    { q: "그게 왜 의미 있나요?", a: "나는 능력이 부족하다" },
-    { q: "그게 사실이라면?", a: "나는 사랑받을 수 없다" },
-    { q: "결국 어떤 의미?", a: "나는 충분하지 않다" },
+function Step4CoreBelief() {
+  const AXES = [
+    { axis: "자기", en: "SELF", belief: "성과가 없으면 난 가치 없다" },
+    { axis: "타인", en: "OTHERS", belief: "사람들은 결과로 나를 본다" },
+    { axis: "세계", en: "WORLD", belief: "멈추면 뒤처지는 세상이다" },
   ];
   return (
     <div className="flex-1 flex flex-col gap-1.5">
-      {STAIRS.map((s, i) => (
-        <Fragment key={i}>
-          <div className="rounded-md border border-[var(--foreground)]/12 bg-[var(--foreground)]/[0.02] px-2.5 py-1.5">
-            <p className="text-[8.5px] text-[var(--foreground)]/45 italic">
-              {s.q}
-            </p>
-            <p className="mt-0.5 text-[11.5px] font-semibold text-[var(--foreground)] break-keep leading-tight">
-              {s.a}
-            </p>
-          </div>
-          {i < STAIRS.length - 1 && (
-            <div className="text-center text-[var(--foreground)]/35 text-[11px] leading-none">
-              ↓
-            </div>
-          )}
-        </Fragment>
+      {AXES.map((a) => (
+        <div
+          key={a.en}
+          className="rounded-md border border-[var(--foreground)]/12 bg-[var(--foreground)]/[0.02] px-2.5 py-1.5"
+        >
+          <span className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-[var(--foreground)]/55">
+            {a.axis} · {a.en}
+          </span>
+          <p className="mt-0.5 text-[11.5px] font-semibold text-[var(--foreground)] break-keep leading-tight">
+            &ldquo;{a.belief}&rdquo;
+          </p>
+        </div>
       ))}
     </div>
   );

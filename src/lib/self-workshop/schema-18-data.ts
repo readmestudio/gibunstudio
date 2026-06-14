@@ -483,6 +483,17 @@ export function getSchema(code: SchemaCode): Schema | undefined {
   return SCHEMA_18.find((s) => s.code === code);
 }
 
+/**
+ * 임의 문자열(대소문자·공백 무관)에서 도식을 안전하게 조회. 화면 표시용.
+ * LLM이 채운 schema_code 같은 신뢰할 수 없는 입력을 그대로 넘겨도 안전하며,
+ * 비거나 유효하지 않은 코드면 undefined를 반환해 해석 섹션을 조용히 숨긴다.
+ */
+export function getSchemaByCode(code?: string | null): Schema | undefined {
+  if (!code || typeof code !== "string") return undefined;
+  const norm = code.trim().toUpperCase();
+  return SCHEMA_18.find((s) => s.code === norm);
+}
+
 export function getDomain(code: SchemaDomain): SchemaDomainDef | undefined {
   return SCHEMA_DOMAINS.find((d) => d.code === code);
 }

@@ -576,6 +576,39 @@
   position: relative;
 }
 
+/* ── 제작 비하인드 스토리 변형 ── */
+.lr .lr-big-story .lr-story-eyebrow {
+  display: inline-block;
+  position: relative;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.16em;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 18px;
+}
+.lr .lr-big-story h3 {
+  margin-bottom: 28px;
+}
+.lr .lr-big-story h3 em {
+  font-style: normal;
+  color: var(--lr-accent-2);
+}
+.lr .lr-big-story .lr-story-body {
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto 28px;
+  text-align: left;
+}
+.lr .lr-big-story .lr-story-body p {
+  font-size: 16px; line-height: 1.85;
+  letter-spacing: -0.01em;
+  color: rgba(255,255,255,0.82);
+  margin: 0 0 16px;
+}
+.lr .lr-big-story .lr-story-body p:last-child {
+  margin-bottom: 0;
+}
+
 /* ============= INTRO / FEATURE LIST ============= */
 .lr .lr-feature-list {
   display: flex; flex-direction: column;
@@ -1250,6 +1283,69 @@
 }
 @keyframes lrBlink { 50% { opacity: 0; } }
 
+/* POINT 2 (new) — 내 안의 마음들 + 16가지 핵심 신념 */
+.lr .lr-mind-head {
+  font-size: 18px; font-weight: 800; letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.lr .lr-mind-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.lr .lr-mind-node {
+  display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: center;
+  padding: 11px 13px;
+  border: 1px solid var(--lr-line-2); border-radius: 12px;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .55s ease, transform .55s ease, border-color .4s ease, background .4s ease;
+}
+.lr .lr-mind-node.lr-in {
+  opacity: 1; transform: translateY(0);
+  border-color: var(--lr-line); background: var(--lr-surface);
+}
+.lr .lr-mind-node .lr-mi {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1.5px solid var(--lr-ink); background: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.lr .lr-mind-node .lr-mt b {
+  display: block; font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+.lr .lr-mind-node .lr-mt span { font-size: 11.5px; color: var(--lr-mute); line-height: 1.5; }
+
+.lr .lr-belief-cap {
+  font-size: 13px; color: var(--lr-ink-soft); font-weight: 600;
+  margin-bottom: 14px;
+}
+.lr .lr-belief-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px;
+  flex: 1; align-content: center;
+}
+.lr .lr-belief-chip {
+  border: 1px solid var(--lr-line-2); border-radius: 9px;
+  padding: 9px 5px; text-align: center;
+  font-size: 10.5px; font-weight: 600; color: var(--lr-ink-soft);
+  line-height: 1.3; background: #fff;
+  word-break: keep-all;
+  opacity: 0; transform: scale(0.9);
+  transition: opacity .4s ease, transform .4s ease,
+              background .45s ease, color .45s ease,
+              border-color .45s ease, box-shadow .45s ease;
+}
+.lr .lr-belief-chip.lr-in { opacity: 1; transform: scale(1); }
+.lr .lr-belief-chip.lr-hit {
+  background: var(--lr-ink); color: #fff; border-color: var(--lr-ink);
+  box-shadow: 0 0 0 4px rgba(255,90,31,0.18), 0 8px 20px -6px rgba(10,10,11,0.4);
+  transform: scale(1.08);
+}
+.lr .lr-belief-found {
+  margin-top: 14px; text-align: center;
+  font-size: 12px; font-weight: 700; color: var(--lr-ink);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.lr .lr-belief-found.lr-in { opacity: 1; transform: translateY(0); }
+.lr .lr-belief-found em { color: var(--lr-accent); font-style: normal; }
+
 /* POINT 4 — evidence + affirmation */
 .lr .lr-evi-head {
   display: flex; justify-content: space-between; align-items: center;
@@ -1416,6 +1512,73 @@
 .lr .lr-price-card.lr-dark .lr-cta-pill::before { background: var(--lr-accent); }
 .lr .lr-price-card.lr-dark .lr-cta-pill:hover { color: #fff; border-color: var(--lr-accent); }
 
+/* 워크북 단독 카드: 검정 잉크 가격 + 고스트 CTA */
+.lr .lr-price-card .lr-big-price.lr-big-price-ink {
+  font-size: clamp(44px, 5.5vw, 60px);
+  font-weight: 800; letter-spacing: -0.04em;
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+  line-height: 1; color: var(--lr-ink);
+  margin: 4px 0 18px;
+}
+.lr .lr-price-card .lr-cta-pill.lr-cta-ghost {
+  background: transparent; color: var(--lr-ink);
+  border-color: var(--lr-line);
+  width: 100%; justify-content: center;
+  margin-top: 24px;
+}
+.lr .lr-price-card .lr-cta-pill.lr-cta-ghost::before { background: var(--lr-ink); }
+.lr .lr-price-card .lr-cta-pill.lr-cta-ghost:hover { color: #fff; border-color: var(--lr-ink); }
+
+/* 강조 카드: CTA를 카드 하단에 붙이기 위한 여백 */
+.lr .lr-price-card.lr-dark .lr-cta-pill { margin-top: 24px; }
+.lr .lr-price-card.lr-dark .lr-pcheck-list { margin-bottom: 18px; }
+.lr .lr-price-card.lr-dark h3 { color: #fff; }
+
+/* 상담 하이라이트 박스 (강조 카드 내부) */
+.lr .lr-counsel-box {
+  border: 1px solid rgba(255,90,31,0.35);
+  background: rgba(255,90,31,0.08);
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+}
+.lr .lr-counsel-head {
+  font-size: 15px; color: #fff; line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+.lr .lr-counsel-head b { color: var(--lr-accent-2); font-weight: 800; }
+.lr .lr-counsel-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--lr-accent); color: #fff;
+  font-size: 13px; font-weight: 800; line-height: 1;
+  margin-right: 8px; vertical-align: -3px;
+}
+.lr .lr-counsel-desc {
+  font-size: 13.5px; color: rgba(255,255,255,0.7);
+  line-height: 1.6; margin: 10px 0 14px; letter-spacing: -0.005em;
+}
+.lr .lr-counsel-desc b { color: rgba(255,255,255,0.92); font-weight: 700; }
+.lr .lr-counsel-price {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px;
+  font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
+}
+.lr .lr-counsel-strike {
+  font-size: 16px; color: rgba(255,255,255,0.4);
+  text-decoration: line-through; letter-spacing: 0.01em;
+}
+.lr .lr-counsel-arrow { color: rgba(255,255,255,0.5); font-size: 14px; }
+.lr .lr-counsel-now {
+  font-size: 24px; font-weight: 800; color: var(--lr-accent-2);
+  letter-spacing: -0.02em;
+}
+.lr .lr-counsel-tag {
+  font-family: 'Pretendard', sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  color: #fff; background: var(--lr-accent);
+  padding: 3px 8px; border-radius: 999px; align-self: center;
+}
+
 .lr .lr-price-foot {
   text-align: center; margin-top: 36px;
   font-size: 12.5px; color: var(--lr-mute); line-height: 1.7;
@@ -1569,6 +1732,158 @@
   color: transparent;
 }
 @media (max-width: 600px) { .lr .lr-creator-box { padding: 36px 26px; } }
+
+/* ============= METHOD & EXPERTISE (IFS·CBT + 1급 상담사) ============= */
+.lr .lr-method-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+@media (max-width: 800px) {
+  .lr .lr-method-grid { grid-template-columns: 1fr; }
+}
+.lr .lr-method-card {
+  border: 1px solid var(--lr-line);
+  border-radius: 20px;
+  background: var(--lr-paper);
+  padding: 40px 36px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease;
+}
+.lr .lr-method-card:hover {
+  border-color: var(--lr-ink);
+  transform: translateY(-3px);
+  box-shadow: 0 24px 48px -24px rgba(10,10,11,0.18);
+}
+.lr .lr-mc-tag {
+  display: inline-block;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 700; color: var(--lr-accent);
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--lr-accent-bg);
+  border: 1px solid var(--lr-accent-soft);
+}
+.lr .lr-mc-title {
+  font-size: 23px; font-weight: 800; letter-spacing: -0.025em;
+  margin: 18px 0 14px; line-height: 1.35;
+}
+.lr .lr-mc-body {
+  font-size: 16px; color: var(--lr-ink-soft);
+  line-height: 1.75; letter-spacing: -0.005em; margin: 0 0 22px;
+}
+.lr .lr-mc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.lr .lr-mc-chip {
+  font-size: 12.5px; color: var(--lr-ink-soft); font-weight: 600;
+  padding: 7px 12px; border-radius: 999px;
+  background: var(--lr-surface-2);
+  letter-spacing: -0.005em;
+}
+
+/* Part B — 1급 심리 상담사 신뢰 배너 (검정) */
+.lr .lr-trust-band {
+  position: relative; overflow: hidden;
+  background: var(--lr-ink); color: #fff;
+  border-radius: 22px;
+  padding: 44px;
+  box-shadow:
+    8px 8px 0 var(--lr-accent),
+    0 32px 64px -24px rgba(10,10,11,0.4);
+}
+.lr .lr-trust-grid-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 100% 0%, rgba(255,90,31,0.20), transparent 55%);
+}
+.lr .lr-trust-head {
+  display: flex; align-items: center; gap: 18px;
+  position: relative;
+  padding-bottom: 24px; margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.lr .lr-trust-badge {
+  flex: none;
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--lr-grad-warm); color: #fff;
+  box-shadow: 0 12px 28px -8px rgba(255,90,31,0.5);
+}
+.lr .lr-trust-eyebrow {
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--lr-accent-2); font-weight: 700; margin-bottom: 8px;
+}
+.lr .lr-trust-h {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.02em;
+  line-height: 1.45; margin: 0;
+}
+.lr .lr-trust-h b { color: var(--lr-accent-2); font-weight: 800; }
+/* 제작자 2인 프로필 (이름 + 자격 이력) */
+.lr .lr-trust-profiles {
+  display: grid; grid-template-columns: 1fr; gap: 0;
+  position: relative;
+}
+.lr .lr-trust-profile {
+  padding: 0;
+  display: flex; align-items: center; gap: 40px;
+}
+.lr .lr-trust-profile:last-child {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 28px; margin-top: 28px;
+}
+.lr .lr-tp-head {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 18px;
+}
+.lr .lr-tp-creds { flex: 1; }
+.lr .lr-tp-photo {
+  flex: 0 0 auto;
+  width: 148px; height: 148px;
+  border-radius: 20px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+}
+.lr .lr-tp-photo img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.lr .lr-tp-headtext {
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+.lr .lr-tp-role {
+  display: inline-block;
+  font-size: 12.5px; font-weight: 700; color: var(--lr-accent-2);
+  letter-spacing: -0.005em;
+  padding: 5px 12px; border-radius: 999px;
+  background: rgba(255,90,31,0.12);
+  border: 1px solid rgba(255,90,31,0.3);
+}
+.lr .lr-tp-name {
+  font-size: 22px; font-weight: 800; color: #fff;
+  letter-spacing: -0.02em; margin: 9px 0 0;
+}
+.lr .lr-tp-creds {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.lr .lr-tp-creds li {
+  display: grid; grid-template-columns: 14px 1fr; gap: 10px;
+  align-items: start;
+  font-size: 14.5px; line-height: 1.55; letter-spacing: -0.005em;
+  color: rgba(255,255,255,0.82);
+}
+.lr .lr-tp-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--lr-accent); margin-top: 8px; justify-self: center;
+}
+@media (max-width: 600px) {
+  .lr .lr-method-card { padding: 32px 26px; }
+  .lr .lr-trust-band { padding: 32px 26px; }
+  .lr .lr-trust-head { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .lr .lr-trust-h { font-size: 20px; }
+  .lr .lr-trust-profile { flex-direction: column; align-items: flex-start; gap: 22px; }
+  .lr .lr-tp-photo { width: 112px; height: 112px; }
+}
 
 /* ============= FAQ ============= */
 .lr .lr-faq-list { display: flex; flex-direction: column; gap: 10px; }

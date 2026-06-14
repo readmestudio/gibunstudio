@@ -19,10 +19,10 @@ import {
   OverviewApproachSection,
   OverviewJourneySection,
   OverviewLineupSection,
+  OverviewMethodSection,
 } from "./OverviewSections";
 import { OverviewTestimonialsSection } from "./OverviewTestimonialsSection";
 import {
-  CreatorSection,
   FaqSection,
   FinalCTA,
   PricingSection,
@@ -63,15 +63,15 @@ export function OverviewLandingPage({
         <Divider />
         <CompareSection />
         <Divider />
-        <OverviewApproachSection />
+        <OverviewMethodSection />
         <OverviewJourneySection />
+        <OverviewApproachSection />
         <OverviewLineupSection />
         <SlideshowWrap demoResult={demoResult} />
-        <OverviewPointsSection />
         <PricingSection />
+        <OverviewPointsSection />
         <PrivacySection />
         <OverviewTestimonialsSection />
-        <CreatorSection />
         <FaqSection />
         <FinalCTA />
         <Footer />

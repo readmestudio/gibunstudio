@@ -198,13 +198,22 @@ export function seedSimulationFromMechanism(
     behavior: string;
   }
 ): AlternativeThoughtSimulation {
+  // 이전에 저장된 시뮬레이션의 원본(상황·감정 등)이 빈 문자열이면(대화형 흐름에서
+  // mechanism_analysis가 비어 시드됐던 경우) 무시하고 현재 mechanism에서 다시 시드한다.
+  // ?? 만 쓰면 ""가 nullish가 아니라 빈 값이 그대로 굳어 Step 6 화면이 비어 보인다.
+  const prefer = (saved: string | undefined, fallback: string) =>
+    saved && saved.trim().length > 0 ? saved : fallback;
   return {
     ...prev,
-    situation: prev?.situation ?? mechanism.situation,
-    original_automatic_thought:
-      prev?.original_automatic_thought ?? mechanism.automatic_thought,
-    original_emotion: prev?.original_emotion ?? mechanism.emotion,
-    original_emotion_detail:
-      prev?.original_emotion_detail ?? mechanism.behavior,
+    situation: prefer(prev?.situation, mechanism.situation),
+    original_automatic_thought: prefer(
+      prev?.original_automatic_thought,
+      mechanism.automatic_thought
+    ),
+    original_emotion: prefer(prev?.original_emotion, mechanism.emotion),
+    original_emotion_detail: prefer(
+      prev?.original_emotion_detail,
+      mechanism.behavior
+    ),
   };
 }

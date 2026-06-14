@@ -6,6 +6,8 @@
  * - 마이그레이션: 기존 Downward Arrow 데이터는 `legacy_downward_arrow`로 백업 보관
  */
 
+import type { PartRole } from "./ifs-parts-data";
+
 /* ─────────────────────────── SCT 응답 ─────────────────────────── */
 
 export interface SctResponse {
@@ -47,6 +49,54 @@ export interface Synthesis {
   reframe_invitation: string;
 }
 
+/* ─────────────────────────── 내면 파츠맵 (Step 4 마무리, 2026-06-11 추가) ───────────────────────────
+ *
+ * 유저가 보고한 답변(SCT 또는 IFS 대화)을 분석해 내면의 여러 마음을 캐릭터화하고
+ * 그들의 관계(누가 앞에 나서는지·어느 둘이 부딪치는지)를 도식화한다.
+ *
+ * IFS 용어 금지: 화면에는 "리더/갈등/부분" 대신 "지금 가장 앞에 나서는 마음",
+ * "서로 자주 부딪치는 두 마음" 같은 자연어만 노출. 아래 구조 필드명은 *내부용*이며
+ * role도 화면에 직접 노출하지 않는다.
+ */
+
+/** 캐릭터화된 한 마음. */
+export interface PartCharacter {
+  /** 안정적 id ("p1", "p2" …). leader_id·conflicts가 이 id를 참조. */
+  id: string;
+  /** 마음 이름. 유저가 붙였거나 LLM이 명명. 예: "다그치는 나" */
+  name: string;
+  /** 특성 키워드 2~3개. 예: ["완벽주의", "통제"] */
+  traits: string[];
+  /** 자주 하는 말(대사) 한 줄. 예: "더 해야 해" */
+  catchphrase: string;
+  /** 유저 원문 인용(환각 방지). 없으면 빈 문자열. */
+  evidence_quote: string;
+  /** IFS 역할 추정(내부용, 화면 비노출). */
+  role?: PartRole;
+}
+
+/** 서로 자주 부딪치는 두 마음. a·b는 PartCharacter.id. */
+export interface PartConflict {
+  a: string;
+  b: string;
+  /** 왜 부딪치는지 한 줄(자연어). */
+  reason: string;
+}
+
+export interface PartsMap {
+  /** 캐릭터화된 마음들. 보통 2~5개. */
+  parts: PartCharacter[];
+  /** 지금 가장 앞에 나서는 마음의 id (parts 중 하나). */
+  leader_id: string;
+  /** 부딪치는 마음 쌍들. */
+  conflicts: PartConflict[];
+  /** 전체 요약(자연어, 용어 금지). */
+  summary: string;
+  /** 분석 입력 소스. */
+  source: "sct" | "dialogue";
+  generated_at: string;
+}
+
 /* ─────────────────────────── 레거시 백업 ─────────────────────────── */
 
 export interface LegacyDownwardArrow {
@@ -77,6 +127,9 @@ export interface CoreBeliefExcavation {
   belief_candidates?: { thoughts: string[]; beliefs: string[] };
   /** 선택 완료 시각(ISO). */
   selection_made_at?: string;
+
+  /** 내면 파츠맵 — Step 4 마무리 캐릭터화 결과(멱등 캐시, 2026-06-11). */
+  parts_map?: PartsMap;
 }
 
 /* ─────────────────────────── 마이그레이션 ─────────────────────────── */
@@ -132,6 +185,8 @@ export function migrateLegacyExcavation(
         typeof obj.selection_made_at === "string"
           ? obj.selection_made_at
           : undefined,
+      // 파츠맵 캐시 보존(이어하기 시 LLM 재호출 방지).
+      parts_map: readPartsMap(obj) ?? undefined,
     };
   }
 
@@ -227,6 +282,84 @@ function readBeliefCandidates(
   const beliefs = toStringArray(o.beliefs) ?? [];
   if (thoughts.length === 0 && beliefs.length === 0) return undefined;
   return { thoughts, beliefs };
+}
+
+const PART_ROLES: PartRole[] = [
+  "manager",
+  "firefighter",
+  "exile",
+  "self_critic",
+  "unclear",
+];
+
+/**
+ * JSONB 컨테이너(core_belief_excavation)에서 parts_map을 안전하게 읽는다.
+ * - parts가 1개 미만이면 null(표시할 게 없음).
+ * - leader_id가 parts에 없으면 첫 파츠로 폴백.
+ * - conflict의 a/b가 parts에 없거나 a===b면 그 conflict 제거.
+ * 손상 데이터로 관계 지도 SVG가 깨지지 않도록 한다.
+ */
+export function readPartsMap(container: unknown): PartsMap | null {
+  if (!container || typeof container !== "object") return null;
+  const pm = (container as { parts_map?: unknown }).parts_map;
+  if (!pm || typeof pm !== "object") return null;
+  const o = pm as Record<string, unknown>;
+
+  const rawParts = Array.isArray(o.parts) ? o.parts : [];
+  const parts: PartCharacter[] = [];
+  for (const p of rawParts) {
+    if (!p || typeof p !== "object") continue;
+    const pp = p as Record<string, unknown>;
+    const id = typeof pp.id === "string" ? pp.id.trim() : "";
+    const name = typeof pp.name === "string" ? pp.name.trim() : "";
+    if (!id || !name) continue;
+    const role =
+      typeof pp.role === "string" && PART_ROLES.includes(pp.role as PartRole)
+        ? (pp.role as PartRole)
+        : undefined;
+    parts.push({
+      id,
+      name,
+      traits: toStringArray(pp.traits) ?? [],
+      catchphrase: typeof pp.catchphrase === "string" ? pp.catchphrase.trim() : "",
+      evidence_quote:
+        typeof pp.evidence_quote === "string" ? pp.evidence_quote.trim() : "",
+      ...(role ? { role } : {}),
+    });
+  }
+  if (parts.length === 0) return null;
+
+  const ids = new Set(parts.map((p) => p.id));
+  const leaderRaw = typeof o.leader_id === "string" ? o.leader_id.trim() : "";
+  const leader_id = ids.has(leaderRaw) ? leaderRaw : parts[0].id;
+
+  const conflicts: PartConflict[] = [];
+  if (Array.isArray(o.conflicts)) {
+    for (const c of o.conflicts) {
+      if (!c || typeof c !== "object") continue;
+      const cc = c as Record<string, unknown>;
+      const a = typeof cc.a === "string" ? cc.a.trim() : "";
+      const b = typeof cc.b === "string" ? cc.b.trim() : "";
+      if (!ids.has(a) || !ids.has(b) || a === b) continue;
+      conflicts.push({
+        a,
+        b,
+        reason: typeof cc.reason === "string" ? cc.reason.trim() : "",
+      });
+    }
+  }
+
+  return {
+    parts,
+    leader_id,
+    conflicts,
+    summary: typeof o.summary === "string" ? o.summary.trim() : "",
+    source: o.source === "sct" ? "sct" : "dialogue",
+    generated_at:
+      typeof o.generated_at === "string"
+        ? o.generated_at
+        : new Date().toISOString(),
+  };
 }
 
 /* ─────────────────────────── 유틸 ─────────────────────────── */

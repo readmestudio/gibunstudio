@@ -14,6 +14,7 @@ import {
   type DestroyRebuildPreview,
   type SituationSummary,
 } from "@/lib/self-workshop/analysis-report";
+import { getSchemaByCode } from "@/lib/self-workshop/schema-18-data";
 import { deriveCaseId } from "./clinical-report/shared/deriveCaseId";
 import {
   COL,
@@ -159,113 +160,6 @@ function Hero({
           {HERO_SUB}
         </p>
       </Reveal>
-    </section>
-  );
-}
-
-// ───────── OVERVIEW ───────── //
-function OverviewSection() {
-  return (
-    <section
-      style={{
-        maxWidth: COL + 96,
-        margin: "0 auto",
-        padding: "40px 48px 120px",
-      }}
-    >
-      <Reveal>
-        <div
-          style={{
-            paddingTop: 40,
-            borderTop: `1px solid ${D.hair2}`,
-          }}
-        >
-          <Mono size={11} color={D.text3} tracking={0.2}>
-            OVERVIEW · 분석 개요
-          </Mono>
-        </div>
-      </Reveal>
-      <Reveal delay={120}>
-        <h2
-          style={{
-            margin: "24px 0 0",
-            fontSize: "clamp(28px, 4.2vw, 56px)",
-            fontWeight: 700,
-            lineHeight: 1.1,
-            letterSpacing: "-0.03em",
-            color: D.ink,
-            textWrap: "balance",
-            maxWidth: 720,
-          }}
-        >
-          CBT 5컬럼과 SCT 응답을 한 흐름으로 합쳤어요.
-        </h2>
-      </Reveal>
-
-      <div
-        style={{
-          marginTop: 56,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: 32,
-          maxWidth: 800,
-        }}
-      >
-        {[
-          {
-            n: "01",
-            label: "COGNITIVE CASCADE",
-            body: "트리거 → 자동사고 → 핵심 자기 정의까지 1~2초 사이의 흐름",
-          },
-          {
-            n: "02",
-            label: "CORE BELIEFS",
-            body: "SCT 응답에서 가장 강하게 작동하는 3가지 신념 키워드",
-          },
-          {
-            n: "03",
-            label: "ACHIEVEMENT LOOP",
-            body: "신념이 합쳐져 만드는 6단계 행동 순환 고리",
-          },
-          {
-            n: "04",
-            label: "DISTORTIONS",
-            body: "동시에 작동 중인 인지 왜곡과 그 우선순위",
-          },
-        ].map((it, i) => (
-          <Reveal key={it.n} delay={i * 80}>
-            <div>
-              <Mono size={13} color={D.text3} tracking={0.06} weight={500}>
-                {it.n}
-              </Mono>
-              <div
-                style={{
-                  marginTop: 10,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  color: D.ink,
-                  textTransform: "uppercase",
-                }}
-              >
-                {it.label}
-              </div>
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  color: D.text2,
-                  letterSpacing: "-0.005em",
-                  textWrap: "pretty",
-                }}
-              >
-                {it.body}
-              </p>
-            </div>
-          </Reveal>
-        ))}
-      </div>
     </section>
   );
 }
@@ -627,6 +521,103 @@ function CascadeSection({ summary }: { summary: SituationSummary }) {
 }
 
 // ───────── CORE BELIEFS · 3 KEYWORDS ───────── //
+/**
+ * 한 신념과 가장 닮은 Young 심리도식(schema_code)의 해석을 가설형·비판단 톤으로 노출.
+ * - 유효한 코드가 없으면(기존 리포트 등) 조용히 숨김.
+ * - 도식 이름은 "닮아 있어요" 가설형으로만, 진단 단정 금지. traits/origin은 참고 자료.
+ */
+function SchemaPatternBlock({ code }: { code?: string }) {
+  const schema = getSchemaByCode(code);
+  if (!schema) return null;
+
+  const listRow = (text: string, k: number, total: number) => (
+    <li
+      key={k}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "10px 1fr",
+        gap: 12,
+        alignItems: "baseline",
+        padding: "10px 0",
+        borderTop: `1px solid ${D.hair3}`,
+        ...(k === total - 1 ? { borderBottom: `1px solid ${D.hair3}` } : {}),
+      }}
+    >
+      <span
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: "50%",
+          background: D.accent,
+          transform: "translateY(6px)",
+        }}
+      />
+      <span
+        style={{
+          fontSize: "clamp(14px, 1.4vw, 16px)",
+          lineHeight: 1.55,
+          color: D.ink,
+          letterSpacing: "-0.005em",
+          textWrap: "pretty",
+        }}
+      >
+        {text}
+      </span>
+    </li>
+  );
+
+  const traits = schema.traits.slice(0, 3);
+
+  return (
+    <div
+      style={{
+        marginTop: 40,
+        paddingTop: 32,
+        borderTop: `1px solid ${D.hair3}`,
+      }}
+    >
+      <Mono size={10} color={D.text3} tracking={0.2}>
+        MIND PATTERN · 닮은 마음의 결
+      </Mono>
+      <p
+        style={{
+          margin: "16px 0 0",
+          fontSize: "clamp(15px, 1.5vw, 17px)",
+          lineHeight: 1.7,
+          color: D.text2,
+          letterSpacing: "-0.005em",
+          fontWeight: 400,
+          maxWidth: 640,
+          textWrap: "pretty",
+        }}
+      >
+        이 신념은 심리학에서{" "}
+        <span style={{ color: D.ink, fontWeight: 600 }}>{schema.name_ko}</span>
+        이라고 부르는 오래된 마음의 패턴과 닮아 있어요. 진단이 아니라, 나를 조금
+        더 이해하기 위한 참고예요.
+      </p>
+
+      <div style={{ marginTop: 24 }}>
+        <Mono size={10} color={D.text3} tracking={0.16}>
+          이런 모습으로 나타나곤 해요
+        </Mono>
+        <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none" }}>
+          {traits.map((t, k) => listRow(t, k, traits.length))}
+        </ul>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Mono size={10} color={D.text3} tracking={0.16}>
+          보통 이런 경험에서 자라나기도 해요
+        </Mono>
+        <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none" }}>
+          {schema.origin.map((o, k) => listRow(o, k, schema.origin.length))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 function KeywordsSection({ keywords }: { keywords: BeliefKeyword[] }) {
   return (
     <section
@@ -826,6 +817,9 @@ function KeywordsSection({ keywords }: { keywords: BeliefKeyword[] }) {
                   >
                     {kw.insight_close}
                   </p>
+
+                  {/* 닮은 마음의 결 — 18 심리도식 해석 (schema_code 있을 때만) */}
+                  <SchemaPatternBlock code={kw.schema_code} />
                 </div>
               </div>
             </div>
@@ -2118,7 +2112,16 @@ function LoadingState({ messageIndex }: { messageIndex: number }) {
   );
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorState({
+  message,
+  onRetry,
+  onBack,
+}: {
+  message: string;
+  onRetry: () => void;
+  /** 제공되면 "Step 4로 돌아가기" 1차 버튼을 띄운다 (데이터 부족 에러). */
+  onBack?: () => void;
+}) {
   return (
     <div
       style={{
@@ -2146,25 +2149,66 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         >
           {message}
         </p>
-        <button
-          type="button"
-          onClick={onRetry}
+        {onBack && (
+          <p
+            style={{
+              margin: "12px 0 0",
+              fontSize: 13.5,
+              color: D.text3,
+              lineHeight: 1.55,
+            }}
+          >
+            지금까지 작성한 대화는 그대로 남아 있어요. 돌아가서 이어서 마무리하면 분석이 열립니다.
+          </p>
+        )}
+        <div
           style={{
             marginTop: 28,
-            fontFamily: D.font,
-            fontSize: 13,
-            fontWeight: 600,
-            color: D.ink,
-            background: D.paper,
-            border: `1px solid ${D.ink}`,
-            borderRadius: 999,
-            padding: "10px 24px",
-            cursor: "pointer",
-            letterSpacing: "-0.005em",
+            display: "flex",
+            gap: 12,
+            justifyContent: "center",
+            flexWrap: "wrap",
           }}
         >
-          다시 시도
-        </button>
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              style={{
+                fontFamily: D.font,
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#fff",
+                background: D.ink,
+                border: `1px solid ${D.ink}`,
+                borderRadius: 999,
+                padding: "10px 24px",
+                cursor: "pointer",
+                letterSpacing: "-0.005em",
+              }}
+            >
+              Step 4로 돌아가기 →
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onRetry}
+            style={{
+              fontFamily: D.font,
+              fontSize: 13,
+              fontWeight: 600,
+              color: D.ink,
+              background: D.paper,
+              border: `1px solid ${D.ink}`,
+              borderRadius: 999,
+              padding: "10px 24px",
+              cursor: "pointer",
+              letterSpacing: "-0.005em",
+            }}
+          >
+            다시 시도
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -2236,10 +2280,17 @@ export function WorkshopCognitiveReport({
 
   if (loading) return <LoadingState messageIndex={loadingMessageIndex} />;
   if (error || !report) {
+    // Step 4 데이터 부족 에러는 같은 요청을 재시도해도 풀리지 않는다 → 되돌아가기 유도.
+    const needsStep4 = /step\s*4|문항|대화를 조금 더/i.test(error);
     return (
       <ErrorState
         message={error || "리포트를 불러오지 못했어요"}
         onRetry={fetchReport}
+        onBack={
+          needsStep4
+            ? () => router.push("/dashboard/self-workshop/step/4")
+            : undefined
+        }
       />
     );
   }
@@ -2257,7 +2308,6 @@ export function WorkshopCognitiveReport({
       }}
     >
       <Hero caseId={caseId} userName={displayName} today={today} />
-      <OverviewSection />
       <CascadeSection summary={report.situation_summary} />
       <KeywordsSection keywords={report.belief_keywords} />
       <AchievementLoopSection loop={report.achievement_loop} />

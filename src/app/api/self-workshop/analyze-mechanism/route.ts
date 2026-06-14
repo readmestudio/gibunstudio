@@ -5,6 +5,7 @@ import {
   isAnalysisReport,
   type AnalysisReport,
 } from "@/lib/self-workshop/analysis-report";
+import { getSchemaByCode } from "@/lib/self-workshop/schema-18-data";
 import {
   COGNITIVE_ERRORS,
   COGNITIVE_ERROR_IDS,
@@ -23,6 +24,31 @@ import {
   type SctResponses,
   type Synthesis as BeliefSynthesis,
 } from "@/lib/self-workshop/core-belief-excavation";
+import {
+  readDialogue,
+  readDialogueRecap,
+  type ConversationTranscript,
+} from "@/lib/self-workshop/conversation";
+
+// 대화형(adaptive) Step 4의 분석 활성화 임계치. CORE_BELIEF_POINTS 4개 주제를
+// 한 번씩만 답해도 4턴이므로, 대화가 완료되면 충족된다.
+const MIN_DIALOGUE_TURNS_FOR_ANALYSIS = 4;
+
+// explore_point_id → 사람이 읽을 한국어 주제 라벨 (프롬프트 가독성용).
+// 앞쪽 4개 = Step 4 핵심신념 대화, 뒤쪽 = Step 3 파츠 탐색 대화.
+const DIALOGUE_POINT_LABELS: Record<string, string> = {
+  self_value: "자기 가치",
+  achievement: "성취·인정",
+  trust: "관계·신뢰",
+  control: "통제·안전",
+  situation: "그 사건(상황)",
+  active_minds: "그때 올라온 마음들",
+  name_part: "마음의 이름",
+  part_dialogue: "마음이 건네는 말",
+  real_want: "진짜 바라는 것",
+  origin: "그 마음의 기원",
+  self_compassion: "마음에게 건네는 말",
+};
 
 export async function POST(req: Request) {
   const guard = await requireWorkshopAccess(req);
@@ -41,12 +67,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "권한이 없습니다" }, { status: 403 });
   }
 
-  if (isAnalysisReport(progress.mechanism_insights)) {
-    return NextResponse.json({ report: progress.mechanism_insights });
-  }
-
   const { diagnosis_scores, mechanism_analysis, core_belief_excavation } =
     progress;
+
+  // 대화형 흐름에서 mechanism_analysis(상황·감정 등)가 비어 있으면 Step 6 이후가
+  // 깨진다. 캐시된 리포트가 있어도 mechanism_analysis가 비어 있으면 1회 재분석해
+  // mechanism_analysis를 채운다(자기치유). 채워지고 나면 다음부터 캐시 반환.
+  const mechForCache = (mechanism_analysis ?? null) as {
+    recent_situation?: unknown;
+    emotions_body?: { emotions?: unknown };
+  } | null;
+  const mechanismPopulated =
+    !!mechForCache &&
+    ((typeof mechForCache.recent_situation === "string" &&
+      mechForCache.recent_situation.trim().length > 0) ||
+      (Array.isArray(mechForCache.emotions_body?.emotions) &&
+        mechForCache.emotions_body!.emotions!.length > 0));
+
+  if (isAnalysisReport(progress.mechanism_insights) && mechanismPopulated) {
+    return NextResponse.json({ report: progress.mechanism_insights });
+  }
 
   if (!diagnosis_scores || !mechanism_analysis) {
     return NextResponse.json(
@@ -61,11 +101,46 @@ export async function POST(req: Request) {
       synthesis?: BeliefSynthesis;
       legacy_downward_arrow?: unknown;
       belief_analysis?: BeliefAnalysis;
+      selected_thoughts?: string[];
+      selected_beliefs?: string[];
     } | null) ?? null;
   const sctResponses: SctResponses = existingExcavation?.sct_responses ?? {};
   const sctAnsweredCount = countAnsweredResponses(sctResponses);
 
-  if (sctAnsweredCount < SCT_MIN_FOR_ANALYSIS) {
+  // 대화형(adaptive) Step 4는 SCT 문항 대신 상담 대화를 수집한다. 대화가 있으면
+  // SCT 카운트 게이트가 아니라 "대화가 충분히 진행되었는지"로 분석 가능 여부를 판정.
+  const dialogue = readDialogue(core_belief_excavation);
+  const answeredTurns =
+    dialogue?.turns.filter((t) => t.answer.trim().length > 0).length ?? 0;
+  const usingDialogue = answeredTurns > 0;
+  const selectedThoughts: string[] = existingExcavation?.selected_thoughts ?? [];
+  const selectedBeliefs: string[] = existingExcavation?.selected_beliefs ?? [];
+
+  // 대화형 Step 3(IFS 파츠 찾기)는 parts_discovery에만 저장되고 mechanism_analysis는
+  // EMPTY로 남는다(WorkshopResultContent가 빈 껍데기로 시드). 그래서 트리거·상황·
+  // 자동사고를 parts 대화에서 보강한다 — 이게 없으면 trigger_quote가 "상황 없음"이 된다.
+  const partsDialogue = readDialogue(progress.parts_discovery);
+  const partsRecap = readDialogueRecap(progress.parts_discovery);
+  const partsSituation =
+    partsDialogue?.turns
+      .find(
+        (t) => t.explore_point_id === "situation" && t.answer.trim().length > 0
+      )
+      ?.answer.trim() ?? "";
+  const partsAutomaticThought =
+    partsRecap?.part_profile?.automatic_thought?.trim() ?? "";
+  const hasPartsDialogue =
+    !!partsDialogue && partsDialogue.turns.some((t) => t.answer.trim().length > 0);
+
+  if (usingDialogue) {
+    if (answeredTurns < MIN_DIALOGUE_TURNS_FOR_ANALYSIS) {
+      // 클라이언트(Step 5)는 "Step 4"가 포함된 메시지를 보고 되돌아가기 버튼을 띄운다.
+      return NextResponse.json(
+        { error: "핵심 신념 찾기(Step 4) 대화를 조금 더 진행해 주세요" },
+        { status: 400 }
+      );
+    }
+  } else if (sctAnsweredCount < SCT_MIN_FOR_ANALYSIS) {
     return NextResponse.json(
       {
         error: `핵심 신념 찾기(Step 4)에서 최소 ${SCT_MIN_FOR_ANALYSIS}문항 이상 작성이 필요해요`,
@@ -120,8 +195,16 @@ export async function POST(req: Request) {
     typeof mechanism_analysis.resulting_behavior === "string"
       ? mechanism_analysis.resulting_behavior
       : "";
+  // mechanism_analysis가 비어 있으면(대화형) parts 대화에서 보강한 값을 사용.
+  const rawRecentSituation =
+    typeof mechanism_analysis.recent_situation === "string"
+      ? mechanism_analysis.recent_situation.trim()
+      : "";
+  const effectiveRecentSituation = rawRecentSituation || partsSituation;
+  const effectivePrimaryThought =
+    primaryThought.trim().length > 0 ? primaryThought : partsAutomaticThought;
   const composedThought = composeAutomaticThought(
-    primaryThought,
+    effectivePrimaryThought,
     worstCaseResult
   );
 
@@ -131,10 +214,46 @@ export async function POST(req: Request) {
 
   const sctSections = formatSctResponsesForPrompt(sctResponses);
 
+  // 대화형/SCT 분기 — Step 4 입력 텍스트와 프롬프트 표현을 모드에 맞춰 구성.
+  const step4Section = usingDialogue
+    ? formatDialogueForPrompt(dialogue!, selectedThoughts, selectedBeliefs)
+    : sctSections;
+  const step4RoleDesc = usingDialogue
+    ? "Step 4(핵심 신념 탐색 — 상담사형 대화)"
+    : "Step 4(핵심 신념 자기보고 — SCT 14문항)";
+  const step4SourceNote = usingDialogue
+    ? `
+
+# STEP 4 데이터 형식 — 매우 중요 (이번 분석은 대화형입니다)
+- 이번 사용자의 Step 4 자료는 SCT 문항이 아니라 *상담사와 나눈 핵심 신념 탐색 대화*입니다.
+- belief_keywords[].evidence[].source_code 에는 A1~D3 같은 SCT 코드를 쓰지 말고, 대화 주제 라벨을 쓰세요 (예: "대화:자기가치", "대화:성취", "대화:관계", "대화:통제").
+- evidence[].stage 에는 "Step 4 · 대화"로, evidence[].id 에는 짧은 라벨(예: D-가치, D-성취)을 넣고, quote는 사용자 발화 원문 그대로 인용하세요.
+- achievement_loop.stages[].source 와 core_mechanism.strongest_fear/second_fear 의 인용도 대화 발화에서 가져오세요. 단서가 약하면 빈 문자열.
+- "사용자가 직접 고른 자동사고/핵심 신념"이 제공되면 belief_keywords 추출 시 최우선으로 반영하세요.`
+    : "";
+
+  // Step 3 보강 — 대화형은 mechanism_analysis가 비어 trigger/cascade/behavior 근거가
+  // 없다. parts 대화 원문을 함께 제공하고, trigger_quote를 거기서 인용하게 한다.
+  const step3DialogueBlock = hasPartsDialogue
+    ? `
+
+## Step 3 보강 — 마음 탐색 대화 (원문)
+아래는 사용자가 "한 사건"을 떠올리며 상담사와 나눈 대화입니다. mechanism_analysis 구조화 값이 비어 있을 때, trigger_quote·cascade·resulting_behavior 근거를 반드시 이 대화에서 인용하세요. 특히 trigger_quote는 '그 사건(상황)' 주제의 사용자 발화를 그대로 사용합니다.
+
+${formatDialogueForPrompt(partsDialogue!, [], [])}`
+    : "";
+  const step3SourceNote = hasPartsDialogue
+    ? `
+
+# STEP 3 데이터 형식 — 중요 (트리거/상황은 대화에서)
+- mechanism_analysis(구조화 5-Part)가 비어 있으면 무시하고, 위 "Step 3 보강 — 마음 탐색 대화"의 사용자 발화에서 trigger_quote·cascade·resulting_behavior 근거를 인용하세요.
+- trigger_quote 에는 "제공된 특정 상황 없음" 같은 표현을 절대 쓰지 말 것. 대화의 '그 사건(상황)' 발화를 그대로 인용하세요.`
+    : "";
+
   /* ─── 시스템 프롬프트 ─── */
 
   const systemPrompt = `# ROLE
-당신은 1급 심리상담사이자 인지행동치료(CBT) 전문가, 그리고 정신분석학적 통찰을 갖춘 임상가입니다. 사용자가 Step 3(자동사고 자기보고)와 Step 4(핵심 신념 자기보고 — SCT 14문항)에서 자기보고한 데이터를 바탕으로, "Step 5 인지 패턴 통합 분석 리포트"를 생성합니다.
+당신은 1급 심리상담사이자 인지행동치료(CBT) 전문가, 그리고 정신분석학적 통찰을 갖춘 임상가입니다. 사용자가 Step 3(자동사고 자기보고)와 ${step4RoleDesc}에서 자기보고한 데이터를 바탕으로, "Step 5 인지 패턴 통합 분석 리포트"를 생성합니다.
 
 당신의 분석은 따뜻하지만 정확해야 하며, 진단하듯 단정짓지 않고 사용자가 자신의 패턴과 거리를 둘 수 있도록 돕는 거울 역할을 합니다.
 
@@ -198,6 +317,10 @@ export async function POST(req: Request) {
    - 응답 데이터에 없는 내용을 추측해서 추가하지 말 것. 분석은 반드시 자기보고에 근거.
    - 임상 용어(EMS, 도식, 스키마, 병리적 등)를 키워드 명제·설명에 노출 금지. clinical_name 한 곳에만 학술적 명명을 허용.
 
+9. **schema_code (도식 분류)**
+   - belief_keywords의 각 항목에 가장 닮은 Young 심리도식 코드 1개를 schema_code로 배정. 화면에는 코드가 아니라 그 도식의 특성·기원 해석이 가설형으로 노출되므로, 코드만 정확히 고르면 됨.
+   - '성취 중독' 워크북 맥락이므로 US(엄격한 기준)·AS(인정추구)·DS(결함/수치심)가 자주 맞지만, 응답이 분명히 다른 결이면 18개 중 더 맞는 코드를 고를 것. 억지로 끼워맞추지 말 것.
+
 # OUTPUT — 반드시 아래 단일 JSON 객체로만 응답
 JSON 외 다른 텍스트(설명, markdown 코드펜스) 절대 포함 금지.
 
@@ -225,10 +348,11 @@ JSON 외 다른 텍스트(설명, markdown 코드펜스) 절대 포함 금지.
         { "source_code": "...", "id": "...", "stage": "...", "quote": "...", "reasoning": "..." },
         { "source_code": "...", "id": "...", "stage": "...", "quote": "...", "reasoning": "..." }
       ],
-      "insight_close": "→ 이 키워드가 사용자의 삶에서 어떻게 작동하는지 통찰적 한 문장 마무리. 관찰·평가식 종결('~하고 있는 것으로 보입니다', '~하게 만들고 있을 가능성이 큽니다'). '당신은' 주어 금지 / 극존칭 금지."
+      "insight_close": "→ 이 키워드가 사용자의 삶에서 어떻게 작동하는지 통찰적 한 문장 마무리. 관찰·평가식 종결('~하고 있는 것으로 보입니다', '~하게 만들고 있을 가능성이 큽니다'). '당신은' 주어 금지 / 극존칭 금지.",
+      "schema_code": "[이 신념과 가장 닮은 Young 심리도식 코드 1개. 아래 18개 중 정확히 하나의 대문자 코드만: ED(정서적 결핍)·AB(유기)·MA(불신/학대)·SI(사회적 고립)·DS(결함/수치심)·FA(실패)·DI(의존/무능감)·VH(위험·질병 취약성)·EM(융합/미발달된 자기)·SB(복종)·SS(자기희생)·EI(정서적 억제)·US(엄격한 기준/과잉비판)·ET(특권의식)·IS(부족한 자기통제)·AS(승인/인정추구)·NP(부정/비관)·PU(처벌). 확신이 약하면 가장 가까운 1개를 고를 것.]"
     },
-    { "proposition": "...", "clinical_name": "...", "explanation": "...", "evidence": [...최소 3개, 각 항목에 id·stage 포함...], "insight_close": "..." },
-    { "proposition": "...", "clinical_name": "...", "explanation": "...", "evidence": [...최소 3개, 각 항목에 id·stage 포함...], "insight_close": "..." }
+    { "proposition": "...", "clinical_name": "...", "explanation": "...", "evidence": [...최소 3개, 각 항목에 id·stage 포함...], "insight_close": "...", "schema_code": "..." },
+    { "proposition": "...", "clinical_name": "...", "explanation": "...", "evidence": [...최소 3개, 각 항목에 id·stage 포함...], "insight_close": "...", "schema_code": "..." }
   ],
   "achievement_loop": {
     "intro": "세 가지 핵심 신념(키워드1 압축 + 키워드2 압축 + 키워드3 압축)이 합쳐지면서, 당신의 행동에는 다음과 같은 순환 고리(loop)가 반복될 가능성이 큽니다. 형식의 한 문단.",
@@ -297,6 +421,18 @@ JSON 외 다른 텍스트(설명, markdown 코드펜스) 절대 포함 금지.
       { "stage": "behavior",    "label": "6글자 이내", "description": "1~2문장" },
       { "stage": "core_belief", "label": "6글자 이내 — keyword_propositions[0]을 압축", "description": "2~3문장. 닫힌 고리 설명." }
     ]
+  },
+
+  // ─── 다운스트림(Step 6/7/8) prefill용 — 대화에서 구조화 추출. 반드시 채울 것 ───
+  // Step 6은 여기 emotions로 감정 칩을, recent_situation으로 상황 카드를 채운다.
+  // 대화 원문(Step 3 보강 대화 포함)에서 추출하되, 단서가 약하면 합리적으로 보완.
+  "mechanism_extract": {
+    "recent_situation": "[트리거가 된 '그 사건/상황'을 1문장으로. trigger_quote와 동일한 사건. 비우지 말 것]",
+    "emotions": ["[그 순간의 감정 단어 2~4개. 예: '불안', '위축', '조급함']"],
+    "body_text": "[몸의 반응 한 줄. 단서 없으면 빈 문자열]",
+    "automatic_thought": "[그 순간의 자동사고 한 줄 — 1인칭]",
+    "worst_case_result": "[그 생각이 사실일 때 최악의 시나리오 한 줄. 단서 없으면 빈 문자열]",
+    "resulting_behavior": "[그래서 실제로 한 행동 한 줄. 단서 없으면 빈 문자열]"
   }
 }
 
@@ -315,13 +451,15 @@ ${errorCatalog}
 - cognitive_errors.items 는 cognitive_distortions와 같은 id를 사용하되, name은 한글명(name_ko 그대로), definition은 카탈로그의 톤으로 짧게.
 - 사용자가 건너뛴(skipped) SCT 문항은 무시.
 - 위기 신호(자해/자살 사고)가 감지되면 분석 대신 즉시 전문가 연결 안내로 응답을 전환하지 말고, 일단 본 JSON으로 응답하되 flow_insight에 "전문가 상담 권유"를 포함.
+${step4SourceNote}${step3SourceNote}
 
 # FINAL CHECK (출력 직전 자가 검증)
 - 모든 인용이 사용자 원문 그대로인가?
 - 핵심 신념 키워드 3개가 4개 카테고리를 가로지르는 통합적 추출인가?
 - 자동사고 한 문장 요약이 진짜로 '한 문장'으로 응축되었는가?
 - 인지 왜곡이 짜맞춤이 아니라 데이터에서 관찰된 것인가?
-- pattern_cycle.nodes[5].label 이 belief_keywords[0].proposition을 6글자로 압축한 것인가?`;
+- pattern_cycle.nodes[5].label 이 belief_keywords[0].proposition을 6글자로 압축한 것인가?
+- mechanism_extract.recent_situation 과 mechanism_extract.emotions(2개 이상)가 비어 있지 않은가? (Step 6 화면이 이 값으로 채워짐 — 절대 비우지 말 것)`;
 
   const userMessage = `## 진단 결과 (리커트 5점 척도 20문항)
 - 총점: ${diagnosis_scores.total}/100
@@ -333,10 +471,10 @@ ${errorCatalog}
   - emotional_avoidance (정서적 회피): ${diagnosis_scores.dimensions.emotional_avoidance}
 
 ## Step 3 자기보고 — 자동사고 5-Part (사건 단위)
-- 최근 불편했던 상황(트리거): ${mechanism_analysis.recent_situation ?? "미작성"}
+- 최근 불편했던 상황(트리거): ${effectiveRecentSituation || "미작성"}
 - 가장 강했던 감정·강도: ${emotionStrengthLine}
 - 머릿속에 스쳐 지나간 생각들(후보 전체): ${candidatesText}
-- 상황에 대한 생각(감정과 가장 직접 연결): "${primaryThought || "미작성"}"
+- 상황에 대한 생각(감정과 가장 직접 연결): "${effectivePrimaryThought || "미작성"}"
 - 생각으로 인한 결과(최악의 시나리오): "${worstCaseResult || "미작성"}"
 - 완성된 자동사고(상황에 대한 생각 + 그로 인한 결과): "${composedThought || "미완성"}"
 - 그때 떠오른 장면·이미지: ${thoughtImage ? `"${thoughtImage}"` : "비움"}
@@ -347,13 +485,21 @@ ${errorCatalog}
 - 그 생각으로 인한 실제 행동: ${resultingBehavior ? `"${resultingBehavior}"` : "미작성"}
 - 자기 정의(자유텍스트): ${cb.about_self ?? "미작성"}
 
-## Step 4 자기보고 — SCT 14문항 (삶 전반의 패턴)
+${
+    usingDialogue
+      ? `## Step 4 자기보고 — 핵심 신념 탐색 대화 (삶 전반의 패턴)
+상담사와 차례로 나눈 대화입니다. 사용자 발화(원문)를 근거로 인용하세요.
+
+${step4Section}`
+      : `## Step 4 자기보고 — SCT 14문항 (삶 전반의 패턴)
 사용자가 미완성 문장에 짧게 채운 응답입니다. (건너뜀) 표시는 무시하세요.
 
-${sctSections}
+${step4Section}`
+  }
+${step3DialogueBlock}
 
 ## 통합 분석 지침
-- belief_keywords 는 위 SCT 14개 응답 + Step 3의 자기 정의/추가질문 체크/최악의 시나리오 등을 통합해 가장 강하게 작동하는 3개 키워드로 응축하세요.
+- belief_keywords 는 위 Step 4 응답 + Step 3의 자기 정의/추가질문 체크/최악의 시나리오 등을 통합해 가장 강하게 작동하는 3개 키워드로 응축하세요.
 - destroy_rebuild_preview.target_automatic_thought 는 이 사용자의 가장 강한 자동사고 — 다음 우선순위로 선택: ① 완성된 자동사고("${composedThought}"), ② primary 자동사고, ③ candidate_thoughts[0].
 - destroy_rebuild_preview.target_checklist_item 은 추가질문 체크 항목 중 가장 강렬한 1개. 체크된 항목이 없으면 빈 문자열.
 - core_mechanism.strongest_fear / second_fear 는 SCT C/D 카테고리에서 두려움 관련 응답을 우선 인용 (C2, C3, D3 등) — 형식: "원문 인용 (코드)".
@@ -451,7 +597,8 @@ ${sctSections}
         report.belief_keywords[2]?.proposition?.trim() ||
         "(아직 충분한 단서가 없어요)",
       dominant_schemas: report.belief_keywords.slice(0, 2).map((k) => ({
-        ems_code: "AS",
+        // LLM이 분류한 schema_code를 우선 사용(18 도식 중 유효 코드만), 없으면 AS 폴백.
+        ems_code: getSchemaByCode(k.schema_code)?.code ?? "AS",
         natural_label_ko: `${k.proposition}는 ${k.clinical_name}의 안경`,
         strength: "strong" as const,
       })),
@@ -474,12 +621,72 @@ ${sctSections}
       synthesis,
     };
 
+    /* ─── mechanism_analysis prefill (Step 6/7/8 다운스트림용) ───
+     * 대화형은 mechanism_analysis가 비어 Step 6 감정 칩·상황 카드가 깨진다.
+     * LLM이 대화에서 뽑은 mechanism_extract로 '빈 필드만' 채운다(기존 값 보존). */
+    const ex = (parsed as { mechanism_extract?: Partial<{
+      recent_situation: string;
+      emotions: string[];
+      body_text: string;
+      automatic_thought: string;
+      worst_case_result: string;
+      resulting_behavior: string;
+    }> }).mechanism_extract;
+
+    const baseMech = (mechanism_analysis ?? {}) as {
+      recent_situation?: string;
+      automatic_thought?: string;
+      primary_emotion?: string;
+      emotions_body?: { emotions?: string[]; body_text?: string };
+      worst_case_result?: string;
+      resulting_behavior?: string;
+    };
+    const exEmotions = Array.isArray(ex?.emotions)
+      ? ex!.emotions.filter((e) => typeof e === "string" && e.trim().length > 0)
+      : [];
+    const existingEmotions = Array.isArray(baseMech.emotions_body?.emotions)
+      ? baseMech.emotions_body!.emotions!.filter((e) => e.trim().length > 0)
+      : [];
+    const finalEmotions =
+      existingEmotions.length > 0 ? existingEmotions : exEmotions;
+    const nonEmpty = (...vals: Array<string | undefined>) =>
+      vals.find((v) => typeof v === "string" && v.trim().length > 0)?.trim() ?? "";
+
+    const mergedMechanism = {
+      ...baseMech,
+      recent_situation: nonEmpty(
+        baseMech.recent_situation,
+        effectiveRecentSituation,
+        ex?.recent_situation
+      ),
+      automatic_thought: nonEmpty(
+        baseMech.automatic_thought,
+        effectivePrimaryThought,
+        ex?.automatic_thought,
+        report.situation_summary.automatic_thought_summary
+      ),
+      primary_emotion: nonEmpty(baseMech.primary_emotion, finalEmotions[0]),
+      emotions_body: {
+        emotions: finalEmotions,
+        body_text: nonEmpty(baseMech.emotions_body?.body_text, ex?.body_text),
+      },
+      worst_case_result: nonEmpty(
+        baseMech.worst_case_result,
+        ex?.worst_case_result
+      ),
+      resulting_behavior: nonEmpty(
+        baseMech.resulting_behavior,
+        ex?.resulting_behavior
+      ),
+    };
+
     /* ─── DB 저장 ─── */
 
     await supabase
       .from("workshop_progress")
       .update({
         mechanism_insights: report,
+        mechanism_analysis: mergedMechanism,
         core_belief_excavation: mergedExcavation,
         current_step: Math.max(6, progress.current_step ?? 5),
       })
@@ -499,6 +706,51 @@ ${sctSections}
 }
 
 /* ─────────────────────────── 헬퍼 ─────────────────────────── */
+
+/**
+ * 대화형(adaptive) Step 4의 transcript를 분석 프롬프트용 텍스트로 직렬화한다.
+ * 주제(explore_point)별로 묶어 상담사 질문 → 사용자 답을 나열하고,
+ * done 화면에서 사용자가 직접 고른 자동사고/핵심 신념을 뒤에 덧붙인다.
+ */
+function formatDialogueForPrompt(
+  transcript: ConversationTranscript,
+  selectedThoughts: string[],
+  selectedBeliefs: string[]
+): string {
+  const byPoint = new Map<string, typeof transcript.turns>();
+  for (const turn of transcript.turns) {
+    if (turn.answer.trim().length === 0) continue;
+    const arr = byPoint.get(turn.explore_point_id) ?? [];
+    arr.push(turn);
+    byPoint.set(turn.explore_point_id, arr);
+  }
+
+  const sections: string[] = [];
+  for (const [pointId, turns] of byPoint) {
+    const label = DIALOGUE_POINT_LABELS[pointId] ?? pointId;
+    const lines = [...turns]
+      .sort((a, b) => a.turn_index - b.turn_index)
+      .map(
+        (t) =>
+          `  상담사: ${t.question.trim()}\n  사용자: "${t.answer.trim()}"`
+      )
+      .join("\n");
+    sections.push(`[${label}]\n${lines}`);
+  }
+
+  let out = sections.join("\n\n");
+  if (selectedThoughts.length > 0) {
+    out += `\n\n[사용자가 직접 고른 자동사고]\n${selectedThoughts
+      .map((t) => `- "${t.trim()}"`)
+      .join("\n")}`;
+  }
+  if (selectedBeliefs.length > 0) {
+    out += `\n\n[사용자가 직접 고른 핵심 신념]\n${selectedBeliefs
+      .map((b) => `- "${b.trim()}"`)
+      .join("\n")}`;
+  }
+  return out;
+}
 
 function formatSctResponsesForPrompt(responses: SctResponses): string {
   const grouped: Record<SctCategoryCode, string[]> = {

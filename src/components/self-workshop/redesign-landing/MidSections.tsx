@@ -86,10 +86,10 @@ export function IntroSection() {
 const COMPARE_ROWS = [
   { label: "비용", a: "회당 8~15만원", b: "한 번 구매 4만원대" },
   { label: "시간", a: "매주 예약·이동·50분", b: "내가 원할 때, 원하는 속도로" },
-  { label: "커리큘럼", a: "같은 이야기 맴돌기 쉬움", b: "구조화된 커리큘럼" },
-  { label: "진행 방식", a: "상담실 방문 필요", b: "비대면 온라인 진행" },
-  { label: "검사", a: "검사 비용 별도", b: "분석 검사 포함" },
-  { label: "결과물", a: "리포트 미제공", b: "분석 리포트 3종 제공" },
+  { label: "커리큘럼", a: "같은 이야기 맴돌기 쉬움", b: "심리 상담사와 함께 검증된 커리큘럼" },
+  { label: "진행 방식", a: "상담실 방문 필요", b: "비대면 온라인 셀프 진행" },
+  { label: "검사", a: "검사 비용 별도", b: "진단 검사 포함" },
+  { label: "결과물", a: "리포트 미제공", b: "AI 분석 리포트 제공" },
 ];
 
 export function CompareSection() {
@@ -138,8 +138,8 @@ export function CompareSection() {
             </svg>
           </div>
           <div className="lr-compare-card lr-dark lr-f-up lr-d2">
-            <div className="lr-ctag">마음 챙김 워크북과 함께</div>
-            <h3>마음 챙김 워크북</h3>
+            <div className="lr-ctag">심리 상담 워크북과 함께</div>
+            <h3>심리 상담 워크북</h3>
             {COMPARE_ROWS.map((r) => (
               <div className="lr-crow" key={r.label}>
                 <span className="lr-marker lr-v">✓</span>

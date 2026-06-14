@@ -52,7 +52,7 @@ export function StickyCTA() {
   return (
     <div className={`lr-sticky-cta ${show ? "lr-show" : ""}`}>
       <WorkshopNotifyButton className="lr-cta-pill lr-accent">
-        출시 알림신청하고 할인받기
+        대기자 등록하기
         <span className="lr-arrow">→</span>
       </WorkshopNotifyButton>
     </div>

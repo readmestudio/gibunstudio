@@ -20,6 +20,7 @@ import { WorkshopNewBeliefContent } from "@/components/self-workshop/WorkshopNew
 import { WorkshopPartsDiscovery } from "@/components/self-workshop/WorkshopPartsDiscovery";
 import { isWorkshopTestUser } from "@/lib/self-workshop/test-users";
 import { isAdaptiveStepsEnabled } from "@/lib/self-workshop/feature-flags";
+import { readDialogueRecap } from "@/lib/self-workshop/conversation";
 
 interface Props {
   params: Promise<{ step: string }>;
@@ -274,7 +275,10 @@ export default async function WorkshopStepPage({ params }: Props) {
           workshopId={workshopId}
           savedData={progress.alternative_thought_simulation ?? undefined}
           mechanism={withSelectedThought(
-            extractMechanismSnapshot(progress.mechanism_analysis),
+            enrichMechanismFromRecap(
+              extractMechanismSnapshot(progress.mechanism_analysis),
+              progress.parts_discovery
+            ),
             progress.core_belief_excavation
           )}
         />
@@ -285,7 +289,13 @@ export default async function WorkshopStepPage({ params }: Props) {
         <WorkshopNewBeliefContent
           workshopId={workshopId}
           savedData={progress.new_belief ?? undefined}
-          recentSituation={progress.mechanism_analysis?.recent_situation ?? ""}
+          recentSituation={
+            (progress.mechanism_analysis?.recent_situation ?? "").trim() ||
+            enrichMechanismFromRecap(
+              extractMechanismSnapshot(progress.mechanism_analysis),
+              progress.parts_discovery
+            ).situation
+          }
           beliefAnalysis={extractBeliefAnalysis(progress.core_belief_excavation)}
         />
       )}
@@ -297,7 +307,10 @@ export default async function WorkshopStepPage({ params }: Props) {
           savedData={progress.coping_plan ?? undefined}
           newBelief={progress.new_belief ?? null}
           beliefAnalysis={extractBeliefAnalysis(progress.core_belief_excavation)}
-          mechanism={extractMechanismSnapshot(progress.mechanism_analysis)}
+          mechanism={enrichMechanismFromRecap(
+            extractMechanismSnapshot(progress.mechanism_analysis),
+            progress.parts_discovery
+          )}
           userName={
             (user.user_metadata?.name as string | undefined) ??
             (user.user_metadata?.full_name as string | undefined) ??
@@ -464,5 +477,59 @@ function extractMechanismSnapshot(mechanism: unknown): {
     body_text: body,
     worst_case:
       typeof m.worst_case_result === "string" ? m.worst_case_result.trim() : "",
+  };
+}
+
+/**
+ * 대화형 흐름에서는 mechanism_analysis가 비어 Step 6/8의 상황·감정 칸이 비어 보인다.
+ * 그런데 사용자가 Step 3을 끝낼 때 만든 parts_discovery.dialogue_recap에는 이미
+ * 깨끗한 상황(part_profile.trigger_situation)·감정(surface_card.emotions)이 들어 있다.
+ * 추가 LLM 호출 없이 그 값으로 빈 필드만 보강한다(이미 한 답변을 그대로 반영).
+ */
+function enrichMechanismFromRecap(
+  snapshot: ReturnType<typeof extractMechanismSnapshot>,
+  partsDiscovery: unknown
+): ReturnType<typeof extractMechanismSnapshot> {
+  const recap = readDialogueRecap(partsDiscovery);
+  if (!recap) return snapshot;
+  const pp = recap.part_profile;
+  const surface = recap.surface_card;
+
+  const recapEmotions = Array.isArray(surface?.emotions)
+    ? surface.emotions
+        .map((e) => (typeof e?.label === "string" ? e.label.trim() : ""))
+        .filter((s) => s.length > 0)
+    : [];
+  const recapBody = surface?.body_signal
+    ? [surface.body_signal.headline, surface.body_signal.description]
+        .filter((s) => typeof s === "string" && s.trim().length > 0)
+        .join(" — ")
+    : "";
+  const pick = (cur: string, ...fallbacks: Array<string | undefined>): string =>
+    cur.trim().length > 0
+      ? cur
+      : fallbacks.find((f) => typeof f === "string" && f.trim().length > 0)?.trim() ?? "";
+
+  const emotionWords =
+    snapshot.emotion_words.length > 0 ? snapshot.emotion_words : recapEmotions;
+  const bodyText = pick(snapshot.body_text, recapBody);
+  const emotionParts: string[] = [];
+  if (emotionWords.length > 0) emotionParts.push(emotionWords.join(", "));
+  if (bodyText) emotionParts.push(bodyText);
+
+  return {
+    ...snapshot,
+    situation: pick(snapshot.situation, pp?.trigger_situation),
+    automatic_thought: pick(
+      snapshot.automatic_thought,
+      pp?.automatic_thought,
+      surface?.thought
+    ),
+    emotion:
+      snapshot.emotion.trim().length > 0
+        ? snapshot.emotion
+        : emotionParts.join(" · "),
+    emotion_words: emotionWords,
+    body_text: bodyText,
   };
 }

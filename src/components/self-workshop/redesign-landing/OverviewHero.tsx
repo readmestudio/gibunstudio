@@ -1,6 +1,5 @@
 "use client";
 
-import { WorkshopNotifyButton } from "./WorkshopNotifyButton";
 
 /**
  * 워크북 전반 상세 페이지(`/payment/self-workshop`) 전용 Hero.
@@ -22,14 +21,16 @@ export function OverviewHero() {
           </span>
         </div>
         <h1 className="lr-f-blur">
-          직장인을 위한
+          <span className="lr-accent-word">하이퍼포머</span>를 위한
           <br />
-          <span className="lr-accent-word">마음 챙김</span> 워크북
+          심리 상담 워크북
         </h1>
         <p className="lr-sub lr-f-up lr-d1">
-          마음 안의 여러 부분을 알아보고,
+          일은 더 잘하고 싶은데 마음이 따라주지 않을 때,
           <br />
-          다음 한 달을 다르게 살아보는 라이팅 테라피
+          1급 심리상담사와 명상 디렉터가 만든 워크북으로
+          <br />
+          당신의 퍼포먼스를 높여보세요
         </p>
         <div className="lr-hero-chips lr-f-up lr-d1">
           <span className="lr-chip">#내면가족체계</span>
@@ -37,13 +38,12 @@ export function OverviewHero() {
           <span className="lr-chip">#소프트런칭특가</span>
         </div>
         <div className="lr-hero-cta-row lr-f-up lr-d2">
-          <WorkshopNotifyButton className="lr-cta-pill lr-accent">
-            출시 알림신청하고 할인받기
+          <a href="/waitlist" className="lr-cta-pill lr-accent">
+            대기자 등록하기
             <span className="lr-arrow">→</span>
-          </WorkshopNotifyButton>
+          </a>
         </div>
         <div className="lr-scroll-cue">
-          <span>SCROLL</span>
           <span className="lr-line" />
         </div>
       </div>
@@ -51,22 +51,38 @@ export function OverviewHero() {
   );
 }
 
-/* ── 워크북의 출발점 인용 박스 (overview 톤) ── */
+/* ── 제작 비하인드 스토리 박스 (overview 톤) ── */
 export function OverviewBigQuestion() {
   return (
     <section className="lr-section-sm">
       <div className="lr-wrap-5">
-        <div className="lr-big-q lr-f-up">
+        <div className="lr-big-q lr-big-story lr-f-up">
           <div className="lr-qmark">&ldquo;</div>
+          <span className="lr-story-eyebrow">MAKER&rsquo;S NOTE · 제작 비하인드</span>
           <h3>
-            과거의 원인을 캐묻기보다,
+            회사가 <em>1조 가치 유니콘</em>이 되어도,
             <br />
-            지금 내 안의 부분들과 대화하고
-            <br />
-            다음 한 걸음을 그려볼 수는 없을까?
+            정작 저는 1분도 쉬지 못했습니다
           </h3>
+          <div className="lr-story-body">
+            <p>
+              실리콘밸리 기업에서 5년간 미친 듯이 일했습니다. 회사는 1조 가치의
+              유니콘이 되었지만, 정작 저는 기쁘지 않았습니다.
+            </p>
+            <p>
+              회사의 성장 속도에 맞춰 저도 끊임없이 성장해야 할 것 같았고, 마음은
+              단 1분도 쉬지 못했습니다. 늘 뭔가를 해야 하는데 하지 않고 있는
+              느낌에 시달렸습니다.
+            </p>
+            <p>
+              그때 명상과 IFS 심리 상담 기법을 만났습니다. 저는 엄청난 돈과
+              시간을 써가며 터득했지만, 여러분은 한 번에 정답을 찾으시길 바라는
+              마음으로 — 한국 심리 상담 협회 1급 상담사와 함께 이 워크북을
+              만들었습니다.
+            </p>
+          </div>
           <div className="lr-footnote">
-            마음 챙김 워크북은 이 질문으로부터 시작되었습니다.
+            심리 상담 워크북은 이 이야기로부터 시작되었습니다.
           </div>
         </div>
       </div>

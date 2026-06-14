@@ -4,9 +4,10 @@ import { useState } from "react";
 import { WorkshopNotifyButton } from "./WorkshopNotifyButton";
 
 /* ============================================================
- * PricingSection — 좌(포함) + 우(검정 가격 카드)
+ * PricingSection — 워크북 단독 vs 워크북+상담 비교 2단
  * ============================================================ */
-const PCL = [
+/** 두 플랜 공통: 워크북 전 과정에 포함되는 것 */
+const WORKBOOK_INCLUDED = [
   "진단 테스트 (Likert 5점 척도 20문항)",
   "진단 결과 리포트 (4영역 위험군 분석)",
   "실습 (CBT 5영역 · 하향 화살표 · 대안 사고 · 근거 모으기)",
@@ -24,45 +25,69 @@ export function PricingSection() {
             PRICING
           </span>
           <h2 className="lr-f-up lr-d1">
-            단 한 번의 결제,
+            워크북만, 또는
             <br />
-            <em>심리 상담의 절반 가격</em>으로
+            <em>심리 상담까지 함께</em>
           </h2>
           <p className="lr-lede lr-f-up lr-d2">
-            1:1 심리 상담 1회 비용으로 10단계 워크북과 3가지 리포트를 모두.
+            혼자 워크북으로 시작하거나, 1급 심리 상담사의 1:1 상담까지 함께
+            받을 수 있어요. 포함되는 것을 비교해 보세요.
           </p>
         </div>
         <div className="lr-price-grid">
+          {/* 플랜 ①: 워크북 단독 */}
           <div className="lr-price-card lr-f-up">
-            <div className="lr-ptag">INCLUDED</div>
-            <h3>한 번 결제에 포함되는 것</h3>
+            <div className="lr-ptag">WORKBOOK ONLY</div>
+            <h3>상담 워크북</h3>
+            <div className="lr-big-price lr-big-price-ink">₩49,000</div>
             <p className="lr-pdesc">
               10단계 워크북 전 과정과 3가지 분석 리포트, 자기 확언 카드까지
-              모두 포함됩니다.
+              영구 보관.
             </p>
             <div className="lr-pcheck-list">
-              {PCL.map((c) => (
+              {WORKBOOK_INCLUDED.map((c) => (
                 <div className="lr-pcl-row" key={c}>
                   <span className="lr-pcl-mark">✓</span>
                   {c}
                 </div>
               ))}
             </div>
-          </div>
-          <div className="lr-price-card lr-dark lr-f-up lr-d1">
-            <div className="lr-badge">EARLY ACCESS</div>
-            <div className="lr-ptag">알림 신청 특가</div>
-            <div className="lr-strike" style={{ marginTop: 12 }}>
-              심리 상담 1회 평균 ₩80,000
-            </div>
-            <div className="lr-big-price">₩49,000</div>
-            <p className="lr-pdesc lr-pdesc-w">
-              한 번 결제로 워크북 + 3가지 리포트 영구 보관
-            </p>
-            <WorkshopNotifyButton className="lr-cta-pill">
-              출시 알림신청하고 할인받기
+            <a className="lr-cta-pill lr-cta-ghost" href="/waitlist">
+              워크북만 신청하기
               <span className="lr-arrow">→</span>
-            </WorkshopNotifyButton>
+            </a>
+          </div>
+
+          {/* 플랜 ②: 워크북 + 심리 상담 (강조) */}
+          <div className="lr-price-card lr-dark lr-f-up lr-d1">
+            <div className="lr-badge">BEST · 심리 상담 포함</div>
+            <div className="lr-ptag">WORKBOOK + 1:1 상담</div>
+            <h3>워크북 + 심리 상담</h3>
+            <div className="lr-big-price">₩129,000</div>
+            <p className="lr-pdesc lr-pdesc-w">
+              워크북 전 과정에, 1급 심리 상담사의 1:1 상담까지 함께.
+            </p>
+            {/* 상담 하이라이트 박스 */}
+            <div className="lr-counsel-box">
+              <div className="lr-counsel-head">
+                <span className="lr-counsel-icon">＋</span>
+                <b>한국상담심리학회 상담심리사 1급</b> 1:1 상담
+              </div>
+              <p className="lr-counsel-desc">
+                자격을 갖춘 1급 심리 상담사가 직접 <b>줌(Zoom)</b>으로 진행하는
+                1:1 상담 1회. 워크북 결과를 바탕으로 더 깊이 들여다봅니다.
+              </p>
+              <div className="lr-counsel-price">
+                <span className="lr-counsel-strike">₩150,000</span>
+                <span className="lr-counsel-arrow">→</span>
+                <span className="lr-counsel-now">₩89,000</span>
+                <span className="lr-counsel-tag">할인가</span>
+              </div>
+            </div>
+            <a className="lr-cta-pill" href="/waitlist">
+              상담까지 함께 신청하기
+              <span className="lr-arrow">→</span>
+            </a>
           </div>
         </div>
         <div className="lr-price-foot lr-f-up">
@@ -238,6 +263,8 @@ export function TestimonialsSection() {
 
 /* ============================================================
  * CreatorSection — 창작자 스토리
+ * (overview 페이지에서는 제작 비하인드 박스와 중복되어 미사용.
+ *  성취 중독 상세 RedesignLandingPage에서만 렌더링)
  * ============================================================ */
 export function CreatorSection() {
   return (
@@ -265,10 +292,10 @@ export function CreatorSection() {
             수 있어야 했습니다. 그 도구를 만들고 싶었습니다.
           </p>
           <p className="lr-highlight">
-            <em>마음챙김 워크북은 그렇게 시작됐습니다.</em>
+            <em>심리 상담 워크북은 그렇게 시작됐습니다.</em>
           </p>
           <p>
-            마음 챙김 워크북은 실습을 통해 문제 상황을 발견하고, 인지행동
+            심리 상담 워크북은 실습을 통해 문제 상황을 발견하고, 인지행동
             이론에 따라 분석함으로써 그 함정에서 빠져나오는 법을 배울 수
             있습니다. 이 워크북이 퍼포먼스의 한계를 없애고, 새로운 세계를
             열어주는 문이 되길 바랍니다.
@@ -289,7 +316,7 @@ const FAQS = [
   },
   {
     q: "우울증/불안장애 진단을 받은 사람도 사용할 수 있나요?",
-    a: "마음 챙김 워크북은 치료 목적이 아니며, 스스로의 마음을 이해하고 대처하는 도구입니다. 이미 진단을 받으셨다면 전문의·상담사 상담과 병행해서 사용해 주세요.",
+    a: "심리 상담 워크북은 치료 목적이 아니며, 스스로의 마음을 이해하고 대처하는 도구입니다. 이미 진단을 받으셨다면 전문의·상담사 상담과 병행해서 사용해 주세요.",
   },
   {
     q: "워크북 완성까지 얼마나 걸리나요?",
@@ -362,7 +389,7 @@ export function FaqSection() {
           ))}
         </div>
         <div className="lr-faq-foot">
-          * 마음 챙김 워크북은 치료 목적이 아니며, 진단을 받은 경우 전문의
+          * 심리 상담 워크북은 치료 목적이 아니며, 진단을 받은 경우 전문의
           상담을 병행하시길 권합니다.
         </div>
       </div>

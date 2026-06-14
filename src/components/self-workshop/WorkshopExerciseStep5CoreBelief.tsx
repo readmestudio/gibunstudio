@@ -20,6 +20,7 @@ import {
 } from "@/lib/self-workshop/core-belief-excavation";
 import { WorkshopConversation } from "@/components/self-workshop/conversation/WorkshopConversation";
 import { WorkshopCoreBeliefDone } from "@/components/self-workshop/conversation/WorkshopCoreBeliefDone";
+import { PartsMapSection } from "@/components/self-workshop/conversation/PartsMapSection";
 import {
   readDialogue,
   readDialogueRecap,
@@ -171,6 +172,8 @@ function ClassicCoreBelief({
               ...(initial.legacy_downward_arrow
                 ? { legacy_downward_arrow: initial.legacy_downward_arrow }
                 : {}),
+              // 파츠맵 캐시 보존(통째 덮어쓰기로 날아가지 않도록).
+              ...(initial.parts_map ? { parts_map: initial.parts_map } : {}),
             },
           }),
         });
@@ -181,6 +184,7 @@ function ClassicCoreBelief({
       initial.synthesis,
       initial.legacy_downward_arrow,
       initial.belief_analysis,
+      initial.parts_map,
     ]
   );
 
@@ -237,6 +241,7 @@ function ClassicCoreBelief({
             ...(initial.legacy_downward_arrow
               ? { legacy_downward_arrow: initial.legacy_downward_arrow }
               : {}),
+            ...(initial.parts_map ? { parts_map: initial.parts_map } : {}),
           },
         }),
       });
@@ -302,6 +307,15 @@ function ClassicCoreBelief({
           onToggleSkip={toggleSkip}
         />
       ))}
+
+      {/* 7문항 이상 답했으면 — 지금까지의 답으로 내 안의 마음들을 그려준다. */}
+      {canAdvance && (
+        <PartsMapSection
+          workshopId={workshopId}
+          source="sct"
+          savedData={savedData}
+        />
+      )}
 
       {/* 진행 카드 — 박스 없이 메타 라벨 + 진행률 줄 + CTA */}
       <section className="space-y-5 pt-4">
@@ -831,6 +845,8 @@ function AdaptiveCoreBelief({
       ...(initial.legacy_downward_arrow
         ? { legacy_downward_arrow: initial.legacy_downward_arrow }
         : {}),
+      // 파츠맵 캐시 보존.
+      ...(initial.parts_map ? { parts_map: initial.parts_map } : {}),
     }),
     [initial]
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 /* ============================================================
@@ -37,12 +38,13 @@ export function OverviewApproachSection() {
             OUR APPROACH
           </span>
           <h2 className="lr-may-h lr-f-up lr-d1">
-            마음 챙김 워크북은
+            심리 상담 워크북은
             <br />
             이렇게 <em>다릅니다</em>
           </h2>
           <p className="lr-lede lr-f-up lr-d2">
-            내면가족체계(IFS)와 인지행동치료(CBT)를 한 권에 녹였습니다.
+            내면가족체계(IFS)와 인지행동치료(CBT)를 기반으로 자연스럽게
+            탐색과 통찰이 일어날 수 있도록 설계했습니다.
           </p>
         </div>
         <div className="lr-feature-list lr-f-up">
@@ -67,6 +69,162 @@ export function OverviewApproachSection() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+ * MethodSection — IFS·CBT 이론 설명 + 1급 상담사 신뢰 영역
+ * "5단계 여정"(JourneySection)과 "이렇게 다릅니다"(ApproachSection) 사이에 배치.
+ *  - Part A: 두 가지 검증된 심리치료 이론(IFS·CBT)이 실제로 무엇인지 설명
+ *  - Part B: 제작자 2인(상담심리사·명상 디렉터)의 이름·자격 이력 신뢰 배너
+ * 톤: 공격적 단어(반박/부수기) 대신 "다시 보기/업데이트" 등 비판단적 표현 사용
+ * ============================================================ */
+const METHODS = [
+  {
+    tag: "내면가족체계 · IFS",
+    title: "마음을 ‘여러 부분’으로 만납니다",
+    body:
+      "우리 마음은 하나가 아니에요. 더 잘하라고 다그치는 부분, 다 그만두고 싶은 부분, 불안해하는 부분이 한 사람 안에서 부딪힙니다. IFS는 이 부분들을 없애야 할 문제가 아니라, 저마다 나를 지키려던 역할로 보고 하나씩 만나 대화하는 접근이에요.",
+    chips: ["Richard Schwartz 박사 정립", "전 세계 상담 현장에서 활용"],
+  },
+  {
+    tag: "인지행동치료 · CBT",
+    title: "생각의 흐름을 다시 살펴봅니다",
+    body:
+      "같은 상황인데 유독 나를 흔드는 생각이 있어요. CBT는 ‘상황 → 자동적 사고 → 감정 → 행동’으로 이어지는 연결고리를 펼쳐 보고, 사실이 아닌 생각을 알아차려 다른 해석으로 업데이트하는 방법입니다. 우울·불안 개선 효과가 가장 많이 검증된 심리치료예요.",
+    chips: ["수십 년간 효과 검증", "전 세계 임상 표준"],
+  },
+];
+
+const CREATORS = [
+  {
+    role: "심리 상담사",
+    name: "김연지",
+    image: "/images/creators/kim-yeonji.png",
+    credentials: [
+      "상담심리사 1급 (한국상담심리학회)",
+      "임상심리사 1급 (한국산업인력공단)",
+      "청소년상담사 2급 (여성가족부)",
+      "트라우마전문상담사 (한국트라우마연구교육원)",
+    ],
+  },
+  {
+    role: "명상 디렉터",
+    name: "김지안",
+    image: "/images/creators/kim-jian.png",
+    credentials: [
+      "(전) Growth Lead, Speak (Silicon Valley AI Language Learning Company)",
+      "MBCT Certified, Brown University",
+      "Meditation Instructor (LV.1, 110 Hours), 숨쉬는고래",
+      "Certified Singing Bowl Meditation Instructor (Level 1)",
+      "인지행동심리상담사 1급 (한국심리교육협회)",
+      "긍정심리상담사 1급 (한국심리교육협회)",
+    ],
+  },
+];
+
+export function OverviewMethodSection() {
+  return (
+    <section className="lr-section" id="method">
+      <div className="lr-wrap-5">
+        <div className="lr-s-header">
+          <span className="lr-eyebrow lr-f-up">
+            <span className="lr-dot" />
+            METHOD & EXPERTISE
+          </span>
+          <h2 className="lr-f-up lr-d1">
+            <em>1급 심리상담사</em>와 <em>명상 디렉터</em>가
+            <br />
+            만들면 다릅니다
+          </h2>
+          <p className="lr-lede lr-f-up lr-d2">
+            한국상담심리학회 1급 심리 상담사와 실리콘밸리 기업 출신 명상
+            디렉터가 만나 실제 현장에서 쓰이는 이론을 한 권의 워크북에
+            담았습니다.
+          </p>
+        </div>
+
+        {/* Part A — 두 이론(IFS·CBT)이 무엇인지 설명 */}
+        <div className="lr-method-grid">
+          {METHODS.map((m, i) => (
+            <div
+              className="lr-method-card lr-f-up"
+              key={m.tag}
+              style={{ transitionDelay: `${i * 0.1}s` }}
+            >
+              <span className="lr-mc-tag">{m.tag}</span>
+              <h3 className="lr-mc-title">{m.title}</h3>
+              <p className="lr-mc-body">{m.body}</p>
+              <div className="lr-mc-chips">
+                {m.chips.map((c) => (
+                  <span className="lr-mc-chip" key={c}>
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Part B — 1급 심리 상담사 신뢰 배너 */}
+        <div className="lr-trust-band lr-f-up lr-d1">
+          <div className="lr-trust-grid-bg" />
+          <div className="lr-trust-head">
+            <span className="lr-trust-badge">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path
+                  d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L3.2 7.7l5.4-.8z"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <div>
+              <div className="lr-trust-eyebrow">CLINICALLY DESIGNED</div>
+              <h3 className="lr-trust-h">
+                검증된 이론을 <b>상담 현장의 순서</b> 그대로
+                <br />
+                워크북 한 권에 옮겼습니다
+              </h3>
+            </div>
+          </div>
+          <div className="lr-trust-profiles">
+            {CREATORS.map((c) => (
+              <div className="lr-trust-profile" key={c.name}>
+                <div className="lr-tp-head">
+                  <div className="lr-tp-photo">
+                    <Image
+                      src={c.image}
+                      alt={`${c.role} ${c.name}`}
+                      width={148}
+                      height={148}
+                    />
+                  </div>
+                  <div className="lr-tp-headtext">
+                    <span className="lr-tp-role">{c.role}</span>
+                    <div className="lr-tp-name">{c.name}</div>
+                  </div>
+                </div>
+                <ul className="lr-tp-creds">
+                  {c.credentials.map((cr) => (
+                    <li key={cr}>
+                      <span className="lr-tp-dot" />
+                      <span>{cr}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -185,20 +343,17 @@ export function OverviewJourneySection() {
           </h2>
         </div>
         <p className="lr-empathy lr-f-up">
-          <b>진단</b>에서 시작해 내 안의 <b>부분들</b>을 알아보고,
+          <b>진단</b>에서 시작해 나의 퍼포먼스를 가로막는 <b>부분들</b>을 분석하고,
           <br />
-          그 안에 자리잡은 <b>신념</b>을 짚어낸 뒤,
+          실제 상담처럼 <b>문답</b>을 통해 개선점과 행동 지침을 도출한
           <br />
-          <b>다음 한 달</b>의 다른 선택을 직접 적어보는 흐름입니다.
+          <b>최종 리포트</b>가 제공됩니다.
         </p>
         <JourneyDiagram />
         <JourneyList />
         <div className="lr-cycle-conclusion lr-f-up">
           상담사가 따라가는 흐름을 워크북이 <b>한 단계씩 안내</b>합니다.
           매번 같은 자리에 머무르지 않도록.
-        </div>
-        <div className="lr-cycle-cta-headline lr-f-up lr-d1">
-          진단부터 다음 한 달의 행동까지, <em>한 번에</em>
         </div>
       </div>
     </section>
@@ -223,8 +378,7 @@ const LINEUP: LineupItem[] = [
     title: "성취 중독",
     desc:
       "성과가 없으면 불안하고, 쉬려고 하면 더 불안한 마음을 풀어내는 워크북. 자가 진단부터 다음 한 달의 다른 행동까지 10단계.",
-    status: "live",
-    href: "/payment/self-workshop/achievement-addiction",
+    status: "coming",
   },
   {
     badge: "WORKBOOK 02",
@@ -269,11 +423,14 @@ export function OverviewLineupSection() {
         </div>
         <div className="lr-lineup-grid">
           {LINEUP.map((item, i) => {
+            // live → 상세 페이지(item.href) / coming → 대기자 등록(/waitlist)
+            const isLive = item.status === "live";
+            const link = isLive ? item.href : "/waitlist";
             const inner = (
               <>
                 <div className="lr-lu-head">
                   <span className="lr-lu-badge">{item.badge}</span>
-                  {item.status === "live" ? (
+                  {isLive ? (
                     <span className="lr-lu-status lr-lu-live">
                       <span className="lr-dot" />
                       판매중
@@ -286,18 +443,18 @@ export function OverviewLineupSection() {
                 </div>
                 <h3 className="lr-lu-title">{item.title}</h3>
                 <p className="lr-lu-desc">{item.desc}</p>
-                {item.status === "live" && (
-                  <div className="lr-lu-cta">
-                    상세보기
-                    <span className="lr-arrow">→</span>
-                  </div>
-                )}
+                <div className="lr-lu-cta">
+                  {isLive ? "상세보기" : "대기자 등록"}
+                  <span className="lr-arrow">→</span>
+                </div>
               </>
             );
-            return item.href ? (
+            return link ? (
               <a
-                href={item.href}
-                className={`lr-lu-card lr-lu-live-card lr-f-up`}
+                href={link}
+                className={`lr-lu-card ${
+                  isLive ? "lr-lu-live-card" : ""
+                } lr-f-up`}
                 style={{ transitionDelay: `${i * 0.08}s` }}
                 key={item.badge}
               >

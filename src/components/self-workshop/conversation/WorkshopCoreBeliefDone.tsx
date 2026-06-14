@@ -26,6 +26,7 @@ import {
   type CoreBeliefExcavation,
 } from "@/lib/self-workshop/core-belief-excavation";
 import type { ConversationTranscript } from "@/lib/self-workshop/conversation";
+import { PartsMapSection } from "./PartsMapSection";
 
 interface Props {
   workshopId: string;
@@ -143,6 +144,8 @@ export function WorkshopCoreBeliefDone({
         ...(initial.legacy_downward_arrow
           ? { legacy_downward_arrow: initial.legacy_downward_arrow }
           : {}),
+        // 파츠맵 캐시 보존(이 저장이 core_belief_excavation을 통째 덮어씀).
+        ...(initial.parts_map ? { parts_map: initial.parts_map } : {}),
       };
       const beliefAnalysis =
         chosenBeliefs.length > 0
@@ -268,6 +271,13 @@ export function WorkshopCoreBeliefDone({
           </>
         )}
       </article>
+
+      {/* 내 안의 마음들 — 대화에서 캐릭터화한 파츠 관계 지도 */}
+      <PartsMapSection
+        workshopId={workshopId}
+        source="dialogue"
+        savedData={savedData}
+      />
 
       {/* 자동사고 고르기 */}
       <SelectBlock

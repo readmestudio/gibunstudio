@@ -363,79 +363,141 @@ function PointThreeCard() {
 }
 
 /* ============================================================
- * POINT 4 — 근거 모으기 + 자기 확언 (워크북 전반)
+ * POINT 4 — 내 안의 마음들 지도 + 16가지 핵심 신념 발견
+ *   2슬라이드 캐러셀: (A) 내면의 부분(마음들) 탐험
+ *                    (B) 16가지 핵심 신념 중 내 신념 찾기
  * ============================================================ */
-const EVI = [
-  "지난주 한 번 다르게 반응했더니 갈등이 짧아졌다",
-  "스스로 다그치지 않은 날, 집중이 더 잘 됐다",
-  "쉬어준 다음날 회의 발언이 더 또렷했다",
-];
-const AFFIRM = [
-  { n: "01", t: "내 안의 부분들은 모두 나를 지키려 한다." },
-  { n: "02", t: "한 번의 다른 선택이 다음 한 달을 바꿀 수 있다." },
+const MINDS = [
+  { icon: "🧭", name: "통제·계획하는 마음", role: "잘 해내려 끊임없이 점검해요" },
+  { icon: "🌊", name: "갑자기 뛰어드는 마음", role: "고통이 올라오면 다른 데로 도망쳐요" },
+  { icon: "🐣", name: "안에 숨은 어린 마음", role: "사실은 안심하고 싶어 해요" },
+  { icon: "📣", name: "스스로 다그치는 마음", role: "더 나아져야 한다고 몰아붙여요" },
 ];
 
-function PointFourCard() {
-  const [stage, setStage] = useState(0);
+function MindsSlide({ active }: { active: boolean }) {
+  const [step, setStep] = useState(-1);
   useEffect(() => {
-    const seq = [500, 1500, 2500, 3500, 4400];
-    const timers = seq.map((d, i) =>
-      setTimeout(() => setStage(i + 1), d),
-    );
-    const reset = setTimeout(() => setStage(0), 7500);
-    return () => {
-      timers.forEach(clearTimeout);
-      clearTimeout(reset);
-    };
-  }, [stage === 0 ? "start" : "run"]);
-  useEffect(() => {
-    if (stage === 5) {
-      const r = setTimeout(() => setStage(0), 2500);
-      return () => clearTimeout(r);
+    if (!active) {
+      setStep(-1);
+      return;
     }
-  }, [stage]);
-  const filledStars = Math.min(5, Math.floor(stage) + 2);
+    const ts = [500, 1300, 2100, 2900].map((d, i) =>
+      setTimeout(() => setStep(i), d),
+    );
+    return () => ts.forEach(clearTimeout);
+  }, [active]);
   return (
-    <div className="lr-point-card">
-      <div className="lr-pc-body" style={{ padding: "20px 22px" }}>
-        <div className="lr-evi-head">
-          <span>STEP 08 · 근거 모으기</span>
-          <span className="lr-stars">
-            {"★".repeat(filledStars)}
-            {"☆".repeat(5 - filledStars)}
-          </span>
-        </div>
-        <div className="lr-evi-belief">
-          <span>&ldquo;다른 반응을 시도해도 안전하다&rdquo;</span>
-        </div>
-        <div className="lr-evi-cards">
-          {EVI.map((e, i) => (
-            <div
-              key={e}
-              className={`lr-evi-card ${stage >= i + 1 ? "lr-in" : ""}`}
-            >
-              <div className="lr-em">✓</div>
-              <div>{e}</div>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div
+        className="lr-pc-head"
+        style={{ margin: "-28px -26px 18px", padding: "16px 24px" }}
+      >
+        <b>STEP 03 · 내면의 부분 탐험</b>
+        <span>INNER PARTS</span>
+      </div>
+      <div className="lr-mind-head">내 안에 살고 있는 마음들</div>
+      <div className="lr-mind-list">
+        {MINDS.map((m, i) => (
+          <div
+            key={m.name}
+            className={`lr-mind-node ${step >= i ? "lr-in" : ""}`}
+          >
+            <div className="lr-mi">{m.icon}</div>
+            <div className="lr-mt">
+              <b>{m.name}</b>
+              <span>{m.role}</span>
             </div>
-          ))}
-        </div>
-        <div className="lr-affirm-section">
-          <div className="lr-ah">
-            <span>STEP 09 · 자기 확언</span>
-            <span>AFFIRMATION CARDS</span>
           </div>
-          <div className="lr-affirm-grid">
-            {AFFIRM.map((a, i) => (
-              <div
-                key={a.n}
-                className={`lr-affirm-card ${stage >= i + 4 ? "lr-in" : ""}`}
-              >
-                <div className="lr-at-num">AFFIRMATION · {a.n}</div>
-                {a.t}
-              </div>
-            ))}
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const BELIEFS = [
+  { t: "나는 부족해", hit: true },
+  { t: "실수하면 안 돼" },
+  { t: "안전하지 않아" },
+  { t: "쉬면 안 돼" },
+  { t: "사랑받지 못해" },
+  { t: "나는 혼자야" },
+  { t: "인정받아야 해" },
+  { t: "통제해야 해" },
+  { t: "나는 짐이야" },
+  { t: "약하면 안 돼" },
+  { t: "완벽해야 해" },
+  { t: "버려질 거야" },
+  { t: "중요하지 않아" },
+  { t: "감정은 숨겨야" },
+  { t: "결함이 있어" },
+  { t: "결국 실패해" },
+];
+
+function BeliefSlide({ active }: { active: boolean }) {
+  const [shown, setShown] = useState(0);
+  const [hit, setHit] = useState(false);
+  const [found, setFound] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setShown(0);
+      setHit(false);
+      setFound(false);
+      return;
+    }
+    const grid = setInterval(
+      () => setShown((n) => Math.min(BELIEFS.length, n + 2)),
+      90,
+    );
+    const h = setTimeout(() => setHit(true), 1400);
+    const f = setTimeout(() => setFound(true), 2100);
+    return () => {
+      clearInterval(grid);
+      clearTimeout(h);
+      clearTimeout(f);
+    };
+  }, [active]);
+  const hitBelief = BELIEFS.find((b) => b.hit)?.t ?? "";
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div
+        className="lr-pc-head"
+        style={{ margin: "-28px -26px 18px", padding: "16px 24px" }}
+      >
+        <b>STEP 04 · 핵심 신념 찾기</b>
+        <span>16 CORE BELIEFS</span>
+      </div>
+      <div className="lr-belief-cap">16가지 핵심 신념 중, 내 신념은</div>
+      <div className="lr-belief-grid">
+        {BELIEFS.map((b, i) => (
+          <div
+            key={b.t}
+            className={`lr-belief-chip ${i < shown ? "lr-in" : ""} ${b.hit && hit ? "lr-hit" : ""}`}
+          >
+            {b.t}
           </div>
-        </div>
+        ))}
+      </div>
+      <div className={`lr-belief-found ${found ? "lr-in" : ""}`}>
+        <em>&ldquo;{hitBelief}&rdquo;</em> 가 마음들의 공통 뿌리였어요
+      </div>
+    </div>
+  );
+}
+
+function PointPartsCard() {
+  const [s, setS] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setS((x) => (x + 1) % 2), 5500);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <div className="lr-point-card" style={{ padding: "28px 26px" }}>
+      {s === 0 && <MindsSlide active />}
+      {s === 1 && <BeliefSlide active />}
+      <div className="lr-carousel-dots">
+        {[0, 1].map((i) => (
+          <div key={i} className={`lr-cd ${s === i ? "lr-on" : ""}`} />
+        ))}
       </div>
     </div>
   );
@@ -469,15 +531,15 @@ const POINTS: PointDef[] = [
   },
   {
     n: "POINT 02",
-    title: ["워크북을 마치면", "3가지 리포트가 남아요"],
+    title: ["내 안의 여러 마음과", "핵심 신념을 발견해요"],
     desc:
-      "한 번의 워크북에서 서로 다른 시점의 리포트가 누적됩니다. 진단 결과 / 인지 패턴 분석 / 종합 가이드 — 다음 한 달을 어떻게 살아볼지가 한 장씩 손에 남아요.",
+      "내 안에는 통제하려는 마음, 도망치고 싶은 마음, 숨어 있는 어린 마음이 함께 살고 있어요. 워크북은 이 마음들을 하나씩 만나 무엇을 지키려는지 분석하고, 그 아래 공통으로 흐르는 16가지 핵심 신념 중 내 신념이 무엇인지까지 찾아냅니다.",
     checks: [
-      "자가 진단 리포트 · 부분별 분석",
-      "자동사고 / 핵심 신념 분석 리포트",
-      "종합 상담 리포트 + 다음 한 달 가이드",
+      "내 마음 속 다양한 마음들 지도화",
+      "각 마음이 지키려는 진짜 의도 분석",
+      "16가지 핵심 신념 중 내 신념 발견",
     ],
-    Card: PointTwoCard,
+    Card: PointPartsCard,
   },
   {
     n: "POINT 03",
@@ -494,15 +556,15 @@ const POINTS: PointDef[] = [
   },
   {
     n: "POINT 04",
-    title: ["답을 찾는 것에서", "끝나지 않아요"],
+    title: ["워크북을 마치면", "3가지 리포트가 남아요"],
     desc:
-      "찾은 답이 진짜 다음 행동이 될 때까지 근거로 강화하고, 일상의 행동 가이드와 자기 확언 카드로 단단히 굳혀갑니다. 위로가 아니라 다음 시도가 남도록.",
+      "한 번의 워크북에서 서로 다른 시점의 리포트가 누적됩니다. 진단 결과 / 인지 패턴 분석 / 종합 가이드 — 다음 한 달을 어떻게 살아볼지가 한 장씩 손에 남아요.",
     checks: [
-      "근거 카드로 새 신념 강화 (★★★ → ★★★★★)",
-      "DO & DON'T 일상 행동 가이드",
-      "자기 확언 카드 (Affirmation Cards)",
+      "자가 진단 리포트 · 부분별 분석",
+      "자동사고 / 핵심 신념 분석 리포트",
+      "종합 상담 리포트 + 다음 한 달 가이드",
     ],
-    Card: PointFourCard,
+    Card: PointTwoCard,
   },
 ];
 
@@ -516,7 +578,7 @@ export function OverviewPointsSection() {
             HOW IT WORKS
           </span>
           <h2 className="lr-f-up lr-d1">
-            마음 챙김 워크북은
+            심리 상담 워크북은
             <br />
             <em>이렇게 작동</em>합니다
           </h2>

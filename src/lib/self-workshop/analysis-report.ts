@@ -77,6 +77,14 @@ export interface BeliefKeyword {
   evidence: BeliefEvidence[];
   /** → 이 키워드가 사용자의 삶에서 어떻게 작동하는지 통찰적 한 문장 마무리 */
   insight_close: string;
+  /**
+   * 이 신념과 가장 닮은 Young 심리도식 코드
+   * (ED/AB/MA/SI/DS/FA/DI/VH/EM/SB/SS/EI/US/ET/IS/AS/NP/PU).
+   * 화면의 "닮은 마음의 결" 해석(schema-18-data의 traits·origin)을 끌어오는 키.
+   * 옵셔널 — 없거나 유효하지 않으면(getSchemaByCode가 undefined) 해석 섹션을 생략한다.
+   * 기존(이 필드 도입 전) 리포트와의 하위 호환을 위해 isBeliefKeyword 검증에서는 강제하지 않는다.
+   */
+  schema_code?: string;
 }
 
 /* ─────────────────────────── 섹션 3: Achievement Loop ─────────────────────────── */
