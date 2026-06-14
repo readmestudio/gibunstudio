@@ -1468,18 +1468,7 @@ function MirrorSection({
         <div className="mirror-head">
           <h4>Reflective Mirror <span className="live-tag">ANALYZED</span></h4>
           <div className="vol">CBT · v01</div>
-          {editing ? (
-            <button
-              type="button"
-              className="mirror-rerun"
-              onClick={() => edit!.runMirror()}
-              disabled={edit!.mirrorLoading}
-            >
-              {edit!.mirrorLoading ? "다시 분석 중…" : "다시 분석 ↻"}
-            </button>
-          ) : (
-            <div className="gen"><span className="gd" /> GENERATED</div>
-          )}
+          <div className="gen"><span className="gd" /> GENERATED</div>
         </div>
 
         {mirror.intro && <div className="mirror-summary">{mirror.intro}</div>}
@@ -2199,14 +2188,6 @@ function StrengthsSection({
               <div className="strengths-note">
                 <div className="strengths-note-head">
                   <span>상담사 코멘트</span>
-                  <button
-                    type="button"
-                    className="mirror-rerun"
-                    onClick={() => edit!.runStrengths()}
-                    disabled={edit!.strengthsLoading}
-                  >
-                    {edit!.strengthsLoading ? "다시 분석 중…" : "다시 분석 ↻"}
-                  </button>
                 </div>
                 <p
                   className="strengths-note-body"

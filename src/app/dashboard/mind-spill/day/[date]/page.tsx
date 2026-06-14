@@ -9,6 +9,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DailyEntryClient } from "@/components/mind-spill/DailyEntryClient";
 import { MindSpillFonts } from "@/components/mind-spill/MindSpillFonts";
+import { readerNameFrom } from "@/lib/mind-spill/reader-name";
 import {
   EMPTY_BRAIN_DUMP,
   EMPTY_DAILY_SCAN,
@@ -60,6 +61,7 @@ export default async function DailyEntryPage({
         entry={entry}
         dateLabel={formatDateLabel(parsed)}
         periodCta={periodCta}
+        readerName={readerNameFrom(user)}
       />
     </>
   );

@@ -1,13 +1,12 @@
 "use client";
 
 /**
- * Period CTA Banner — 캘린더 페이지 상단.
+ * Period 종합 리포트 promo 카드 — 캘린더 상단 topgrid 좌측.
+ * (report-redesign / 감정 캘린더.html 의 .promo 카드 디자인)
  *
- * "ready" 상태(미결제 entry 3개 이상)면 결제 시작 버튼 표시.
- * 버튼 클릭 → /api/payment/mind-spill/create 호출하여 period_report 생성 +
- * period_purchase pending 생성 → period 리포트 페이지로 이동.
- *
- * "none" 상태면 안내 카드(점선)만 표시.
+ * "ready" (미결제 entry 3개 이상): 결제 시작 버튼.
+ *   클릭 → /api/payment/mind-spill/create → period 리포트 페이지(미결제 분기)로 이동.
+ * "none": 진행률 바(이번 주기 X / 3 DAYS)만 보여주는 안내 카드.
  */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -17,54 +16,11 @@ type PeriodCta =
   | { kind: "none"; unclaimedCount: number }
   | { kind: "ready"; unclaimedCount: number; entryIds: string[] };
 
+const PRICE = `₩${MIND_SPILL_REPORT_PRICE.toLocaleString("ko-KR")}`;
+
 export function PeriodCtaBanner({ periodCta }: { periodCta: PeriodCta }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-
-  if (periodCta.kind === "none") {
-    const remaining = Math.max(0, 3 - periodCta.unclaimedCount);
-    return (
-      <div
-        style={{
-          padding: 20,
-          border: "1px dashed var(--ms-line)",
-          borderRadius: 14,
-          background: "transparent",
-        }}
-      >
-        <div
-          className="ms-eyebrow"
-          style={{ marginBottom: 8, color: "var(--ms-ink-3)" }}
-        >
-          ₩{MIND_SPILL_REPORT_PRICE.toLocaleString("ko-KR")} · PERIOD REPORT
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--ms-font-display)",
-            fontWeight: 600,
-            fontSize: 16,
-            color: "var(--ms-ink)",
-            marginBottom: 6,
-            letterSpacing: "-0.015em",
-          }}
-        >
-          체크인 {remaining > 0 ? `${remaining}일` : "조금"} 더 모이면 종합 리포트를
-          받을 수 있어요
-        </div>
-        <p
-          style={{
-            fontSize: 13,
-            color: "var(--ms-ink-3)",
-            lineHeight: 1.7,
-            margin: 0,
-          }}
-        >
-          3개 이상 체크인이 쌓이면 반복 패턴 · 강점 · 상담사 편지가 한 통에 담긴
-          종합 리포트를 받을 수 있어요.
-        </p>
-      </div>
-    );
-  }
 
   async function handleStartPurchase() {
     if (periodCta.kind !== "ready") return;
@@ -76,14 +32,15 @@ export function PeriodCtaBanner({ periodCta }: { periodCta: PeriodCta }) {
         body: JSON.stringify({ entry_ids: periodCta.entryIds }),
       });
       if (res.status === 401) {
-        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+        router.push(
+          `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+        );
         return;
       }
       const data = await res.json();
       if (!res.ok || !data.period_report_id) {
         throw new Error(data.error || "결제 정보 생성에 실패했습니다");
       }
-      // 결제 게이트 페이지로 이동 (period 리포트 페이지의 미결제 분기).
       router.push(`/dashboard/mind-spill/period/${data.period_report_id}`);
     } catch (err) {
       console.error("[period CTA] start failed:", err);
@@ -92,59 +49,59 @@ export function PeriodCtaBanner({ periodCta }: { periodCta: PeriodCta }) {
     }
   }
 
-  return (
-    <div
-      style={{
-        padding: 24,
-        border: "2px solid var(--ms-ink)",
-        borderRadius: 16,
-        background: "var(--ms-surface)",
-      }}
-    >
-      <div
-        className="ms-eyebrow"
-        style={{ marginBottom: 10, color: "var(--ms-accent)" }}
-      >
-        ₩{MIND_SPILL_REPORT_PRICE.toLocaleString("ko-KR")} · PERIOD REPORT ·{" "}
-        {periodCta.unclaimedCount}일치
-      </div>
-      <h3
-        style={{
-          fontFamily: "var(--ms-font-display)",
-          fontWeight: 600,
-          fontSize: 21,
-          color: "var(--ms-ink)",
-          margin: "0 0 10px",
-          letterSpacing: "-0.018em",
-        }}
-      >
-        지난 {periodCta.unclaimedCount}일치 종합 리포트가 준비됐어요
-      </h3>
-      <p
-        style={{
-          fontSize: 14,
-          color: "var(--ms-ink-3)",
-          lineHeight: 1.75,
-          marginBottom: 16,
-        }}
-      >
-        모인 체크인에서 발견한 반복 패턴, 당신만의 강점 3가지, 상담사의 한 통의
-        편지까지. 약 1분 안에 받아보세요.
-      </p>
+  if (periodCta.kind === "ready") {
+    return (
       <button
+        type="button"
+        className="ms-cal-promo ms-cal-grain"
+        style={{ ["--grain" as string]: "0.14" }}
         onClick={handleStartPurchase}
         disabled={submitting}
-        className="ms-btn-ink"
-        style={{
-          padding: "12px 22px",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: submitting ? "not-allowed" : "pointer",
-          opacity: submitting ? 0.6 : 1,
-        }}
       >
-        {submitting ? "결제 준비 중…" : "₩4,900 종합 리포트 받기 →"}
+        <div className="lbl">
+          {PRICE} · PERIOD REPORT · {periodCta.unclaimedCount}일치
+        </div>
+        <h2>
+          지난 {periodCta.unclaimedCount}일치
+          <br />
+          종합 리포트가 준비됐어요
+        </h2>
+        <p>
+          모인 체크인에서 발견한 반복 패턴, 당신만의 강점 3가지, 상담사의 한 통의
+          편지까지. 약 1분 안에 받아보세요.
+        </p>
+        <span className="promo-cta">
+          {submitting ? "결제 준비 중…" : `${PRICE} 종합 리포트 받기 →`}
+        </span>
       </button>
+    );
+  }
+
+  const prog = Math.min(3, periodCta.unclaimedCount);
+  return (
+    <div
+      className="ms-cal-promo ms-cal-grain"
+      style={{ ["--grain" as string]: "0.14" }}
+    >
+      <div className="lbl">{PRICE} · PERIOD REPORT</div>
+      <h2>
+        3일이 모이면
+        <br />
+        종합 리포트가 완성돼요
+      </h2>
+      <p>
+        매일 작성 + 그날 감정 분석은 무료. 3일치가 모이면 반복 패턴 · 강점 ·
+        상담사 편지가 한 통에 담긴 종합 리포트를 받아요.
+      </p>
+      <div className="barwrap">
+        <div className="meta">
+          <span>이번 주기 진행</span>
+          <span>{prog} / 3 DAYS</span>
+        </div>
+        <div className="track">
+          <i style={{ width: `${(prog / 3) * 100}%` }} />
+        </div>
+      </div>
     </div>
   );
 }

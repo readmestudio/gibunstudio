@@ -1,13 +1,11 @@
 /**
- * Mind Spill 메인 — 캘린더 뷰 (Freemium 모델).
+ * Mind Spill 메인 — 감정 캘린더 뷰 (report-redesign 적용).
  *
- * 캘린더 셀 상태:
- *   · 미작성 (empty)   — 회색 빈 셀
- *   · 작성됨 (draft)   — 검은 점 (entry 있음)
- *   · 종합 리포트 받음 — accent 채워진 원 (period 결제 confirmed에 묶인 entry)
- *   · 오늘 (today)     — 강조 테두리
+ * "매일, 한 칸씩" — 작성한 날은 그날의 감정·강도·컨디션을 블렌딩한 색 한 칸으로,
+ * 작성 안 한 날은 + 칸으로. 작성한 날들을 잇는 에너지 흐름 곡선(토글) + 색 범례.
  *
- * Period CTA — 미결제 + period에 묶이지 않은 entry가 3개 이상이면 활성 배너.
+ * 셀의 mesh gradient 는 서버에서 계산해 문자열로 전달(SSR). 그리드 상호작용
+ * (에너지 오버레이·모달·토글)은 MindSpillCalendar(클라이언트)가 담당.
  *
  * URL 쿼리: ?month=YYYY-MM (없으면 오늘 기준 월)
  */
@@ -16,6 +14,20 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MindSpillFonts } from "@/components/mind-spill/MindSpillFonts";
 import { PeriodCtaBanner } from "@/components/mind-spill/PeriodCtaBanner";
+import {
+  MindSpillCalendar,
+  type CalCell,
+} from "@/components/mind-spill/calendar/MindSpillCalendar";
+import {
+  EMOTION_COLORS,
+  emotionHsl,
+  grainFor,
+  meshLayers,
+  swatchBg,
+  toScanColorInput,
+  clamp,
+} from "@/lib/mind-spill/emotion-color";
+import type { DailyScan } from "@/lib/mind-spill/types";
 import "@/components/mind-spill/mind-spill-theme.css";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +36,22 @@ export const revalidate = 0;
 type EntryRow = {
   id: string;
   entry_date: string;
-  mirror_generated_at: string | null;
+  daily_scan: DailyScan | null;
 };
 
 type SearchParams = Promise<{ month?: string }>;
+
+const EMOTION_ORDER = [
+  "기쁨",
+  "평온",
+  "불안",
+  "초조",
+  "압박감",
+  "슬픔",
+  "피로",
+  "분노",
+  "외로움",
+];
 
 export default async function MindSpillCalendarPage({
   searchParams,
@@ -44,40 +68,51 @@ export default async function MindSpillCalendarPage({
   const { year, month, monthLabel, prevMonth, nextMonth, today } =
     resolveMonth(params.month);
 
-  // 이번 달 entries.
+  // 이번 달 entries (color blending 위해 daily_scan 포함).
   const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const monthEnd = lastDayOfMonth(year, month);
   const { data: rows } = await supabase
     .from("mind_spill_daily_entries")
-    .select("id, entry_date, mirror_generated_at")
+    .select("id, entry_date, daily_scan")
     .eq("user_id", user.id)
     .gte("entry_date", monthStart)
     .lte("entry_date", monthEnd)
     .order("entry_date", { ascending: true });
   const entries = (rows ?? []) as EntryRow[];
 
-  // Period CTA + 캘린더 셀 표시를 위해 confirmed period에 묶인 entry id 집합 필요.
   const reportedIdSet = await fetchReportedEntryIds(supabase, user.id);
-
-  const byDate = new Map<string, EntryRow>(
-    entries.map((e) => [e.entry_date, e])
-  );
+  const byDate = new Map<string, EntryRow>(entries.map((e) => [e.entry_date, e]));
 
   const totalEntries = entries.length;
   const reportedThisMonth = entries.filter((e) => reportedIdSet.has(e.id)).length;
 
-  // Period CTA: 미결제 + 결제 안 묶인 entry 개수 (전기간).
+  // 이번 달 가장 많았던 감정.
+  const topEmotion = computeTopEmotion(entries);
+
+  // Period CTA.
   const periodCta = await resolvePeriodCta(supabase, user.id, reportedIdSet);
 
-  const cells = buildCalendarCells(year, month);
+  // 캘린더 셀 — 색 계산 포함.
+  const cells = buildCells(year, month, today, byDate, reportedIdSet);
 
   return (
     <div className="mind-spill">
       <MindSpillFonts />
-      <main
-        className="ms-container"
-        style={{ paddingTop: 56, paddingBottom: 96 }}
-      >
+
+      {/* TOP RAIL */}
+      <div className="ms-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
+        <div className="ms-cal-rail">
+          <div className="ms-cal-rail-inner">
+            <div className="ms-cal-brand">
+              <span className="ms-cal-blip" />한 회 · MIND&nbsp;SPILL
+            </div>
+            <div className="ms-cal-rail-center">감정 캘린더 · EMOTION FIELD</div>
+            <div className="ms-cal-rail-right">{year} · VOL.01</div>
+          </div>
+        </div>
+      </div>
+
+      <main className="ms-container" style={{ paddingTop: 24, paddingBottom: 40 }}>
         <Link
           href="/dashboard"
           style={{
@@ -88,356 +123,307 @@ export default async function MindSpillCalendarPage({
             textTransform: "uppercase",
             color: "var(--ms-ink-3)",
             textDecoration: "none",
-            marginBottom: 36,
+            marginBottom: 8,
             fontWeight: 500,
           }}
         >
           ← 대시보드
         </Link>
 
-        {/* Hero */}
-        <div style={{ marginBottom: 40 }}>
-          <div className="ms-eyebrow" style={{ marginBottom: 16 }}>
-            MIND · SPILL — DAILY CHECK-IN
+        {/* HERO */}
+        <header className="ms-cal-hero">
+          <div className="ms-cal-kick">
+            <span className="ln" />
+            EMOTION CALENDAR · 매일 한 칸
           </div>
-          <h1
-            style={{
-              fontFamily: "var(--ms-font-display)",
-              fontWeight: 700,
-              fontSize: "clamp(36px, 6vw, 60px)",
-              lineHeight: 1.05,
-              letterSpacing: "-0.035em",
-              color: "var(--ms-ink)",
-              margin: 0,
-              wordBreak: "keep-all",
-            }}
-          >
+          <h1 className="ms-cal-h1">
             매일,
             <br />
-            <span style={{ color: "var(--ms-accent)" }}>한 칸</span>씩.
+            <span className="g">한 칸씩.</span>
           </h1>
-          <p
-            style={{
-              marginTop: 16,
-              fontSize: 15,
-              maxWidth: 520,
-              color: "var(--ms-ink-3)",
-              lineHeight: 1.7,
-              wordBreak: "keep-all",
-            }}
-          >
-            매일 작성 + 그날 감정 분석은 무료예요. 3일치가 모이면 패턴·강점·상담사
-            편지가 담긴 종합 리포트(₩4,900)를 받을 수 있어요.
+          <p className="ms-cal-lede">
+            매일 한 번의 체크인이 한 칸의 색이 됩니다. 칸이 모이면{" "}
+            <b>이번 달 내 마음의 결</b>이 색으로 드러나요. 칸을 누르면 그날의 체크인을
+            작성하고, 이미 작성한 날은 <b>보기</b>로 다시 펼칩니다.
           </p>
+        </header>
+
+        {/* PROMO + STATS */}
+        <div className="ms-cal-topgrid">
+          <PeriodCtaBanner periodCta={periodCta} />
+          <CalendarStats
+            totalEntries={totalEntries}
+            reportedThisMonth={reportedThisMonth}
+            topEmotion={topEmotion}
+          />
         </div>
 
-        {/* Period CTA Banner */}
-        <PeriodCtaBanner periodCta={periodCta} />
-
-        {/* 통계 스트립 */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
-            padding: "16px 20px",
-            border: "1px solid var(--ms-line)",
-            borderRadius: 14,
-            background: "var(--ms-surface)",
-            marginBottom: 36,
-            marginTop: 24,
-          }}
-        >
-          <StatCell label="이번 달 체크인" value={`${totalEntries}일`} />
-          <StatCell label="이번 달 종합 리포트" value={`${reportedThisMonth}일`} />
+        {/* MONTH NAV */}
+        <div className="ms-cal-monthbar">
+          <Link
+            href={`/dashboard/mind-spill?month=${prevMonth}`}
+            className="ms-cal-navbtn l"
+          >
+            ← 이전 달
+          </Link>
+          <h3>{monthLabel}</h3>
+          <Link
+            href={`/dashboard/mind-spill?month=${nextMonth}`}
+            className="ms-cal-navbtn r"
+          >
+            다음 달 →
+          </Link>
         </div>
 
-        {/* 월 이동 + 캘린더 */}
-        <section>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 16,
-            }}
-          >
-            <Link
-              href={`/dashboard/mind-spill?month=${prevMonth}`}
-              className="ms-eyebrow"
-              style={{
-                color: "var(--ms-ink-3)",
-                textDecoration: "none",
-                padding: "8px 10px",
-              }}
-            >
-              ← 이전 달
-            </Link>
-            <h2
-              style={{
-                fontFamily: "var(--ms-font-display)",
-                fontWeight: 600,
-                fontSize: 20,
-                color: "var(--ms-ink)",
-                margin: 0,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {monthLabel}
-            </h2>
-            <Link
-              href={`/dashboard/mind-spill?month=${nextMonth}`}
-              className="ms-eyebrow"
-              style={{
-                color: "var(--ms-ink-3)",
-                textDecoration: "none",
-                padding: "8px 10px",
-              }}
-            >
-              다음 달 →
-            </Link>
-          </div>
+        {/* CALENDAR (client) */}
+        <MindSpillCalendar cells={cells} />
 
-          {/* 요일 헤더 */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7, 1fr)",
-              gap: 6,
-              marginBottom: 6,
-            }}
-          >
-            {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
-              <div
-                key={d}
-                style={{
-                  textAlign: "center",
-                  fontSize: 11,
-                  fontFamily: "var(--ms-font-mono)",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--ms-ink-3)",
-                  fontWeight: 500,
-                  paddingBottom: 8,
-                }}
-              >
-                {d}
-              </div>
-            ))}
+        {/* LEGEND */}
+        <section className="ms-cal-legend">
+          <div className="ms-cal-lhead">
+            <h4>색은 이렇게 만들어져요</h4>
+            <span className="en">How the color is blended</span>
           </div>
-
-          {/* 캘린더 그리드 */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7, 1fr)",
-              gap: 6,
-            }}
-          >
-            {cells.map((cell, i) => {
-              const entry = cell.iso ? byDate.get(cell.iso) ?? null : null;
-              const reported = entry ? reportedIdSet.has(entry.id) : false;
-              return (
-                <CalendarCell
-                  key={i}
-                  cell={cell}
-                  today={today}
-                  hasEntry={!!entry}
-                  reported={reported}
-                />
-              );
-            })}
-          </div>
-
-          {/* 범례 */}
-          <div
-            style={{
-              marginTop: 24,
-              display: "flex",
-              gap: 20,
-              flexWrap: "wrap",
-              fontSize: 12,
-              color: "var(--ms-ink-3)",
-            }}
-          >
-            <LegendDot variant="draft" label="작성됨" />
-            <LegendDot variant="reported" label="종합 리포트 받음" />
-            <LegendDot variant="today" label="오늘" />
+          <p className="intro">
+            그날 체크인한 <b>감정·강도·컨디션·신체 반응</b>이 하나의 그라디언트로
+            블렌딩됩니다. 정해진 점수표가 아니라, 그날의 결을 닮은 색 한 칸이 남아요.
+          </p>
+          <div className="ms-cal-legend-grid">
+            <div className="ms-cal-swatches">
+              {EMOTION_ORDER.map((name) => (
+                <div className="ms-cal-sw" key={name}>
+                  <div className="chip" style={{ background: swatchBg(name) }} />
+                  <div className="t">
+                    <b>{name}</b>
+                    <small>{EMOTION_COLORS[name]?.en}</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="ms-cal-axes">
+              <Axis
+                title="감정 → 색상"
+                en="HUE"
+                bar="linear-gradient(90deg,#FFD49A,#FF9E7D,#FF8C82,#E59ED8,#C3A9F0,#9FB8F0,#A9C8F5)"
+                desc="고른 감정의 색이 모여 칸의 바탕색이 돼요. 여러 감정이면 색이 자연스럽게 섞입니다."
+              />
+              <Axis
+                title="강도 → 선명함"
+                en="SATURATION"
+                bar="linear-gradient(90deg,#E8E2EC,#C9A9E0,#A66BE0)"
+                desc="감정이 강할수록 색이 더 선명하고 짙어집니다."
+              />
+              <Axis
+                title="컨디션 → 밝기"
+                en="LIGHTNESS"
+                bar="linear-gradient(90deg,#5B4E66,#A99CC0,#EFE7F4)"
+                desc="에너지·의욕이 낮은 날은 색이 가라앉고, 좋은 날은 환하게 떠요."
+              />
+              <Axis
+                title="신체 반응 → 질감"
+                en="GRAIN"
+                bar="linear-gradient(90deg,#D8CFE2,#B7A9C8)"
+                desc="신체 신호가 많은 날은 칸 표면에 거친 결(노이즈)이 더 얹혀요."
+              />
+            </div>
           </div>
         </section>
+
+        <footer className="ms-cal-footer">
+          매일, 한 칸씩 · 비우고 채우는 한 회 · MIND SPILL
+        </footer>
       </main>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────
- * Calendar Cell
+ * Stats / Legend 보조 컴포넌트
  * ───────────────────────────────────────────── */
 
-type CalCell = {
-  date: number | null;
-  iso: string | null;
-  inMonth: boolean;
-  isFuture: boolean;
-};
-
-function CalendarCell({
-  cell,
-  today,
-  hasEntry,
-  reported,
+function CalendarStats({
+  totalEntries,
+  reportedThisMonth,
+  topEmotion,
 }: {
-  cell: CalCell;
-  today: string;
-  hasEntry: boolean;
-  reported: boolean;
+  totalEntries: number;
+  reportedThisMonth: number;
+  topEmotion: { name: string; count: number } | null;
 }) {
-  if (!cell.iso) {
-    return <div style={{ aspectRatio: "1 / 1.1" }} />;
-  }
-
-  const isToday = cell.iso === today;
-  const isFuture = cell.isFuture;
-
-  if (isFuture) {
-    return (
-      <div
-        style={{
-          aspectRatio: "1 / 1.1",
-          border: "1px solid var(--ms-line-2)",
-          borderRadius: 10,
-          padding: "8px 10px",
-          opacity: 0.4,
-          cursor: "not-allowed",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 500,
-            color: "var(--ms-ink-3)",
-            fontFamily: "var(--ms-font-mono)",
-          }}
-        >
-          {cell.date}
+  const filled = Math.min(5, totalEntries);
+  const dotGrad = topEmotion
+    ? topEmotionGradient(topEmotion.name)
+    : "var(--ms-line)";
+  return (
+    <div className="ms-cal-stats">
+      <div className="ms-cal-stat-row">
+        <div className="ms-cal-stat">
+          <div className="k">이번 달 체크인</div>
+          <div className="v">
+            {totalEntries}
+            <small>일</small>
+          </div>
+          <div className="ms-cal-streak">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <i key={i} className={i < filled ? "on" : undefined} />
+            ))}
+          </div>
+        </div>
+        <div className="ms-cal-stat">
+          <div className="k">종합 리포트</div>
+          <div className="v">
+            {reportedThisMonth}
+            <small>일</small>
+          </div>
+          <div className="ms-cal-streak">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <i key={i} />
+            ))}
+          </div>
         </div>
       </div>
-    );
-  }
-
-  const borderColor = isToday ? "var(--ms-ink)" : "var(--ms-line)";
-  const borderWidth = isToday ? 2 : 1;
-
-  return (
-    <Link
-      href={`/dashboard/mind-spill/day/${cell.iso}`}
-      style={{
-        position: "relative",
-        display: "block",
-        aspectRatio: "1 / 1.1",
-        border: `${borderWidth}px solid ${borderColor}`,
-        borderRadius: 10,
-        padding: "8px 10px",
-        background: hasEntry ? "var(--ms-surface)" : "transparent",
-        textDecoration: "none",
-        transition: "background 0.15s, transform 0.1s",
-      }}
-      className="ms-cal-cell"
-    >
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: isToday ? 700 : 500,
-          color: "var(--ms-ink)",
-          fontFamily: "var(--ms-font-mono)",
-        }}
-      >
-        {cell.date}
-      </div>
-
-      {hasEntry && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 8,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: reported ? 10 : 6,
-            height: reported ? 10 : 6,
-            borderRadius: "50%",
-            background: reported ? "var(--ms-accent)" : "var(--ms-ink)",
-            border: reported ? "1.5px solid var(--ms-ink)" : "none",
-          }}
-        />
-      )}
-    </Link>
-  );
-}
-
-function LegendDot({
-  variant,
-  label,
-}: {
-  variant: "draft" | "reported" | "today";
-  label: string;
-}) {
-  if (variant === "today") {
-    return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <span
-          style={{
-            display: "inline-block",
-            width: 14,
-            height: 14,
-            border: "2px solid var(--ms-ink)",
-            borderRadius: 3,
-          }}
-        />
-        {label}
-      </span>
-    );
-  }
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-      <span
-        style={{
-          display: "inline-block",
-          width: variant === "reported" ? 10 : 6,
-          height: variant === "reported" ? 10 : 6,
-          borderRadius: "50%",
-          background:
-            variant === "reported" ? "var(--ms-accent)" : "var(--ms-ink)",
-          border:
-            variant === "reported" ? "1.5px solid var(--ms-ink)" : "none",
-        }}
-      />
-      {label}
-    </span>
-  );
-}
-
-function StatCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div
-        className="ms-eyebrow"
-        style={{ marginBottom: 4, color: "var(--ms-ink-3)" }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--ms-font-display)",
-          fontSize: 22,
-          fontWeight: 600,
-          color: "var(--ms-ink)",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        {value}
+      <div className="ms-cal-stat ms-cal-topemo">
+        <div className="k">이번 달 가장 많았던 감정</div>
+        <div className="ms-cal-topemo-row">
+          <span className="ms-cal-topemo-dot" style={{ background: dotGrad }} />
+          <span className="ms-cal-topemo-name">{topEmotion?.name ?? "—"}</span>
+          <span className="ms-cal-topemo-count">
+            {topEmotion ? `${topEmotion.count} DAYS` : ""}
+          </span>
+        </div>
       </div>
     </div>
   );
+}
+
+function Axis({
+  title,
+  en,
+  bar,
+  desc,
+}: {
+  title: string;
+  en: string;
+  bar: string;
+  desc: string;
+}) {
+  return (
+    <div className="ms-cal-axis">
+      <div className="at">
+        <b>{title}</b>
+        <small>{en}</small>
+      </div>
+      <div className="gbar" style={{ background: bar }} />
+      <div className="desc">{desc}</div>
+    </div>
+  );
+}
+
+function topEmotionGradient(name: string): string {
+  const c = EMOTION_COLORS[name];
+  if (!c) return "var(--ms-ink-4)";
+  return `linear-gradient(135deg, hsl(${c.h} ${c.s}% ${c.l}%), hsl(${
+    (c.h + 20) % 360
+  } ${c.s}% ${c.l - 6}%))`;
+}
+
+/* ─────────────────────────────────────────────
+ * 셀 빌드 (색 계산 포함)
+ * ───────────────────────────────────────────── */
+
+function buildCells(
+  year: number,
+  month: number,
+  today: string,
+  byDate: Map<string, EntryRow>,
+  reportedIdSet: Set<string>
+): CalCell[] {
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells: CalCell[] = [];
+  for (let i = 0; i < firstDow; i++) cells.push({ kind: "empty" });
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      d
+    ).padStart(2, "0")}`;
+    const isToday = iso === today;
+    const isFuture = iso > today;
+    const entry = byDate.get(iso) ?? null;
+    const scan = entry?.daily_scan ?? null;
+    const hasScan = !!scan && (scan.emotions?.length ?? 0) > 0;
+
+    if (hasScan && scan) {
+      cells.push(buildDoneCell(d, iso, scan, reportedIdSet.has(entry!.id)));
+    } else if (isToday) {
+      cells.push({ kind: "today", date: d, iso });
+    } else if (isFuture) {
+      cells.push({ kind: "locked", date: d });
+    } else {
+      cells.push({ kind: "todo", date: d, iso });
+    }
+  }
+
+  while (cells.length % 7 !== 0) cells.push({ kind: "empty" });
+  while (cells.length < 42) cells.push({ kind: "empty" });
+  return cells;
+}
+
+function buildDoneCell(
+  date: number,
+  iso: string,
+  scan: DailyScan,
+  reported: boolean
+): CalCell {
+  const input = toScanColorInput(scan);
+  const mesh = meshLayers(input);
+  const grain = grainFor(input);
+  const emotionsRaw = scan.emotions ?? [];
+  const top = emotionsRaw[0] ?? "평온";
+
+  return {
+    kind: "done",
+    date,
+    iso,
+    bg: mesh.bg,
+    grain,
+    dark: mesh.avgL < 60,
+    topEmotion: top,
+    topEmotionDot: emotionHsl(top),
+    moreEmotions: emotionsRaw.length > 1,
+    intensityFilled: clamp(Math.round(input.intensity / 2), 0, 5),
+    energy: Math.round(input.energy),
+    intensity: Math.round(input.intensity),
+    drive: Math.round(input.drive),
+    sleepLabel: formatSleep(scan.sleep_avg_hours),
+    body: input.body,
+    emotions: emotionsRaw.map((name) => ({ name, dot: emotionHsl(name) })),
+    reported,
+  };
+}
+
+function formatSleep(h: number | null): string {
+  if (h == null) return "—";
+  const hh = Math.floor(h);
+  const mm = Math.round((h - hh) * 60);
+  return `${hh}h${String(mm).padStart(2, "0")}m`;
+}
+
+function computeTopEmotion(
+  entries: EntryRow[]
+): { name: string; count: number } | null {
+  const count = new Map<string, number>();
+  for (const e of entries) {
+    for (const name of e.daily_scan?.emotions ?? []) {
+      count.set(name, (count.get(name) ?? 0) + 1);
+    }
+  }
+  let best: { name: string; count: number } | null = null;
+  for (const [name, c] of count) {
+    if (!best || c > best.count) best = { name, count: c };
+  }
+  return best;
 }
 
 /* ─────────────────────────────────────────────
@@ -481,8 +467,6 @@ async function resolvePeriodCta(
   | { kind: "none"; unclaimedCount: number }
   | { kind: "ready"; unclaimedCount: number; entryIds: string[] }
 > {
-  // 미결제 entry 후보 — 모든 기간의 entries 중 reportedIdSet에 없는 것.
-  // 너무 오래된 데이터는 패턴 의미가 떨어지므로 최근 60일로 제한.
   const since = (() => {
     const d = new Date();
     d.setDate(d.getDate() - 60);
@@ -547,31 +531,4 @@ function toISO(d: Date): string {
 function lastDayOfMonth(year: number, month: number): string {
   const d = new Date(year, month + 1, 0);
   return toISO(d);
-}
-
-function buildCalendarCells(year: number, month: number): CalCell[] {
-  const firstDow = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayISO = toISO(new Date());
-
-  const cells: CalCell[] = [];
-  for (let i = 0; i < firstDow; i++) {
-    cells.push({ date: null, iso: null, inMonth: false, isFuture: false });
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    cells.push({
-      date: d,
-      iso,
-      inMonth: true,
-      isFuture: iso > todayISO,
-    });
-  }
-  while (cells.length % 7 !== 0) {
-    cells.push({ date: null, iso: null, inMonth: false, isFuture: false });
-  }
-  while (cells.length < 42) {
-    cells.push({ date: null, iso: null, inMonth: false, isFuture: false });
-  }
-  return cells;
 }

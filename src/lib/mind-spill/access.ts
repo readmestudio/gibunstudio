@@ -7,8 +7,10 @@ import { WORKSHOP_TEST_EMAILS } from "@/lib/self-workshop/test-users";
 import {
   MIND_SPILL_QUOTA,
   MIND_SPILL_VALID_DAYS,
+  type MindSpillDailySubscription,
   type MindSpillSubscription,
 } from "./types";
+import { MIND_SPILL_DAILY_FREE_QUOTA } from "./constants";
 
 /** 운영자/테스트 유저는 결제 없이 접근 가능. self-workshop 화이트리스트 재사용. */
 export function isMindSpillTestUser(email: string | null | undefined): boolean {
@@ -244,6 +246,105 @@ export async function canViewPeriodReport(
     .maybeSingle();
 
   return !!purchase;
+}
+
+/* ========== 데일리 분석 ("오늘 하루 정리하기") 접근 제어 ========== */
+
+/** 활성(미만료) 데일리 구독 1건. 없으면 null. */
+export async function getActiveDailySubscription(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<MindSpillDailySubscription | null> {
+  const { data } = await supabase
+    .from("mind_spill_daily_subscriptions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  if (new Date(data.expires_at).getTime() < Date.now()) return null;
+  return data as MindSpillDailySubscription;
+}
+
+/** 이번 달(KST 기준) 1일 00:00 의 UTC ISO 문자열. */
+function currentMonthStartIso(): string {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  // KST 달력의 연/월 1일 00:00(KST) 를 UTC 인스턴트로 환산.
+  const utcMs =
+    Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), 1) - 9 * 60 * 60 * 1000;
+  return new Date(utcMs).toISOString();
+}
+
+/**
+ * 이번 달 무료로 소모한 데일리 분석 횟수.
+ * 별도 카운터 없이 "이번 달에 daily_analysis_generated_at 이 찍힌 entry 수"로 집계.
+ */
+export async function countDailyAnalysesThisMonth(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number> {
+  const { count } = await supabase
+    .from("mind_spill_daily_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("daily_analysis_generated_at", currentMonthStartIso());
+  return count ?? 0;
+}
+
+export type DailyAnalysisAccess = {
+  /** 새 분석을 생성할 수 있는지. */
+  allowed: boolean;
+  /** 활성 구독자(또는 테스트 유저)인지. */
+  subscribed: boolean;
+  /** 이번 달 소모한 무료 횟수. */
+  freeUsed: number;
+  /** 이번 달 남은 무료 횟수. */
+  freeRemaining: number;
+};
+
+/**
+ * "오늘 하루 정리하기" 새 분석 생성 가능 여부.
+ *   · 테스트 유저 / 활성 구독 → 무제한 허용.
+ *   · 그 외 → 이번 달 무료 3회까지 허용.
+ *
+ * (이미 생성된 entry 의 멱등 재조회는 이 게이트와 무관하게 항상 허용 — 호출부에서 분기.)
+ */
+export async function checkDailyAnalysisAccess(
+  supabase: SupabaseClient,
+  userId: string,
+  userEmail: string | null | undefined
+): Promise<DailyAnalysisAccess> {
+  if (isMindSpillTestUser(userEmail)) {
+    return {
+      allowed: true,
+      subscribed: true,
+      freeUsed: 0,
+      freeRemaining: MIND_SPILL_DAILY_FREE_QUOTA,
+    };
+  }
+
+  const sub = await getActiveDailySubscription(supabase, userId);
+  if (sub) {
+    return {
+      allowed: true,
+      subscribed: true,
+      freeUsed: 0,
+      freeRemaining: MIND_SPILL_DAILY_FREE_QUOTA,
+    };
+  }
+
+  const freeUsed = await countDailyAnalysesThisMonth(supabase, userId);
+  const freeRemaining = Math.max(0, MIND_SPILL_DAILY_FREE_QUOTA - freeUsed);
+  return {
+    allowed: freeRemaining > 0,
+    subscribed: false,
+    freeUsed,
+    freeRemaining,
+  };
 }
 
 /** 차감 롤백 (insert 실패 시). 옛/새 스키마 양쪽 지원. */

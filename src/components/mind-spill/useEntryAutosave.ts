@@ -74,6 +74,8 @@ export function useEntryAutosave(entryId: string | null) {
       timerRef.current = null;
     }
     await doSave();
+    // doSave 는 in-flight 전송을 시작만 하고 반환하므로, 실제 완료까지 대기.
+    if (inflightRef.current) await inflightRef.current;
   }, [doSave]);
 
   useEffect(() => {

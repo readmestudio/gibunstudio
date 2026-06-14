@@ -5,6 +5,11 @@ import {
   MIND_SPILL_BODY_SIGNS,
   MIND_SPILL_EMOTIONS,
 } from "@/lib/mind-spill/constants";
+import {
+  EMPTY_MODAL_BG,
+  meshLayers,
+  toScanColorInput,
+} from "@/lib/mind-spill/emotion-color";
 import type {
   BDItem,
   BrainDump,
@@ -35,17 +40,21 @@ function newBd(): BDItem {
   return { id: makeBdId(), text: "", created_at: new Date().toISOString() };
 }
 
-export function PartOneEmpty({ wb, onPatch }: Props) {
+export function PartOneEmpty({
+  wb,
+  onPatch,
+  showMirror = true,
+}: Props & { showMirror?: boolean }) {
   return (
     <>
       <WeeklyScanStep scan={wb.weekly_scan} onPatch={onPatch} />
       <BrainDumpStep dump={wb.brain_dump} onPatch={onPatch} />
-      <MirrorReportStep wb={wb} />
+      {showMirror && <MirrorReportStep wb={wb} />}
     </>
   );
 }
 
-/* ============= i. Weekly Scan ============= */
+/* ============= i. Scan (데이터-viz) ============= */
 
 function WeeklyScanStep({
   scan,
@@ -57,229 +66,367 @@ function WeeklyScanStep({
   const update = <K extends keyof WeeklyScan>(key: K, value: WeeklyScan[K]) => {
     onPatch({ weekly_scan: { ...scan, [key]: value } });
   };
-  const toggle = (key: "emotions" | "body_signs", v: string) => {
-    const list = scan[key] ?? [];
+
+  const emotions = scan.emotions ?? [];
+  const intensities = scan.emotion_intensities ?? {};
+  const hasEmo = emotions.length > 0;
+  const todayBg = hasEmo
+    ? meshLayers(toScanColorInput(scan)).bg
+    : EMPTY_MODAL_BG;
+
+  /** 선택된 감정들의 평균을 emotion_intensity 로 동기화 (캘린더 색 계산 호환). */
+  function avgOf(list: string[], ints: Record<string, number>): number | null {
+    if (!list.length) return null;
+    const vals = list.map((e) => ints[e] ?? 5);
+    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+  }
+
+  function toggleEmotion(e: string) {
+    const has = emotions.includes(e);
+    const nextList = has ? emotions.filter((x) => x !== e) : [...emotions, e];
+    const ints = { ...intensities };
+    if (has) delete ints[e];
+    else if (ints[e] == null) ints[e] = scan.emotion_intensity ?? 5;
+    onPatch({
+      weekly_scan: {
+        ...scan,
+        emotions: nextList,
+        emotion_intensities: ints,
+        emotion_intensity: avgOf(nextList, ints),
+      },
+    });
+  }
+
+  function addEmotion(v: string) {
+    const t = v.trim();
+    if (!t || emotions.includes(t)) return;
+    const nextList = [...emotions, t];
+    const ints = { ...intensities, [t]: scan.emotion_intensity ?? 5 };
+    onPatch({
+      weekly_scan: {
+        ...scan,
+        emotions: nextList,
+        emotion_intensities: ints,
+        emotion_intensity: avgOf(nextList, ints),
+      },
+    });
+  }
+
+  function setIntensity(e: string, val: number) {
+    const ints = { ...intensities, [e]: clamp10(val) };
+    onPatch({
+      weekly_scan: {
+        ...scan,
+        emotion_intensities: ints,
+        emotion_intensity: avgOf(emotions, ints),
+      },
+    });
+  }
+
+  function toggleBody(v: string) {
+    const list = scan.body_signs ?? [];
     const next = list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
-    update(key, next);
-  };
-  const addCustom = (key: "emotions" | "body_signs", v: string) => {
+    update("body_signs", next);
+  }
+  function addBody(v: string) {
     const t = v.trim();
     if (!t) return;
-    const list = scan[key] ?? [];
+    const list = scan.body_signs ?? [];
     if (list.includes(t)) return;
-    update(key, [...list, t]);
-  };
+    update("body_signs", [...list, t]);
+  }
+
+  const bodyCount = (scan.body_signs ?? []).length;
 
   return (
-    <section className="ms-step">
-      <div className="ms-step-header">
-        <div className="ms-step-num">i.</div>
-        <h2 className="ms-step-title">지금의 나를 스캔합니다</h2>
+    <section className="ms-w-sec">
+      <div className="ms-w-sec-head">
+        <div className="ix">i. — scan</div>
+        <div>
+          <h3>지금의 나를 스캔합니다</h3>
+          <p className="desc">
+            정확하지 않아도 괜찮습니다. 떠오르는 대로, 짐작으로도 충분합니다.
+            준비된 단어를 누르거나 직접 적고, 강도를 조절해보세요.
+          </p>
+        </div>
+        <div className="tag">
+          <span>SELF SCAN</span>
+          <span>≈ 5 MIN</span>
+        </div>
       </div>
-      <p className="ms-step-intro">
-        정확하지 않아도 괜찮습니다. 떠오르는 대로, 짐작으로도 충분합니다. 5분.
-        준비된 단어를 누르거나, 옆 칸에 직접 적어주세요.
-      </p>
 
-      <div className="ms-scan-grid">
+      <div className="ms-w-scan-grid">
+        {/* TODAY'S COLOR — 현재 고른 마음으로 블렌딩된 오늘의 색 미리보기 */}
+        <div className="ms-w-today">
+          <div className="fill" style={{ background: todayBg }} />
+          <div className="ms-w-today-glass">
+            <div className="lbl">TODAY&apos;S COLOR · 오늘의 색</div>
+            <h4>
+              지금 고른 마음이,
+              <br />한 칸의 색이 됩니다
+            </h4>
+            <p>
+              감정은 색상, 강도는 선명함, 컨디션은 밝기로 블렌딩됩니다. 이 색이
+              오늘 <b>감정 캘린더</b> 한 칸에 그대로 담겨요.
+            </p>
+          </div>
+          <div className="ms-w-today-side">
+            <span className="hint">
+              {hasEmo ? "오늘의 색이 채워졌어요" : "감정을 골라보세요"}
+            </span>
+            <a className="link" href="/dashboard/mind-spill">
+              캘린더에서 보기 →
+            </a>
+          </div>
+        </div>
+
         {/* 감정 */}
-        <div className="ms-scan-card">
-          <div className="ms-scan-card-head">
-            <div className="ms-scan-card-title">
-              감정 <span className="en">emotion</span>
+        <div className="ms-w-panel ms-w-panel-emotion">
+          <div className="p-head">
+            <div className="p-title">
+              <h4>감정</h4>
+              <span className="en">EMOTION</span>
             </div>
-            <div className="ms-scan-card-icon">e</div>
+            <div className="p-meta">{emotions.length} SELECTED</div>
           </div>
-
-          <div className="ms-emo-chips">
-            {MIND_SPILL_EMOTIONS.map((e) => (
-              <button
-                type="button"
-                key={e}
-                className={`ms-chip ${scan.emotions?.includes(e) ? "active" : ""}`}
-                onClick={() => toggle("emotions", e)}
-                aria-pressed={scan.emotions?.includes(e) ?? false}
-              >
-                {e}
-              </button>
-            ))}
-            {/* 사용자가 직접 추가한 감정 */}
-            {(scan.emotions ?? [])
-              .filter((e) => !PRESET_EMOTIONS.has(e))
-              .map((e) => (
-                <button
-                  type="button"
-                  key={`custom-${e}`}
-                  className="ms-chip active"
-                  onClick={() => toggle("emotions", e)}
-                  aria-label={`${e} 삭제`}
-                >
-                  {e} ×
-                </button>
-              ))}
+          <div className="emotion-split">
+            <div>
+              <div className="ms-w-chip-row">
+                {MIND_SPILL_EMOTIONS.map((e) => {
+                  const on = emotions.includes(e);
+                  return (
+                    <button
+                      type="button"
+                      key={e}
+                      className={`ms-w-chip${on ? " on" : ""}`}
+                      onClick={() => toggleEmotion(e)}
+                      aria-pressed={on}
+                    >
+                      {on && <span className="dot" />}
+                      {e}
+                    </button>
+                  );
+                })}
+                {emotions
+                  .filter((e) => !PRESET_EMOTIONS.has(e))
+                  .map((e) => (
+                    <button
+                      type="button"
+                      key={`custom-${e}`}
+                      className="ms-w-chip on"
+                      onClick={() => toggleEmotion(e)}
+                      aria-label={`${e} 삭제`}
+                    >
+                      <span className="dot" />
+                      {e} ×
+                    </button>
+                  ))}
+              </div>
+              <CustomTagInput
+                placeholder="+ 직접 추가 (Enter)"
+                onAdd={addEmotion}
+              />
+            </div>
+            <div className="ms-w-heat-col">
+              {emotions.length === 0 ? (
+                <p className="ms-w-heat-hint">
+                  감정을 고르면 각 감정의 강도를 조절할 수 있어요.
+                </p>
+              ) : (
+                emotions.map((e) => (
+                  <Heatrow
+                    key={e}
+                    label={e}
+                    value={intensities[e] ?? 5}
+                    onChange={(v) => setIntensity(e, v)}
+                  />
+                ))
+              )}
+            </div>
           </div>
-          <CustomTagInput
-            placeholder="+ 직접 추가 (Enter)"
-            onAdd={(v) => addCustom("emotions", v)}
-          />
-
-          <SliderRow
-            label="강도"
-            value={scan.emotion_intensity ?? 5}
-            onChange={(v) => update("emotion_intensity", v)}
-          />
         </div>
 
         {/* 수면 */}
-        <div className="ms-scan-card">
-          <div className="ms-scan-card-head">
-            <div className="ms-scan-card-title">
-              수면 <span className="en">sleep</span>
+        <div className="ms-w-panel ms-w-panel-sleep">
+          <div className="p-head">
+            <div className="p-title">
+              <h4>수면</h4>
+              <span className="en">SLEEP</span>
             </div>
-            <div className="ms-scan-card-icon">s</div>
+            <div className="p-meta">
+              회복 {scan.sleep_recovery ?? "—"}/10
+            </div>
           </div>
-          <div className="ms-stat-row">
-            <NumberStat
-              label="평균 수면"
-              unit="h"
-              value={scan.sleep_avg_hours}
-              onChange={(v) => update("sleep_avg_hours", v)}
-              min={0}
-              max={14}
-              step={0.5}
-            />
-            <NumberStat
-              label="잠들기까지"
-              unit="min"
-              value={scan.sleep_latency_min}
-              onChange={(v) => update("sleep_latency_min", v)}
-              min={0}
-              max={180}
-              step={5}
-            />
+          <div className="sleep-flex">
+            <SleepRing hours={scan.sleep_avg_hours} />
+            <div className="ms-w-sleep-stats">
+              <NumberStatBar
+                label="평균 수면"
+                unit="h"
+                value={scan.sleep_avg_hours}
+                onChange={(v) => update("sleep_avg_hours", v)}
+                min={0}
+                max={14}
+                step={0.5}
+                pct={(scan.sleep_avg_hours ?? 0) / 14}
+              />
+              <NumberStatBar
+                label="잠들기까지"
+                unit="min"
+                value={scan.sleep_latency_min}
+                onChange={(v) => update("sleep_latency_min", v)}
+                min={0}
+                max={180}
+                step={5}
+                pct={Math.min(1, (scan.sleep_latency_min ?? 0) / 120)}
+              />
+              <RangeStatBar
+                label="회복감"
+                value={scan.sleep_recovery ?? 5}
+                onChange={(v) => update("sleep_recovery", v)}
+              />
+            </div>
           </div>
-          <SliderRow
-            label="회복감"
-            value={scan.sleep_recovery ?? 5}
-            onChange={(v) => update("sleep_recovery", v)}
-          />
         </div>
 
         {/* 신체 반응 */}
-        <div className="ms-scan-card">
-          <div className="ms-scan-card-head">
-            <div className="ms-scan-card-title">
-              신체 반응 <span className="en">body</span>
+        <div className="ms-w-panel ms-w-panel-body">
+          <div className="p-head">
+            <div className="p-title">
+              <h4>신체 반응</h4>
+              <span className="en">BODY</span>
             </div>
-            <div className="ms-scan-card-icon">b</div>
+            <div className="p-meta">{bodyCount} ACTIVE</div>
           </div>
-          <div className="ms-body-map">
-            {MIND_SPILL_BODY_SIGNS.map((b) => (
-              <button
-                type="button"
-                key={b}
-                className={`ms-body-tag ${scan.body_signs?.includes(b) ? "active" : ""}`}
-                onClick={() => toggle("body_signs", b)}
-                aria-pressed={scan.body_signs?.includes(b) ?? false}
-              >
-                {b}
-              </button>
-            ))}
-            {(scan.body_signs ?? [])
-              .filter((e) => !PRESET_BODY.has(e))
-              .map((e) => (
-                <button
-                  type="button"
-                  key={`body-custom-${e}`}
-                  className="ms-body-tag active"
-                  onClick={() => toggle("body_signs", e)}
-                  aria-label={`${e} 삭제`}
-                >
-                  {e} ×
-                </button>
-              ))}
+          <div className="body-grid">
+            <div>
+              <div className="ms-w-body-tags">
+                {MIND_SPILL_BODY_SIGNS.map((b) => {
+                  const on = (scan.body_signs ?? []).includes(b);
+                  return (
+                    <button
+                      type="button"
+                      key={b}
+                      className={`ms-w-body-tag${on ? " on" : ""}`}
+                      onClick={() => toggleBody(b)}
+                      aria-pressed={on}
+                    >
+                      {b}
+                    </button>
+                  );
+                })}
+                {(scan.body_signs ?? [])
+                  .filter((e) => !PRESET_BODY.has(e))
+                  .map((e) => (
+                    <button
+                      type="button"
+                      key={`body-custom-${e}`}
+                      className="ms-w-body-tag on"
+                      onClick={() => toggleBody(e)}
+                      aria-label={`${e} 삭제`}
+                    >
+                      {e} ×
+                    </button>
+                  ))}
+              </div>
+              <CustomTagInput
+                placeholder="+ 다른 신체 반응 적기 (Enter)"
+                onAdd={addBody}
+              />
+            </div>
+            <div className="ms-w-body-load">
+              <div className="v">{bodyCount}</div>
+              <div className="k">Body Load</div>
+              <div className="dots">
+                {Array.from({ length: 8 }, (_, i) => (
+                  <i key={i} className={i < Math.min(bodyCount, 8) ? "on" : undefined} />
+                ))}
+              </div>
+            </div>
           </div>
-          <CustomTagInput
-            placeholder="+ 다른 신체 반응 적기 (Enter)"
-            onAdd={(v) => addCustom("body_signs", v)}
-          />
         </div>
 
         {/* 컨디션 */}
-        <div className="ms-scan-card">
-          <div className="ms-scan-card-head">
-            <div className="ms-scan-card-title">
-              컨디션 <span className="en">condition</span>
+        <div className="ms-w-panel ms-w-panel-condition">
+          <div className="p-head">
+            <div className="p-title">
+              <h4>컨디션</h4>
+              <span className="en">CONDITION</span>
             </div>
-            <div className="ms-scan-card-icon">c</div>
+            <div className="p-meta">1 — 10</div>
           </div>
-          {(
-            [
-              ["energy", "에너지"],
-              ["focus", "집중력"],
-              ["motivation", "의욕"],
-            ] as const
-          ).map(([key, label], i) => (
-            <SliderRow
-              key={key}
-              label={label}
-              value={scan[key] ?? 5}
-              onChange={(v) => update(key, v)}
-              flush={i === 0}
-            />
-          ))}
+          <div className="cond-row">
+            {(
+              [
+                ["energy", "에너지", "ENERGY"],
+                ["focus", "집중력", "FOCUS"],
+                ["motivation", "의욕", "DRIVE"],
+              ] as const
+            ).map(([key, label, en]) => (
+              <SegStat
+                key={key}
+                label={label}
+                en={en}
+                value={scan[key] ?? 5}
+                onChange={(v) => update(key, v)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-/* ----- helpers (Weekly Scan 내부 컨트롤) ----- */
+/* ----- Scan 컨트롤 ----- */
 
-function SliderRow({
+function Heatrow({
   label,
   value,
   onChange,
-  flush = false,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
-  flush?: boolean;
 }) {
   return (
-    <div className="ms-intensity" style={flush ? { marginTop: 12 } : undefined}>
-      <span className="ms-intensity-label">{label}</span>
-      <div className="ms-slider-wrap">
+    <div className="ms-w-heatrow">
+      <span className="lbl">{label}</span>
+      <div className="bar">
+        <i style={{ width: `${value * 10}%` }} />
         <input
-          className="ms-slider"
           type="range"
           min={1}
           max={10}
           value={value}
           onChange={(e) => onChange(clamp10(Number(e.target.value)))}
-          aria-label={label}
+          aria-label={`${label} 강도`}
         />
       </div>
-      <input
-        className="ms-value-input"
-        type="number"
-        min={1}
-        max={10}
-        step={1}
-        value={value}
-        onChange={(e) => {
-          const raw = e.target.value;
-          if (raw === "") return;
-          onChange(clamp10(Number(raw)));
-        }}
-        aria-label={`${label} 값 직접 입력`}
-      />
+      <span className="num">{value}</span>
     </div>
   );
 }
 
-function NumberStat({
+function SleepRing({ hours }: { hours: number | null }) {
+  const C = 282.7; // 2π·45
+  const pct = hours != null ? Math.max(0, Math.min(1, hours / 9)) : 0;
+  const offset = C * (1 - pct);
+  return (
+    <div className="ms-w-ring">
+      <svg viewBox="0 0 130 130" aria-hidden="true">
+        <circle className="track" cx="65" cy="65" r="45" />
+        <circle className="fill" cx="65" cy="65" r="45" style={{ strokeDashoffset: offset }} />
+      </svg>
+      <div className="ring-num">
+        <b>{hours != null ? `${hours}h` : "—"}</b>
+        <span>AVG SLEEP</span>
+      </div>
+    </div>
+  );
+}
+
+function NumberStatBar({
   label,
   unit,
   value,
@@ -287,6 +434,7 @@ function NumberStat({
   min,
   max,
   step,
+  pct,
 }: {
   label: string;
   unit: string;
@@ -295,27 +443,98 @@ function NumberStat({
   min: number;
   max: number;
   step: number;
+  pct: number;
 }) {
   return (
-    <div className="ms-stat-block">
-      <div className="ms-stat-num">
+    <div className="ms-w-sleep-stat">
+      <div className="row1">
+        <span>{label}</span>
+        <span>
+          <input
+            className="ms-w-sleep-num"
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={value ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value;
+              onChange(raw === "" ? null : Number(raw));
+            }}
+            placeholder="—"
+            aria-label={label}
+          />
+          <span style={{ fontSize: 12, color: "var(--ms-ink-4)", marginLeft: 2 }}>
+            {unit}
+          </span>
+        </span>
+      </div>
+      <div className="bar">
+        <i style={{ width: `${Math.max(0, Math.min(1, pct)) * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function RangeStatBar({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="ms-w-sleep-stat">
+      <div className="row1">
+        <span>{label}</span>
+        <span className="num">{value}/10</span>
+      </div>
+      <div className="bar">
+        <i style={{ width: `${value * 10}%`, background: "var(--ms-accent)" }} />
         <input
-          className="ms-stat-input"
-          type="number"
-          min={min}
-          max={max}
-          step={step}
-          value={value ?? ""}
-          onChange={(e) => {
-            const raw = e.target.value;
-            onChange(raw === "" ? null : Number(raw));
-          }}
-          placeholder="—"
+          type="range"
+          min={1}
+          max={10}
+          value={value}
+          onChange={(e) => onChange(clamp10(Number(e.target.value)))}
           aria-label={label}
         />
-        <span className="unit">{unit}</span>
       </div>
-      <div className="ms-stat-cap">{label}</div>
+    </div>
+  );
+}
+
+function SegStat({
+  label,
+  en,
+  value,
+  onChange,
+}: {
+  label: string;
+  en: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="ms-w-seg-stat">
+      <div className="row1">
+        <span>{label}</span>
+        <span className="num">{value}/10</span>
+      </div>
+      <div className="ms-w-seg-bar">
+        {Array.from({ length: 10 }, (_, i) => (
+          <button
+            type="button"
+            key={i}
+            className={i < value ? "on" : undefined}
+            onClick={() => onChange(i + 1)}
+            aria-label={`${label} ${i + 1}점`}
+          />
+        ))}
+      </div>
+      <div className="legend">{en}</div>
     </div>
   );
 }
@@ -344,7 +563,7 @@ function CustomTagInput({
 
   return (
     <input
-      className="ms-custom-tag-input"
+      className="ms-w-custom-input"
       type="text"
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
@@ -365,52 +584,93 @@ function BrainDumpStep({
   dump: BrainDump;
   onPatch: (p: WorkbookPatch) => void;
 }) {
-  return (
-    <section className="ms-step">
-      <div className="ms-step-header">
-        <div className="ms-step-num">ii.</div>
-        <h2 className="ms-step-title">머릿속을 쏟아냅니다</h2>
-      </div>
-      <p className="ms-step-intro">
-        완성된 문장이 아니어도, 모순돼도, 부끄러워도 괜찮습니다. 검열하지 마세요.
-        10분 타이머.
-      </p>
+  const recCount = (dump.recurring ?? []).length;
+  const disCount = (dump.discomfort ?? []).length;
+  const todoCount = (dump.todos ?? []).length;
+  const total = recCount + disCount + todoCount;
 
-      <BdPrompt
-        title="현재, 나를 불편하게 하는"
-        en="recurring"
-        hint="요즘 머릿속에 자주 자리 잡는 생각, 자꾸 신경 쓰이는 일을 한 줄씩 적어주세요."
-        items={dump.recurring ?? []}
-        onChange={(items) => onPatch({ brain_dump: { ...dump, recurring: items } })}
-      />
-      <BdPrompt
-        title="나를 불편하게 만든 생각들"
-        en="discomfort"
-        hint="두려웠거나 불안하게 만든 생각을 써보세요. 막연한 것도, 형태가 없는 것도 괜찮습니다."
-        items={dump.discomfort ?? []}
-        onChange={(items) => onPatch({ brain_dump: { ...dump, discomfort: items } })}
-      />
-      <BdPrompt
-        title="해야 하는 일, 해야 하는데 하지 않은 일"
-        en="to-do & undone"
-        hint="큰 일도, 미루고 있는 작은 일도 모두 좋습니다. 죄책감이 따라오는 항목일수록 적어두세요."
-        items={dump.todos ?? []}
-        onChange={(items) => onPatch({ brain_dump: { ...dump, todos: items } })}
-      />
+  return (
+    <section className="ms-w-sec">
+      <div className="ms-w-sec-head">
+        <div className="ix">ii. — dump</div>
+        <div>
+          <h3>머릿속을 쏟아냅니다</h3>
+          <p className="desc">
+            완성된 문장이 아니어도, 모순돼도, 부끄러워도 괜찮습니다. 검열하지
+            마세요. 떠오르는 대로 한 줄씩.
+          </p>
+        </div>
+        <div className="tag">
+          <span>BRAIN DUMP</span>
+          <span>≈ 10 MIN</span>
+        </div>
+      </div>
+
+      <div className="ms-w-bd-bar">
+        <div className="ms-w-bd-stat">
+          <div className="v">{String(recCount).padStart(2, "0")}</div>
+          <div className="k">반복되는</div>
+        </div>
+        <div className="ms-w-bd-stat">
+          <div className="v">{String(disCount).padStart(2, "0")}</div>
+          <div className="k">불편한 생각</div>
+        </div>
+        <div className="ms-w-bd-stat">
+          <div className="v">{String(todoCount).padStart(2, "0")}</div>
+          <div className="k">할 일</div>
+        </div>
+        <div className="ms-w-bd-stat">
+          <div className="v">{String(total).padStart(2, "0")}</div>
+          <div className="k">총 항목</div>
+        </div>
+        <div className="live">
+          <span className="rd" />
+          LIVE
+        </div>
+      </div>
+
+      <div className="ms-w-bd-grid">
+        <BdCol
+          title="반복되는 생각"
+          en="RECURRING"
+          hint="요즘 머릿속에 자주 자리 잡는 생각, 자꾸 신경 쓰이는 일을 한 줄씩."
+          variant="recurring"
+          items={dump.recurring ?? []}
+          onChange={(items) => onPatch({ brain_dump: { ...dump, recurring: items } })}
+        />
+        <BdCol
+          title="불편하게 만든 생각"
+          en="DISCOMFORT"
+          hint="두려웠거나 불안하게 만든 생각. 막연한 것도, 형태가 없는 것도 괜찮아요."
+          variant="discomfort"
+          items={dump.discomfort ?? []}
+          onChange={(items) => onPatch({ brain_dump: { ...dump, discomfort: items } })}
+        />
+        <BdCol
+          title="해야 하는 일"
+          en="TO-DO & UNDONE"
+          hint="큰 일도, 미루던 작은 일도. 죄책감이 따라오는 항목일수록 적어두세요."
+          variant="todos"
+          items={dump.todos ?? []}
+          onChange={(items) => onPatch({ brain_dump: { ...dump, todos: items } })}
+        />
+      </div>
     </section>
   );
 }
 
-function BdPrompt({
+function BdCol({
   title,
   en,
   hint,
+  variant,
   items,
   onChange,
 }: {
   title: string;
   en: string;
   hint: string;
+  variant: "recurring" | "discomfort" | "todos";
   items: BDItem[];
   onChange: (items: BDItem[]) => void;
 }) {
@@ -424,29 +684,27 @@ function BdPrompt({
     onChange(next.filter((x) => x.text.trim().length > 0));
   }
 
+  const itemClass =
+    variant === "discomfort"
+      ? "ms-w-bd-item discomfort"
+      : variant === "recurring"
+      ? "ms-w-bd-item recurring"
+      : "ms-w-bd-item";
+
   return (
-    <div className="ms-bd-prompt">
-      <div className="ms-bd-prompt-q">
-        {title} <span className="en">{en}</span>
+    <div className="ms-w-bd-col">
+      <div className="ms-w-bd-col-head">
+        <h5>
+          {title} <span className="en">{en}</span>
+        </h5>
+        <p className="colsub">{hint}</p>
       </div>
-      <p className="ms-bd-prompt-hint">{hint}</p>
-      <div className="ms-bd-list">
-        {draft.map((it) => (
-          <div className="ms-bd-block" key={it.id}>
-            <div className="ms-bd-block-head">
-              <span className="ms-bd-badge">BD</span>
-              {draft.length > 1 && (
-                <button
-                  type="button"
-                  className="ms-bd-delete"
-                  onClick={() => commit(draft.filter((x) => x.id !== it.id))}
-                >
-                  삭제
-                </button>
-              )}
-            </div>
+      <div className="ms-w-bd-col-list">
+        {draft.map((it, i) => (
+          <div className={itemClass} key={it.id}>
+            <span className="ln">{String(i + 1).padStart(2, "0")}</span>
             <textarea
-              className="ms-bd-textarea"
+              className="ms-w-bd-textarea"
               value={it.text}
               onChange={(e) =>
                 commit(
@@ -455,7 +713,7 @@ function BdPrompt({
                   )
                 )
               }
-              placeholder="Brain Dump 항목"
+              placeholder="한 줄 적기"
               rows={1}
               onInput={(e) => {
                 const ta = e.currentTarget;
@@ -463,29 +721,34 @@ function BdPrompt({
                 ta.style.height = `${ta.scrollHeight}px`;
               }}
             />
+            {draft.length > 1 && (
+              <button
+                type="button"
+                className="ms-w-bd-del"
+                onClick={() => commit(draft.filter((x) => x.id !== it.id))}
+              >
+                삭제
+              </button>
+            )}
           </div>
         ))}
+        <button
+          type="button"
+          className="ms-w-bd-add"
+          onClick={() => commit([...draft, newBd()])}
+        >
+          + 항목 추가
+        </button>
       </div>
-      <button
-        type="button"
-        className="ms-bd-add"
-        onClick={() => commit([...draft, newBd()])}
-      >
-        + Brain Dump 항목 추가
-      </button>
     </div>
   );
 }
 
-/* ============= iii. Mirror Report (LLM) ============= */
+/* ============= iii. Mirror Report (LLM) — 주간(레거시) 경로 전용 ============= */
 
 function MirrorReportStep({ wb }: { wb: Workbook }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // optimistic: workbook.mirror_report 가 갱신되어야 UI에 반영되는데,
-  // mirror_report 는 WorkbookPatch 의 화이트리스트에 없음 (LLM이 별도 endpoint로 저장).
-  // 클라이언트는 fetch 응답으로 받은 결과를 별도 state로 보유.
   const [localReport, setLocalReport] = useState<typeof wb.mirror_report>(
     wb.mirror_report
   );
@@ -532,7 +795,6 @@ function MirrorReportStep({ wb }: { wb: Workbook }) {
         준비되었다면 아래 버튼을 눌러주세요.
       </p>
 
-      {/* 분석 트리거 */}
       {!report ? (
         <div className="ms-mirror-cta">
           <button
@@ -551,13 +813,7 @@ function MirrorReportStep({ wb }: { wb: Workbook }) {
           {error && <div className="ms-mirror-error">{error}</div>}
         </div>
       ) : (
-        <ReportView
-          wb={wb}
-          report={report}
-          loading={loading}
-          onRerun={run}
-          error={error}
-        />
+        <ReportView wb={wb} report={report} error={error} />
       )}
     </section>
   );
@@ -566,21 +822,16 @@ function MirrorReportStep({ wb }: { wb: Workbook }) {
 function ReportView({
   wb,
   report,
-  loading,
-  onRerun,
   error,
 }: {
   wb: Workbook;
   report: NonNullable<Workbook["mirror_report"]>;
-  loading: boolean;
-  onRerun: () => void;
   error: string | null;
 }) {
   const clusters = report.emotion_clusters ?? [];
   const distortions = report.cognitive_distortions ?? [];
   const links = report.body_thought_links ?? [];
 
-  // 클러스터 색 매핑
   const clusterColors: Record<string, string> = {
     불안: "var(--ms-accent)",
     압박: "var(--ms-coral)",
@@ -610,8 +861,7 @@ function ReportView({
                 key={i}
                 style={{
                   width: `${Math.max(0, Math.min(100, c.percent))}%`,
-                  background:
-                    clusterColors[c.category] ?? "var(--ms-ink-3)",
+                  background: clusterColors[c.category] ?? "var(--ms-ink-3)",
                 }}
               >
                 {c.category} {c.percent}%
@@ -686,31 +936,8 @@ function ReportView({
         </div>
       )}
 
-      <div className="ms-mirror-actions">
-        <button
-          type="button"
-          className="ms-btn-ghost"
-          onClick={onRerun}
-          disabled={loading}
-        >
-          {loading ? "다시 분석 중…" : "다시 분석하기 ↻"}
-        </button>
-        <span
-          style={{
-            fontFamily: "var(--ms-font-mono)",
-            fontSize: 10,
-            color: "var(--ms-ink-3)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            alignSelf: "center",
-          }}
-        >
-          내용을 수정한 뒤 다시 누르면 새로 분석합니다
-        </span>
-      </div>
       {error && <div className="ms-mirror-error">{error}</div>}
 
-      {/* 다음 단계 안내 */}
       <NextStepCta />
     </div>
   );

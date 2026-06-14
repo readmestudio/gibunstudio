@@ -105,6 +105,26 @@ export type MirrorReport = {
   body_thought_links: Array<{ body: string; linked_thought: string }>;
 };
 
+/**
+ * Daily Analysis (LLM) — "오늘 하루 정리하기".
+ * 오늘 작성한 체크인을 읽고, 이전 기록이 있으면 그 맥락까지 엮어
+ * 변화 · 반복되는 사고 · 희망적인 부분을 짚어준다. mirror_report를 대체.
+ */
+export type DailyAnalysis = {
+  /** 오늘에 대한 따뜻한 도입 2~3문장. */
+  intro: string;
+  /** 오늘 가장 두드러진 감정·생각 한 줄. */
+  today_focus: string;
+  /** 이전 기록 대비 달라진 점(변화). 첫 기록이면 빈 배열. */
+  changes: string[];
+  /** 여러 날에 걸쳐 반복되는 사고/패턴. */
+  recurring_themes: string[];
+  /** 희망적인 부분 · 강점의 씨앗. */
+  hopeful: string[];
+  /** 마무리 한 문장. */
+  closing: string;
+};
+
 /** Strengths Report (LLM) — vii. 단계 상담사 종합 코멘트. */
 export type StrengthsReport = {
   /** 종합 줄글 (vii. 끝에 표시). */
@@ -256,9 +276,37 @@ export type DailyEntry = {
   moments: Moment[];
 
   // 매일 무료 LLM 결과 (entry당 1회).
+  // @deprecated mirror_report는 daily_analysis("오늘 하루 정리하기")로 대체됨.
   mirror_report: MirrorReport | null;
   mirror_generated_at: string | null;
 
+  /**
+   * "오늘 하루 정리하기" 분석 결과 (entry당 1회, 멱등).
+   * 월 무료 3회 + 이후 데일리 구독. 생성 시각으로 월간 무료 사용량을 집계.
+   */
+  daily_analysis: DailyAnalysis | null;
+  daily_analysis_generated_at: string | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+/* ========== 데일리 구독 (오늘 하루 정리하기 무제한) ========== */
+
+/**
+ * 데일리 분석 무제한 이용권. 1건 = 한 달 이용권(현재는 일회성 구매로 31일 부여,
+ * 자동 갱신 빌링키는 후속). 종합 리포트(period) 결제와 별개.
+ */
+export type MindSpillDailySubscription = {
+  id: string;
+  user_id: string;
+  started_at: string;
+  expires_at: string;
+  status: SubscriptionStatus;
+  order_id: string | null;
+  amount: number | null;
+  payment_key: string | null;
+  paid_at: string | null;
   created_at: string;
   updated_at: string;
 };
