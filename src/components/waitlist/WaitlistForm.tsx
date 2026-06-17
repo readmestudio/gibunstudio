@@ -282,9 +282,10 @@ export function WaitlistForm() {
         fail(data.error ?? "잠시 후 다시 시도해주세요.");
         return;
       }
-      // 서베이 제출 성공 — Meta 표준 이벤트(Lead) 발화.
+      // 서베이 제출 성공 — Meta 표준 이벤트(SubmitApplication) 발화.
+      // 워크북 프로그램 "신청서 제출"에 해당하는 고관심 전환. 알림신청(CompleteRegistration)과 구분.
       // 버튼 클릭이 아니라 "제출 성공" 시점에만 쏴서 빈 클릭·검증 실패를 전환에서 배제.
-      trackMetaEvent("Lead");
+      trackMetaEvent("SubmitApplication");
       // status 는 success 로 유지해 버튼 비활성 상태로 두고, 완료 페이지로 라우팅.
       setStatus("success");
       router.push("/waitlist/complete");

@@ -88,9 +88,10 @@ export function WorkshopNotifyProvider({ children }: { children: ReactNode }) {
           }
           return "already";
         }
-        // 신규 알림신청 성공 — Meta 표준 이벤트(Lead) 발화.
+        // 신규 알림신청 성공 — Meta 표준 이벤트(CompleteRegistration) 발화.
+        // 가벼운 알림 등록 신호. 서베이 제출(SubmitApplication)과 구분해 캠페인 최적화 혼선 방지.
         // 플로팅 CTA·상단바 버튼·로그인 후 자동등록 세 경로가 모두 이 지점을 거친다.
-        trackMetaEvent("Lead");
+        trackMetaEvent("CompleteRegistration");
         showToast(
           "success",
           "알림 신청이 완료됐어요. 정식 오픈 시 가장 먼저 알려드릴게요."
