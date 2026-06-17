@@ -45,6 +45,8 @@ async function notifyOperatorsAboutWaitlist(p: {
   goals: string[];
   desiredStart: string | null;
   inquiry: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
 }): Promise<void> {
   const isCounselingLead = p.purchaseType === "workbook_counseling";
 
@@ -103,6 +105,13 @@ async function notifyOperatorsAboutWaitlist(p: {
       {
         type: "context",
         elements: [
+          {
+            type: "mrkdwn",
+            text:
+              p.utmContent || p.utmCampaign
+                ? `📣 유입 광고: ${p.utmContent ?? "—"}${p.utmCampaign ? ` (${p.utmCampaign})` : ""}`
+                : "📣 유입 광고: 직접/자연 유입",
+          },
           {
             type: "mrkdwn",
             text: `📅 ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST)`,
@@ -221,6 +230,22 @@ export async function POST(req: Request) {
   const desiredStart = cleanChoice(b.desiredStart, ids(DESIRED_START_OPTIONS));
   const inquiry = cleanText(b.inquiry);
 
+  // ── 광고 유입(attribution) — 클라이언트가 보관해 둔 UTM/fbclid ──
+  // 문자열만 허용하고 길이를 제한해 저장한다(선택지 검증 대상이 아닌 자유값).
+  const attr = (b.attribution ?? {}) as Record<string, unknown>;
+  const utm = (value: unknown): string | null => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed.slice(0, 200) : null;
+  };
+  const utmSource = utm(attr.utm_source);
+  const utmMedium = utm(attr.utm_medium);
+  const utmCampaign = utm(attr.utm_campaign);
+  const utmContent = utm(attr.utm_content);
+  const utmTerm = utm(attr.utm_term);
+  const fbclid = utm(attr.fbclid);
+  const landingPath = utm(attr.landing_path);
+
   const admin = createAdminClient();
 
   const { error: insertError } = await admin.from("workbook_waitlist").insert({
@@ -242,6 +267,13 @@ export async function POST(req: Request) {
     etc_details: etcDetails,
     inquiry,
     source: "waitlist_page",
+    utm_source: utmSource,
+    utm_medium: utmMedium,
+    utm_campaign: utmCampaign,
+    utm_content: utmContent,
+    utm_term: utmTerm,
+    fbclid,
+    landing_path: landingPath,
   });
 
   if (insertError) {
@@ -266,6 +298,8 @@ export async function POST(req: Request) {
       goals,
       desiredStart,
       inquiry,
+      utmCampaign,
+      utmContent,
     })
   );
 

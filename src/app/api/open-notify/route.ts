@@ -34,6 +34,24 @@ export async function POST(request: NextRequest) {
       ? program_type.trim()
       : "7day";
 
+  // ── 광고 유입(attribution) — 클라이언트가 보관해 둔 UTM/fbclid ──
+  // 문자열만 허용하고 길이를 제한해 INSERT 컬럼으로 펼친다.
+  const attr = (body?.attribution ?? {}) as Record<string, unknown>;
+  const utm = (value: unknown): string | null => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed.slice(0, 200) : null;
+  };
+  const attribution = {
+    utm_source: utm(attr.utm_source),
+    utm_medium: utm(attr.utm_medium),
+    utm_campaign: utm(attr.utm_campaign),
+    utm_content: utm(attr.utm_content),
+    utm_term: utm(attr.utm_term),
+    fbclid: utm(attr.fbclid),
+    landing_path: utm(attr.landing_path),
+  };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -73,6 +91,7 @@ export async function POST(request: NextRequest) {
       name: resolvedName,
       phone: resolvedPhone,
       program_type: programType,
+      ...attribution,
     });
 
     if (error) {
@@ -110,6 +129,7 @@ export async function POST(request: NextRequest) {
     name: trimmedName,
     phone: trimmedPhone,
     program_type: programType,
+    ...attribution,
   });
 
   if (error) {

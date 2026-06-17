@@ -42,6 +42,25 @@ interface WaitlistRow {
   goals: string[] | null;
   etc_details: Record<string, string> | null;
   inquiry: string | null;
+  utm_source: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+}
+
+// 자유값(utm_content 등)의 분포를 동적으로 집계한다. 선택지가 정해져 있지 않아
+// distribution() 대신 실제로 들어온 값을 그대로 모아 응답 많은 순으로 정렬한다.
+function freeDistribution<T>(
+  rows: T[],
+  pick: (r: T) => string | null
+): { label: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const v = pick(r);
+    if (v) counts.set(v, (counts.get(v) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 // 신청 시각을 한국 시간 기준 "2026.06.14 14:30" 형태로(테이블용 짧은 포맷).
@@ -136,6 +155,66 @@ function StatBlock({
   );
 }
 
+// 광고 유입(utm_content) 분포를 강조 카드로 보여준다. 대기신청·알림신청에 공용.
+// 비율 기준은 "추적된 건수"(attributedTotal) — 광고 간 상대 성과 비교에 집중.
+function AdAttributionBlock({
+  title,
+  data,
+  attributedTotal,
+  total,
+  totalUnit,
+}: {
+  title: string;
+  data: { label: string; count: number }[];
+  attributedTotal: number;
+  total: number;
+  totalUnit: string;
+}) {
+  if (attributedTotal === 0) return null;
+  return (
+    <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-5">
+      <div className="mb-3 flex items-baseline justify-between">
+        <p className="text-sm font-bold text-[var(--foreground)]">{title}</p>
+        <p className="text-xs tabular-nums text-[var(--foreground)]/50">
+          추적됨 {attributedTotal}
+          {totalUnit} / 전체 {total}
+          {totalUnit}
+        </p>
+      </div>
+      <div className="space-y-2">
+        {data.map((d) => {
+          const pct =
+            attributedTotal > 0
+              ? Math.round((d.count / attributedTotal) * 100)
+              : 0;
+          return (
+            <div key={d.label}>
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="font-medium text-[var(--foreground)]">
+                  {d.label}
+                </span>
+                <span className="tabular-nums text-[var(--foreground)]/50">
+                  {d.count}
+                  {totalUnit} · {pct}%
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-[var(--surface)]">
+                <div
+                  className="h-full rounded-full bg-[var(--foreground)]"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[11px] text-[var(--foreground)]/40">
+        utm_content 값 기준. 광고 URL 에 ?utm_content=ad01 처럼 광고별 식별자를 달아야 집계돼요.
+      </p>
+    </div>
+  );
+}
+
 // 로우데이터 테이블의 열 정의(헤더 + 각 행의 셀 값 추출).
 const COLUMNS: { header: string; cell: (r: WaitlistRow) => string }[] = [
   { header: "신청일시(KST)", cell: (r) => formatKst(r.created_at) },
@@ -191,6 +270,9 @@ const COLUMNS: { header: string; cell: (r: WaitlistRow) => string }[] = [
     cell: (r) => many(WAITLIST_LABELS.goals, r.goals, r.etc_details?.goals),
   },
   { header: "추가 문의", cell: (r) => r.inquiry ?? "" },
+  { header: "유입 광고(크리)", cell: (r) => r.utm_content ?? "" },
+  { header: "유입 캠페인", cell: (r) => r.utm_campaign ?? "" },
+  { header: "유입 소스", cell: (r) => r.utm_source ?? "" },
 ];
 
 export default async function AdminWaitlistPage() {
@@ -208,7 +290,17 @@ export default async function AdminWaitlistPage() {
     .from("open_notifications")
     .select("*", { count: "exact", head: true });
 
+  // 알림신청의 광고 유입(utm_content) — 광고별 알림신청 수 집계용.
+  const { data: notifyAttr } = await admin
+    .from("open_notifications")
+    .select("utm_content, utm_campaign, utm_source");
+
   const rows = (data ?? []) as WaitlistRow[];
+  const notifyAttrRows = (notifyAttr ?? []) as {
+    utm_content: string | null;
+    utm_campaign: string | null;
+    utm_source: string | null;
+  }[];
 
   // 상단 요약: 전체 / "워크북+상담" 희망(상담 리드) 건수.
   const total = rows.length;
@@ -268,6 +360,24 @@ export default async function AdminWaitlistPage() {
       data: distribution(rows, GOAL_OPTIONS, (r) => r.goals ?? []),
     },
   ];
+
+  // ── 광고 유입 분석 ── "어떤 크리에이티브가 대기신청을 많이 만들었나"
+  // utm_content(광고 식별자)별 신청 수. 없으면 캠페인/소스로 폴백.
+  const adDistribution = freeDistribution(
+    rows,
+    (r) => r.utm_content ?? r.utm_campaign ?? r.utm_source
+  );
+  const attributedTotal = adDistribution.reduce((s, d) => s + d.count, 0);
+
+  // 알림신청(open_notifications)의 광고별 분포 — 대기신청과 별도로 집계.
+  const notifyAdDistribution = freeDistribution(
+    notifyAttrRows,
+    (r) => r.utm_content ?? r.utm_campaign ?? r.utm_source
+  );
+  const notifyAttributedTotal = notifyAdDistribution.reduce(
+    (s, d) => s + d.count,
+    0
+  );
 
   return (
     <main className="bg-[var(--surface)] min-h-screen">
@@ -334,6 +444,26 @@ export default async function AdminWaitlistPage() {
             </p>
           </div>
         </div>
+
+        {/* 광고 유입 분석 — 어떤 크리에이티브가 등록을 많이 만들었나 (대기신청·알림신청 분리) */}
+        {(attributedTotal > 0 || notifyAttributedTotal > 0) && (
+          <div className="mb-12 grid gap-3 lg:grid-cols-2">
+            <AdAttributionBlock
+              title="📣 광고별 대기신청 설문 (SubmitApplication)"
+              data={adDistribution}
+              attributedTotal={attributedTotal}
+              total={total}
+              totalUnit="명"
+            />
+            <AdAttributionBlock
+              title="📣 광고별 알림신청 (CompleteRegistration)"
+              data={notifyAdDistribution}
+              attributedTotal={notifyAttributedTotal}
+              total={notifyTotal}
+              totalUnit="건"
+            />
+          </div>
+        )}
 
         {/* 자동 응답 분포 통계 */}
         {total > 0 && (

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trackMetaEvent } from "@/lib/meta-pixel";
+import { getAttribution } from "@/lib/attribution";
 import {
   WAITLIST_WORKBOOKS,
   PURCHASE_TYPE_OPTIONS,
@@ -275,6 +276,8 @@ export function WaitlistForm() {
           goals,
           etcDetails,
           inquiry: inquiry.trim() || undefined,
+          // 첫 진입 시 보관해 둔 광고 유입 정보(UTM/fbclid)를 함께 전송.
+          attribution: getAttribution(),
         }),
       });
       const data = await res.json();

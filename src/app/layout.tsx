@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { AttributionCapture } from "@/components/AttributionCapture";
 
 const META_PIXEL_ID = "978167614596276";
 
@@ -46,6 +47,9 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
+
+        {/* 광고 유입(UTM/fbclid) 첫 진입 캡처 — 렌더 출력 없음 */}
+        <AttributionCapture />
 
         <Header />
         <main className="flex-1">{children}</main>

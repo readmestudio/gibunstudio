@@ -13,6 +13,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { trackMetaEvent } from "@/lib/meta-pixel";
+import { getAttribution } from "@/lib/attribution";
 
 const PROGRAM_TYPE = "self-workshop";
 const NOTIFY_INTENT_KEY = "notify";
@@ -70,7 +71,11 @@ export function WorkshopNotifyProvider({ children }: { children: ReactNode }) {
         const res = await fetch("/api/open-notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ program_type: PROGRAM_TYPE }),
+          body: JSON.stringify({
+            program_type: PROGRAM_TYPE,
+            // 첫 진입 시 보관해 둔 광고 유입 정보(UTM/fbclid)를 함께 전송.
+            attribution: getAttribution(),
+          }),
         });
         const data = (await res.json().catch(() => ({}))) as {
           success?: boolean;
