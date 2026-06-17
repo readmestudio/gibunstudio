@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   WAITLIST_WORKBOOKS,
   PURCHASE_TYPE_OPTIONS,
@@ -201,6 +202,8 @@ function CheckIcon() {
 }
 
 export function WaitlistForm() {
+  const router = useRouter();
+
   // 연락처 (필수)
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -278,39 +281,25 @@ export function WaitlistForm() {
         fail(data.error ?? "잠시 후 다시 시도해주세요.");
         return;
       }
+      // 성공 시 완료 페이지로 이동 — URL(`waitlist/complete`)로 Meta 전환을 잡는다.
+      // status 는 success 로 유지해 버튼 비활성 상태로 두고, 그대로 라우팅한다.
       setStatus("success");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      router.push("/waitlist/complete");
     } catch {
       fail("네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
     }
   }
 
-  // ── 신청 완료 화면 ──
+  // ── 신청 완료 → 완료 페이지(`/waitlist/complete`)로 이동 중 ──
+  // 라우팅이 끝나기 전 폼이 깜빡이지 않도록 가벼운 안내만 노출.
   if (status === "success") {
     return (
       <div className="rounded-2xl border-2 border-[var(--foreground)] bg-white px-8 py-16 text-center">
-        <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[var(--foreground)]">
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold text-[var(--foreground)]">
+        <p className="text-lg font-semibold text-[var(--foreground)]">
           대기신청이 완료됐어요
-        </h2>
-        <p className="mx-auto mt-3 max-w-md leading-relaxed text-[var(--foreground)]/60">
-          워크북이 준비되면 입력해주신 연락처로 가장 먼저 알려드릴게요.
-          <br />
-          솔직하게 골라주신 답변, 워크북을 만드는 데 소중히 쓰겠습니다.
+        </p>
+        <p className="mt-2 text-sm text-[var(--foreground)]/55">
+          잠시만요, 안내 페이지로 이동하고 있어요…
         </p>
       </div>
     );
