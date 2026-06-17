@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import {
   WAITLIST_WORKBOOKS,
   PURCHASE_TYPE_OPTIONS,
@@ -281,8 +282,10 @@ export function WaitlistForm() {
         fail(data.error ?? "잠시 후 다시 시도해주세요.");
         return;
       }
-      // 성공 시 완료 페이지로 이동 — URL(`waitlist/complete`)로 Meta 전환을 잡는다.
-      // status 는 success 로 유지해 버튼 비활성 상태로 두고, 그대로 라우팅한다.
+      // 서베이 제출 성공 — Meta 표준 이벤트(Lead) 발화.
+      // 버튼 클릭이 아니라 "제출 성공" 시점에만 쏴서 빈 클릭·검증 실패를 전환에서 배제.
+      trackMetaEvent("Lead");
+      // status 는 success 로 유지해 버튼 비활성 상태로 두고, 완료 페이지로 라우팅.
       setStatus("success");
       router.push("/waitlist/complete");
     } catch {
