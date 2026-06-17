@@ -31,7 +31,6 @@ import {
   WorkbookScreenshotSection,
   WorkbookScreenshotStrip,
 } from "./WorkbookScreenshotSection";
-import { WorkshopNotifyProvider } from "./WorkshopNotifyContext";
 
 /**
  * `/payment/self-workshop` — 심리 상담 워크북 *전반* 상세 페이지.
@@ -49,31 +48,29 @@ export function OverviewLandingPage() {
   useFadeIn();
 
   return (
-    <WorkshopNotifyProvider>
-      <div className="lr">
-        <SoftLaunchBanner />
-        <OverviewHero />
-        <WorkbookScreenshotSection />
-        <ProblemsSection />
-        <OverviewBigQuestion />
-        <OverviewIntroSection />
-        <Divider />
-        <CompareSection />
-        <Divider />
-        <OverviewMethodSection />
-        <OverviewJourneySection />
-        <WorkbookScreenshotStrip />
-        <OverviewApproachSection />
-        <OverviewLineupSection />
-        <PricingSection />
-        <OverviewPointsSection />
-        <PrivacySection />
-        <OverviewTestimonialsSection />
-        <FaqSection />
-        <FinalCTA />
-        <Footer />
-        <StickyCTA />
-      </div>
-    </WorkshopNotifyProvider>
+    <div className="lr">
+      <SoftLaunchBanner />
+      <OverviewHero />
+      <WorkbookScreenshotSection />
+      <ProblemsSection />
+      <OverviewBigQuestion />
+      <OverviewIntroSection />
+      <Divider />
+      <CompareSection />
+      <Divider />
+      <OverviewMethodSection />
+      <OverviewJourneySection />
+      <WorkbookScreenshotStrip />
+      <OverviewApproachSection />
+      <OverviewLineupSection />
+      <PricingSection />
+      <OverviewPointsSection />
+      <PrivacySection />
+      <OverviewTestimonialsSection />
+      <FaqSection />
+      <FinalCTA />
+      <Footer />
+      <StickyCTA />
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { WorkshopNotifyButton } from "./WorkshopNotifyButton";
 
 /* ============================================================
  * PricingSection — 워크북 단독 vs 워크북+상담 비교 2단
@@ -441,10 +440,10 @@ export function FinalCTA() {
           <p className="lr-sub">
             정식 오픈 시 알림과 함께 얼리 액세스 특별가를 보내드릴게요.
           </p>
-          <WorkshopNotifyButton className="lr-cta-pill lr-invert">
-            출시 알림신청하고 할인받기
+          <a href="/waitlist" className="lr-cta-pill lr-invert">
+            대기자 등록하고 할인받기
             <span className="lr-arrow">→</span>
-          </WorkshopNotifyButton>
+          </a>
         </div>
       </div>
     </section>
