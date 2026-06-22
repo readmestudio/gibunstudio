@@ -1,7 +1,51 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendSlackMessage, SLACK_OPEN_NOTIFY_CHANNEL } from "@/lib/slack";
 import { getResend, getFromAddress, getSiteUrl } from "@/lib/newsletter/resend-client";
 import { buildWelcomeEmail } from "@/lib/newsletter/email-templates";
+
+/**
+ * 운영자 채널에 신규(또는 재)구독을 알린다.
+ *
+ * waitlist 알림과 동일하게 `next/server` 의 `after()` 안에서 호출돼야 한다 —
+ * Vercel 서버리스 함수는 응답 직후 컨텍스트를 종료해서 await 안 한 fetch 가
+ * 잘릴 수 있다. after() 가 응답 후 백그라운드 실행을 끝까지 보장한다.
+ */
+async function notifyOperatorsAboutNewsletter(p: {
+  email: string;
+  reactivated: boolean;
+}): Promise<void> {
+  await sendSlackMessage({
+    channel: SLACK_OPEN_NOTIFY_CHANNEL,
+    text: p.reactivated
+      ? `💌 기분 레터 재구독: ${p.email}`
+      : `💌 기분 레터 새 구독: ${p.email}`,
+    blocks: [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: p.reactivated
+            ? "💌 기분 레터 재구독이 들어왔어요"
+            : "💌 기분 레터 새 구독이 들어왔어요",
+        },
+      },
+      {
+        type: "section",
+        fields: [{ type: "mrkdwn", text: `*이메일*\n${p.email}` }],
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `📅 ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST)`,
+          },
+        ],
+      },
+    ],
+  });
+}
 
 /**
  * POST /api/newsletter/subscribe
@@ -67,9 +111,10 @@ export async function POST(req: Request) {
   }
 
   let subscriberToken: string;
+  let reactivated = false;
 
   if (existing && existing.status === "active") {
-    // 이미 활성 구독 — 조용히 성공 처리
+    // 이미 활성 구독 — 조용히 성공 처리 (운영자 알림도 보내지 않음)
     return NextResponse.json({ ok: true, alreadySubscribed: true });
   }
 
@@ -87,6 +132,7 @@ export async function POST(req: Request) {
       );
     }
     subscriberToken = existing.unsubscribe_token;
+    reactivated = true;
   } else {
     // 신규 등록 (DB가 unsubscribe_token 자동 생성)
     const { data: inserted, error: insertError } = await admin
@@ -123,6 +169,9 @@ export async function POST(req: Request) {
     console.error("[newsletter/subscribe] 환영 메일 발송 실패:", err);
     // 구독 자체는 성공 상태로 응답
   }
+
+  // 구독이 성공적으로 저장된 뒤에만 운영자 채널에 알림(fire-and-forget).
+  after(() => notifyOperatorsAboutNewsletter({ email, reactivated }));
 
   return NextResponse.json({ ok: true });
 }
