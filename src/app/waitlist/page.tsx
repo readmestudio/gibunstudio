@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { WaitlistForm } from "@/components/waitlist/WaitlistForm";
+import { WaitlistPageView } from "@/components/waitlist/WaitlistPageView";
 
 export const metadata: Metadata = {
   title: "심리 상담 워크북 대기신청 | GIBUN",
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 export default function WaitlistPage() {
   return (
     <main className="min-h-screen bg-white">
+      <WaitlistPageView />
       <div className="mx-auto max-w-2xl px-5 py-16 sm:px-6 sm:py-24">
         {/* ── 히어로 ── */}
         <header className="text-center">
