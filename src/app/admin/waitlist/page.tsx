@@ -394,12 +394,20 @@ export default async function AdminWaitlistPage() {
               심리 상담 워크북 대기신청 내역을 최신순으로 확인하실 수 있어요.
             </p>
           </div>
-          <Link
-            href="/admin/essays"
-            className="shrink-0 text-xs font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] whitespace-nowrap"
-          >
-            에세이 관리 →
-          </Link>
+          <div className="flex shrink-0 items-center gap-4">
+            <Link
+              href="/admin"
+              className="text-xs font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] whitespace-nowrap"
+            >
+              ← 관리자 홈
+            </Link>
+            <Link
+              href="/admin/essays"
+              className="text-xs font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] whitespace-nowrap"
+            >
+              에세이 관리 →
+            </Link>
+          </div>
         </div>
 
         {/* 요약 통계 */}

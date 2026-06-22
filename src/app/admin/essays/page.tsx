@@ -57,6 +57,12 @@ export default async function AdminEssaysPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link
+              href="/admin"
+              className="text-xs font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] whitespace-nowrap"
+            >
+              ← 관리자 홈
+            </Link>
+            <Link
               href="/admin/waitlist"
               className="text-xs font-medium text-[var(--foreground)]/60 hover:text-[var(--foreground)] whitespace-nowrap"
             >
