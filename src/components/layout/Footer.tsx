@@ -16,8 +16,9 @@ export function Footer() {
             <p className="mt-1">
               카카오톡 채널 gibun_studio 로 문의해주세요
             </p>
+            <p className="mt-1">전화 010-2155-4772</p>
             <p className="mt-2">
-              월-금 10:00 - 18:00<br />
+              월-금 10:00 - 15:00<br />
               lunch 12:00 - 13:00<br />
               토,일요일 및 공휴일 OFF
             </p>
@@ -27,6 +28,7 @@ export function Footer() {
             <p>올핸즈라운지 | 대표 김지안</p>
             <p>사업자등록번호 : 335-25-01567</p>
             <p>통신판매업신고 : 2024-서울은평-0870</p>
+            <p>주소 : 서울특별시 마포구 마포대로 12 (마포동) 1606-씨13호</p>
             <p>E-MAIL allhandslounge@gmail.com</p>
             <div className="flex gap-3 mt-3">
               <Link href="/privacy" className="underline hover:text-white/60">
