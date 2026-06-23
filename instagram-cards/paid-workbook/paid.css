@@ -1,0 +1,175 @@
+/* ============================================================
+   기분 스튜디오 — 페이드(광고) 소재: 상담 워크북 대기 신청
+   ------------------------------------------------------------
+   캔버스: 1080 × 1350 (인스타 4:5)
+   톤: 다크(#0e0e10) + 오렌지(#e85d3a) / 실물 워크북 스크린샷 히어로
+   레퍼런스: Downloads/Paid_09.png 구조(상단 라벨 → 히어로 → 하단 굵은 2줄 카피)
+   ============================================================ */
+
+:root {
+  --bg: #0e0e10;
+  --accent: #e85d3a;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.82);
+  --text-tertiary: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --divider: rgba(255, 255, 255, 0.12);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #1a1a1a;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+/* ───────────── 카드 본체 1080×1350 ───────────── */
+.card {
+  position: relative;
+  width: 1080px;
+  height: 1350px;
+  background: var(--bg);
+  box-sizing: border-box;
+  padding: 72px 80px 84px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 배경 도트 그리드 (은은하게) */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 30px 30px;
+  pointer-events: none;
+}
+/* 히어로 뒤 오렌지 앰비언트 글로우 */
+.card::after {
+  content: "";
+  position: absolute;
+  top: 240px;
+  left: 50%;
+  width: 760px;
+  height: 620px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(232, 93, 58, 0.30) 0%, rgba(232, 93, 58, 0) 68%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.card > * { position: relative; z-index: 1; }
+
+/* ───────────── 상단 메타 바 ───────────── */
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.brand {
+  color: var(--text-tertiary);
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 24px;
+  border: 1.5px solid rgba(232, 93, 58, 0.55);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.badge .ping {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 rgba(232, 93, 58, 0.55);
+}
+
+/* ───────────── 히어로 목업 ───────────── */
+.hero {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+.mockup {
+  width: 800px;
+  border-radius: 26px;
+  background: #f4f4f5;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55), 0 6px 22px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mockup .bar {
+  height: 56px;
+  background: #e6e6e8;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 26px;
+  box-sizing: border-box;
+}
+.mockup .bar i {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #c5c5c9;
+  display: inline-block;
+}
+.mockup .bar i:first-child { background: var(--accent); }
+.mockup .shot {
+  display: block;
+  width: 100%;
+  height: 560px;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* ───────────── 하단 카피 ───────────── */
+.copy { margin-top: 40px; }
+.headline {
+  color: var(--text-primary);
+  font-size: 74px;
+  font-weight: 800;
+  line-height: 1.26;
+  letter-spacing: -0.04em;
+}
+.headline .accent { color: var(--accent); }
+.subcopy {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-tertiary);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.subcopy .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+.subcopy .cta { color: var(--text-primary); font-weight: 700; }

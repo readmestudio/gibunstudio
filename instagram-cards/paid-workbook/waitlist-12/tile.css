@@ -1,0 +1,228 @@
+/* ============================================================
+   기분 스튜디오 — 워크북 대기 신청 페이드 (타일 배경 12종)
+   ------------------------------------------------------------
+   캔버스: 1080 × 1350 (인스타 4:5)
+   톤: 다크(#0e0e10) + 오렌지(#e85d3a) / Pretendard
+   배경: 워크북 페이지를 비스듬히 열 맞춰 타일링 + 다크 스크림으로 불투명 처리
+   ※ 배경은 12종 모두 동일, 얹어지는 텍스트만 교체
+   ============================================================ */
+
+:root {
+  --bg: #0e0e10;
+  --accent: #e85d3a;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.82);
+  --text-tertiary: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --divider: rgba(255, 255, 255, 0.12);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #1a1a1a;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+/* ───────────── 카드 본체 1080×1350 ───────────── */
+.card {
+  position: relative;
+  width: 1080px;
+  height: 1350px;
+  background: var(--bg);
+  box-sizing: border-box;
+  padding: 72px 80px 84px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ───────────── 배경 타일 필드 (비스듬히 열 맞춰 깔린 워크북 페이지) ───────────── */
+.tilefield {
+  position: absolute;
+  inset: -420px -260px;
+  z-index: 0;
+  display: flex;
+  justify-content: center;
+  gap: 34px;
+  transform: rotate(-13deg) scale(1.06);
+  transform-origin: center;
+  pointer-events: none;
+}
+.tilecol {
+  flex: none;
+  width: 318px;
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+}
+.tilecol:nth-child(2) { margin-top: -180px; }
+.tilecol:nth-child(3) { margin-top: -90px; }
+.tilecol:nth-child(4) { margin-top: -240px; }
+.tilecol:nth-child(5) { margin-top: -40px; }
+
+.tile {
+  width: 318px;
+  height: 410px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* ───────────── 다크 스크림 (불투명 처리 + 하단 카피존 강조) ───────────── */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 30%, rgba(232, 93, 58, 0.16) 0%, rgba(232, 93, 58, 0) 70%),
+    linear-gradient(to bottom,
+      rgba(14, 14, 16, 0.62) 0%,
+      rgba(14, 14, 16, 0.70) 38%,
+      rgba(14, 14, 16, 0.90) 64%,
+      rgba(14, 14, 16, 0.985) 84%,
+      #0e0e10 100%);
+}
+/* 은은한 도트 그리드 (브랜드 일관성) */
+.scrim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+/* ───────────── 콘텐츠 레이어 ───────────── */
+.layer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 상단 메타 바 */
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.brand {
+  color: var(--text-tertiary);
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 24px;
+  border: 1.5px solid rgba(232, 93, 58, 0.55);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.badge .ping {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* 남는 공간 */
+.spacer { flex: 1; min-height: 0; }
+
+/* 하단 카피 블록 */
+.copy { display: flex; flex-direction: column; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-tertiary);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 26px;
+}
+.eyebrow .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+.headline {
+  color: var(--text-primary);
+  font-size: 74px;
+  font-weight: 800;
+  line-height: 1.28;
+  letter-spacing: -0.04em;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.45);
+}
+.headline .accent { color: var(--accent); }
+
+.subcopy {
+  margin-top: 28px;
+  color: var(--text-secondary);
+  font-size: 31px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+/* CTA */
+.cta {
+  margin-top: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.cta .product {
+  color: var(--text-muted);
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.cta .product b { color: var(--text-tertiary); font-weight: 700; }
+.cta .btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 40px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 16px;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow: 0 16px 40px rgba(232, 93, 58, 0.35);
+}
+.cta .btn .arrow { font-size: 30px; transform: translateY(1px); }

@@ -1,0 +1,121 @@
+/* ============================================================
+   기분 스튜디오 — 워크북 대기신청 페이드 v2 (인스타 '마지막 장' 스타일)
+   ------------------------------------------------------------
+   캔버스: 1080 × 1350 (4:5)
+   구조: 가운데 정렬 배지 + 헤드라인(형광펜 마커 강조) + 큰 서브카피
+         + 하단 띠배너(설명 + CTA 버튼)
+   배경: 워크북 페이지를 어둡게 비스듬히 깔되 프레임 밖으로 흘려 '잘림' 방지
+   ============================================================ */
+
+:root {
+  --bg: #0E0D0C;
+  --accent: #e85d3a;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.86);
+  --text-tertiary: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.42);
+}
+
+html, body {
+  margin: 0; padding: 0;
+  background: #1a1a1a;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 10px 0; box-sizing: border-box;
+}
+
+/* ───────── 카드 본체 ───────── */
+.card {
+  position: relative;
+  width: 1080px; height: 1350px;
+  background: var(--bg);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* ───────── 배경: self-workshop 히어로 모자이크와 동일 ─────────
+   (OverviewHero / landing.css .lr-hero-shots 와 그리드·기울기·필터·오버레이 1:1 복제) */
+.tilefield {
+  position: absolute; inset: 0; z-index: 0;
+  overflow: hidden; pointer-events: none;
+}
+.tilegrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-auto-rows: 250px;
+  gap: 16px;
+  position: absolute; inset: -8% -6%;
+  transform: rotate(-4deg) scale(1.1);
+  transform-origin: center;
+  opacity: 0.5;
+}
+.tilegrid img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: top center;
+  border-radius: 12px;
+  filter: grayscale(0.35) brightness(0.85) contrast(1.02);
+}
+/* 가운데(텍스트 위치) 가장 어둡게 + 가장자리 자연 페이드 */
+.tilefield::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 78% 72% at 50% 42%, rgba(14,13,12,0.9) 0%, rgba(14,13,12,0.66) 48%, rgba(14,13,12,0.48) 100%),
+    linear-gradient(180deg, rgba(14,13,12,0.5) 0%, rgba(14,13,12,0.16) 24%, rgba(14,13,12,0.28) 74%, rgba(14,13,12,0.82) 100%);
+}
+
+/* ───────── 콘텐츠 ───────── */
+.layer { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+/* 가운데 정렬 히어로 */
+.hero {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+  padding: 0 96px;
+}
+
+.pill {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 16px 32px;
+  border: 1.5px solid rgba(255, 255, 255, 0.20);
+  border-radius: 999px;
+  background: rgba(20, 20, 22, 0.55);
+  color: var(--text-secondary);
+  font-size: 26px; font-weight: 700; letter-spacing: -0.01em;
+  margin-bottom: 56px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+.pill .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); flex: none; }
+
+.headline {
+  color: var(--text-primary);
+  font-size: 78px; font-weight: 800; line-height: 1.3; letter-spacing: -0.04em;
+  text-shadow: 0 4px 26px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+.headline .accent { color: var(--accent); }
+.headline .quo { color: rgba(255, 255, 255, 0.6); font-weight: 800; }
+
+.subcopy {
+  margin-top: 40px;
+  color: var(--text-primary);
+  font-size: 39px; font-weight: 500; line-height: 1.55; letter-spacing: -0.015em;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.85), 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* ───────── 하단 풀폭 오렌지 띠배너 ───────── */
+.band {
+  position: relative; z-index: 2;
+  background: var(--accent);
+  box-shadow: 0 -24px 60px rgba(14, 14, 16, 0.75);
+  padding: 52px 80px;
+  display: flex; align-items: center; justify-content: center;
+}
+.band .btn {
+  display: inline-flex; align-items: center; gap: 18px;
+  color: #fff;
+  font-size: 42px; font-weight: 800; letter-spacing: -0.01em;
+}
+.band .btn .arrow { font-size: 38px; transform: translateY(2px); }
