@@ -277,7 +277,8 @@ export const WORKBOOK_FEATURES = [
 ];
 
 export const WORKSHOP_ORIGINAL_PRICE = 99000;
-export const WORKSHOP_PRICE = 69000;
+// 실판매가 — 공개 랜딩(₩49,000)과 일치시킴. 이전 69,000에서 통일.
+export const WORKSHOP_PRICE = 49000;
 export const WORKSHOP_DISCOUNT_PERCENT = Math.round(
   (1 - WORKSHOP_PRICE / WORKSHOP_ORIGINAL_PRICE) * 100
 );

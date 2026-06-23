@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from "react";
 
+/* ── 워크북 시작 경로 (무료 진단 → 결제) ── */
+export const WORKBOOK_START_HREF = "/dashboard/self-workshop";
+
 /* ── 최상단 띠 배너 ── */
 export function SoftLaunchBanner() {
   return (
     <div className="lr-softlaunch">
       <span className="lr-pulse" />
       <span>
-        <b>SOFT LAUNCH</b> · 정식 오픈 시 알림과 함께 특별가를
-        보내드려요.
+        지금 <b>무료 자가 진단</b>으로 시작하고 바로 워크북을 받아보세요.
       </span>
     </div>
   );
@@ -31,8 +33,8 @@ export function TopBar() {
           <a href="#price">가격</a>
           <a href="#faq">FAQ</a>
         </nav>
-        <a href="/waitlist" className="lr-cta-mini">
-          대기 신청
+        <a href={WORKBOOK_START_HREF} className="lr-cta-mini">
+          시작하기
         </a>
       </div>
     </header>
@@ -50,8 +52,8 @@ export function StickyCTA() {
   }, []);
   return (
     <div className={`lr-sticky-cta ${show ? "lr-show" : ""}`}>
-      <a href="/waitlist" className="lr-cta-pill lr-accent">
-        대기자 등록하기
+      <a href={WORKBOOK_START_HREF} className="lr-cta-pill lr-accent">
+        워크북 시작하기
         <span className="lr-arrow">→</span>
       </a>
     </div>

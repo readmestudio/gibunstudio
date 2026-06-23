@@ -25,7 +25,7 @@ export const WORKBOOK_CATALOG: WorkbookInfo[] = [
     subtitle: "쉬지 못하는 마음을 위한 워크북",
     description:
       "멈출 수 없는 성취 욕구, 쉼에 대한 죄책감. CBT 기반 자가 진단과 실습으로 나만의 순환 패턴을 발견하고 대처법을 찾아보세요.",
-    price: 69000,
+    price: 49000,
     originalPrice: 99000,
     slug: "workbook-achievement",
     features: [

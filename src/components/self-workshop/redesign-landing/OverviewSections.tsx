@@ -433,7 +433,8 @@ const LINEUP: LineupItem[] = [
     title: "성취 중독",
     desc:
       "성과가 없으면 불안하고, 쉬려고 하면 더 불안한 마음을 풀어내는 워크북. 자가 진단부터 다음 한 달의 다른 행동까지 10단계.",
-    status: "coming",
+    status: "live",
+    href: "/payment/self-workshop/achievement-addiction",
   },
   {
     badge: "WORKBOOK 02",

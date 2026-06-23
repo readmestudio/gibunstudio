@@ -70,11 +70,11 @@ export function OverviewHero() {
         <div className="lr-hero-chips lr-f-up lr-d1">
           <span className="lr-chip">#내면가족체계</span>
           <span className="lr-chip">#셀프심리상담</span>
-          <span className="lr-chip">#소프트런칭특가</span>
+          <span className="lr-chip">#무료자가진단</span>
         </div>
         <div className="lr-hero-cta-row lr-f-up lr-d2">
-          <a href="/waitlist" className="lr-cta-pill lr-accent">
-            대기자 등록하기
+          <a href="/dashboard/self-workshop" className="lr-cta-pill lr-accent">
+            워크북 시작하기
             <span className="lr-arrow">→</span>
           </a>
         </div>

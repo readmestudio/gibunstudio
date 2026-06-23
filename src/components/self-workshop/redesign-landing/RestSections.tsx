@@ -51,8 +51,11 @@ export function PricingSection() {
                 </div>
               ))}
             </div>
-            <a className="lr-cta-pill lr-cta-ghost" href="/waitlist">
-              워크북만 대기신청하기
+            <a
+              className="lr-cta-pill lr-cta-ghost"
+              href="/dashboard/self-workshop"
+            >
+              워크북 시작하기
               <span className="lr-arrow">→</span>
             </a>
           </div>
@@ -106,16 +109,16 @@ export function PricingSection() {
               </p>
             </div>
 
-            <a className="lr-cta-pill" href="/waitlist">
-              상담까지 함께 대기신청하기
+            <a className="lr-cta-pill" href="/programs/counseling">
+              상담까지 함께 문의하기
               <span className="lr-arrow">→</span>
             </a>
           </div>
         </div>
         <div className="lr-price-foot lr-f-up">
-          현재 소수의 인원으로 소프트 런칭 후 고도화하고 있어요.
+          워크북은 지금 바로 시작할 수 있어요. 무료 진단 후 결제로 이어집니다.
           <br />
-          추후 판매가 오픈되면 알림을 보내드릴게요.
+          상담까지 함께 원하시면 카카오톡으로 편하게 문의해 주세요.
         </div>
       </div>
     </section>
@@ -430,7 +433,7 @@ export function FinalCTA() {
           <div className="lr-grid-bg" />
           <span className="lr-eyebrow lr-dark">
             <span className="lr-dot" />
-            JOIN THE WAITLIST
+            START NOW
           </span>
           <h2>
             마음을 챙겨야
@@ -438,10 +441,10 @@ export function FinalCTA() {
             <em>퍼포먼스가 따라옵니다</em>
           </h2>
           <p className="lr-sub">
-            정식 오픈 시 알림과 함께 얼리 액세스 특별가를 보내드릴게요.
+            무료 자가 진단으로 지금 바로 시작해 보세요.
           </p>
-          <a href="/waitlist" className="lr-cta-pill lr-invert">
-            대기자 등록하고 할인받기
+          <a href="/dashboard/self-workshop" className="lr-cta-pill lr-invert">
+            워크북 시작하기
             <span className="lr-arrow">→</span>
           </a>
         </div>
