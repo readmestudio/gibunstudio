@@ -3,26 +3,77 @@
 /**
  * 무료 "마음 확인"(/minds) 상태머신 오케스트레이터.
  *
- *   landing → capture → conversation → report
+ *   landing → capture → conversation → analyzing → report
  *
- * 공유 상태(리드·대화기록·마음지도)를 들고 단계를 전환한다. 현재는 *골격* —
- * 대화 종료 시 답변에서 목(mock) PartsMap을 구성해 리포트를 끝까지 보여준다.
- * (TODO 표시: 공개 parts-map API·리드 저장 배선은 다음 단계.)
+ * 공유 상태(리드 id·마음지도)를 들고 단계를 전환한다.
+ *  - capture 완료 즉시 /api/minds/lead 로 연락처를 저장하고 id 를 받아 둔다(이탈 대비).
+ *  - conversation 완료 시 /api/minds/parts-map 로 실제 LLM 분석을 호출해 마음지도를
+ *    만들고(leadId 동봉 → 같은 리드 행에 답변·결과가 붙는다), report 로 넘어간다.
+ *  - 분석 호출이 길어질 수 있어 그 사이 analyzing 로딩 화면을 보여준다.
+ *
+ * 전환 측정: 연락처 제출(Lead) · 결과 도달(ViewContent) 을 Meta 픽셀로 추적한다.
  */
 
 import { useState } from "react";
 import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
+import { getAttribution } from "@/lib/attribution";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import { MindsLanding } from "./MindsLanding";
 import { MindsLeadCapture, type MindsLead } from "./MindsLeadCapture";
 import { MindsConversation, type MindAnswer } from "./MindsConversation";
 import { MindsFreeReport } from "./MindsFreeReport";
+import { MindsAnalyzing } from "./MindsAnalyzing";
 
-type Phase = "landing" | "capture" | "conversation" | "report";
+type Phase = "landing" | "capture" | "conversation" | "analyzing" | "report";
 
 export function MindsFlow() {
   const [phase, setPhase] = useState<Phase>("landing");
-  const [, setLead] = useState<MindsLead | null>(null);
+  const [leadId, setLeadId] = useState<string | null>(null);
   const [partsMap, setPartsMap] = useState<PartsMap | null>(null);
+
+  // 연락처 저장(fire-and-forget). 실패해도 사용자 흐름은 막지 않는다.
+  const saveLead = async (lead: MindsLead) => {
+    try {
+      const res = await fetch("/api/minds/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel: lead.channel,
+          email: lead.value,
+          attribution: getAttribution(),
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.id) setLeadId(json.id);
+    } catch {
+      // 네트워크 실패 — 결과 보기는 계속 진행.
+    }
+  };
+
+  // 대화 완료 → 실제 LLM 분석 호출 → 리포트.
+  const runAnalysis = async (answers: MindAnswer[]) => {
+    setPhase("analyzing");
+    try {
+      const res = await fetch("/api/minds/parts-map", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, leadId }),
+      });
+      const json = await res.json().catch(() => null);
+      if (json?.parts_map) {
+        setPartsMap(json.parts_map as PartsMap);
+        trackMetaEvent("ViewContent", { content_name: "minds_report" });
+        setPhase("report");
+        return;
+      }
+    } catch {
+      // 아래 폴백으로.
+    }
+    // API가 끝내 실패하면 최소한의 마음지도라도 만들어 결과를 보여준다.
+    setPartsMap(buildClientFallback(answers));
+    trackMetaEvent("ViewContent", { content_name: "minds_report" });
+    setPhase("report");
+  };
 
   return (
     <div className="mx-auto w-full max-w-[448px] px-6 py-8 sm:py-10">
@@ -33,7 +84,8 @@ export function MindsFlow() {
       {phase === "capture" && (
         <MindsLeadCapture
           onSubmit={(lead) => {
-            setLead(lead);
+            void saveLead(lead);
+            trackMetaEvent("Lead", { content_name: "minds" });
             setPhase("conversation");
           }}
           onBack={() => setPhase("landing")}
@@ -41,15 +93,10 @@ export function MindsFlow() {
       )}
 
       {phase === "conversation" && (
-        <MindsConversation
-          onComplete={(answers) => {
-            // TODO(다음 단계): 공개 /api/minds/parts-map 호출로 교체.
-            // 지금은 답변에서 목 마음지도를 구성해 리포트를 끝까지 보여준다.
-            setPartsMap(buildMockPartsMap(answers));
-            setPhase("report");
-          }}
-        />
+        <MindsConversation onComplete={(answers) => void runAnalysis(answers)} />
       )}
+
+      {phase === "analyzing" && <MindsAnalyzing />}
 
       {phase === "report" && partsMap && (
         <MindsFreeReport partsMap={partsMap} />
@@ -58,56 +105,39 @@ export function MindsFlow() {
   );
 }
 
-/* ─────────────── 골격용 목 마음지도 ───────────────
+/* ─────────────── 클라이언트 최종 폴백 ───────────────
  *
- * 실제 분석(LLM parts-map)을 붙이기 전, 사용자가 적은 답에서 최소한 "납득되는"
- * 마음 2개를 구성한다. 캐릭터 카드만 무료로 보이므로 leader_id/conflicts는
- * 페이월 티저(목 블러)용으로만 채운다. 진짜 분석으로 교체될 자리.
+ * API 호출 자체가 실패(네트워크 단절 등)했을 때를 위한 마지막 안전망. 서버 폴백과
+ * 같은 골격(다그치는 마음 ↔ 쉬고 싶은 마음)을 사용자 답변으로 개인화한다.
+ * 정상 경로에서는 서버 /api/minds/parts-map 응답이 쓰인다.
  */
-function buildMockPartsMap(answers: MindAnswer[]): PartsMap {
+function buildClientFallback(answers: MindAnswer[]): PartsMap {
   const byId = (id: string) =>
     answers.find((a) => a.id === id)?.answer.trim() ?? "";
+  const trim = (s: string, n = 60) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
   const loudest = byId("loudest_voice");
   const situation = byId("situation");
   const counter = byId("counter_voice");
-  const other = byId("other_minds");
-
-  const trim = (s: string, n = 60) =>
-    s.length > n ? `${s.slice(0, n - 1)}…` : s;
-
-  const parts: PartsMap["parts"] = [
-    {
-      id: "p1",
-      name: "더 해야 한다고 다그치는 마음",
-      traits: ["성취 압박", "통제"],
-      catchphrase: trim(loudest || "더 해야 해, 멈추면 안 돼", 24),
-      evidence_quote: trim(loudest || situation),
-      role: "manager",
-    },
-    {
-      id: "p2",
-      name: counter ? "다르게 속삭이는 마음" : "이제는 멈추고 쉬고 싶은 마음",
-      traits: counter ? ["반대 방향", "쉼"] : ["피로", "쉼"],
-      catchphrase: "이제 좀 쉬어도 되지 않을까",
-      evidence_quote: trim(counter || situation),
-      role: "exile",
-    },
-  ];
-
-  // 5번 질문에서 또 다른 마음을 적었으면 세 번째 캐릭터로 추가.
-  if (other) {
-    parts.push({
-      id: "p3",
-      name: "한켠에서 또 다른 목소리를 낸 마음",
-      traits: ["또 다른 목소리"],
-      catchphrase: trim(other, 24),
-      evidence_quote: trim(other),
-      role: "unclear",
-    });
-  }
 
   return {
-    parts,
+    parts: [
+      {
+        id: "p1",
+        name: "더 해야 한다고 다그치는 마음",
+        traits: ["성취 압박", "통제"],
+        catchphrase: trim(loudest || "더 해야 해, 멈추면 안 돼", 24),
+        evidence_quote: trim(loudest || situation),
+        role: "manager",
+      },
+      {
+        id: "p2",
+        name: "이제는 멈추고 쉬고 싶은 마음",
+        traits: ["피로", "쉼"],
+        catchphrase: "이제 좀 쉬어도 되지 않을까",
+        evidence_quote: trim(counter || situation),
+        role: "exile",
+      },
+    ],
     leader_id: "p1",
     conflicts: [
       {

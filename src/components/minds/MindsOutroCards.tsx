@@ -18,6 +18,7 @@
  */
 
 import Link from "next/link";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import { CardShell, CardKicker } from "./MindsCardShell";
 import { M, Hr, dispStyle, leadStyle, ctaStyle, IcLock } from "./quiet-editorial";
 import { ROLE_SLOTS, type CharacterView } from "@/lib/minds/characters";
@@ -245,7 +246,18 @@ export function MindsPricingCard() {
       </div>
 
       {/* CTA + 가격 */}
-      <Link href="/payment/self-workshop/achievement-addiction" style={{ ...ctaStyle, marginTop: 18, textDecoration: "none" }} className="transition-transform active:scale-[0.99]">
+      <Link
+        href="/payment/self-workshop/achievement-addiction"
+        onClick={() =>
+          trackMetaEvent("InitiateCheckout", {
+            content_name: "minds_to_workbook",
+            value: WORKSHOP_PRICE,
+            currency: "KRW",
+          })
+        }
+        style={{ ...ctaStyle, marginTop: 18, textDecoration: "none" }}
+        className="transition-transform active:scale-[0.99]"
+      >
         워크북으로 배역표 열기 <span style={{ opacity: 0.45 }}>·</span> {won(WORKSHOP_PRICE)}
       </Link>
       <p style={{ textAlign: "center", marginTop: 14, fontSize: 12.5, color: M.mute, fontFamily: M.font }}>
@@ -254,6 +266,9 @@ export function MindsPricingCard() {
 
       <Link
         href="/programs/counseling"
+        onClick={() =>
+          trackMetaEvent("Lead", { content_name: "minds_to_counseling" })
+        }
         style={{ display: "block", marginTop: 14, padding: "15px 20px", borderRadius: 2, border: `1px solid ${M.line}`, textAlign: "center", fontSize: 14, fontWeight: 600, color: M.ink, fontFamily: M.font, textDecoration: "none" }}
       >
         혼자보다 함께가 편하다면, 1:1 심리상담 알아보기

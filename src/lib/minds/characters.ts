@@ -14,8 +14,8 @@
  *  - 유료: 역할 배역표(누가 리더·빌런·관리자·추방자인지) + 관계 역학(누가 누구와 부딪치는지)
  *  → FREE_CHARACTER_COUNT / 아웃트로 카드 한 곳에서 경계를 옮길 수 있다.
  *
- * 초상(portrait): 지금은 기존 손그림 도들(/public/doodles/*.svg)을 placeholder로 사용.
- * 힉스필드 캐릭터 이미지가 준비되면 ARCHETYPE.portrait만 교체하면 된다(레이아웃 불변).
+ * 초상(portrait): 배역별 캐릭터 일러스트(/public/minds/cast/{배역}.png) 5종을 쓴다.
+ * 같은 배역(roleSlot)을 맡은 캐릭터는 같은 일러스트를 공유한다(리더·빌런·난봉꾼·관리자·추방자).
  *
  * 용어 정책: 무료 /minds 는 드라마 배역명(리더/빌런/난봉꾼/관리자/추방자)을 그대로
  * 노출한다. (유료 워크북의 IFS_TERM_BAN_RULES 와 별개 — 그쪽은 자연어 유지.)
@@ -98,7 +98,7 @@ export interface CharacterArchetype {
   fears: string;
   /** 발동되는 순간 — 이 마음이 언제 깨어나는지(문장형 1~2문장). */
   triggers: string;
-  /** placeholder 초상(도들). 힉스필드 이미지로 교체 예정. */
+  /** 배역별 캐릭터 일러스트 경로(/minds/cast/{배역}.png). */
   portrait: string;
   /** 기본 역할 슬롯 key(매핑·배역표 힌트). */
   roleSlot: string;
@@ -125,7 +125,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려워하는 건 당신이 긴장을 푸는 순간이에요. 잠깐이라도 느슨해지면, 사실은 형편없는 사람이었다는 게 만천하에 들통날 것만 같거든요. 그래서 좀처럼 쉬는 법을 허락하지 못합니다.",
     triggers:
       "누군가와 비교될 때, 혹은 무언가를 잘 해낸 직후의 짧은 여유가 찾아올 때 가장 크게 깨어나요. 평가나 피드백을 앞둔 순간에도 어김없이 목소리를 높입니다.",
-    portrait: "/doodles/mystic-eye.svg",
+    portrait: "/minds/cast/villain.png",
     roleSlot: "villain",
     role: "self_critic",
   },
@@ -147,7 +147,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 통제의 끈을 놓치는 순간이에요. 손을 놓는 순간 애써 쌓아 둔 모든 것이 한꺼번에 무너져 내릴 것 같은 불안이, 늘 그 아래 깊이 깔려 있습니다.",
     triggers:
       "계획이 어긋나거나 예상 못 한 변수가 생길 때, 또는 누군가에게 중요한 일을 맡겨야 할 때 가장 예민하게 곤두섭니다.",
-    portrait: "/doodles/star-sparkle.svg",
+    portrait: "/minds/cast/manager.png",
     roleSlot: "manager",
     role: "manager",
   },
@@ -169,7 +169,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 아무도 자신을 알아봐 주지 않는 거예요. 결국 별 거 아닌 사람으로 조용히 잊히는 상상이, 이 마음을 한순간도 가만히 두지 못하게 합니다.",
     triggers:
       "공들인 성과를 내보일 때, 그에 대한 반응이 없거나 미지근할 때, 또는 누군가가 나보다 더 주목받는 순간에 크게 흔들립니다.",
-    portrait: "/doodles/chat-bubble.svg",
+    portrait: "/minds/cast/leader.png",
     roleSlot: "leader",
     role: "manager",
   },
@@ -191,7 +191,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 끝까지 무시당하는 거예요. 작은 신호로는 끝내 닿지 못해서, 결국 번아웃이라는 극단적인 방식으로만 존재를 증명하게 될까 봐 두려워합니다.",
     triggers:
       "몸이 먼저 피로 신호를 보낼 때, 주말이나 연휴처럼 빈 시간이 생길 때 조용히 손을 흔듭니다. 다만 쉬어도 죄책감이 들 때면 다시 슬그머니 숨어 버려요.",
-    portrait: "/doodles/plant-doodle.svg",
+    portrait: "/minds/cast/exile.png",
     roleSlot: "exile",
     role: "exile",
   },
@@ -213,7 +213,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 도망칠 곳마저 사라지는 거예요. 어디로도 피하지 못한 채 고통을 정면으로 마주해야 하는 상황을, 이 마음은 무엇보다 무서워합니다.",
     triggers:
       "해야 할 일이 막막하게 느껴질 때, 압박이 한계까지 차오를 때, 또는 감정이 감당하기 버거워질 때 가장 빠르게 튀어나옵니다.",
-    portrait: "/doodles/arrow-squiggle.svg",
+    portrait: "/minds/cast/rake.png",
     roleSlot: "rake",
     role: "firefighter",
   },
@@ -235,7 +235,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 방심한 사이에 최악이 현실이 되는 거예요. 잠깐 마음을 놓은 그 틈을 비집고 사고가 터질까 봐, 좀처럼 긴장을 풀지 못합니다.",
     triggers:
       "상황이 불확실할 때, 중요한 일을 코앞에 두었을 때, 또는 남들은 다 안심하는데 어쩐지 나만 불안할 때 가장 분주해집니다.",
-    portrait: "/doodles/anchor-storm.svg",
+    portrait: "/minds/cast/manager.png",
     roleSlot: "manager",
     role: "exile",
   },
@@ -257,7 +257,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 내 노력과 희생이 끝내 누구에게도 인정받지 못한 채 사라지는 거예요. 묵묵히 감당해 온 것들이 그저 당연한 일로만 여겨질 때, 이 마음은 가장 크게 아파합니다.",
     triggers:
       "인정이 자꾸 남에게로 돌아갈 때, 책임만 나에게 떠넘겨질 때, 또는 내가 들인 노력이 당연시될 때 가장 크게 발동합니다.",
-    portrait: "/doodles/heart-doodle.svg",
+    portrait: "/minds/cast/rake.png",
     roleSlot: "rake",
     role: "firefighter",
   },
@@ -279,7 +279,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 남들 다 가는 길에서 나 혼자만 낙오되는 거예요. 모두가 앞으로 나아가는 동안 나만 멈춰 있을까 봐, 끊임없이 주위를 두리번거립니다.",
     triggers:
       "SNS나 주변 사람의 성취를 마주할 때, 또래의 소식이 들려올 때, 또는 내 속도가 유난히 느리게 느껴질 때 크게 반응합니다.",
-    portrait: "/doodles/mystic-eye.svg",
+    portrait: "/minds/cast/villain.png",
     roleSlot: "villain",
     role: "self_critic",
   },
@@ -301,7 +301,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 또다시 기대했다가 무너지는 거예요. 애써 일으켜 세운 마음이 다시 한번 꺾이고, 그 실망을 또 견뎌 내야 하는 상황을 무엇보다 피하고 싶어 합니다.",
     triggers:
       "지난 실패의 기억이 떠오를 때, 큰 노력이 필요한 일을 앞두었을 때, 또는 이미 몸과 마음이 지쳐 있을 때 스르륵 올라옵니다.",
-    portrait: "/doodles/underline-wave.svg",
+    portrait: "/minds/cast/exile.png",
     roleSlot: "exile",
     role: "exile",
   },
@@ -323,7 +323,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
       "가장 두려운 건 자신의 목소리가 끝내 묻히는 거예요. 워낙 조용한 탓에, 시끄럽게 다투는 다른 마음들 사이에서 아무에게도 가닿지 못할까 봐 늘 염려합니다.",
     triggers:
       "마음들이 서로 부딪쳐 시끄러울 때, 당신이 스스로를 지나치게 몰아세울 때, 또는 잠시 숨을 고르며 멈추는 순간에 조용히 깨어납니다.",
-    portrait: "/doodles/brain-mind.svg",
+    portrait: "/minds/cast/leader.png",
     roleSlot: "leader",
     role: "unclear",
   },
