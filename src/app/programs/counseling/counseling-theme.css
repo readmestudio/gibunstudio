@@ -223,9 +223,27 @@
     radial-gradient(60% 50% at 50% 8%, rgba(255, 90, 31, 0.22), transparent 70%),
     radial-gradient(50% 40% at 80% 100%, rgba(44, 107, 214, 0.12), transparent 70%);
 }
-.counseling-page .c-hero.dark h1 { color: #fff; }
-.counseling-page .c-hero.dark .sub { color: rgba(255, 255, 255, 0.62); }
+.counseling-page .c-hero.dark h1 { color: #fff; text-shadow: 0 2px 24px rgba(20, 28, 40, 0.45); }
+.counseling-page .c-hero.dark h1 em {
+  background: none; color: #fff; -webkit-text-fill-color: #fff;
+}
+.counseling-page .c-hero.dark .sub {
+  color: #fff; max-width: 640px; text-shadow: 0 1px 16px rgba(20, 28, 40, 0.5);
+}
+.counseling-page .c-hero.dark .eyebrow.on-dark { text-shadow: 0 1px 10px rgba(20, 28, 40, 0.4); }
 .counseling-page .c-hero .cta-pill { white-space: nowrap; }
+
+/* 일렁이는 셰이더 배경 (파스텔) */
+.counseling-page .c-hero .mesh-bg {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.counseling-page .c-hero .mesh-bg canvas { display: block; width: 100% !important; height: 100% !important; }
+.counseling-page .c-hero .mesh-veil {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(62% 52% at 50% 42%, rgba(34, 44, 58, 0.34), transparent 74%),
+    linear-gradient(180deg, rgba(28, 38, 52, 0.08), rgba(28, 38, 52, 0.2));
+}
 
 /* ---------- need section (rolling checks) ---------- */
 .counseling-page .need-sec { text-align: center; background: var(--surface); }

@@ -13,6 +13,7 @@
     "@anthropic-ai/sdk": "^0.72.1",
     "@fontsource/pretendard": "^5.2.5",
     "@google/generative-ai": "^0.24.1",
+    "@paper-design/shaders-react": "^0.0.76",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.3",
     "framer-motion": "^12.29.2",
