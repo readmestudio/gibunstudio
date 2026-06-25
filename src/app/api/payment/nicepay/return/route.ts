@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { approveNicepayPayment } from "@/lib/nicepay/approve";
 import { MIND_SPILL_DAILY_SUB_DAYS } from "@/lib/mind-spill/constants";
+import { COUNSELING_TYPES, getCounselingType } from "@/lib/counseling/types";
 
 /**
  * POST /api/payment/nicepay/return
@@ -14,6 +15,7 @@ import { MIND_SPILL_DAILY_SUB_DAYS } from "@/lib/mind-spill/constants";
  *   WB- → workshop_purchases (단일 워크북)
  *   CT- → cart_orders (장바구니 통합 결제, 여러 상품)
  *   MS- → mind_spill_report_purchases (Mind Spill 리포트 1건)
+ *   CN- → 상담 결제 (CN-{typeId}-... ; DB 기록 없이 금액 검증 후 승인/캡처)
  */
 export async function POST(request: NextRequest) {
   if (!isNicepayEnabled()) {
@@ -53,6 +55,7 @@ export async function POST(request: NextRequest) {
   const isCart = orderId.startsWith("CT-");
   const isMindSpill = orderId.startsWith("MS-");
   const isMindSpillDailySub = orderId.startsWith("MD-");
+  const isCounseling = orderId.startsWith("CN-");
 
   // 1. 인증 실패 시 실패 페이지로 리다이렉트
   if (resultCode !== "0000") {
@@ -64,6 +67,8 @@ export async function POST(request: NextRequest) {
       failUrl = `/payment/self-workshop?error=${encodeURIComponent(resultMsg)}`;
     } else if (isMindSpill || isMindSpillDailySub) {
       failUrl = `/dashboard/mind-spill?error=${encodeURIComponent(resultMsg)}`;
+    } else if (isCounseling) {
+      failUrl = `/programs/counseling?error=${encodeURIComponent(resultMsg)}`;
     } else {
       failUrl = `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
     }
@@ -80,6 +85,11 @@ export async function POST(request: NextRequest) {
   // ── 워크북 결제 처리 ──
   if (isWorkshop) {
     return handleWorkshopPayment(supabase, { tid, orderId, amount, baseUrl });
+  }
+
+  // ── 상담 결제 처리 (orderId 의 typeId 로 금액 검증 → 승인/캡처 → DB 기록) ──
+  if (isCounseling) {
+    return handleCounselingPayment(supabase, { tid, orderId, amount, baseUrl });
   }
 
   // ── Mind Spill 리포트 결제 처리 ──
@@ -355,6 +365,103 @@ async function handleWorkshopPayment(
   return NextResponse.redirect(
     `${baseUrl}/dashboard/self-workshop/generating`
   );
+}
+
+/* ── 상담 결제 처리 ── */
+//
+// 상담은 별도 DB 테이블 없이 처리한다(현재 운영은 결제 후 카카오/대시보드로 수동 예약).
+// 위변조 방지를 위해 orderId 에 박힌 상담 유형(CN-{typeId}-...)으로 서버에서 정가를
+// 다시 조회해 amount 와 대조한 뒤에만 승인(캡처)한다.
+async function handleCounselingPayment(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: {
+    tid: string;
+    orderId: string;
+    amount: number;
+    baseUrl: string;
+  }
+) {
+  const { tid, orderId, amount, baseUrl } = params;
+
+  // orderId = "CN-{typeId}-{timestamp}-{rand}". typeId 에 하이픈이 있을 수 있어
+  // (예: report-interpret) 알려진 유형 목록과 prefix 매칭으로 안전하게 식별한다.
+  const matched = COUNSELING_TYPES.find((t) =>
+    orderId.startsWith(`CN-${t.id}-`)
+  );
+  const ct = matched ? getCounselingType(matched.id) : undefined;
+
+  if (!ct) {
+    console.error("상담 결제 유형 식별 실패:", { orderId });
+    return NextResponse.redirect(
+      `${baseUrl}/programs/counseling?error=${encodeURIComponent("결제 정보를 확인할 수 없습니다")}`
+    );
+  }
+
+  const failUrl = `${baseUrl}/payment/counseling/${ct.id}`;
+
+  // 금액 위변조 검증 — 서버 정가와 다르면 승인하지 않는다.
+  if (ct.price !== amount) {
+    console.error("상담 결제 금액 불일치:", {
+      expected: ct.price,
+      nicepayAmount: amount,
+      orderId,
+    });
+    return NextResponse.redirect(
+      `${failUrl}?error=${encodeURIComponent("결제 금액이 일치하지 않습니다")}`
+    );
+  }
+
+  // NicePay 최종 승인(캡처).
+  const approval = await approveNicepayPayment(tid, amount);
+  if (!approval.success) {
+    console.error("상담 NicePay 승인 실패:", {
+      resultCode: approval.resultCode,
+      resultMsg: approval.resultMsg,
+      orderId,
+    });
+    return NextResponse.redirect(
+      `${failUrl}?error=${encodeURIComponent(approval.resultMsg)}`
+    );
+  }
+
+  // 결제 성공 → 원장 기록. 로그인 사용자면 user_id 도 남긴다(비로그인은 NULL).
+  // 기록 실패가 캡처된 결제의 완료 화면을 막지 않도록 try/catch 로 감싼다.
+  try {
+    let userId: string | null = null;
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      userId = user?.id ?? null;
+    } catch {
+      // 비로그인/세션 없음 — user_id NULL 로 진행.
+    }
+
+    const admin = createAdminClient();
+    const { error: insertError } = await admin
+      .from("counseling_purchases")
+      .upsert(
+        {
+          order_id: orderId,
+          counseling_type: ct.id,
+          title: ct.title,
+          amount,
+          status: "confirmed",
+          user_id: userId,
+          payment_key: tid,
+          paid_at: new Date().toISOString(),
+        },
+        { onConflict: "order_id" }
+      );
+
+    if (insertError) {
+      console.error("상담 결제 기록 저장 실패:", { orderId, insertError });
+    }
+  } catch (e) {
+    console.error("상담 결제 기록 저장 예외:", { orderId, error: e });
+  }
+
+  return NextResponse.redirect(`${baseUrl}/payment/counseling/complete`);
 }
 
 /* ── 남편상 분석 결제 처리 (기존 로직) ── */

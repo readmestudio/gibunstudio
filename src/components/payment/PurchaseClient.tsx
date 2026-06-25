@@ -12,8 +12,25 @@ const NICEPAY_SDK_URL =
 const BUYNOW_METHOD = process.env.NEXT_PUBLIC_NICEPAY_BUYNOW_METHOD || "";
 
 interface PurchaseClientProps {
-  /** 주문번호 prefix 및 returnUrl 경로에 사용할 슬러그 (예: "self-workshop") */
+  /** 주문번호 prefix 및 (returnSlug 미지정 시) returnUrl 경로에 사용할 슬러그 (예: "self-workshop") */
   slug: string;
+  /**
+   * 결제 완료 후 돌아올 경로(`/payment/{returnSlug}/complete`)의 슬러그.
+   * 미지정 시 slug 를 사용한다. slug 가 상품별로 갈라질 때(예: "counseling-personal")
+   * 완료 페이지는 공통("counseling")으로 모으기 위해 분리한다.
+   */
+  returnSlug?: string;
+  /**
+   * 주문번호(orderId) 접두사. 미지정 시 slug 대문자.
+   * 서버 승인 라우트(/api/payment/nicepay/return)가 prefix 로 결제 유형을 분기하므로,
+   * 실결제(서버 승인)가 필요한 상품은 약속된 prefix(예: "CN-personal")를 넘긴다.
+   */
+  orderIdPrefix?: string;
+  /**
+   * NicePay returnUrl 로 쓸 경로(origin 제외). 미지정 시 `/payment/{returnSlug||slug}/complete`.
+   * 실결제(서버 승인)가 필요하면 "/api/payment/nicepay/return" 를 넘긴다.
+   */
+  returnPath?: string;
   /** 페이지 상단 타이틀 */
   title: string;
   /** 한 줄 설명 */
@@ -28,6 +45,9 @@ interface PurchaseClientProps {
 
 export function PurchaseClient({
   slug,
+  returnSlug,
+  orderIdPrefix,
+  returnPath,
   title,
   description,
   amount,
@@ -51,8 +71,8 @@ export function PurchaseClient({
 
     setSubmittingAction(action);
 
-    // 클라이언트 측 주문번호 (백엔드 기록 없이 NicePay 결제창만 호출)
-    const orderId = `${slug.toUpperCase()}-${Date.now()}-${Math.random()
+    // 주문번호: 접두사(orderIdPrefix)로 서버 승인 라우트가 결제 유형을 분기한다.
+    const orderId = `${orderIdPrefix || slug.toUpperCase()}-${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 10)}`;
 
@@ -62,7 +82,9 @@ export function PurchaseClient({
       orderId,
       amount,
       goodsName,
-      returnUrl: `${window.location.origin}/payment/${slug}/complete`,
+      returnUrl: `${window.location.origin}${
+        returnPath || `/payment/${returnSlug || slug}/complete`
+      }`,
       fnError: (result: { errorMsg: string }) => {
         console.error("NicePay 에러:", result);
         alert(`결제 오류: ${result.errorMsg}`);

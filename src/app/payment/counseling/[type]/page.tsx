@@ -30,6 +30,9 @@ export default async function CounselingPaymentPage({
   return (
     <PurchaseClient
       slug={`counseling-${counseling.id}`}
+      returnSlug="counseling"
+      orderIdPrefix={`CN-${counseling.id}`}
+      returnPath="/api/payment/nicepay/return"
       title={counseling.title}
       description={counseling.description}
       amount={counseling.price}

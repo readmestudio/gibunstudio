@@ -15,9 +15,53 @@ export interface CounselingType {
   features: { text: string; included: boolean }[];
   /** true면 아직 판매하지 않고 알림신청만 받는 상담 */
   notifyOnly: boolean;
+  /** true면 일반 가격표(PricingTable 등)에 노출하지 않음 — 통일 결제 페이지 전용 상품 */
+  hidden?: boolean;
 }
 
 export const COUNSELING_TYPES: CounselingType[] = [
+  // ── 통일 결제 페이지(/payment/start) 전용 상담 상품 ──
+  // 모든 무료 테스트(성취중독·minds·멘탈헬스)의 마지막 결제 화면에서 공통으로 노출.
+  // 결제 유도 기본가는 1회 체험(₩129,000). 일반 가격표에는 hidden 처리.
+  {
+    id: "trial",
+    title: "1회 체험 상담",
+    price: 129000,
+    priceLabel: "129,000",
+    duration: "50분",
+    requirement: null,
+    description:
+      "유료 심리검사부터 1급 심리상담사의 50분 1:1 화상 상담까지, 검사·해석·상담을 한 번에 경험하는 1회 체험 상담입니다.",
+    recommended: "상담이 처음이라 1회 먼저 경험해보고 싶은 분",
+    features: [
+      { text: "유료 심리검사 (MMPI·TCI 등) 실시", included: true },
+      { text: "검사 결과 전문 해석 상담", included: true },
+      { text: "1급 심리상담사 50분 1:1 화상 상담", included: true },
+      { text: "사전 질문지 + 사후 리포트", included: true },
+    ],
+    notifyOnly: false,
+    hidden: true,
+  },
+  {
+    id: "package-8",
+    title: "8회 패키지",
+    price: 792000,
+    priceLabel: "792,000",
+    duration: "주 1회 · 50분",
+    requirement: null,
+    description:
+      "주 1회·회당 50분, 8회차 구조화 커리큘럼으로 진행하는 정규 심리상담 패키지입니다. 회당 99,000원으로 1회 체험가보다 저렴합니다.",
+    recommended: "구조화된 커리큘럼으로 끝까지 변화를 만들고 싶은 분",
+    features: [
+      { text: "8회차 구조화 커리큘럼 전체 진행", included: true },
+      { text: "유료 심리검사 (MMPI·TCI 등) + 전문 해석", included: true },
+      { text: "매 회차 사전 질문지 + 사후 리포트 + 심층 분석", included: true },
+      { text: "8회 종합 리포트 (전체 여정 정리)", included: true },
+      { text: "회당 99,000원 — 1회 체험가 대비 23% 할인", included: true },
+    ],
+    notifyOnly: false,
+    hidden: true,
+  },
   {
     id: "report-interpret",
     title: "결과 해석 상담",
