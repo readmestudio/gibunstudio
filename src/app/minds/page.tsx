@@ -15,7 +15,7 @@ import { MindsFlow } from "@/components/minds/MindsFlow";
 export const metadata: Metadata = {
   title: "내 안엔 몇 명이 살고 있을까 | GIBUN",
   description:
-    "일·성취 앞에서 흔들리는 순간, 내 안에선 여러 마음이 동시에 말을 건넵니다. 3분이면 내 안에 사는 마음들을 만나볼 수 있어요. (무료)",
+    "마음이 불편했던 순간, 내 안에선 여러 마음이 동시에 말을 건넵니다. 3분이면 내 안에 사는 다섯 배역을 만나볼 수 있어요. (무료)",
 };
 
 export default function MindsPage() {

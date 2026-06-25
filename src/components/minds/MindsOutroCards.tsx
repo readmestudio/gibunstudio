@@ -34,6 +34,28 @@ const headline = { ...dispStyle, fontSize: 28, fontWeight: 700 } as const;
 const para = { ...leadStyle, fontSize: 15 } as const;
 
 /**
+ * 페이월(프라이싱) 이후 카드에 항상 따라붙는 결제 CTA. 누르면 카드 결제 모달을 연다.
+ * — "결제 유도 페이지 이후 장에는 항상 결제 버튼이 있어야 한다" 규칙의 구현.
+ */
+function CheckoutCta({ onCheckout, label = "워크북으로 배역표 열기" }: { onCheckout: () => void; label?: string }) {
+  return (
+    <div style={{ marginTop: 30 }}>
+      <button
+        type="button"
+        onClick={onCheckout}
+        style={{ ...ctaStyle }}
+        className="transition-transform active:scale-[0.99]"
+      >
+        {label} <span style={{ opacity: 0.45 }}>·</span> {won(WORKSHOP_PRICE)}
+      </button>
+      <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: M.mute, fontFamily: M.font }}>
+        지금 만난 마음들을 그대로 이어받아요.
+      </p>
+    </div>
+  );
+}
+
+/**
  * 카드 본문을 설명하는 고정 일러스트(도식). 힉스필드로 생성한 손그림 선화.
  * 레이아웃은 고정 — 이미지 경로만 교체하면 된다.
  */
@@ -102,8 +124,8 @@ export function MindsRolesCard() {
   );
 }
 
-/* ───────────────── ③ 알아야 하는 이유 ───────────────── */
-export function MindsWhyCard() {
+/* ───────────────── ③ 알아야 하는 이유 (페이월 이후) ───────────────── */
+export function MindsWhyCard({ onCheckout }: { onCheckout: () => void }) {
   return (
     <CardShell>
       <CardKicker>Why · 왜 알아야 할까요</CardKicker>
@@ -129,12 +151,13 @@ export function MindsWhyCard() {
           휘둘림을 멈추고 대화를 시작할 수 있으니까요.
         </p>
       </div>
+      <CheckoutCta onCheckout={onCheckout} label="내 무대의 리더부터 확인하기" />
     </CardShell>
   );
 }
 
-/* ───────────────── ④ 알았을 때 좋은 점 ───────────────── */
-export function MindsBenefitCard() {
+/* ───────────────── ④ 알았을 때 좋은 점 (페이월 이후) ───────────────── */
+export function MindsBenefitCard({ onCheckout }: { onCheckout: () => void }) {
   return (
     <CardShell>
       <CardKicker>What Changes · 달라지는 것</CardKicker>
@@ -158,6 +181,7 @@ export function MindsBenefitCard() {
           마음의 주도권은 천천히, 그러나 분명하게 당신에게 옮겨와요.
         </p>
       </div>
+      <CheckoutCta onCheckout={onCheckout} label="내 배역표 열고 시작하기" />
     </CardShell>
   );
 }
@@ -209,7 +233,7 @@ export function MindsActiveStageCard({ views }: { views: CharacterView[] }) {
 }
 
 /* ───────────────── ⑥ 페이월 — 잠긴 배역표 + 프라이싱 ───────────────── */
-export function MindsPricingCard() {
+export function MindsPricingCard({ onCheckout }: { onCheckout: () => void }) {
   return (
     <CardShell>
       <CardKicker>Final · 마음 극장의 배역표</CardKicker>
@@ -245,21 +269,15 @@ export function MindsPricingCard() {
         지금 만난 마음들을 <b style={{ color: M.ink }}>그대로 이어받아</b> 워크북에서 배역과 관계를 풀어가요. 처음부터 다시 적지 않아도 돼요.
       </div>
 
-      {/* CTA + 가격 */}
-      <Link
-        href="/payment/self-workshop/achievement-addiction"
-        onClick={() =>
-          trackMetaEvent("InitiateCheckout", {
-            content_name: "minds_to_workbook",
-            value: WORKSHOP_PRICE,
-            currency: "KRW",
-          })
-        }
-        style={{ ...ctaStyle, marginTop: 18, textDecoration: "none" }}
+      {/* CTA + 가격 — 워크북 페이지로 이동하지 않고 카드 결제 모달을 연다 */}
+      <button
+        type="button"
+        onClick={onCheckout}
+        style={{ ...ctaStyle, marginTop: 18 }}
         className="transition-transform active:scale-[0.99]"
       >
         워크북으로 배역표 열기 <span style={{ opacity: 0.45 }}>·</span> {won(WORKSHOP_PRICE)}
-      </Link>
+      </button>
       <p style={{ textAlign: "center", marginTop: 14, fontSize: 12.5, color: M.mute, fontFamily: M.font }}>
         <span style={{ textDecoration: "line-through" }}>{won(WORKSHOP_ORIGINAL_PRICE)}</span> 에서 런칭 할인 {WORKSHOP_DISCOUNT_PERCENT}% 적용가
       </p>
