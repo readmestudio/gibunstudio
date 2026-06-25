@@ -104,6 +104,17 @@ function resolveWorkshopState(
 ): WorkshopState | null {
   if (!progress) return null;
 
+  // 결제 완료 사용자(테스트 제외): 워크북은 답변에 맞춰 제작 후 별도 전달.
+  // 인앱 "이어하기" 대신 제작 현황 안내로 연결.
+  if (hasPurchase && !isTestUser) {
+    return {
+      badge: "준비 중",
+      description: "답변에 맞춰 워크북을 만들고 있어요. 완성되면 보내드릴게요.",
+      ctaLabel: "준비 현황 보기",
+      ctaHref: "/dashboard/self-workshop/generating",
+    };
+  }
+
   const purchased = hasPurchase || isTestUser;
   const step = progress.current_step;
   const exerciseStarted = progress.mechanism_analysis !== null;

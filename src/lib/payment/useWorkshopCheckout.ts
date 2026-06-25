@@ -150,7 +150,9 @@ export function useWorkshopCheckout(params: UseWorkshopCheckoutParams) {
   return {
     submittingAction,
     isSubmitting: submittingAction !== null,
-    handleBuyNow: () => startPayment("buyNow", BUYNOW_METHOD || undefined),
+    // method는 NicePay 필수 파라미터(P007). env(NEXT_PUBLIC_NICEPAY_BUYNOW_METHOD)가
+    // 비어 있으면 카드 결제("card")로 폴백한다.
+    handleBuyNow: () => startPayment("buyNow", BUYNOW_METHOD || "card"),
     handleNpay: () => startPayment("npay", "naverpayCard"),
     handleAddToCart,
   };

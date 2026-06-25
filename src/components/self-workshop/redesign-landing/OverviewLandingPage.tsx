@@ -27,6 +27,7 @@ import {
   PrivacySection,
 } from "./RestSections";
 import { useFadeIn } from "./useFadeIn";
+import { WorkshopCheckoutProvider } from "./WorkshopCheckoutContext";
 import {
   WorkbookScreenshotSection,
   WorkbookScreenshotStrip,
@@ -48,9 +49,10 @@ export function OverviewLandingPage() {
   useFadeIn();
 
   return (
-    <div className="lr">
-      <SoftLaunchBanner />
-      <OverviewHero />
+    <WorkshopCheckoutProvider>
+      <div className="lr">
+        <SoftLaunchBanner />
+        <OverviewHero />
       <WorkbookScreenshotSection />
       <ProblemsSection />
       <OverviewBigQuestion />
@@ -71,6 +73,7 @@ export function OverviewLandingPage() {
       <FinalCTA />
       <Footer />
       <StickyCTA />
-    </div>
+      </div>
+    </WorkshopCheckoutProvider>
   );
 }

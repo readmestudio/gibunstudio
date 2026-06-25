@@ -32,7 +32,7 @@ import {
 } from "./RestSections";
 import { SlideshowWrap } from "./SlideshowWrap";
 import { useFadeIn } from "./useFadeIn";
-import { WorkshopNotifyProvider } from "./WorkshopNotifyContext";
+import { WorkshopCheckoutProvider } from "./WorkshopCheckoutContext";
 
 /**
  * /payment/self-workshop 새 디자인 — Apple-style 마케팅 랜딩.
@@ -54,7 +54,7 @@ export function RedesignLandingPage({
   useFadeIn();
 
   return (
-    <WorkshopNotifyProvider>
+    <WorkshopCheckoutProvider>
       <div className="lr">
         <SoftLaunchBanner />
         <HeroSection />
@@ -78,6 +78,6 @@ export function RedesignLandingPage({
         <Footer />
         <StickyCTA />
       </div>
-    </WorkshopNotifyProvider>
+    </WorkshopCheckoutProvider>
   );
 }

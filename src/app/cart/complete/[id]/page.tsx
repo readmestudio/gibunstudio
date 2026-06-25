@@ -109,10 +109,10 @@ export default async function CartCompletePage({ params }: CartCompletePageProps
         <div className="space-y-3">
           {hasWorkbook && (
             <Link
-              href="/dashboard/self-workshop/step/3"
+              href="/dashboard/self-workshop/generating"
               className="block rounded-lg border-2 border-[var(--foreground)] bg-[var(--foreground)] py-3.5 text-center text-sm font-bold text-white hover:opacity-90"
             >
-              워크북 시작하기
+              워크북 제작 현황 보기
             </Link>
           )}
           <Link

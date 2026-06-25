@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { WorkbookBuyButton } from "./WorkbookBuyButton";
 
 /* ── 워크북 시작 경로 (무료 진단 → 결제) ── */
 export const WORKBOOK_START_HREF = "/dashboard/self-workshop";
@@ -52,10 +53,10 @@ export function StickyCTA() {
   }, []);
   return (
     <div className={`lr-sticky-cta ${show ? "lr-show" : ""}`}>
-      <a href={WORKBOOK_START_HREF} className="lr-cta-pill lr-accent">
-        워크북 시작하기
+      <WorkbookBuyButton className="lr-cta-pill lr-accent">
+        오픈 특가로 구매하기
         <span className="lr-arrow">→</span>
-      </a>
+      </WorkbookBuyButton>
     </div>
   );
 }

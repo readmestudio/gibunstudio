@@ -279,9 +279,11 @@ async function handleWorkshopPayment(
     return NextResponse.redirect(failUrl);
   }
 
-  // 이미 승인됨 → step 3로 직행
+  // 이미 승인됨 → 생성 중 안내로 (워크북은 답변 기반 제작 후 별도 전달)
   if (purchase.status === "confirmed") {
-    return NextResponse.redirect(`${baseUrl}/dashboard/self-workshop/step/3`);
+    return NextResponse.redirect(
+      `${baseUrl}/dashboard/self-workshop/generating`
+    );
   }
 
   if (purchase.status !== "pending") {
@@ -349,7 +351,10 @@ async function handleWorkshopPayment(
       .eq("id", existingProgress.id);
   }
 
-  return NextResponse.redirect(`${baseUrl}/dashboard/self-workshop/step/3`);
+  // 결제 직후: 워크북은 답변에 맞춰 제작 후 별도 전달 → "생성 중" 안내로 이동
+  return NextResponse.redirect(
+    `${baseUrl}/dashboard/self-workshop/generating`
+  );
 }
 
 /* ── 남편상 분석 결제 처리 (기존 로직) ── */

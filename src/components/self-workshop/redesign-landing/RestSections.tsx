@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { WorkbookBuyButton } from "./WorkbookBuyButton";
 
 /* ============================================================
  * PricingSection — 워크북 단독 vs 워크북+상담 비교 2단
@@ -51,13 +52,10 @@ export function PricingSection() {
                 </div>
               ))}
             </div>
-            <a
-              className="lr-cta-pill lr-cta-ghost"
-              href="/dashboard/self-workshop"
-            >
-              워크북 시작하기
+            <WorkbookBuyButton className="lr-cta-pill lr-cta-ghost">
+              오픈 특가로 구매하기
               <span className="lr-arrow">→</span>
-            </a>
+            </WorkbookBuyButton>
           </div>
 
           {/* 플랜 ②: 워크북 + 심리 상담 (강조) */}
@@ -443,10 +441,10 @@ export function FinalCTA() {
           <p className="lr-sub">
             무료 자가 진단으로 지금 바로 시작해 보세요.
           </p>
-          <a href="/dashboard/self-workshop" className="lr-cta-pill lr-invert">
-            워크북 시작하기
+          <WorkbookBuyButton className="lr-cta-pill lr-invert">
+            오픈 특가로 구매하기
             <span className="lr-arrow">→</span>
-          </a>
+          </WorkbookBuyButton>
         </div>
       </div>
     </section>

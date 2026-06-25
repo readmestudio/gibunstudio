@@ -21,6 +21,21 @@ export default async function SelfWorkshopDashboardPage() {
   const TEST_EMAILS = ["mingle22@hanmail.net"];
   const isTestUser = TEST_EMAILS.includes(user.email ?? "");
 
+  // 결제 완료 사용자(테스트 제외): 워크북은 답변에 맞춰 제작 후 별도 전달 →
+  // 인앱 워크북 목록 대신 "생성 중" 안내로 보낸다.
+  if (!isTestUser) {
+    const { data: confirmedPurchase } = await supabase
+      .from("workshop_purchases")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("workshop_type", "achievement-addiction")
+      .eq("status", "confirmed")
+      .maybeSingle();
+    if (confirmedPurchase) {
+      redirect("/dashboard/self-workshop/generating");
+    }
+  }
+
   // 결제 확인: NicePay 결제 완료된 self-workshop 구매 확인
   // TODO: purchases 테이블에서 program_type='self-workshop' AND status='confirmed' 확인
   // 현재는 workshop_progress 레코드 유무로 대체

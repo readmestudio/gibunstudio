@@ -1,6 +1,6 @@
 "use client";
 
-import { WorkshopNotifyButton } from "./WorkshopNotifyButton";
+import { WorkbookBuyButton } from "./WorkbookBuyButton";
 
 /* ── Hero 본체 — 큰 타이틀 + 서브 + CTA + 스크롤 큐 ── */
 export function HeroSection() {
@@ -28,10 +28,10 @@ export function HeroSection() {
           <span className="lr-chip">#소프트런칭특가</span>
         </div>
         <div className="lr-hero-cta-row lr-f-up lr-d2">
-          <WorkshopNotifyButton className="lr-cta-pill lr-accent">
-            출시 알림신청하고 할인받기
+          <WorkbookBuyButton className="lr-cta-pill lr-accent">
+            오픈 특가로 구매하기
             <span className="lr-arrow">→</span>
-          </WorkshopNotifyButton>
+          </WorkbookBuyButton>
         </div>
         <div className="lr-scroll-cue">
           <span>SCROLL</span>

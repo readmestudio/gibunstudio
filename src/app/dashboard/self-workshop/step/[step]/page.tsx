@@ -127,6 +127,13 @@ export default async function WorkshopStepPage({ params }: Props) {
     }
   }
 
+  // 결제 완료 사용자(테스트 유저 제외): 워크북은 제출한 답변에 맞춰 제작한 뒤
+  // 별도로 전달한다. 따라서 결제 후 유료 스텝(2~10)을 인앱에서 바로 조회하지
+  // 못하게 막고 "생성 중" 안내로 보낸다. Step 1(무료 자가 진단)은 그대로 허용.
+  if (hasPurchase && !isTestUser && stepNumber >= 2) {
+    redirect("/dashboard/self-workshop/generating");
+  }
+
   // 잠금 확인: 현재 step보다 앞선 step만 접근 가능
   // 예외 1: 구매자가 Step 2를 건너뛰고 Step 3로 이어가는 경우 허용
   // 예외 2: 진단 점수가 있는 사용자는 Step 2(진단 리포트)는 항상 접근 가능
