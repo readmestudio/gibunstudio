@@ -61,7 +61,7 @@ export function PricingTable() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          {COUNSELING_TYPES.map((plan) => {
+          {COUNSELING_TYPES.filter((plan) => !plan.hidden).map((plan) => {
             const isPopular = plan.id === POPULAR_ID;
             return (
               <div

@@ -15,7 +15,7 @@ export default function TestIntroSection() {
         style={{ wordBreak: "keep-all" }}
       >
         유튜브 구독 리스트로 먼저 나의 기질, 성격, 관계 패턴을 분석합니다.
-        그 결과를 바탕으로 48개 유형 중 나에게 진짜 맞는 배우자 타입까지 찾아드려요.
+        그 결과를 바탕으로 48개 유형 중 나에게 잘 맞는 남편 성향까지 알려드려요.
       </p>
     </section>
   );

@@ -257,7 +257,7 @@ export function ReportCard({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `남편상 분석: ${title}`,
+          title: `내 성향 + 남편 성향: ${title}`,
           text: content.substring(0, 200) + '...',
           url: window.location.href,
         });

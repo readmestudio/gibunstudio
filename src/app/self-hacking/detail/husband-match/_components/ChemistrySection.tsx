@@ -15,13 +15,13 @@ export default function ChemistrySection() {
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] text-center mb-4 whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"이 6가지를 알기 전에는\n결혼을 결정하지 마세요"}
+        {"이 6가지를 알면\n나와 어울리는 남편 성향이 보여요"}
       </h2>
       <p
         className="text-base sm:text-lg text-[var(--foreground)]/60 text-center max-w-lg mx-auto mb-12 leading-relaxed whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"행복한 결혼 생활을 결정짓는 여섯가지 퍼즐을\n단 한 번에 풀어드려요"}
+        {"나를 이루는 여섯 가지 퍼즐을\n단 한 번에 풀어드려요"}
       </p>
 
       {/* 6축 카드 그리드 */}
@@ -48,9 +48,9 @@ export default function ChemistrySection() {
         style={{ wordBreak: "keep-all" }}
       >
         <p className="text-base sm:text-lg font-semibold leading-relaxed">
-          유튜브 알고리즘으로 6가지 항목을 분석한
+          유튜브 알고리즘으로 6가지를 분석한
           <br />
-          배우자 기질 적합성 검사 리포트를 받아보세요
+          내 성향 + 남편 성향 리포트를 받아보세요
         </p>
       </div>
     </section>

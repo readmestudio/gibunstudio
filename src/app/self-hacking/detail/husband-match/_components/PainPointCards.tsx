@@ -20,7 +20,7 @@ export default function PainPointCards() {
         className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] mb-10"
         style={{ wordBreak: "keep-all" }}
       >
-        배우자 기질 적합성 검사, 이런 분께 추천해요
+        내 성향 + 남편 성향 분석, 이런 분께 추천해요
       </h2>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -55,13 +55,13 @@ export default function PainPointCards() {
         </p>
         <ol className="inline-block text-left space-y-2">
           <li className="text-base text-[var(--foreground)]/70" style={{ wordBreak: "keep-all" }}>
-            <span className="font-semibold text-[var(--foreground)]">1.</span>{"  "}결혼을 결정짓는 나의 주요 성격 및 기질
+            <span className="font-semibold text-[var(--foreground)]">1.</span>{"  "}나의 주요 성격과 타고난 기질
           </li>
           <li className="text-base text-[var(--foreground)]/70" style={{ wordBreak: "keep-all" }}>
-            <span className="font-semibold text-[var(--foreground)]">2.</span>{"  "}나의 연애 스타일, 갈등 타입, 결혼까지 가는 조건
+            <span className="font-semibold text-[var(--foreground)]">2.</span>{"  "}나의 연애 스타일, 갈등 타입, 관계에서의 조건
           </li>
           <li className="text-base text-[var(--foreground)]/70" style={{ wordBreak: "keep-all" }}>
-            <span className="font-semibold text-[var(--foreground)]">3.</span>{"  "}나에게 잘 맞는 배우자 타입
+            <span className="font-semibold text-[var(--foreground)]">3.</span>{"  "}나에게 잘 맞는 남편 성향
           </li>
         </ol>
       </div>

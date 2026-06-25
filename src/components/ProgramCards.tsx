@@ -21,11 +21,10 @@ const PROGRAMS: ProgramCardData[] = [
     id: "self-report",
     title: "무료 상담 리포트",
     description:
-      "남편상 분석과 데일리 체크인 리포트를 한 곳에서. 오픈 준비 중이에요.",
-    href: "/dashboard/reports",
-    cta: "리포트 보기 →",
+      "남편성향·마음 배역·성취중독·멘탈헬스·마음 체크인까지, 무료 심리테스트를 한 곳에서. 로그인 없이 바로.",
+    href: "/free-tests",
+    cta: "자세히 보기 →",
     illustration: "brain-mind",
-    notifyOnly: true,
   },
   {
     id: "self-workshop",

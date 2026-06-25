@@ -1,4 +1,4 @@
-import { NotifyButton } from "@/components/NotifyButton";
+import Link from "next/link";
 
 const TCI_AXES = [
   { name: "자극추구", score: 44, desc: "새로운 자극을 찾는 정도" },
@@ -16,7 +16,7 @@ const RESULT_CARDS = [
   { num: 4, title: "스트레스 반응", desc: "분노 패턴, 트리거, 회복 방법" },
   { num: 5, title: "추구하는 미래", desc: "성격의 뿌리, 지금, 앞으로의 나" },
   { num: 6, title: "딜브레이커 + 행복", desc: "참을 수 없는 것과 행복 공식" },
-  { num: 7, title: "배우자 타입 매칭", desc: "48개 유형 중 나에게 맞는 사람" },
+  { num: 7, title: "남편 성향 매칭", desc: "48개 유형 중 나에게 맞는 사람" },
   { num: 8, title: "파트너 상세 프로필", desc: "일상, 갈등, 오래된 관계 패턴" },
   { num: 9, title: "다음 스텝", desc: "더 깊은 분석으로의 안내" },
 ];
@@ -133,7 +133,7 @@ export default function HowItWorks() {
             3
           </span>
           <p className="text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/40">
-            배우자 매칭 + 리포트 발급
+            남편 성향 매칭 + 리포트 발급
           </p>
         </div>
 
@@ -141,15 +141,15 @@ export default function HowItWorks() {
           className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] mb-4 leading-snug"
           style={{ wordBreak: "keep-all" }}
         >
-          48개 유형 중 나에게 맞는 배우자를 찾아드립니다
+          48개 유형 중 나에게 맞는 남편 성향을 찾아드립니다
         </h2>
         <p
           className="text-base leading-relaxed text-[var(--foreground)]/60 mb-4"
           style={{ wordBreak: "keep-all" }}
         >
-          TCI 6축 + MBTI + 에니어그램을 조합한 18차원 벡터로 48개 배우자 유형과
+          TCI 6축 + MBTI + 에니어그램을 조합한 18차원 벡터로 48개 남편 유형과
           매칭합니다. 단순한 유형 분류가 아니라, 당신의 기질 구조와 가장
-          잘 맞는 파트너 유형을 데이터로 찾아냅니다.
+          잘 맞는 남편 성향을 데이터로 찾아냅니다.
         </p>
 
         {/* 핵심 메시지 */}
@@ -193,13 +193,12 @@ export default function HowItWorks() {
 
         {/* CTA */}
         <div className="text-center">
-          <NotifyButton
-            programId="husband-match"
-            programTitle="내면 분석 리포트 — 남편상 분석"
-            label="알림 신청 →"
-            triggerClassName="inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
-            doneLabel="알림 신청 완료"
-          />
+          <Link
+            href="/husband-match/birth-info"
+            className="inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
+          >
+            테스트 시작하기 →
+          </Link>
         </div>
       </section>
     </>

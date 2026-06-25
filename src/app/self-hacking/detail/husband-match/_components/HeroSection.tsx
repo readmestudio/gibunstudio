@@ -1,17 +1,17 @@
+import Link from "next/link";
 import SampleCardSlider from "./SampleCardSlider";
-import { NotifyButton } from "@/components/NotifyButton";
 
 export default function HeroSection() {
   return (
     <section className="py-24 text-center">
       <p className="mb-6 text-xs font-semibold tracking-widest uppercase text-[var(--foreground)]/50">
-        배우자 기질 적합성 검사
+        내 성향 + 남편 성향 분석
       </p>
       <h1
         className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] leading-snug whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"유튜브 구독 리스트만 넣으면\n운명의 배우자 타입을 분석해드려요"}
+        {"유튜브 구독 리스트만 넣으면\n미래의 내 남편 성향을 알려드려요"}
       </h1>
 
       {/* 샘플 카드 슬라이드 — 히어로 중앙 */}
@@ -21,15 +21,14 @@ export default function HeroSection() {
         className="text-base sm:text-lg leading-relaxed text-[var(--foreground)]/60 max-w-md mx-auto whitespace-pre-line"
         style={{ wordBreak: "keep-all" }}
       >
-        {"결혼은 하고 싶은데\n어떤 사람과 해야할지 모르겠다면 지금 리포트를 받아보세요"}
+        {"내가 어떤 사람인지, 어떤 남편이 잘 맞는지\n궁금하다면 지금 리포트를 받아보세요"}
       </p>
-      <NotifyButton
-        programId="husband-match"
-        programTitle="내면 분석 리포트 — 남편상 분석"
-        label="알림 신청 →"
-        triggerClassName="mt-8 inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
-        doneLabel="알림 신청 완료"
-      />
+      <Link
+        href="/husband-match/birth-info"
+        className="mt-8 inline-flex items-center gap-2 px-8 py-3 text-base font-medium text-[var(--foreground)] bg-[var(--accent)] border-2 border-[var(--accent)] rounded-lg transition-all hover:bg-[var(--accent-hover)]"
+      >
+        테스트 시작하기 →
+      </Link>
     </section>
   );
 }

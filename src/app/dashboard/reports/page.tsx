@@ -92,9 +92,30 @@ export default async function ReportsPage() {
           무료 상담 리포트
         </h1>
         <p className="mt-3 text-[var(--foreground)]/60 leading-relaxed">
-          남편상 분석과 데일리 체크인 리포트를 한 곳에서 확인할 수 있어요.
+          마음 배역 진단, 남편상 분석, 데일리 체크인 리포트를 한 곳에서 확인할 수 있어요.
         </p>
       </header>
+
+      {/* ── 섹션 0: 마음 배역 진단 (무료 · 가입 없이) ── */}
+      <section className="mb-16">
+        <div className="mb-5 flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold text-[var(--foreground)]">
+            마음 배역 진단
+          </h2>
+          <Link
+            href="/minds"
+            className="text-xs text-[var(--foreground)]/60 underline hover:text-[var(--foreground)]"
+          >
+            진단 시작하기 →
+          </Link>
+        </div>
+        <EmptyState
+          title="내 안엔 몇 명이 살고 있을까?"
+          description="최근 마음이 불편했던 한 순간으로, 내 안에서 동시에 목소리를 내는 마음 배역들을 만나봐요. 3분, 가입 없이 무료예요."
+          ctaLabel="마음 진단 시작하기"
+          ctaHref="/minds"
+        />
+      </section>
 
       {/* ── 섹션 1: 남편상 분석 ── */}
       <section className="mb-16">
@@ -104,7 +125,7 @@ export default async function ReportsPage() {
           </h2>
           {!phase1 && (
             <Link
-              href="/husband-match/onboarding"
+              href="/husband-match/birth-info"
               className="text-xs text-[var(--foreground)]/60 underline hover:text-[var(--foreground)]"
             >
               분석 시작하기 →
@@ -155,7 +176,7 @@ export default async function ReportsPage() {
             title="아직 남편상 분석을 받지 않으셨어요"
             description="YouTube 구독 채널 기반의 무료 셀프 분석으로 시작할 수 있어요."
             ctaLabel="분석 시작하기"
-            ctaHref="/husband-match/onboarding"
+            ctaHref="/husband-match/birth-info"
           />
         )}
       </section>
