@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useState } from "react";
-import Script from "next/script";
+import Link from "next/link";
 import {
   DIAGNOSIS_QUESTIONS,
   LIKERT_OPTIONS,
@@ -32,9 +32,7 @@ import {
   WORKSHOP_ORIGINAL_PRICE,
   WORKSHOP_DISCOUNT_PERCENT,
 } from "@/lib/self-workshop/landing-data";
-import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 import { trackMetaEvent } from "@/lib/meta-pixel";
-import type { BuyAction } from "@/types/payment";
 import {
   D,
   COL,
@@ -46,13 +44,6 @@ import {
 } from "@/components/self-workshop/clinical-report/v3-shared";
 
 const TOTAL = DIAGNOSIS_QUESTIONS.length;
-
-// 직접 결제 — 워크북 랜딩과 동일 출처(landing-data)에서 상품/가격을 가져온다.
-const PRODUCT_ID = "achievement-addiction";
-const GOODS_NAME = "심리 상담 워크북 - 성취 중독";
-const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
-const NICEPAY_SDK_URL =
-  process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
 
 const wonFormat = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
 
@@ -792,27 +783,7 @@ function ResultDeepDive() {
 
 // ─────────────────── RESULT: 워크북 구매 CTA ─────────────────── //
 
-function ResultCTA({
-  onBuyNow,
-  onNpay,
-  isSubmitting,
-  submittingAction,
-  disabled,
-}: {
-  onBuyNow: () => void;
-  onNpay: () => void;
-  isSubmitting: boolean;
-  submittingAction: BuyAction | null;
-  disabled: boolean;
-}) {
-  // 결제 모듈 로딩 전(disabled)에는 버튼 라벨로 상태를 알려준다.
-  const buyLabel =
-    submittingAction === "buyNow"
-      ? "결제 진행 중…"
-      : disabled && !isSubmitting
-        ? "결제 모듈 로딩 중…"
-        : "바로 구매하기";
-
+function ResultCTA() {
   return (
     <section
       style={{
@@ -941,10 +912,9 @@ function ResultCTA({
               gap: 12,
             }}
           >
-            <button
-              type="button"
-              onClick={onBuyNow}
-              disabled={disabled}
+            {/* 통일 결제 페이지 — 워크북(₩49,000) 또는 심리상담을 한 곳에서 선택 */}
+            <Link
+              href="/payment/start"
               style={{
                 fontFamily: D.font,
                 fontWeight: 600,
@@ -954,35 +924,16 @@ function ResultCTA({
                 border: "none",
                 borderRadius: 999,
                 padding: "16px 34px",
-                cursor: disabled ? "not-allowed" : "pointer",
-                opacity: disabled ? 0.55 : 1,
+                cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
+                textDecoration: "none",
               }}
             >
-              {buyLabel}
-              {!disabled && <span style={{ fontFamily: D.mono, fontSize: 15 }}>→</span>}
-            </button>
-            <button
-              type="button"
-              onClick={onNpay}
-              disabled={disabled}
-              style={{
-                fontFamily: D.font,
-                fontWeight: 600,
-                fontSize: 15,
-                color: "#fff",
-                background: "#03c75a",
-                border: "none",
-                borderRadius: 999,
-                padding: "16px 28px",
-                cursor: disabled ? "not-allowed" : "pointer",
-                opacity: disabled ? 0.55 : 1,
-              }}
-            >
-              {submittingAction === "npay" ? "결제 진행 중…" : "네이버페이 구매"}
-            </button>
+              워크북·상담 보러가기
+              <span style={{ fontFamily: D.mono, fontSize: 15 }}>→</span>
+            </Link>
           </div>
         </Reveal>
 
@@ -993,7 +944,7 @@ function ResultCTA({
             tracking={0.14}
             style={{ marginTop: 24, display: "block" }}
           >
-            1인 1회 · 리포트 1년 보관 · 서베이 제출 전 전액 환불
+            워크북 1인 1회 · 리포트 1년 보관 · 서베이 제출 전 전액 환불
           </Mono>
         </Reveal>
       </div>
@@ -1005,24 +956,16 @@ function ResultCTA({
 
 function Result({
   scores,
-  checkout,
   onRetake,
 }: {
   scores: DiagnosisScores;
-  checkout: {
-    onBuyNow: () => void;
-    onNpay: () => void;
-    isSubmitting: boolean;
-    submittingAction: BuyAction | null;
-    disabled: boolean;
-  };
   onRetake: () => void;
 }) {
   return (
     <div style={{ background: D.bg, color: D.text, fontFamily: D.font }}>
       <ResultScore scores={scores} />
       <ResultDeepDive />
-      <ResultCTA {...checkout} />
+      <ResultCTA />
 
       {/* 다시 하기 */}
       <div
@@ -1057,21 +1000,12 @@ function Result({
 
 // ─────────────────────────── PAGE ─────────────────────────── //
 
-export function AchievementTestFunnel() {
-  const [phase, setPhase] = useState<Phase>("intro");
+export function AchievementTestFunnel({ skipIntro = false }: { skipIntro?: boolean } = {}) {
+  // skipIntro=true: 광고/카드뉴스 유입용. 랜딩(Intro)을 건너뛰고 바로 첫 문항부터 시작해
+  // 이탈을 줄이고 진단 완료율을 높인다.
+  const [phase, setPhase] = useState<Phase>(skipIntro ? "test" : "intro");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<DiagnosisScores | null>(null);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
-
-  // 워크북 직접 결제 — 로그인/NicePay 결제창 처리는 훅이 담당.
-  // 미로그인 시 훅이 /login?redirect= 로 보내고, 결제 성공은 NicePay return URL 이 처리.
-  const { submittingAction, isSubmitting, handleBuyNow, handleNpay } =
-    useWorkshopCheckout({
-      productId: PRODUCT_ID,
-      workshopType: PRODUCT_ID,
-      amount: WORKSHOP_PRICE,
-      goodsName: GOODS_NAME,
-    });
 
   // 점수는 순수 함수로 클라이언트에서 계산 — 로그인/DB 불필요.
   const computeAndShow = useCallback(() => {
@@ -1091,37 +1025,17 @@ export function AchievementTestFunnel() {
   const retake = useCallback(() => {
     setAnswers({});
     setScores(null);
-    setPhase("intro");
-  }, []);
+    setPhase(skipIntro ? "test" : "intro");
+  }, [skipIntro]);
 
   return (
     <main style={{ background: D.bg, minHeight: "100vh" }}>
-      {/* NicePay SDK — 결제창(window.AUTHNICE) 로드 */}
-      {NICEPAY_CLIENT_ID && (
-        <Script
-          src={NICEPAY_SDK_URL}
-          strategy="afterInteractive"
-          onLoad={() => setSdkLoaded(true)}
-          onReady={() => setSdkLoaded(true)}
-        />
-      )}
-
       {phase === "intro" && <Intro onStart={() => setPhase("test")} />}
       {phase === "test" && (
         <Test answers={answers} setAnswers={setAnswers} onComplete={computeAndShow} />
       )}
       {phase === "result" && scores && (
-        <Result
-          scores={scores}
-          checkout={{
-            onBuyNow: handleBuyNow,
-            onNpay: handleNpay,
-            isSubmitting,
-            submittingAction,
-            disabled: isSubmitting || (!!NICEPAY_CLIENT_ID && !sdkLoaded),
-          }}
-          onRetake={retake}
-        />
+        <Result scores={scores} onRetake={retake} />
       )}
     </main>
   );
