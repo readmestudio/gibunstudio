@@ -85,7 +85,9 @@ export default async function WorkshopGeneratingPage() {
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-[var(--foreground)]">3.</span>
-            <span>완성되면 가입하신 계정으로 안내드릴게요.</span>
+            <span>
+              완성되면 다음 날, 가입하신 계정으로 워크북 링크를 보내드려요.
+            </span>
           </li>
         </ol>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { WorkbookBuyButton } from "./WorkbookBuyButton";
+import { WorkbookEasyPayButtons } from "./WorkbookEasyPayButtons";
 
 /**
  * 워크북 전반 상세 페이지(`/payment/self-workshop`) 전용 Hero.
@@ -78,6 +79,9 @@ export function OverviewHero() {
             오픈 특가로 구매하기
             <span className="lr-arrow">→</span>
           </WorkbookBuyButton>
+        </div>
+        <div className="lr-f-up lr-d2">
+          <WorkbookEasyPayButtons />
         </div>
         <div className="lr-scroll-cue">
           <span className="lr-line" />

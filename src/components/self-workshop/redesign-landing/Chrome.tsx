@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { WorkbookBuyButton } from "./WorkbookBuyButton";
+import { WorkbookEasyPayButtons } from "./WorkbookEasyPayButtons";
 
 /* ── 워크북 시작 경로 (무료 진단 → 결제) ── */
 export const WORKBOOK_START_HREF = "/dashboard/self-workshop";
@@ -57,6 +58,7 @@ export function StickyCTA() {
         오픈 특가로 구매하기
         <span className="lr-arrow">→</span>
       </WorkbookBuyButton>
+      <WorkbookEasyPayButtons />
     </div>
   );
 }

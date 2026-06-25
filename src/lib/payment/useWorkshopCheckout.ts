@@ -154,6 +154,9 @@ export function useWorkshopCheckout(params: UseWorkshopCheckoutParams) {
     // 비어 있으면 카드 결제("card")로 폴백한다.
     handleBuyNow: () => startPayment("buyNow", BUYNOW_METHOD || "card"),
     handleNpay: () => startPayment("npay", "naverpayCard"),
+    // 카카오페이: NicePay 간편결제 method. 카드/네이버와 동일 파이프라인,
+    // method만 "kakaopay"로 지정 → 카카오페이 전용 결제창이 열린다.
+    handleKakao: () => startPayment("buyNow", "kakaopay"),
     handleAddToCart,
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { WorkbookBuyButton } from "./WorkbookBuyButton";
+import { WorkbookEasyPayButtons } from "./WorkbookEasyPayButtons";
 
 /* ── Hero 본체 — 큰 타이틀 + 서브 + CTA + 스크롤 큐 ── */
 export function HeroSection() {
@@ -32,6 +33,9 @@ export function HeroSection() {
             오픈 특가로 구매하기
             <span className="lr-arrow">→</span>
           </WorkbookBuyButton>
+        </div>
+        <div className="lr-f-up lr-d2">
+          <WorkbookEasyPayButtons />
         </div>
         <div className="lr-scroll-cue">
           <span>SCROLL</span>

@@ -125,6 +125,34 @@
 .lr .lr-cta-pill.lr-invert::before { background: var(--lr-accent); }
 .lr .lr-cta-pill.lr-invert:hover { color: #fff; border-color: var(--lr-accent); }
 
+/* 간편결제 (카카오페이 / 네이버페이) — 메인 CTA 아래 보조 행 */
+.lr .lr-easypay-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  justify-content: center; align-items: center;
+  margin-top: 12px;
+}
+.lr .lr-easypay-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--lr-paper); color: var(--lr-ink-2);
+  padding: 11px 20px; border-radius: 999px;
+  font-weight: 600; font-size: 13.5px; letter-spacing: -0.01em;
+  border: 1px solid var(--lr-line);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  cursor: pointer;
+}
+.lr .lr-easypay-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -10px rgba(10,10,11,0.25);
+  border-color: var(--lr-mute-2);
+}
+.lr .lr-easypay-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.lr .lr-easypay-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+}
+.lr .lr-easypay-kakao .lr-easypay-dot { background: #FEE500; }
+.lr .lr-easypay-naver .lr-easypay-dot { background: #03C75A; }
+
 /* fade-up motion */
 .lr .lr-f-up {
   opacity: 0; transform: translateY(36px);

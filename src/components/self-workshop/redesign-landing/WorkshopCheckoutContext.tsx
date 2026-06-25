@@ -14,8 +14,12 @@ const PRODUCT_ID = "achievement-addiction";
 const GOODS_NAME = "심리 상담 워크북 - 성취 중독";
 
 interface WorkshopCheckoutContextValue {
-  /** 클릭 즉시 NicePay 결제창을 띄운다 (미로그인 → 로그인 페이지로). */
+  /** 클릭 즉시 NicePay 카드 결제창을 띄운다 (미로그인 → 로그인 페이지로). */
   buy: () => void;
+  /** 카카오페이 간편결제 결제창 (method: kakaopay). */
+  payKakao: () => void;
+  /** 네이버페이 간편결제 결제창 (method: naverpayCard). */
+  payNpay: () => void;
   /** 결제 진행중 — 버튼 disable / 라벨 전환용 */
   isSubmitting: boolean;
   /** SDK 아직 로딩중(머천트 ID가 있을 때만) — 버튼 disable용 */
@@ -51,7 +55,8 @@ export function WorkshopCheckoutProvider({
   const router = useRouter();
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  const { isSubmitting, handleBuyNow } = useWorkshopCheckout({
+  const { isSubmitting, handleBuyNow, handleNpay, handleKakao } =
+    useWorkshopCheckout({
     productId: PRODUCT_ID,
     workshopType: PRODUCT_ID,
     amount: WORKSHOP_PRICE,
@@ -67,7 +72,13 @@ export function WorkshopCheckoutProvider({
 
   return (
     <WorkshopCheckoutContext.Provider
-      value={{ buy: handleBuyNow, isSubmitting, sdkPending }}
+      value={{
+        buy: handleBuyNow,
+        payKakao: handleKakao,
+        payNpay: handleNpay,
+        isSubmitting,
+        sdkPending,
+      }}
     >
       {NICEPAY_CLIENT_ID && (
         <Script
