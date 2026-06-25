@@ -1,0 +1,85 @@
+/* ============================================================
+   기분 스튜디오 — "내 안의 마음" 카드뉴스 (MINDS · THE CAST)
+   ------------------------------------------------------------
+   shared.css(다크 모노톤) 위에 얹는 추가 스타일.
+   - 상단바: 카테고리 라벨 + 원형 선화 도들(제품 카드와 동일 시그니처)
+   - 도들 SVG는 stroke="#191919"(거의 검정)라 invert(1)로 흰 선화 전환
+   캔버스: 1080 × 1350
+   ============================================================ */
+
+/* 카테고리 + 도들 초상을 한 줄에 배치 */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 64px;
+}
+.topbar .category {
+  margin-bottom: 0; /* shared.css의 .category 하단 여백 제거 */
+}
+
+/* 원형 선화 도들 초상 (제품 마음카드의 동그란 일러스트 재현) */
+.portrait {
+  flex: none;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.portrait img {
+  width: 76px;
+  height: 76px;
+  /* 검정 선화(#191919) → 다크 배경용 흰 선화로 반전 */
+  filter: invert(1) brightness(1.05);
+  opacity: 0.92;
+}
+
+/* ───────────── 표지(COVER) 전용 ───────────── */
+.cover .portrait {
+  margin: 0 auto 52px;
+  width: 150px;
+  height: 150px;
+}
+.cover .portrait img {
+  width: 86px;
+  height: 86px;
+}
+
+/* ───────────── 인용블록 안 강조 ───────────── */
+.quote-block .accent {
+  color: var(--accent);
+}
+
+/* ───────────── 「무료」 도장 딱지 (마지막 CTA 장) ───────────── */
+.stamp {
+  position: absolute;
+  top: 92px;
+  right: 84px;
+  z-index: 3;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  color: var(--accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-12deg);
+  background: rgba(14, 14, 16, 0.4);
+}
+.stamp .big {
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.stamp .small {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}

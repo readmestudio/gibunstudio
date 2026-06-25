@@ -1,0 +1,55 @@
+/* ============================================================
+   MINDS · 빌런 단독 카드뉴스 — 추가 스타일
+   ------------------------------------------------------------
+   본문/리스트/인용 카드는 ../shared.css 클래스 그대로 사용.
+   여기선 표지(게시 포맷)·풀블리드 일러스트 장면·CTA 띠만 정의.
+   일러스트: ../minds-cast/illustrations/villain.png 재사용
+   ============================================================ */
+
+/* ───────── 풀블리드 일러스트 배경 (표지·장면 공용) ───────── */
+.card.illu { position: relative; padding: 0; overflow: hidden; }
+.illu-bg { position: absolute; inset: 0; z-index: 0; }
+.illu-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+
+/* 하단 텍스트존을 어둡게 (상단 일러스트 비침) */
+.illu-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(14,14,16,0.34) 0%, rgba(14,14,16,0.2) 28%, rgba(14,14,16,0.5) 54%,
+    rgba(14,14,16,0.8) 72%, rgba(14,14,16,0.95) 88%, rgba(14,14,16,0.99) 100%); }
+
+.illu-layer { position: relative; z-index: 2; height: 100%; box-sizing: border-box;
+  padding: 80px 80px 150px; display: flex; flex-direction: column; justify-content: flex-end; }
+
+/* 표지 텍스트 (게시 포맷) */
+.illu-layer .brand { font-size: 30px; font-weight: 500; color: var(--text-tertiary);
+  letter-spacing: -0.01em; margin-bottom: 24px; text-shadow: 0 2px 14px rgba(0,0,0,0.7); }
+.illu-layer .title { font-size: 82px; font-weight: 700; line-height: 1.18; letter-spacing: -0.04em;
+  color: #fff; margin-bottom: 34px; text-shadow: 0 6px 40px rgba(0,0,0,0.72); }
+.illu-layer .title .accent { color: var(--accent); }
+.illu-layer .subtitle { font-size: 40px; font-weight: 400; line-height: 1.4; letter-spacing: -0.02em;
+  color: var(--text-secondary); text-shadow: 0 2px 16px rgba(0,0,0,0.8); }
+
+/* 장면(본문) 텍스트 — 카테고리 + 헤드라인 + 본문 */
+.illu-layer .category { display: flex; align-items: center; gap: 18px; margin-bottom: 28px; }
+.illu-layer .category .dot { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); }
+.illu-layer .category .text { font-size: 25px; font-weight: 700; letter-spacing: 0.18em; color: var(--text-tertiary); }
+.illu-layer .headline { font-size: 64px; font-weight: 800; line-height: 1.24; letter-spacing: -0.035em;
+  color: #fff; margin-bottom: 32px; text-shadow: 0 6px 40px rgba(0,0,0,0.72); }
+.illu-layer .headline .accent { color: var(--accent); }
+.illu-layer .stext { font-size: 36px; font-weight: 400; line-height: 1.6; letter-spacing: -0.02em;
+  color: var(--text-secondary); text-shadow: 0 2px 16px rgba(0,0,0,0.82); }
+.illu-layer .stext + .stext { margin-top: 24px; }
+.illu-layer .stext .hl { color: var(--accent); font-weight: 700; }
+.illu-layer .stext .strong { color: #fff; font-weight: 700; }
+
+.illu-layer .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 44px; }
+.illu-layer .foot .pg { font-size: 22px; color: var(--text-muted); }
+.illu-layer .foot .next { font-size: 22px; color: var(--accent); font-weight: 700; }
+
+/* ───────── 하단 풀폭 오렌지 CTA 띠 ───────── */
+.band { position: relative; z-index: 2; background: var(--accent);
+  box-shadow: 0 -24px 60px rgba(14,14,16,0.75);
+  padding: 50px 80px; display: flex; align-items: center; justify-content: center; }
+.band .btn { display: inline-flex; align-items: center; gap: 18px;
+  color: #fff; font-size: 42px; font-weight: 800; letter-spacing: -0.015em; }
+.band .btn .arrow { font-size: 38px; transform: translateY(2px); }

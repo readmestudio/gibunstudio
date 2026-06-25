@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>MINDS 01 — 표지</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<link rel="stylesheet" href="../shared.css" />
+<style>
+  .card.cover { position: relative; padding: 0; overflow: hidden; }
+
+  /* 배경: 5배역 일러스트 타일 모자이크 */
+  .cover-tiles { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+  .cover-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 360px; gap: 18px;
+    position: absolute; inset: -10% -8%;
+    transform: rotate(-5deg) scale(1.14); transform-origin: center;
+    opacity: 0.36;
+  }
+  .cover-grid img { width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: 12px; }
+
+  /* 불투명 스크림 — 상단 타일 비침, 하단 텍스트존 어둡게 */
+  .cover-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(180deg,
+      rgba(14,14,16,0.5) 0%, rgba(14,14,16,0.34) 26%, rgba(14,14,16,0.4) 48%,
+      rgba(14,14,16,0.72) 66%, rgba(14,14,16,0.92) 82%, rgba(14,14,16,0.98) 100%); }
+  .cover-scrim::before { content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 28px 28px; }
+
+  /* 콘텐츠: 좌우 80px · 텍스트 블록 하단 정렬 */
+  .cover-layer { position: relative; z-index: 2; height: 100%; box-sizing: border-box;
+    padding: 80px 80px 150px; display: flex; flex-direction: column; justify-content: flex-end; }
+
+  /* 브랜드 라벨 */
+  .cover-layer .brand {
+    font-size: 30px; font-weight: 500; color: var(--text-tertiary);
+    letter-spacing: -0.01em; margin-bottom: 24px;
+    text-shadow: 0 2px 14px rgba(0,0,0,0.7);
+  }
+
+  /* 제목: Pretendard Bold · 큰 사이즈 · 강조어 오렌지 */
+  .cover-layer .title {
+    font-size: 82px; font-weight: 700; line-height: 1.18; letter-spacing: -0.04em;
+    color: #fff; margin-bottom: 34px;            /* 제목 ↔ 서브 */
+    text-shadow: 0 6px 40px rgba(0,0,0,0.72);
+  }
+  .cover-layer .title .accent { color: var(--accent); }
+
+  /* 서브카피: Pretendard Regular · 1줄 */
+  .cover-layer .subtitle {
+    font-size: 40px; font-weight: 400; line-height: 1.4; letter-spacing: -0.02em;
+    color: var(--text-secondary);
+    text-shadow: 0 2px 16px rgba(0,0,0,0.78);
+  }
+</style>
+</head>
+<body>
+<div class="card cover">
+  <div class="cover-tiles">
+    <div class="cover-grid">
+      <img src="./illustrations/leader.png" alt="" /><img src="./illustrations/villain.png" alt="" /><img src="./illustrations/rake.png" alt="" /><img src="./illustrations/manager.png" alt="" />
+      <img src="./illustrations/exile.png" alt="" /><img src="./illustrations/manager.png" alt="" /><img src="./illustrations/leader.png" alt="" /><img src="./illustrations/villain.png" alt="" />
+      <img src="./illustrations/rake.png" alt="" /><img src="./illustrations/exile.png" alt="" /><img src="./illustrations/villain.png" alt="" /><img src="./illustrations/leader.png" alt="" />
+      <img src="./illustrations/manager.png" alt="" /><img src="./illustrations/rake.png" alt="" /><img src="./illustrations/exile.png" alt="" /><img src="./illustrations/villain.png" alt="" />
+      <img src="./illustrations/leader.png" alt="" /><img src="./illustrations/manager.png" alt="" /><img src="./illustrations/rake.png" alt="" /><img src="./illustrations/exile.png" alt="" />
+    </div>
+  </div>
+  <div class="cover-scrim"></div>
+
+  <div class="cover-layer">
+    <div class="brand">기분 스튜디오</div>
+    <div class="title">내 기분을 결정하는<br />내 마음 속 <span class="accent">다섯 가지 배역</span></div>
+    <div class="subtitle">오늘 내 기분, 누가 정했을까?</div>
+  </div>
+</div>
+</body>
+</html>

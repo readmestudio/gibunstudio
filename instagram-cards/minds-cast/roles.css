@@ -1,0 +1,78 @@
+/* ============================================================
+   MINDS · THE CAST — 배역 카드 스타일 (일러스트 풀블리드 버전)
+   ------------------------------------------------------------
+   - 힉스필드 일러스트(near-black #0e0e10 배경)를 카드 전면에 깔고
+   - 스크림 그라데이션으로 텍스트존 확보
+   - 역할 이름(빌런/난봉꾼…)을 가장 크게
+   shared.css(:root 토큰) 위에 얹어 사용.
+   ============================================================ */
+
+.card.role { padding: 0; }
+
+/* 배경 일러스트 (카드 배경색과 동일 톤이라 자연스럽게 합쳐짐) */
+.role-illu { position: absolute; inset: 0; z-index: 0; }
+.role-illu img {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+}
+
+/* 텍스트 가독성용 스크림 */
+.role-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.role-scrim.bottom {
+  background: linear-gradient(to bottom,
+    rgba(14, 14, 16, 0) 0%, rgba(14, 14, 16, 0) 32%,
+    rgba(14, 14, 16, 0.42) 50%, rgba(14, 14, 16, 0.84) 70%,
+    rgba(14, 14, 16, 0.97) 85%, #0e0e10 100%);
+}
+.role-scrim.top {
+  background: linear-gradient(to bottom,
+    #0e0e10 0%, rgba(14, 14, 16, 0.92) 20%, rgba(14, 14, 16, 0.62) 38%,
+    rgba(14, 14, 16, 0.18) 56%, rgba(14, 14, 16, 0) 72%);
+}
+
+/* 콘텐츠 레이어 */
+.role-layer {
+  position: relative; z-index: 2;
+  height: 100%; box-sizing: border-box;
+  padding: 72px 80px 84px;
+  display: flex; flex-direction: column;
+}
+
+/* 상단 카테고리 라벨 */
+.role-cat { display: flex; align-items: center; gap: 18px; }
+.role-cat .dot { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); }
+.role-cat .text {
+  font-size: 25px; font-weight: 700; letter-spacing: 0.22em; color: var(--text-tertiary);
+}
+
+/* 본문 블록 — 기본은 하단 앵커 */
+.role-main { margin-top: auto; }
+.card.role.top .role-main { margin-top: 60px; }
+
+/* 역할 이름 = 가장 큰 요소 */
+.role-name {
+  font-size: 168px; font-weight: 800; line-height: 0.98; letter-spacing: -0.045em;
+  color: #fff; text-shadow: 0 6px 44px rgba(0, 0, 0, 0.75);
+}
+.role-desc {
+  margin-top: 30px;
+  font-size: 40px; font-weight: 600; color: var(--text-secondary); letter-spacing: -0.025em;
+  text-shadow: 0 3px 20px rgba(0, 0, 0, 0.85);
+}
+.role-quote {
+  margin-top: 28px; padding-left: 28px;
+  border-left: 3px solid var(--accent);
+  font-size: 36px; font-weight: 700; line-height: 1.4; color: #fff; letter-spacing: -0.02em;
+  text-shadow: 0 3px 20px rgba(0, 0, 0, 0.85);
+}
+.role-quote .accent { color: var(--accent); }
+
+/* 하단 푸터 */
+.role-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 44px;
+}
+.card.role.top .role-foot { margin-top: auto; }
+.role-foot .pg { font-size: 22px; color: var(--text-muted); }
+.role-foot .next { font-size: 22px; color: var(--accent); font-weight: 700; }
