@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 
 const YEARS = Array.from({ length: 60 }, (_, i) => 2010 - i); // 1951~2010
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -14,20 +13,8 @@ export default function BirthInfoPage() {
   const [year, setYear] = useState<number | ''>('');
   const [month, setMonth] = useState<number | ''>('');
   const [day, setDay] = useState<number | ''>('');
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // 로그인 여부 체크 — 비로그인이면 로그인 페이지로
-  useEffect(() => {
-    createClient()
-      .auth.getUser()
-      .then(({ data: { user } }) => {
-        if (!user) {
-          router.replace('/login?next=/husband-match/birth-info');
-        } else {
-          setCheckingAuth(false);
-        }
-      });
-  }, [router]);
+  // 로그인 없이도 시작 가능 — 로그인은 결과 보기(분석하기) 단계에서 요구한다.
 
   const isValid = userName.trim().length > 0 && year !== '' && month !== '' && day !== '';
 
@@ -41,14 +28,6 @@ export default function BirthInfoPage() {
     };
     localStorage.setItem('birthInfo', JSON.stringify(birthInfo));
     router.push('/husband-match/capture');
-  }
-
-  if (checkingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <p className="text-[var(--foreground)]/60">로딩 중...</p>
-      </div>
-    );
   }
 
   const selectClass =

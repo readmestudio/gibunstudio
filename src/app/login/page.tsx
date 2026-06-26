@@ -10,7 +10,10 @@ type Tab = "login" | "signup";
 function LoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const next = searchParams.get("next") ?? "";
+  // 로그인 후 돌아갈 경로. 앱 전반은 `redirect=`(결제·대시보드·cart 등),
+  // husband-match는 `next=`를 쓰므로 둘 다 받아준다. (이름 불일치로 홈으로
+  // 튕기던 버그 방지 — 특히 결제 흐름에서 로그인 후 결제 페이지로 복귀)
+  const next = searchParams.get("next") ?? searchParams.get("redirect") ?? "";
   const [tab, setTab] = useState<Tab>("login");
 
   const [email, setEmail] = useState("");
@@ -23,9 +26,19 @@ function LoginContent() {
 
   const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
+  // OAuth/이메일 콜백 주소는 쿼리 없는 "깨끗한" /auth/callback 으로 고정한다.
+  // Supabase Redirect URLs 허용목록은 쿼리스트링이 붙으면 매칭에 실패해 Site URL(홈)로
+  // 튕기는 경우가 많기 때문. 로그인 후 돌아갈 next 경로는 아래 쿠키로만 전달한다.
   const getRedirectTo = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+    return `${origin}/auth/callback`;
+  };
+
+  // 인증 후 돌아올 경로를 쿠키에 저장 (콜백 라우트가 읽어서 복귀시킨다)
+  const persistNext = () => {
+    if (typeof document !== "undefined" && next && next.startsWith("/")) {
+      document.cookie = `auth_redirect=${encodeURIComponent(next)}; path=/; max-age=600; SameSite=Lax`;
+    }
   };
 
   const redirectAfterAuth = () => {
@@ -46,10 +59,8 @@ function LoginContent() {
     setLoading(true);
     setMessage(null);
     try {
-      // OAuth 후 돌아올 경로를 쿠키에 저장 (Supabase가 query param을 유실할 수 있으므로)
-      if (next && next.startsWith("/")) {
-        document.cookie = `auth_redirect=${next}; path=/; max-age=600; SameSite=Lax`;
-      }
+      // OAuth 후 돌아올 경로를 쿠키에 저장 (redirectTo는 쿼리 없는 깨끗한 콜백 주소)
+      persistNext();
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
@@ -92,6 +103,8 @@ function LoginContent() {
     setLoading(true);
     setMessage(null);
     try {
+      // 이메일 인증 링크로 돌아온 뒤에도 next로 복귀하도록 쿠키에 저장
+      persistNext();
       const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
         email,

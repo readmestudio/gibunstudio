@@ -5,8 +5,8 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
 
-  // 1) URL query param에서 next 확인
-  let next = searchParams.get("next") ?? "";
+  // 1) URL query param에서 next 확인 (앱 전반의 `redirect=`도 함께 받는다)
+  let next = searchParams.get("next") ?? searchParams.get("redirect") ?? "";
 
   // 2) query param이 없으면 쿠키에서 확인 (OAuth가 query param을 유실하는 경우 대비)
   if (!next) {

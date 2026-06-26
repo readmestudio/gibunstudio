@@ -8,6 +8,19 @@ import { createClient } from '@/lib/supabase/client';
 
 const MIN_IMAGES = 3;
 
+// 비로그인 유저가 업로드한 캡처를 로그인 후까지 보존하기 위한 sessionStorage 키
+const CAPTURE_STORAGE_KEY = 'husband_match_capture_images';
+
+// File → data URL(base64) 변환 (sessionStorage 보존용)
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 const LOADING_MESSAGES = [
   '유튜브 구독 리스트를 확인하고 있습니다',
   '재밌는 패턴을 발견했어요!',
@@ -47,15 +60,18 @@ export default function CapturePage() {
   }, [submitLoading]);
 
   useEffect(() => {
+    // 로그인 없이도 업로드 가능 — 로그인은 "분석하기"(결과 생성) 단계에서 요구한다.
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) {
-        router.replace('/login?next=/husband-match/birth-info');
+        // 비로그인 신규 유저: 기존 결과 조회 없이 곧장 업로드 화면 표시
+        setIsLoggedIn(false);
+        setLoading(false);
         return;
       }
       setIsLoggedIn(true);
 
-      // 기존 분석 결과 존재 여부 확인
+      // 기존 분석 결과 존재 여부 확인 (로그인 유저만)
       const { data: existing } = await supabase
         .from('phase1_results')
         .select('id')
@@ -101,7 +117,24 @@ export default function CapturePage() {
       setError(`구독 목록 캡처를 ${MIN_IMAGES}장 이상 올려주세요.`);
       return;
     }
-    if (!isLoggedIn) return;
+
+    // 비로그인: 결과 보기 단계에서 로그인 요구 — 업로드한 이미지를 보존하고 로그인으로 보낸다.
+    if (!isLoggedIn) {
+      setSubmitLoading(true);
+      setError(null);
+      try {
+        const dataUrls = await Promise.all(files.map(fileToDataUrl));
+        window.sessionStorage.setItem(
+          CAPTURE_STORAGE_KEY,
+          JSON.stringify({ images: dataUrls, force: forceReanalyze })
+        );
+        router.replace('/login?next=/husband-match/capture/claim');
+      } catch {
+        // 저장 용량 초과 등 실패 시: 로그인 후 캡처 화면으로 복귀해 다시 업로드
+        router.replace('/login?next=/husband-match/capture');
+      }
+      return;
+    }
 
     setSubmitLoading(true);
     setError(null);
