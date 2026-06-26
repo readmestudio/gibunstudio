@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./counseling-theme.css";
-import { BackBar } from "./_components/BackBar";
 import { Hero } from "./_components/Hero";
 import { NeedSection } from "./_components/NeedSection";
 import { FixSection } from "./_components/FixSection";
@@ -30,13 +29,12 @@ export const metadata: Metadata = {
  * 사이트의 기존 모노톤 토큰(노란 --accent)과 충돌하지 않는다.
  *
  * 섹션 순서(핸드오프 c05-app.jsx 렌더 순서 기준):
- *   BackBar → Hero → Need → Fix → Counselor → Pricing → Curriculum →
+ *   Hero → Need → Fix → Counselor → Pricing → Curriculum →
  *   Gpt → Keep → Reviews → Faq → FinalCta → Footer → StickyKakao
  */
 export default function ProgramCounselingPage() {
   return (
     <div className="counseling-page">
-      <BackBar />
       <Hero />
       <NeedSection />
       <FixSection />

@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 import { WORKSHOP_PRICE } from "@/lib/self-workshop/landing-data";
+import { WorkbookCheckoutModal } from "./WorkbookCheckoutModal";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
@@ -24,6 +25,12 @@ interface WorkshopCheckoutContextValue {
   isSubmitting: boolean;
   /** SDK 아직 로딩중(머천트 ID가 있을 때만) — 버튼 disable용 */
   sdkPending: boolean;
+  /** 결제 수단 선택 모달 열림 여부 */
+  isModalOpen: boolean;
+  /** 결제 수단 선택 모달 열기 (모든 CTA가 클릭 시 호출) */
+  openModal: () => void;
+  /** 결제 수단 선택 모달 닫기 */
+  closeModal: () => void;
 }
 
 const WorkshopCheckoutContext =
@@ -54,6 +61,7 @@ export function WorkshopCheckoutProvider({
 }) {
   const router = useRouter();
   const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [isModalOpen, setModalOpen] = useState(false);
 
   const { isSubmitting, handleBuyNow, handleNpay, handleKakao } =
     useWorkshopCheckout({
@@ -78,6 +86,9 @@ export function WorkshopCheckoutProvider({
         payNpay: handleNpay,
         isSubmitting,
         sdkPending,
+        isModalOpen,
+        openModal: () => setModalOpen(true),
+        closeModal: () => setModalOpen(false),
       }}
     >
       {NICEPAY_CLIENT_ID && (
@@ -89,6 +100,7 @@ export function WorkshopCheckoutProvider({
         />
       )}
       {children}
+      <WorkbookCheckoutModal />
     </WorkshopCheckoutContext.Provider>
   );
 }

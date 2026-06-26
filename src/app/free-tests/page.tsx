@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { requireAdmin } from "@/lib/admin/auth";
 
 /**
- * /free-tests — 무료 심리 테스트 모음 (공개 · 로그인 불필요).
+ * /free-tests — 무료 심리 테스트 모음 (관리자 전용).
  *
- * 홈의 "무료 상담 리포트" 카드가 이 페이지로 들어온다. 흩어져 있던 무료 진단들을
- * 한 곳에 모아 카드로 고르게 한다. 목록 페이지 자체는 누구나 접근 가능하고, 개별
- * 테스트는 각자의 진입 규칙을 따른다(남편성향·마음 체크인은 시작 시 로그인 필요).
+ * 흩어져 있던 무료 진단들을 한 곳에 모아 카드로 고르게 하는 페이지. 현재는 관리자
+ * (ADMIN_EMAILS)만 접근 가능하도록 `requireAdmin()` 가드를 둔다. 로그인 안 했으면
+ * /login 으로, 관리자가 아니면 홈으로 리다이렉트된다.
  */
 
 export const metadata: Metadata = {
@@ -73,7 +74,9 @@ const FREE_TESTS: FreeTest[] = [
   },
 ];
 
-export default function FreeTestsPage() {
+export default async function FreeTestsPage() {
+  await requireAdmin("/free-tests");
+
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <div className="container mx-auto max-w-5xl px-5 py-16 lg:px-24">

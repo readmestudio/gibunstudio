@@ -16,7 +16,7 @@ export const PACKAGE_PER_SESSION = 99_000;
 
 /* ── 카카오톡 채널 ───────────────────────────────────────
    검색용 아이디(gibun_studio)가 아니라 공개 채널 URL(밑줄 코드)을 써야 열린다. */
-export const KAKAO_CHANNEL_URL = "https://pf.kakao.com/_NxevhX";
+export const KAKAO_CHANNEL_URL = "https://pf.kakao.com/_WTDxfX";
 
 /* 프로그램 목록(뒤로가기) 경로 */
 export const PROGRAMS_HREF = "/";

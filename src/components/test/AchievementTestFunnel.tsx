@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 성취 중독 무료 테스트 — 독립 퍼널 (로그인·DB·결제 불필요)
+ * 성취 중독 무료 테스트 — 독립 퍼널 (로그인·DB 불필요, 결과에서 바로 결제)
  *
  * 워크북 Step 1·2(WorkshopDiagnosisContent / WorkshopResultContent)에서
  * "테스트 + 결과"만 떼어내 무료 리드 마그넷으로 재구성한 화면이다.
@@ -9,15 +9,18 @@
  * 핵심 차이:
  *  - 점수 계산을 서버 API 가 아니라 클라이언트에서 calculateDiagnosisScores() 로 처리
  *    (순수 함수라 로그인/DB 없이 동작 → 마찰 0)
- *  - AI 개인화 프로필·실습 게이트는 제거하고, 레벨 기반 정적 해석만 노출
- *  - 결과 하단에서 "더 깊은 분석"이 필요하다는 메시지와 함께 워크북 대기신청(/waitlist)으로 유도
+ *  - 결과 화면에서 답변을 /api/achievement-test/diagnose 로 보내 LLM 상황 진단을 받고
+ *    (지금 이런 상태 → 자주 하는 생각 → 빠지기 쉬운 인지 오류) 워크북으로 자연스럽게 연결
+ *  - 워크북 랜딩으로 보내지 않고, 결과에서 바로 카카오페이/네이버페이로 결제
+ *    (WorkshopCheckoutProvider 공유) + 항상 따라다니는 스티키 구매 버튼
+ *  - "심리 상담 워크북은 이렇게 작동합니다" 설명~FAQ는 /payment/self-workshop 의
+ *    overview 섹션을 그대로 재사용(.lr 네임스페이스)
  *
  * 문항·점수·레벨 데이터는 워크북과 동일 출처(diagnosis.ts)를 공유하므로
  * 한쪽을 고치면 양쪽이 함께 정렬된다.
  */
 
-import { useCallback, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import {
   DIAGNOSIS_QUESTIONS,
   LIKERT_OPTIONS,
@@ -42,6 +45,31 @@ import {
   useInView,
   useTimeline,
 } from "@/components/self-workshop/clinical-report/v3-shared";
+
+// ── 워크북 결제 + overview 섹션 재사용 (.lr 네임스페이스) ──
+import "@/components/self-workshop/redesign-landing/landing.css";
+import {
+  WorkshopCheckoutProvider,
+  useWorkshopCheckoutCtx,
+} from "@/components/self-workshop/redesign-landing/WorkshopCheckoutContext";
+import { useFadeIn } from "@/components/self-workshop/redesign-landing/useFadeIn";
+import { StickyCTA, Divider } from "@/components/self-workshop/redesign-landing/Chrome";
+import { OverviewIntroSection } from "@/components/self-workshop/redesign-landing/OverviewIntroSection";
+import { CompareSection } from "@/components/self-workshop/redesign-landing/MidSections";
+import {
+  OverviewApproachSection,
+  OverviewJourneySection,
+  OverviewLineupSection,
+  OverviewMethodSection,
+} from "@/components/self-workshop/redesign-landing/OverviewSections";
+import { OverviewPointsSection } from "@/components/self-workshop/redesign-landing/OverviewPointsSection";
+import { OverviewTestimonialsSection } from "@/components/self-workshop/redesign-landing/OverviewTestimonialsSection";
+import {
+  FaqSection,
+  PricingSection,
+  PrivacySection,
+} from "@/components/self-workshop/redesign-landing/RestSections";
+import { WorkbookScreenshotStrip } from "@/components/self-workshop/redesign-landing/WorkbookScreenshotSection";
 
 const TOTAL = DIAGNOSIS_QUESTIONS.length;
 
@@ -651,25 +679,54 @@ function ResultScore({ scores }: { scores: DiagnosisScores }) {
   );
 }
 
-// ─────────────────── RESULT: 더 깊은 분석 안내 ─────────────────── //
+// ─────────────────── RESULT: LLM 상황 진단 ─────────────────── //
 
-// 이 테스트가 알려주는 것 vs 알려주지 못하는 것 — 워크북/상담으로 가는 다리.
-const LIMITS = [
-  {
-    tag: "이 테스트가 알려준 것",
-    title: "내 패턴이 지금 어디까지 왔는지",
-    body: "성취 패턴의 위험 레벨과 네 가지 지표의 균형을 숫자로 보여줘요. '내가 어떤 상태인가'를 객관적으로 확인하는 단계예요.",
-    accent: false,
-  },
-  {
-    tag: "아직 알 수 없는 것",
-    title: "왜 그런 반응이 반복되는지",
-    body: "어떤 상황이 트리거가 되고, 어떤 자동사고와 핵심 신념이 그 아래에서 작동하는지 — 이 '닫힌 고리'는 문항 점수만으로는 풀리지 않아요. 직접 자기 사례를 따라가며 해체해야 비로소 흐름을 바꿀 수 있어요.",
-    accent: true,
-  },
-];
+// /api/achievement-test/diagnose 응답 형태.
+interface LlmDiagnosis {
+  state_summary: string;
+  frequent_thoughts: string[];
+  cognitive_errors: { id: string; name: string; why: string }[];
+  bridge: string;
+}
 
-function ResultDeepDive() {
+/**
+ * 사용자의 20문항 답변을 LLM으로 보내 "지금 이런 상태 → 자주 하는 생각 →
+ * 빠지기 쉬운 인지 오류 → 성취 중독 워크북으로 분석 받아 보세요"를 생성해 보여준다.
+ *
+ * 점수만으로는 '왜'가 풀리지 않으므로(닫힌 고리), 여기서 개인화된 거울을 보여주고
+ * 자연스럽게 워크북 구매(ResultCTA)로 이어준다.
+ */
+function ResultLLMDiagnosis({ answers }: { answers: Record<string, number> }) {
+  const [data, setData] = useState<LlmDiagnosis | null>(null);
+  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/achievement-test/diagnose", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answers }),
+        });
+        if (!res.ok) throw new Error("diagnose failed");
+        const json = await res.json();
+        if (!alive) return;
+        if (json?.diagnosis) {
+          setData(json.diagnosis as LlmDiagnosis);
+          setStatus("ok");
+        } else {
+          setStatus("error");
+        }
+      } catch {
+        if (alive) setStatus("error");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [answers]);
+
   return (
     <section
       style={{
@@ -681,8 +738,8 @@ function ResultDeepDive() {
     >
       <div style={{ maxWidth: COL + 96, margin: "0 auto", padding: "0 48px" }}>
         <Reveal>
-          <Mono size={11} color={D.text3} tracking={0.2}>
-            WHAT&apos;S NEXT · 더 깊은 분석
+          <Mono size={11} color={D.accent} tracking={0.2}>
+            AI 분석 · 지금 당신의 상태
           </Mono>
         </Reveal>
         <Reveal delay={120}>
@@ -698,84 +755,228 @@ function ResultDeepDive() {
               maxWidth: 720,
             }}
           >
-            점수를 알았다면,
+            점수 너머,
             <br />
-            이제 &apos;왜&apos;를 풀 차례예요.
+            지금 당신의 마음을 읽었어요.
           </h2>
         </Reveal>
 
-        <div
-          style={{
-            marginTop: 72,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 24,
-          }}
-        >
-          {LIMITS.map((item, i) => (
-            <Reveal key={i} delay={i * 100}>
+        {/* 로딩 — 답변을 분석하는 동안 */}
+        {status === "loading" && (
+          <div style={{ marginTop: 64 }}>
+            <Mono size={11} color={D.text3} tracking={0.16}>
+              답변을 분석하는 중이에요…
+            </Mono>
+            <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: 16,
+                    width: `${[92, 76, 84][i]}%`,
+                    borderRadius: 8,
+                    background: D.hair2,
+                    opacity: 0.8,
+                    animation: "achPulse 1.3s ease-in-out infinite",
+                    animationDelay: `${i * 0.15}s`,
+                  }}
+                />
+              ))}
+            </div>
+            <style>{`@keyframes achPulse {0%,100%{opacity:.45}50%{opacity:.9}}`}</style>
+          </div>
+        )}
+
+        {/* 본문 — LLM 진단 */}
+        {status === "ok" && data && (
+          <>
+            {/* 지금 이런 상태에요 */}
+            <Reveal delay={200}>
+              <p
+                style={{
+                  margin: "48px 0 0",
+                  maxWidth: 720,
+                  fontSize: "clamp(17px, 1.7vw, 21px)",
+                  lineHeight: 1.7,
+                  color: D.ink,
+                  fontWeight: 400,
+                  textWrap: "pretty",
+                }}
+              >
+                {data.state_summary}
+              </p>
+            </Reveal>
+
+            {/* 이런 생각을 자주 해요 */}
+            {data.frequent_thoughts.length > 0 && (
+              <Reveal delay={120}>
+                <div style={{ marginTop: 56 }}>
+                  <Mono size={10} color={D.text3} tracking={0.18}>
+                    자주 떠오르는 생각
+                  </Mono>
+                  <div
+                    style={{
+                      marginTop: 18,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 12,
+                    }}
+                  >
+                    {data.frequent_thoughts.map((t, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          position: "relative",
+                          padding: "16px 20px 16px 24px",
+                          borderRadius: 14,
+                          background: D.paper,
+                          border: `1px solid ${D.hair}`,
+                          fontSize: "clamp(15px, 1.5vw, 18px)",
+                          lineHeight: 1.5,
+                          color: D.ink,
+                          fontWeight: 500,
+                        }}
+                      >
+                        <span
+                          aria-hidden
+                          style={{
+                            position: "absolute",
+                            left: 0,
+                            top: 16,
+                            bottom: 16,
+                            width: 3,
+                            background: D.accent,
+                            borderRadius: 3,
+                          }}
+                        />
+                        {t.startsWith("“") || t.startsWith('"') ? t : `“${t}”`}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+            )}
+
+            {/* 이런 인지 오류에 빠지기 쉬워요 */}
+            {data.cognitive_errors.length > 0 && (
+              <Reveal delay={120}>
+                <div style={{ marginTop: 56 }}>
+                  <Mono size={10} color={D.text3} tracking={0.18}>
+                    빠지기 쉬운 인지 오류
+                  </Mono>
+                  <div
+                    style={{
+                      marginTop: 18,
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(260px, 1fr))",
+                      gap: 16,
+                    }}
+                  >
+                    {data.cognitive_errors.map((e) => (
+                      <div
+                        key={e.id}
+                        style={{
+                          padding: "22px 22px",
+                          borderRadius: 16,
+                          background: D.paper,
+                          border: `1px solid ${D.hair}`,
+                        }}
+                      >
+                        <h3
+                          style={{
+                            margin: 0,
+                            fontSize: "clamp(16px, 1.8vw, 19px)",
+                            fontWeight: 700,
+                            color: D.ink,
+                            letterSpacing: "-0.02em",
+                          }}
+                        >
+                          {e.name}
+                        </h3>
+                        <p
+                          style={{
+                            margin: "10px 0 0",
+                            fontSize: 14.5,
+                            lineHeight: 1.65,
+                            color: D.text2,
+                            fontWeight: 400,
+                          }}
+                        >
+                          {e.why}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+            )}
+
+            {/* 워크북으로 자연스럽게 연결 */}
+            <Reveal delay={160}>
               <div
                 style={{
                   position: "relative",
-                  height: "100%",
-                  padding: "28px 26px",
-                  borderRadius: 18,
-                  background: D.paper,
-                  border: `1px solid ${item.accent ? D.ink : D.hair}`,
-                  boxShadow: item.accent
-                    ? "0 12px 32px -16px rgba(255,90,31,0.30)"
-                    : "none",
+                  marginTop: 64,
+                  padding: "32px 30px",
+                  borderRadius: 20,
+                  background: D.ink,
+                  color: "#fff",
                 }}
               >
-                {item.accent && (
-                  <span
-                    aria-hidden
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 26,
-                      bottom: 26,
-                      width: 3,
-                      background: D.accent,
-                      borderRadius: 3,
-                    }}
-                  />
-                )}
-                <Mono
-                  size={10}
-                  color={item.accent ? D.accent : D.text3}
-                  tracking={0.16}
-                >
-                  {item.accent ? "● " : ""}
-                  {item.tag}
+                <Mono size={10} color={D.accent} tracking={0.18}>
+                  ● 다음 단계
                 </Mono>
-                <h3
-                  style={{
-                    margin: "14px 0 0",
-                    fontSize: "clamp(18px, 2vw, 22px)",
-                    fontWeight: 700,
-                    color: D.ink,
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {item.title}
-                </h3>
                 <p
                   style={{
                     margin: "14px 0 0",
-                    fontSize: 15,
-                    lineHeight: 1.7,
-                    color: D.text2,
-                    fontWeight: 400,
+                    fontSize: "clamp(16px, 1.7vw, 20px)",
+                    lineHeight: 1.65,
+                    color: "rgba(255,255,255,0.92)",
+                    fontWeight: 500,
+                    textWrap: "pretty",
                   }}
                 >
-                  {item.body}
+                  {data.bridge}
                 </p>
               </div>
             </Reveal>
-          ))}
-        </div>
+          </>
+        )}
+
+        {/* 에러 — 분석 실패 시에도 워크북으로 연결되는 정적 폴백 */}
+        {status === "error" && (
+          <Reveal delay={120}>
+            <div
+              style={{
+                position: "relative",
+                marginTop: 56,
+                padding: "32px 30px",
+                borderRadius: 20,
+                background: D.ink,
+                color: "#fff",
+              }}
+            >
+              <Mono size={10} color={D.accent} tracking={0.18}>
+                ● 다음 단계
+              </Mono>
+              <p
+                style={{
+                  margin: "14px 0 0",
+                  fontSize: "clamp(16px, 1.7vw, 20px)",
+                  lineHeight: 1.65,
+                  color: "rgba(255,255,255,0.92)",
+                  fontWeight: 500,
+                  textWrap: "pretty",
+                }}
+              >
+                점수는 &lsquo;내가 어떤 상태인가&rsquo;를 보여주지만, &lsquo;왜
+                그런 반응이 반복되는가&rsquo;는 직접 따라가야 풀려요. 성취 중독
+                워크북으로 내 트리거·자동사고·핵심 신념을 분석 받아 보세요.
+              </p>
+            </div>
+          </Reveal>
+        )}
       </div>
     </section>
   );
@@ -784,6 +985,12 @@ function ResultDeepDive() {
 // ─────────────────── RESULT: 워크북 구매 CTA ─────────────────── //
 
 function ResultCTA() {
+  // 워크북 랜딩의 결제 컨텍스트를 그대로 공유 — 클릭 즉시 NicePay 결제창.
+  // (상품/금액/이미구매 처리는 모두 WorkshopCheckoutProvider 안에서 일괄)
+  const { payKakao, payNpay, openModal, isSubmitting, sdkPending } =
+    useWorkshopCheckoutCtx();
+  const blocked = isSubmitting || sdkPending;
+
   return (
     <section
       style={{
@@ -902,6 +1109,7 @@ function ResultCTA() {
           </div>
         </Reveal>
 
+        {/* 결제 — 랜딩으로 보내지 않고 여기서 바로. 카카오페이 / 네이버페이 2버튼. */}
         <Reveal delay={480}>
           <div
             style={{
@@ -912,32 +1120,78 @@ function ResultCTA() {
               gap: 12,
             }}
           >
-            {/* 통일 결제 페이지 — 워크북(₩49,000) 또는 심리상담을 한 곳에서 선택 */}
-            <Link
-              href="/payment/start"
+            <button
+              type="button"
+              onClick={payKakao}
+              disabled={blocked}
+              aria-label="카카오페이로 워크북 결제"
               style={{
                 fontFamily: D.font,
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: 16,
-                color: D.ink,
-                background: "#fff",
+                color: "#191600",
+                background: "#FEE500",
                 border: "none",
                 borderRadius: 999,
-                padding: "16px 34px",
-                cursor: "pointer",
+                padding: "16px 30px",
+                cursor: blocked ? "not-allowed" : "pointer",
+                opacity: blocked ? 0.6 : 1,
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
-                textDecoration: "none",
               }}
             >
-              워크북·상담 보러가기
-              <span style={{ fontFamily: D.mono, fontSize: 15 }}>→</span>
-            </Link>
+              {isSubmitting ? "결제 진행 중…" : "카카오페이로 결제"}
+            </button>
+            <button
+              type="button"
+              onClick={payNpay}
+              disabled={blocked}
+              aria-label="네이버페이로 워크북 결제"
+              style={{
+                fontFamily: D.font,
+                fontWeight: 700,
+                fontSize: 16,
+                color: "#fff",
+                background: "#03C75A",
+                border: "none",
+                borderRadius: 999,
+                padding: "16px 30px",
+                cursor: blocked ? "not-allowed" : "pointer",
+                opacity: blocked ? 0.6 : 1,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              {isSubmitting ? "결제 진행 중…" : "네이버페이로 결제"}
+            </button>
           </div>
         </Reveal>
 
-        <Reveal delay={560}>
+        <Reveal delay={540}>
+          <button
+            type="button"
+            onClick={openModal}
+            disabled={blocked}
+            style={{
+              marginTop: 18,
+              fontFamily: D.font,
+              fontSize: 14,
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.7)",
+              background: "transparent",
+              border: "none",
+              cursor: blocked ? "not-allowed" : "pointer",
+              textDecoration: "underline",
+              textUnderlineOffset: 4,
+            }}
+          >
+            신용·체크카드 등 다른 결제수단
+          </button>
+        </Reveal>
+
+        <Reveal delay={600}>
           <Mono
             size={11}
             color="rgba(255,255,255,0.45)"
@@ -952,20 +1206,60 @@ function ResultCTA() {
   );
 }
 
+// ──────────── 워크북 작동 설명 ~ FAQ (/payment/self-workshop 재사용) ──────────── //
+
+/**
+ * "심리 상담 워크북은 이렇게 작동합니다" 설명부터 FAQ까지 —
+ * /payment/self-workshop(OverviewLandingPage)의 overview 섹션을 그대로 붙인다.
+ *
+ * 이 섹션들은 모두 `.lr` 네임스페이스 CSS와 useFadeIn(.lr-f-up → .lr-in) 모션을
+ * 전제로 하므로, `<div className="lr">`로 감싸고 useFadeIn()을 호출한다.
+ * result phase에서 마운트될 때 useFadeIn이 실행되도록 별도 컴포넌트로 분리.
+ *
+ * 결제 CTA(PricingSection·StickyCTA의 WorkbookBuyButton)는 상위
+ * WorkshopCheckoutProvider의 컨텍스트를 그대로 사용한다.
+ */
+function WorkbookHowItWorks() {
+  useFadeIn();
+  return (
+    <div className="lr">
+      <OverviewIntroSection />
+      <Divider />
+      <CompareSection />
+      <Divider />
+      <OverviewMethodSection />
+      <OverviewJourneySection />
+      <WorkbookScreenshotStrip />
+      <OverviewApproachSection />
+      <OverviewLineupSection />
+      <PricingSection />
+      <OverviewPointsSection />
+      <PrivacySection />
+      <OverviewTestimonialsSection />
+      <FaqSection />
+      {/* 항상 따라다니는 워크북 구매 스티키 버튼 (스크롤 800px 이후 노출) */}
+      <StickyCTA />
+    </div>
+  );
+}
+
 // ─────────────────────────── RESULT ─────────────────────────── //
 
 function Result({
   scores,
+  answers,
   onRetake,
 }: {
   scores: DiagnosisScores;
+  answers: Record<string, number>;
   onRetake: () => void;
 }) {
   return (
     <div style={{ background: D.bg, color: D.text, fontFamily: D.font }}>
       <ResultScore scores={scores} />
-      <ResultDeepDive />
+      <ResultLLMDiagnosis answers={answers} />
       <ResultCTA />
+      <WorkbookHowItWorks />
 
       {/* 다시 하기 */}
       <div
@@ -1029,14 +1323,18 @@ export function AchievementTestFunnel({ skipIntro = false }: { skipIntro?: boole
   }, [skipIntro]);
 
   return (
-    <main style={{ background: D.bg, minHeight: "100vh" }}>
-      {phase === "intro" && <Intro onStart={() => setPhase("test")} />}
-      {phase === "test" && (
-        <Test answers={answers} setAnswers={setAnswers} onComplete={computeAndShow} />
-      )}
-      {phase === "result" && scores && (
-        <Result scores={scores} onRetake={retake} />
-      )}
-    </main>
+    // 결과 화면의 결제 CTA(카카오/네이버/카드)·스티키 버튼이 공유하는 결제 컨텍스트.
+    // intro/test 단계에서도 감싸 두면 SDK가 미리 로드되어 결제 클릭 지연이 줄어든다.
+    <WorkshopCheckoutProvider>
+      <main style={{ background: D.bg, minHeight: "100vh" }}>
+        {phase === "intro" && <Intro onStart={() => setPhase("test")} />}
+        {phase === "test" && (
+          <Test answers={answers} setAnswers={setAnswers} onComplete={computeAndShow} />
+        )}
+        {phase === "result" && scores && (
+          <Result scores={scores} answers={answers} onRetake={retake} />
+        )}
+      </main>
+    </WorkshopCheckoutProvider>
   );
 }

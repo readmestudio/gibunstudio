@@ -4,8 +4,9 @@ import { MindCheckFunnel } from "@/components/test/MindCheckFunnel";
 /**
  * /test/mind-check — 마음 체크 무료 온보딩 스크리너 (정규 진입점).
  *
- * 랜딩(Intro) → 21문항 테스트 → 진단 리포트 → 상담 유도 순으로 진행한다.
- * 광고 유입 전용 진입점은 /check (Intro 스킵).
+ * 랜딩(Intro)을 건너뛰고 첫 문항이 곧 첫 페이지가 되도록 바로 21문항 테스트부터
+ * 시작한다 → 진단 리포트 → 상담 유도 순으로 진행한다.
+ * 광고 유입 전용 진입점 /check 와 동일하게 Intro 를 스킵한다.
  */
 
 export const metadata: Metadata = {
@@ -20,5 +21,5 @@ export const metadata: Metadata = {
 };
 
 export default function MindCheckPage() {
-  return <MindCheckFunnel />;
+  return <MindCheckFunnel skipIntro />;
 }

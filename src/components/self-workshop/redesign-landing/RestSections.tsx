@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { WorkbookBuyButton } from "./WorkbookBuyButton";
-import { WorkbookEasyPayButtons } from "./WorkbookEasyPayButtons";
 
 /* ============================================================
  * PricingSection — 워크북 단독 vs 워크북+상담 비교 2단
@@ -57,7 +56,6 @@ export function PricingSection() {
               오픈 특가로 구매하기
               <span className="lr-arrow">→</span>
             </WorkbookBuyButton>
-            <WorkbookEasyPayButtons />
           </div>
 
           {/* 플랜 ②: 워크북 + 심리 상담 (강조) */}
@@ -447,7 +445,6 @@ export function FinalCTA() {
             오픈 특가로 구매하기
             <span className="lr-arrow">→</span>
           </WorkbookBuyButton>
-          <WorkbookEasyPayButtons />
         </div>
       </div>
     </section>
