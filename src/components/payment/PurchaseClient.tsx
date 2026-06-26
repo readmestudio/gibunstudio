@@ -93,8 +93,8 @@ export function PurchaseClient({
     });
   }
 
-  const handleBuyNow = () =>
-    startPayment("buyNow", BUYNOW_METHOD || undefined);
+  // method 는 NicePay 필수 파라미터(P007). env 가 비어 있으면 카드 결제로 폴백한다.
+  const handleBuyNow = () => startPayment("buyNow", BUYNOW_METHOD || "card");
   const handleNpay = () => startPayment("npay", "naverpayCard");
 
   const isSubmitting = submittingAction !== null;

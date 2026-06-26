@@ -17,7 +17,6 @@
 import { useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
-import { ProductBuyButtons } from "@/components/commerce/ProductBuyButtons";
 import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 import { getCounselingType } from "@/lib/counseling/types";
 import {
@@ -31,14 +30,58 @@ import { trackMetaEvent } from "@/lib/meta-pixel";
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
   process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
-const BUYNOW_METHOD = process.env.NEXT_PUBLIC_NICEPAY_BUYNOW_METHOD || "";
 
 const WORKBOOK_GOODS_NAME = "심리 상담 워크북 - 성취 중독";
 const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
 
+/**
+ * 카카오페이 / 네이버페이 두 결제 버튼.
+ * NicePay 는 method 가 필수 파라미터(P007)라 항상 명시적으로 넘긴다.
+ *  - stacked: 세로 풀폭(워크북). 아니면 가로 2분할(상담 티어).
+ */
+function PayButtons({
+  onKakao,
+  onNaver,
+  kakaoLoading,
+  naverLoading,
+  disabled,
+  stacked = false,
+}: {
+  onKakao: () => void;
+  onNaver: () => void;
+  kakaoLoading: boolean;
+  naverLoading: boolean;
+  disabled: boolean;
+  stacked?: boolean;
+}) {
+  const block = disabled || kakaoLoading || naverLoading;
+  const base =
+    "inline-flex items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100";
+  return (
+    <div className={stacked ? "space-y-2" : "grid grid-cols-2 gap-2"}>
+      <button
+        type="button"
+        onClick={onKakao}
+        disabled={block}
+        className={`${base} bg-[#FEE500] text-[#191919]`}
+      >
+        {kakaoLoading ? "결제 진행 중…" : "카카오페이 구매"}
+      </button>
+      <button
+        type="button"
+        onClick={onNaver}
+        disabled={block}
+        className={`${base} bg-[#03C75A] text-white`}
+      >
+        {naverLoading ? "결제 진행 중…" : "네이버페이 구매"}
+      </button>
+    </div>
+  );
+}
+
 export function StoreCheckout() {
   const [sdkLoaded, setSdkLoaded] = useState(false);
-  // 어떤 상담 상품이 결제 진행 중인지(typeId) — 버튼 라벨/비활성용.
+  // 결제 진행 중인 상담 버튼 키 `${typeId}:${method}` — 버튼 라벨/비활성용.
   const [counselingSubmitting, setCounselingSubmitting] = useState<
     string | null
   >(null);
@@ -46,8 +89,7 @@ export function StoreCheckout() {
   // ── 워크북 결제 (로그인 필요, workshop_purchases) ──
   const {
     submittingAction: workbookAction,
-    isSubmitting: workbookSubmitting,
-    handleBuyNow: workbookBuyNow,
+    handleKakao: workbookKakao,
     handleNpay: workbookNpay,
   } = useWorkshopCheckout({
     productId: "achievement-addiction",
@@ -59,7 +101,8 @@ export function StoreCheckout() {
   const sdkPending = !!NICEPAY_CLIENT_ID && !sdkLoaded;
 
   // ── 상담 결제 (서버 승인, CN-{typeId}. PurchaseClient 와 동일 패턴) ──
-  function startCounselingPayment(typeId: string) {
+  // method 는 NicePay 필수 파라미터(P007)이므로 카카오페이/네이버페이를 항상 명시한다.
+  function startCounselingPayment(typeId: string, method: string) {
     const ct = getCounselingType(typeId);
     if (!ct) return;
 
@@ -78,7 +121,7 @@ export function StoreCheckout() {
       currency: "KRW",
     });
 
-    setCounselingSubmitting(ct.id);
+    setCounselingSubmitting(`${ct.id}:${method}`);
 
     const orderId = `CN-${ct.id}-${Date.now()}-${Math.random()
       .toString(36)
@@ -86,7 +129,7 @@ export function StoreCheckout() {
 
     window.AUTHNICE.requestPay({
       clientId: NICEPAY_CLIENT_ID,
-      ...(BUYNOW_METHOD ? { method: BUYNOW_METHOD } : {}),
+      method,
       orderId,
       amount: ct.price,
       goodsName: `심리상담 · ${ct.title}`,
@@ -159,18 +202,13 @@ export function StoreCheckout() {
           </div>
 
           <div className="mt-5">
-            <ProductBuyButtons
-              variant="inline"
-              productId="achievement-addiction"
-              productName={WORKBOOK_GOODS_NAME}
-              price={WORKSHOP_PRICE}
-              hideAddToCart
-              onBuyNow={workbookBuyNow}
-              onNpayBuy={workbookNpay}
-              isSubmitting={workbookSubmitting}
-              submittingAction={workbookAction}
+            <PayButtons
+              stacked
+              onKakao={workbookKakao}
+              onNaver={workbookNpay}
+              kakaoLoading={workbookAction === "buyNow"}
+              naverLoading={workbookAction === "npay"}
               disabled={sdkPending}
-              disabledLabel="결제 모듈 로딩 중..."
             />
           </div>
 
@@ -234,18 +272,15 @@ export function StoreCheckout() {
                   ))}
               </ul>
 
-              <button
-                type="button"
-                onClick={() => startCounselingPayment("trial")}
-                disabled={sdkPending || counselingSubmitting !== null}
-                className="mt-6 inline-flex items-center justify-center rounded-full bg-[var(--foreground)] px-7 py-4 text-base font-bold text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-              >
-                {counselingSubmitting === "trial"
-                  ? "결제 진행 중…"
-                  : sdkPending
-                    ? "결제 모듈 로딩 중…"
-                    : "1회 체험 신청하기 →"}
-              </button>
+              <div className="mt-6">
+                <PayButtons
+                  onKakao={() => startCounselingPayment("trial", "kakaopay")}
+                  onNaver={() => startCounselingPayment("trial", "naverpayCard")}
+                  kakaoLoading={counselingSubmitting === "trial:kakaopay"}
+                  naverLoading={counselingSubmitting === "trial:naverpayCard"}
+                  disabled={sdkPending || counselingSubmitting !== null}
+                />
+              </div>
             </div>
           )}
 
@@ -294,18 +329,19 @@ export function StoreCheckout() {
                   ))}
               </ul>
 
-              <button
-                type="button"
-                onClick={() => startCounselingPayment("package-8")}
-                disabled={sdkPending || counselingSubmitting !== null}
-                className="mt-6 inline-flex items-center justify-center rounded-full bg-white px-7 py-4 text-base font-bold text-[var(--foreground)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-              >
-                {counselingSubmitting === "package-8"
-                  ? "결제 진행 중…"
-                  : sdkPending
-                    ? "결제 모듈 로딩 중…"
-                    : "8회 패키지 시작하기 →"}
-              </button>
+              <div className="mt-6">
+                <PayButtons
+                  onKakao={() => startCounselingPayment("package-8", "kakaopay")}
+                  onNaver={() =>
+                    startCounselingPayment("package-8", "naverpayCard")
+                  }
+                  kakaoLoading={counselingSubmitting === "package-8:kakaopay"}
+                  naverLoading={
+                    counselingSubmitting === "package-8:naverpayCard"
+                  }
+                  disabled={sdkPending || counselingSubmitting !== null}
+                />
+              </div>
             </div>
           )}
         </div>
