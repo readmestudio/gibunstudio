@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { WorkshopDeliverControl } from "@/components/self-workshop/WorkshopDeliverControl";
 
 export const metadata: Metadata = {
   title: "워크북 설문 응답 | 기분 스튜디오",
@@ -22,6 +23,8 @@ interface SurveyRow {
   goal: string | null;
   status: string | null;
   workshop_type: string | null;
+  workbook_url: string | null;
+  released_at: string | null;
 }
 
 // 제출 시각을 한국 시간 기준 "2026.06.28 14:30" 형태로.
@@ -48,7 +51,7 @@ export default async function AdminWorkshopSurveysPage() {
   const { data, error } = await admin
     .from("workshop_survey_responses")
     .select(
-      "id, created_at, name, phone, age, job, concern, goal, status, workshop_type"
+      "id, created_at, name, phone, age, job, concern, goal, status, workshop_type, workbook_url, released_at"
     )
     .order("created_at", { ascending: false });
 
@@ -122,6 +125,13 @@ export default async function AdminWorkshopSurveysPage() {
                   {r.goal ?? "-"}
                 </p>
               </div>
+
+              {/* 맞춤 워크북 링크 전달/공개 */}
+              <WorkshopDeliverControl
+                id={r.id}
+                initialUrl={r.workbook_url}
+                releasedAt={r.released_at}
+              />
             </article>
           ))}
         </div>
