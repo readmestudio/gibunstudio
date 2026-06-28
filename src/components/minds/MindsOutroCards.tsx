@@ -17,7 +17,8 @@
  * 리더인지)은 무료 화면에 내려보내지 않는다 — 라벨·설명만 노출하고 배정은 잠금.
  */
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { trackMindsFunnel } from "@/lib/minds/track";
 import { CardShell, CardKicker } from "./MindsCardShell";
 import { M, COLUMN, Hr, dispStyle, leadStyle, ctaStyle, IcLock } from "./quiet-editorial";
 import { ROLE_SLOTS, type CharacterView } from "@/lib/minds/characters";
@@ -46,7 +47,7 @@ const para = { ...leadStyle, fontSize: 15 } as const;
  */
 function StickyCheckoutBar({
   onCheckout,
-  label = "워크북으로 배역표 열기",
+  label = "워크북으로 심층 분석하기",
   caption,
 }: {
   onCheckout: () => void;
@@ -225,7 +226,7 @@ export function MindsWhyCard({ onCheckout }: { onCheckout: () => void }) {
       <CtaSpacer />
       <StickyCheckoutBar
         onCheckout={onCheckout}
-        label="내 무대의 리더부터 확인하기"
+        label="워크북으로 심층 분석하기"
         caption="지금 만난 마음들을 그대로 이어받아요."
       />
     </CardShell>
@@ -260,7 +261,7 @@ export function MindsBenefitCard({ onCheckout }: { onCheckout: () => void }) {
       <CtaSpacer />
       <StickyCheckoutBar
         onCheckout={onCheckout}
-        label="내 배역표 열고 시작하기"
+        label="워크북으로 심층 분석하기"
         caption="지금 만난 마음들을 그대로 이어받아요."
       />
     </CardShell>
@@ -315,6 +316,12 @@ export function MindsActiveStageCard({ views }: { views: CharacterView[] }) {
 
 /* ───────────────── ⑥ 페이월 — 잠긴 배역표 + 프라이싱 ───────────────── */
 export function MindsPricingCard({ onCheckout }: { onCheckout: () => void }) {
+  // ② 운영자 슬랙 알림 — 캐러셀은 보이는 카드만 마운트하므로, 이 페이월 카드가
+  // 처음 마운트되는 순간이 곧 "Final 배역표 도달". 세션당 1회만 전송된다(track.ts).
+  useEffect(() => {
+    trackMindsFunnel("reached_paywall");
+  }, []);
+
   return (
     <CardShell>
       <CardKicker>Final · 마음 극장의 배역표</CardKicker>
@@ -355,7 +362,7 @@ export function MindsPricingCard({ onCheckout }: { onCheckout: () => void }) {
       <CtaSpacer />
       <StickyCheckoutBar
         onCheckout={onCheckout}
-        label="워크북으로 배역표 열기"
+        label="워크북으로 심층 분석하기"
         caption={
           <>
             <span style={{ textDecoration: "line-through" }}>{won(WORKSHOP_ORIGINAL_PRICE)}</span> 에서 런칭 할인 {WORKSHOP_DISCOUNT_PERCENT}% 적용가
