@@ -4,8 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * 관리자 화면용 — 설문 응답 한 건에 맞춤 워크북 링크를 저장(전달/공개)/해제한다.
- * 링크를 저장하면 해당 회원의 전달 안내 페이지에 "워크북 열기"가 노출된다.
+ * 관리자 화면용 — 설문 응답 한 건의 워크북을 전달(공개)/취소한다.
+ *
+ *  · 링크를 비우고 [기본 워크북으로 전달] → 기본 성취중독 워크북(인앱 1단계)으로 열림.
+ *  · 링크를 넣고 [이 링크로 전달] → 그 커스텀 링크(노션/PDF 등)로 열림.
+ *  · [전달 취소] → 다시 "제작 중" 상태로.
  */
 export function WorkshopDeliverControl({
   id,
@@ -20,16 +23,21 @@ export function WorkshopDeliverControl({
   const [url, setUrl] = useState(initialUrl ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const delivered = !!initialUrl;
 
-  const save = async (workbookUrl: string) => {
+  const released = !!releasedAt;
+  const isCustom = released && !!initialUrl;
+
+  const send = async (body: {
+    release: boolean;
+    workbookUrl?: string;
+  }) => {
     setError("");
     setSaving(true);
     try {
       const res = await fetch("/api/admin/workshop-survey/deliver", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, workbookUrl }),
+        body: JSON.stringify({ id, ...body }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -43,15 +51,17 @@ export function WorkshopDeliverControl({
     }
   };
 
+  const trimmed = url.trim();
+
   return (
     <div className="mt-4 rounded-lg border-2 border-[var(--foreground)]/10 bg-white p-4">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold text-[var(--foreground)]/50">
-          맞춤 워크북 링크
+          워크북 전달
         </p>
-        {delivered ? (
+        {released ? (
           <span className="rounded-full bg-[var(--foreground)] px-2.5 py-0.5 text-[11px] font-semibold text-white">
-            전달됨
+            전달됨 · {isCustom ? "커스텀 링크" : "기본 워크북"}
             {releasedAt
               ? ` · ${new Date(releasedAt).toLocaleDateString("ko-KR")}`
               : ""}
@@ -63,35 +73,44 @@ export function WorkshopDeliverControl({
         )}
       </div>
 
+      <p className="mt-2 text-[11px] leading-relaxed text-[var(--foreground)]/45">
+        링크를 비워두면 기본 성취중독 워크북(1단계)으로 열려요. 커스텀 워크북은
+        링크를 넣어 전달하세요.
+      </p>
+
       <div className="mt-2 flex gap-2">
         <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://… (노션/PDF 등 워크북 링크)"
+          placeholder="https://… (비우면 기본 워크북)"
           className="min-w-0 flex-1 rounded-lg border-2 border-[var(--foreground)]/15 bg-white px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground)]/35 focus:border-[var(--foreground)] focus:outline-none"
         />
         <button
           type="button"
-          onClick={() => save(url.trim())}
-          disabled={saving || !url.trim() || url.trim() === (initialUrl ?? "")}
+          onClick={() => send({ release: true, workbookUrl: trimmed })}
+          disabled={saving}
           className="shrink-0 rounded-lg border-2 border-[var(--foreground)] bg-[var(--foreground)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
         >
-          {saving ? "저장 중…" : delivered ? "수정" : "전달하기"}
+          {saving
+            ? "저장 중…"
+            : trimmed
+              ? "이 링크로 전달"
+              : "기본 워크북으로 전달"}
         </button>
       </div>
 
-      {delivered && (
+      {released && (
         <button
           type="button"
           onClick={() => {
             setUrl("");
-            save("");
+            send({ release: false });
           }}
           disabled={saving}
           className="mt-2 text-xs font-medium text-red-600 underline underline-offset-2 disabled:opacity-40"
         >
-          전달 취소(링크 비우기)
+          전달 취소
         </button>
       )}
 

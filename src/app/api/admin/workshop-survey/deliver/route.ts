@@ -6,12 +6,14 @@ import { isAdminEmail } from "@/lib/admin/auth";
 /**
  * POST /api/admin/workshop-survey/deliver
  *
- * 관리자가 특정 설문 응답에 "맞춤 워크북 링크"를 저장(=전달/공개)하거나 해제한다.
- * - workbookUrl 있음 → workbook_url 저장 + released_at=now + status='delivered'
- * - workbookUrl 빈값 → 전달 취소(workbook_url/released_at NULL + status='submitted')
+ * 관리자가 특정 설문 응답의 워크북을 전달(공개)하거나 전달을 취소한다.
+ * - release=true  → released_at=now + status='delivered'
+ *                   · workbookUrl 있음 → 그 커스텀 링크로 연결
+ *                   · workbookUrl 빈값 → 기본 인앱 워크북(1단계)으로 연결(workbook_url NULL)
+ * - release=false → 전달 취소(released_at/workbook_url NULL + status='submitted')
  *
- * Body: { id: string, workbookUrl?: string }
- * Resp: { ok: true, workbookUrl, releasedAt } | { error }
+ * Body: { id: string, release?: boolean, workbookUrl?: string }
+ * Resp: { ok: true, released, workbookUrl, releasedAt } | { error }
  */
 export async function POST(req: NextRequest) {
   // 관리자 권한 확인 — 세션에서 이메일 확정.
@@ -36,27 +38,28 @@ export async function POST(req: NextRequest) {
 
   const id = typeof b.id === "string" ? b.id : "";
   const url = typeof b.workbookUrl === "string" ? b.workbookUrl.trim() : "";
+  const release = b.release !== false; // 기본값 true(전달). 명시적으로 false면 취소.
   if (!id) {
     return NextResponse.json({ error: "대상이 없어요." }, { status: 400 });
   }
 
-  // 링크가 있으면 http(s) 형식만 허용.
-  if (url && !/^https?:\/\//i.test(url)) {
+  // 커스텀 링크를 넣었다면 http(s) 형식만 허용.
+  if (release && url && !/^https?:\/\//i.test(url)) {
     return NextResponse.json(
       { error: "http:// 또는 https:// 로 시작하는 링크를 넣어주세요." },
       { status: 400 }
     );
   }
 
-  const releasedAt = url ? new Date().toISOString() : null;
+  const releasedAt = release ? new Date().toISOString() : null;
 
   const admin = createAdminClient();
   const { error } = await admin
     .from("workshop_survey_responses")
     .update({
-      workbook_url: url || null,
+      workbook_url: release ? url || null : null,
       released_at: releasedAt,
-      status: url ? "delivered" : "submitted",
+      status: release ? "delivered" : "submitted",
     })
     .eq("id", id);
 
@@ -65,5 +68,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "저장에 실패했어요." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, workbookUrl: url || null, releasedAt });
+  return NextResponse.json({
+    ok: true,
+    released: release,
+    workbookUrl: release ? url || null : null,
+    releasedAt,
+  });
 }

@@ -30,18 +30,22 @@ export default async function WorkshopGeneratingPage() {
   }
 
   // 본인 행만 읽는 RLS 정책으로 조회. 상태에 따라 안내가 세 갈래로 갈린다.
-  //  · workbook_url 있음 → 맞춤 워크북 전달 완료(워크북 열기)
+  //  · 전달됨(released_at 있음) → 워크북 열기
   //  · 설문 제출했지만 미전달 → 제작 중
   //  · 설문 미제출 → 설문 작성 유도
   const { data: survey } = await supabase
     .from("workshop_survey_responses")
-    .select("id, workbook_url")
+    .select("id, released_at, workbook_url")
     .eq("user_id", user.id)
     .eq("workshop_type", "achievement-addiction")
     .maybeSingle();
 
   const surveyDone = !!survey;
+  const released = !!survey?.released_at;
   const workbookUrl = survey?.workbook_url ?? null;
+  // 워크북 열기 목적지: 커스텀 링크가 있으면 그걸로, 없으면 기본 인앱 워크북(1단계).
+  const openHref = workbookUrl || "/dashboard/self-workshop/step/1";
+  const openExternal = /^https?:\/\//i.test(openHref);
 
   const userName =
     (user.user_metadata?.name as string | undefined) ??
@@ -77,8 +81,8 @@ export default async function WorkshopGeneratingPage() {
         고민에 맞춰 새롭게 제작하여 전달드립니다.
       </p>
 
-      {workbookUrl ? (
-        /* 맞춤 워크북 전달 완료 → 워크북 열기 */
+      {released ? (
+        /* 워크북 전달 완료 → 워크북 열기 (커스텀 링크 또는 기본 인앱 1단계) */
         <>
           <div className="mt-8 rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-6 text-left">
             <p className="break-keep text-base font-semibold text-[var(--foreground)]">
@@ -91,15 +95,18 @@ export default async function WorkshopGeneratingPage() {
           </div>
 
           <a
-            href={workbookUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={openHref}
+            {...(openExternal
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
             className="mt-6 inline-flex w-full items-center justify-center rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
           >
             워크북 열기
           </a>
           <p className="mt-3 break-keep text-xs leading-relaxed text-[var(--foreground)]/55">
-            링크가 열리지 않으면 카카오톡 채널로 알려주세요.
+            {openExternal
+              ? "링크가 열리지 않으면 카카오톡 채널로 알려주세요."
+              : "버튼을 누르면 워크북 1단계부터 시작돼요."}
           </p>
         </>
       ) : (

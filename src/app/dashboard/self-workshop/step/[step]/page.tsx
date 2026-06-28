@@ -127,10 +127,11 @@ export default async function WorkshopStepPage({ params }: Props) {
     }
   }
 
-  // 결제 완료 사용자(테스트 유저 제외): 맞춤 워크북은 외부 링크로 따로 전달하므로
-  // 인앱 워크북(step 페이지)은 전부 막고 "제작/전달 현황" 안내로 보낸다.
-  // hasPurchase 는 stepNumber>=2 일 때만 계산되므로, 결제 여부를 독립적으로 다시
-  // 확인한다(Step 1 직접 진입도 막기 위함).
+  // 결제 완료 사용자(테스트 유저 제외)의 인앱 워크북 접근 제어.
+  //  · 미전달(released_at NULL) → 인앱 차단 → "제작/전달 현황" 안내로.
+  //  · 전달됐고 커스텀 "외부" 링크가 지정됨 → 그 링크로 보게 하므로 인앱은 차단.
+  //  · 전달됐고 커스텀 외부 링크 없음(기본) → 기본 성취중독 워크북을 인앱에서 열람 허용.
+  // hasPurchase 는 stepNumber>=2 일 때만 계산되므로 결제 여부를 독립적으로 재확인한다.
   if (!isTestUser) {
     const { data: paid } = await supabase
       .from("workshop_purchases")
@@ -140,7 +141,19 @@ export default async function WorkshopStepPage({ params }: Props) {
       .eq("status", "confirmed")
       .maybeSingle();
     if (paid) {
-      redirect("/dashboard/self-workshop/generating");
+      const { data: delivery } = await supabase
+        .from("workshop_survey_responses")
+        .select("released_at, workbook_url")
+        .eq("user_id", user.id)
+        .eq("workshop_type", "achievement-addiction")
+        .maybeSingle();
+      const released = !!delivery?.released_at;
+      const hasExternalCustom =
+        !!delivery?.workbook_url &&
+        /^https?:\/\//i.test(delivery.workbook_url);
+      if (!released || hasExternalCustom) {
+        redirect("/dashboard/self-workshop/generating");
+      }
     }
   }
 
