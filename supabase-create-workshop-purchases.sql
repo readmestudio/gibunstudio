@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.workshop_purchases (
   payment_key TEXT,        -- NicePay tid
   status TEXT NOT NULL DEFAULT 'pending',  -- pending | confirmed | cancelled
   paid_at TIMESTAMPTZ,
+  minds_lead_id UUID,      -- 무료 /minds 리드(minds_leads.id) 연결 키 (minds 경유 결제일 때만)
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

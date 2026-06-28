@@ -6,8 +6,19 @@ import { nanoid } from "nanoid";
  * POST /api/payment/workshop/create
  *
  * 워크북 결제 레코드 생성 (NicePay 호출 전에 DB에 먼저 기록)
- * Body: { workshopType?, amount }
+ * Body: { workshopType?, amount, mindsLeadId? }
+ *
+ * mindsLeadId: 무료 /minds 를 거쳐온 사용자의 리드 id(minds_leads.id). 결제에 실어
+ * 두면 승인 시 워크북 진행으로 복사돼, 워크북 단계에서 minds 배역을 이어 보여준다.
  */
+
+/** UUID 형식만 통과(그 외 값은 무시) — minds_lead_id 컬럼은 UUID. */
+function sanitizeLeadId(value: unknown): string | null {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+    ? value
+    : null;
+}
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -19,8 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 });
     }
 
-    const { workshopType = "achievement-addiction", amount } =
-      await request.json();
+    const {
+      workshopType = "achievement-addiction",
+      amount,
+      mindsLeadId,
+    } = await request.json();
+    const leadId = sanitizeLeadId(mindsLeadId);
 
     if (!amount) {
       return NextResponse.json(
@@ -50,11 +65,18 @@ export async function POST(request: NextRequest) {
     if (existing?.status === "pending") {
       const { data: pendingRecord } = await supabase
         .from("workshop_purchases")
-        .select("id, order_id")
+        .select("id, order_id, minds_lead_id")
         .eq("id", existing.id)
         .single();
 
       if (pendingRecord) {
+        // 이전 pending 에 leadId 가 비어 있고 이번에 들고 왔으면 보강한다.
+        if (leadId && !pendingRecord.minds_lead_id) {
+          await supabase
+            .from("workshop_purchases")
+            .update({ minds_lead_id: leadId })
+            .eq("id", pendingRecord.id);
+        }
         return NextResponse.json({
           success: true,
           purchase_id: pendingRecord.id,
@@ -74,6 +96,7 @@ export async function POST(request: NextRequest) {
         amount,
         order_id: orderId,
         status: "pending",
+        minds_lead_id: leadId,
       })
       .select("id, order_id")
       .single();

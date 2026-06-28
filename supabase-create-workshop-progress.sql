@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.workshop_progress (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   purchase_id UUID,  -- purchases 테이블 연결 (결제 검증용)
+  minds_lead_id UUID,  -- 무료 /minds 리드(minds_leads.id) 연결 키 (결제 승인 시 복사)
   workshop_type TEXT NOT NULL DEFAULT 'achievement-addiction',
 
   current_step INT NOT NULL DEFAULT 1,  -- 1~9

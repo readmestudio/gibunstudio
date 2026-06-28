@@ -280,7 +280,7 @@ async function handleWorkshopPayment(
   // DB에서 결제 레코드 조회
   const { data: purchase, error: queryError } = await supabase
     .from("workshop_purchases")
-    .select("id, user_id, amount, status")
+    .select("id, user_id, amount, status, minds_lead_id")
     .eq("order_id", orderId)
     .single();
 
@@ -338,10 +338,11 @@ async function handleWorkshopPayment(
   }
 
   // workshop_progress 레코드가 없으면 자동 생성 (step 3부터 시작)
+  // minds 를 거쳐온 결제라면 leadId 를 진행으로 복사해, 워크북 단계에서 배역을 잇는다.
   const admin = createAdminClient();
   const { data: existingProgress } = await admin
     .from("workshop_progress")
-    .select("id, current_step")
+    .select("id, current_step, minds_lead_id")
     .eq("user_id", purchase.user_id)
     .eq("workshop_type", "achievement-addiction")
     .maybeSingle();
@@ -353,12 +354,24 @@ async function handleWorkshopPayment(
       current_step: 3,
       status: "in_progress",
       purchase_id: purchase.id,
+      minds_lead_id: purchase.minds_lead_id ?? null,
     });
-  } else if ((existingProgress.current_step ?? 0) < 3) {
-    await admin
-      .from("workshop_progress")
-      .update({ current_step: 3, status: "in_progress" })
-      .eq("id", existingProgress.id);
+  } else {
+    // 진행이 이미 있으면 step 을 앞당기고, 비어 있던 leadId 만 보강한다(덮어쓰지 않음).
+    const patch: Record<string, unknown> = {};
+    if ((existingProgress.current_step ?? 0) < 3) {
+      patch.current_step = 3;
+      patch.status = "in_progress";
+    }
+    if (purchase.minds_lead_id && !existingProgress.minds_lead_id) {
+      patch.minds_lead_id = purchase.minds_lead_id;
+    }
+    if (Object.keys(patch).length > 0) {
+      await admin
+        .from("workshop_progress")
+        .update(patch)
+        .eq("id", existingProgress.id);
+    }
   }
 
   // 결제 직후: 워크북은 답변에 맞춰 제작 후 별도 전달 → "생성 중" 안내로 이동

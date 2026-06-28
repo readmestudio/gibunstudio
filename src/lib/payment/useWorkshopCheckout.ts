@@ -13,6 +13,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BuyAction } from "@/types/payment";
+import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const BUYNOW_METHOD = process.env.NEXT_PUBLIC_NICEPAY_BUYNOW_METHOD || "";
@@ -56,6 +57,14 @@ export function useWorkshopCheckout(params: UseWorkshopCheckoutParams) {
 
     setSubmittingAction(action);
 
+    // 무료 /minds 를 거쳐온 사용자라면, 그때 저장해 둔 리드 id 를 결제에 실어
+    // 보낸다(없으면 null). 결제 승인 시 워크북 진행에 복사돼, 워크북 단계에서
+    // minds 배역(parts_map)을 이어서 보여줄 연결 키가 된다.
+    const mindsLeadId =
+      typeof window !== "undefined"
+        ? localStorage.getItem(MINDS_LEAD_STORAGE_KEY)
+        : null;
+
     try {
       const res = await fetch("/api/payment/workshop/create", {
         method: "POST",
@@ -63,6 +72,7 @@ export function useWorkshopCheckout(params: UseWorkshopCheckoutParams) {
         body: JSON.stringify({
           workshopType: params.workshopType,
           amount: params.amount,
+          mindsLeadId,
         }),
       });
 

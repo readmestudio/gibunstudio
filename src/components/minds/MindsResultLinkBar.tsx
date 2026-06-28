@@ -29,7 +29,7 @@ export function MindsResultLinkBar({ leadId }: { leadId: string }) {
         alignItems: "center",
         justifyContent: "space-between",
         gap: 12,
-        marginBottom: 16,
+        marginTop: 24,
         padding: "12px 14px",
         borderRadius: 3,
         border: `1px solid ${M.line}`,

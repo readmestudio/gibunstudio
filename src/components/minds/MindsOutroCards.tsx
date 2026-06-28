@@ -17,8 +17,9 @@
  * 리더인지)은 무료 화면에 내려보내지 않는다 — 라벨·설명만 노출하고 배정은 잠금.
  */
 
+import type { ReactNode } from "react";
 import { CardShell, CardKicker } from "./MindsCardShell";
-import { M, Hr, dispStyle, leadStyle, ctaStyle, IcLock } from "./quiet-editorial";
+import { M, COLUMN, Hr, dispStyle, leadStyle, ctaStyle, IcLock } from "./quiet-editorial";
 import { ROLE_SLOTS, type CharacterView } from "@/lib/minds/characters";
 import {
   WORKSHOP_PRICE,
@@ -32,25 +33,58 @@ const headline = { ...dispStyle, fontSize: 28, fontWeight: 700 } as const;
 const para = { ...leadStyle, fontSize: 15 } as const;
 
 /**
- * 페이월(프라이싱) 이후 카드에 항상 따라붙는 결제 CTA. 누르면 카드 결제 모달을 연다.
- * — "결제 유도 페이지 이후 장에는 항상 결제 버튼이 있어야 한다" 규칙의 구현.
+ * 페이월(프라이싱) 및 이후 카드에 항상 따라붙는 결제 CTA — 스크롤과 무관하게 화면
+ * 하단에 압정처럼 고정되는 스티키 바. (MindsLanding 의 고정 CTA 와 동일한 패턴)
+ *
+ * 캐러셀이 mode="wait" 라 현재 보이는 카드 한 장만 DOM 에 존재하므로, 각 결제 카드가
+ * 자기 바를 들고 있어도 화면엔 항상 하나만 뜬다. 뷰포트 기준 fixed + 카드와 같은
+ * 448px(COLUMN) 중앙 폭. 바깥 래퍼는 pointerEvents:none 이라 투명한 페이드 영역으로는
+ * 뒤 글자를 만질 수 있고, 클릭은 버튼에만 걸린다. 위쪽 투명→종이색 그라데이션으로
+ * 지나가는 글자가 자연스럽게 사라진다.
+ *
+ * 카드 본문 끝에는 <CtaSpacer/> 를 둬, 마지막 줄이 이 바에 가리지 않게 여백을 비운다.
  */
-function CheckoutCta({ onCheckout, label = "워크북으로 배역표 열기" }: { onCheckout: () => void; label?: string }) {
+function StickyCheckoutBar({
+  onCheckout,
+  label = "워크북으로 배역표 열기",
+  caption,
+}: {
+  onCheckout: () => void;
+  label?: string;
+  caption?: ReactNode;
+}) {
   return (
-    <div style={{ marginTop: 30 }}>
-      <button
-        type="button"
-        onClick={onCheckout}
-        style={{ ...ctaStyle }}
-        className="transition-transform active:scale-[0.99]"
+    <div className="fixed inset-x-0 bottom-0 z-40" style={{ pointerEvents: "none" }}>
+      <div
+        style={{
+          maxWidth: COLUMN,
+          margin: "0 auto",
+          padding: "14px 24px calc(env(safe-area-inset-bottom, 0px) + 16px)",
+          background:
+            "linear-gradient(180deg, rgba(247,244,238,0) 0%, rgba(247,244,238,0.92) 28%, #F7F4EE 60%)",
+        }}
       >
-        {label} <span style={{ opacity: 0.45 }}>·</span> {won(WORKSHOP_PRICE)}
-      </button>
-      <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: M.mute, fontFamily: M.font }}>
-        지금 만난 마음들을 그대로 이어받아요.
-      </p>
+        <button
+          type="button"
+          onClick={onCheckout}
+          style={{ ...ctaStyle, pointerEvents: "auto", boxShadow: "0 8px 28px rgba(16,15,14,0.18)" }}
+          className="transition-transform active:scale-[0.99]"
+        >
+          {label} <span style={{ opacity: 0.45 }}>·</span> {won(WORKSHOP_PRICE)}
+        </button>
+        {caption && (
+          <p style={{ textAlign: "center", margin: "10px 0 0", fontSize: 12, color: M.mute, fontFamily: M.font }}>
+            {caption}
+          </p>
+        )}
+      </div>
     </div>
   );
+}
+
+/** 스티키 결제 바가 마지막 콘텐츠를 가리지 않도록 카드 본문 끝에 두는 여백. */
+function CtaSpacer() {
+  return <div aria-hidden style={{ height: 104 }} />;
 }
 
 /**
@@ -188,7 +222,12 @@ export function MindsWhyCard({ onCheckout }: { onCheckout: () => void }) {
           휘둘림을 멈추고 대화를 시작할 수 있으니까요.
         </p>
       </div>
-      <CheckoutCta onCheckout={onCheckout} label="내 무대의 리더부터 확인하기" />
+      <CtaSpacer />
+      <StickyCheckoutBar
+        onCheckout={onCheckout}
+        label="내 무대의 리더부터 확인하기"
+        caption="지금 만난 마음들을 그대로 이어받아요."
+      />
     </CardShell>
   );
 }
@@ -218,7 +257,12 @@ export function MindsBenefitCard({ onCheckout }: { onCheckout: () => void }) {
           마음의 주도권은 천천히, 그러나 분명하게 당신에게 옮겨와요.
         </p>
       </div>
-      <CheckoutCta onCheckout={onCheckout} label="내 배역표 열고 시작하기" />
+      <CtaSpacer />
+      <StickyCheckoutBar
+        onCheckout={onCheckout}
+        label="내 배역표 열고 시작하기"
+        caption="지금 만난 마음들을 그대로 이어받아요."
+      />
     </CardShell>
   );
 }
@@ -306,18 +350,18 @@ export function MindsPricingCard({ onCheckout }: { onCheckout: () => void }) {
         지금 만난 마음들을 <b style={{ color: M.ink }}>그대로 이어받아</b> 워크북에서 배역과 관계를 풀어가요. 처음부터 다시 적지 않아도 돼요.
       </div>
 
-      {/* CTA + 가격 — 워크북 페이지로 이동하지 않고 카드 결제 모달을 연다 */}
-      <button
-        type="button"
-        onClick={onCheckout}
-        style={{ ...ctaStyle, marginTop: 18 }}
-        className="transition-transform active:scale-[0.99]"
-      >
-        워크북으로 배역표 열기 <span style={{ opacity: 0.45 }}>·</span> {won(WORKSHOP_PRICE)}
-      </button>
-      <p style={{ textAlign: "center", marginTop: 14, fontSize: 12.5, color: M.mute, fontFamily: M.font }}>
-        <span style={{ textDecoration: "line-through" }}>{won(WORKSHOP_ORIGINAL_PRICE)}</span> 에서 런칭 할인 {WORKSHOP_DISCOUNT_PERCENT}% 적용가
-      </p>
+      {/* CTA + 가격 — 스크롤과 무관하게 화면 하단에 고정되는 스티키 바로 노출.
+          워크북 페이지로 이동하지 않고 카드 결제 모달을 연다. */}
+      <CtaSpacer />
+      <StickyCheckoutBar
+        onCheckout={onCheckout}
+        label="워크북으로 배역표 열기"
+        caption={
+          <>
+            <span style={{ textDecoration: "line-through" }}>{won(WORKSHOP_ORIGINAL_PRICE)}</span> 에서 런칭 할인 {WORKSHOP_DISCOUNT_PERCENT}% 적용가
+          </>
+        }
+      />
     </CardShell>
   );
 }

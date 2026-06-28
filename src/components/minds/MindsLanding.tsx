@@ -16,7 +16,7 @@
  * 리드젠이라 진입장벽을 낮춘다). 실제 테스트 문항도 free-minds-flow 에서 일반화됨.
  */
 
-import { M, Kicker, LabelS, dispStyle, leadStyle, ctaStyle } from "./quiet-editorial";
+import { M, COLUMN, Kicker, LabelS, dispStyle, leadStyle, ctaStyle } from "./quiet-editorial";
 import { CharacterPortrait } from "./CharacterPortrait";
 
 /** 다섯 배역 — 초상 + "어떤 역할인지" 한 줄 정의. 나쁜 배역은 하나도 없다. */
@@ -33,7 +33,8 @@ const TILES = [0, 1, 2, 3, 4, 2, 0, 4, 1, 3, 4, 1].map((i) => CAST[i].src);
 
 export function MindsLanding({ onStart }: { onStart: () => void }) {
   return (
-    <section>
+    // 하단 여백 — 항상 떠 있는 스티키 CTA 바가 마지막 콘텐츠를 가리지 않도록 확보.
+    <section style={{ paddingBottom: 132 }}>
       {/* ① 다크 모자이크 히어로 — 부모 컬럼 패딩을 음수 마진으로 상쇄해 풀-블리드 */}
       <div
         className="relative -mx-6 -mt-8 overflow-hidden sm:-mt-10"
@@ -152,14 +153,34 @@ export function MindsLanding({ onStart }: { onStart: () => void }) {
         </p>
       </div>
 
-      {/* CTA */}
-      <div style={{ marginTop: 28 }}>
-        <button type="button" onClick={onStart} style={{ ...ctaStyle }} className="transition-transform active:scale-[0.99]">
-          3분 무료 테스트로 진단하기
-        </button>
-        <p style={{ textAlign: "center", marginTop: 18, fontSize: 12.5, color: M.mute, fontFamily: M.font }}>
-          진단이 아니라, 지금의 나를 비춰보는 거울이에요.
-        </p>
+      {/* CTA — 스크롤과 무관하게 화면 하단에 항상 고정되는 스티키 바.
+          뷰포트 기준 fixed + 컨테이너와 같은 448px 중앙 폭. 위쪽은 투명→종이색
+          페이드라 지나가는 글자가 자연스럽게 사라지고, 클릭은 버튼에만 걸린다. */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-40"
+        style={{ pointerEvents: "none" }}
+      >
+        <div
+          style={{
+            maxWidth: COLUMN,
+            margin: "0 auto",
+            padding: "14px 24px calc(env(safe-area-inset-bottom, 0px) + 16px)",
+            background:
+              "linear-gradient(180deg, rgba(247,244,238,0) 0%, rgba(247,244,238,0.92) 28%, #F7F4EE 60%)",
+          }}
+        >
+          <p style={{ textAlign: "center", margin: "0 0 10px", fontSize: 12, color: M.mute, fontFamily: M.font, pointerEvents: "none" }}>
+            진단이 아니라, 지금의 나를 비춰보는 거울이에요.
+          </p>
+          <button
+            type="button"
+            onClick={onStart}
+            style={{ ...ctaStyle, pointerEvents: "auto", boxShadow: "0 8px 28px rgba(16,15,14,0.18)" }}
+            className="transition-transform active:scale-[0.99]"
+          >
+            3분 무료 테스트로 진단하기
+          </button>
+        </div>
       </div>
     </section>
   );
