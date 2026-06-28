@@ -1,4 +1,4 @@
-import { after, NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -22,9 +22,11 @@ import {
  * leadId 가 함께 오면 같은 리드 행(minds_leads)에 answers·parts_map 을 붙인다.
  *
  * 비용 방어(무료 깔때기라 호출 폭주 시 비용 위험):
+ *  0) **리드당 1회 캐시** — leadId 가 이미 parts_map 을 가졌으면 저장본을 돌려주고
+ *     LLM 을 재호출하지 않는다. "테스트 1인 1회(재분석 불가)" 정책과도 일치.
  *  1) IP 레이트리밋(ai: 5회/분)
  *  2) 전역 일일 상한(MINDS_LLM_DAILY_LIMIT, 기본 500) — 초과 시 LLM 미호출, 폴백
- *  3) 저가 모델(gemini-2.5-flash) + thinking 끔 + max_tokens 2048
+ *  3) 저가 모델(gemini-2.5-flash) + thinking 끔
  *
  * Body: { answers: {id,question,answer}[], leadId?: string }
  * Resp: { parts_map: PartsMap }  — 어떤 실패든 폴백으로 항상 유효한 지도를 돌려준다.
@@ -56,6 +58,28 @@ async function withinDailyBudget(): Promise<boolean> {
   } catch (err) {
     console.error("[minds/parts-map] 일일 카운터 확인 실패:", err);
     return true; // fail-open
+  }
+}
+
+/**
+ * 같은 리드가 이미 만든 마음지도를 조회한다(리드당 1회 = 비용 보호).
+ * 저장본이 있으면 그걸 돌려줘 LLM 을 재호출하지 않는다. 없거나 조회 실패면 null →
+ * 정상적으로 LLM 분석을 진행한다(fail-open).
+ */
+async function readCachedPartsMap(leadId: string): Promise<PartsMap | null> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("minds_leads")
+      .select("parts_map")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (error || !data?.parts_map) return null;
+    // 컬럼엔 PartsMap 객체가 그대로 저장돼 있으므로 readPartsMap 컨테이너 형태로 감싼다.
+    return readPartsMap({ parts_map: data.parts_map });
+  } catch (err) {
+    console.error("[minds/parts-map] 캐시 조회 실패:", err);
+    return null;
   }
 }
 
@@ -97,6 +121,12 @@ export async function POST(req: NextRequest) {
   const answers = cleanAnswers(b.answers);
   const leadId = typeof b.leadId === "string" ? b.leadId : "";
 
+  // [0] 리드당 1회 — 이미 분석한 리드면 저장본을 돌려주고 LLM 재호출을 막는다(비용 보호).
+  if (leadId) {
+    const cached = await readCachedPartsMap(leadId);
+    if (cached) return NextResponse.json({ parts_map: cached, cached: true });
+  }
+
   const userContent = answers
     .map((a) => `Q: ${a.question}\nA: ${a.answer}`)
     .join("\n\n");
@@ -118,20 +148,18 @@ export async function POST(req: NextRequest) {
   // LLM 실패/빈 입력 → 사용자 답변 기반 결정론적 폴백(항상 유효한 지도).
   if (!partsMap) partsMap = buildFallbackPartsMap(userQuotes);
 
-  // 리드가 있으면 답변·결과를 같은 행에 붙인다(응답 후 백그라운드).
+  // 리드가 있으면 답변·결과를 같은 행에 저장한다. 응답 전에 동기로 저장해, 다음
+  // 호출(새로고침·재시도)이 [0] 캐시에 확실히 걸리도록 — 리드당 LLM 1회를 보장.
   if (leadId && partsMap) {
-    const finalMap = partsMap;
-    after(async () => {
-      try {
-        const admin = createAdminClient();
-        await admin
-          .from("minds_leads")
-          .update({ answers, parts_map: finalMap })
-          .eq("id", leadId);
-      } catch (err) {
-        console.error("[minds/parts-map] 리드 UPDATE 실패:", err);
-      }
-    });
+    try {
+      const admin = createAdminClient();
+      await admin
+        .from("minds_leads")
+        .update({ answers, parts_map: partsMap })
+        .eq("id", leadId);
+    } catch (err) {
+      console.error("[minds/parts-map] 리드 UPDATE 실패:", err);
+    }
   }
 
   return NextResponse.json({ parts_map: partsMap });
