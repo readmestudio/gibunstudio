@@ -16,6 +16,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
 import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
 import { getAttribution } from "@/lib/attribution";
@@ -62,6 +63,36 @@ export function MindsFlow() {
       // 네트워크 실패 — 결과 보기는 계속 진행.
     }
   };
+
+  // 카카오 OAuth 복귀 처리.
+  // /auth/callback 이 세션을 굽고 /minds?auth=kakao 로 되돌려보내면, 로그인된 세션에서
+  // 실제 카카오 이메일을 읽어 리드를 저장하고 곧장 대화 단계로 진입시킨다(capture 생략).
+  // 표식은 곧바로 URL 에서 지워 새로고침/뒤로가기 시 재진입을 막는다.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth") !== "kakao") return;
+    // 이미 분석을 마친 브라우저면 위 복원 effect가 결과 페이지로 보내므로 양보한다.
+    if (localStorage.getItem(MINDS_LEAD_STORAGE_KEY)) return;
+
+    let cancelled = false;
+    void (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+      // URL 에서 auth 표식 제거 (히스토리 치환).
+      router.replace("/minds");
+      if (cancelled || !data.user) return;
+      // 실제 카카오 이메일로 리드 저장(서버가 세션에서 신원을 다시 확인) → 대화로.
+      await saveLead({ channel: "kakao", value: data.user.email ?? "" });
+      trackMetaEvent("Lead", { content_name: "minds" });
+      if (!cancelled) setPhase("conversation");
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // 마운트 시 1회만 — router 는 안정 참조, saveLead 는 매 렌더 동일 동작.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 대화 완료 → 실제 LLM 분석 호출 → 리포트.
   const runAnalysis = async (answers: MindAnswer[]) => {

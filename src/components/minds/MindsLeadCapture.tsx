@@ -7,17 +7,21 @@
  * 이 연락처로 "더 깊은 분석/워크북" 후속 마케팅과 결제 전환 시 연속성(무료에서
  * 만난 마음 이관)을 잇는다.
  *
- * 골격: 클라이언트 검증만. 실제 저장(/api/minds/lead)·카카오 OAuth는 다음 단계.
+ * 카카오: 실제 Supabase OAuth(provider:"kakao")로 인증창을 띄운다. 인증 후
+ * /auth/callback 이 세션을 굽고 auth_redirect 쿠키로 /minds?auth=kakao 로 되돌리면,
+ * MindsFlow 가 세션을 감지해 실제 카카오 이메일로 리드를 저장하고 대화로 진입한다.
+ * 이메일: 형식만 검증하고 곧장 onSubmit 으로 다음 단계로 넘어간다.
  */
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { M, Kicker, dispStyle, leadStyle, ctaStyle } from "./quiet-editorial";
 
 export type LeadChannel = "email" | "kakao";
 
 export interface MindsLead {
   channel: LeadChannel;
-  /** email 채널일 때 입력값. kakao는 OAuth 후 서버가 채움(골격에선 빈 값). */
+  /** email 채널일 때 입력값. kakao는 OAuth 후 세션에서 서버가 실제 이메일을 채운다. */
   value: string;
 }
 
@@ -42,6 +46,7 @@ const fieldStyle = {
 export function MindsLeadCapture({ onSubmit, onBack }: Props) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [kakaoLoading, setKakaoLoading] = useState(false);
 
   const submitEmail = () => {
     const v = email.trim();
@@ -50,6 +55,37 @@ export function MindsLeadCapture({ onSubmit, onBack }: Props) {
       return;
     }
     onSubmit({ channel: "email", value: v });
+  };
+
+  // 진짜 카카오 로그인. 성공하면 카카오 인증창으로 리다이렉트되므로 이 함수는 거기서
+  // 끝난다. 인증 후엔 /auth/callback → /minds?auth=kakao 로 돌아와 MindsFlow 가 이어받는다.
+  const startKakao = async () => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      setError("로그인 설정이 아직 준비되지 않았어요. 이메일로 진행해주세요.");
+      return;
+    }
+    setKakaoLoading(true);
+    setError("");
+    try {
+      // OAuth 후 /minds 로 돌아와 대화를 이어가도록 복귀 경로를 쿠키에 저장한다.
+      // (/auth/callback 이 이 쿠키를 읽어 같은 경로로 되돌린다.)
+      document.cookie = `auth_redirect=${encodeURIComponent(
+        "/minds?auth=kakao"
+      )}; path=/; max-age=600; SameSite=Lax`;
+      const supabase = createClient();
+      const origin = window.location.origin;
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "kakao",
+        options: { redirectTo: `${origin}/auth/callback` },
+      });
+      if (oauthError) throw oauthError;
+      // 성공 시 카카오로 리다이렉트되어 아래 코드는 실행되지 않는다.
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "카카오 로그인에 실패했어요. 잠시 후 다시 시도해주세요."
+      );
+      setKakaoLoading(false);
+    }
   };
 
   return (
@@ -73,10 +109,11 @@ export function MindsLeadCapture({ onSubmit, onBack }: Props) {
         리포트를 이어볼 수 있게 안내해드릴게요.
       </p>
 
-      {/* 카카오 — 골격: OAuth 자리(TODO). 지금은 placeholder 채널로 진행. */}
+      {/* 카카오 — 실제 Supabase OAuth. 누르면 카카오 인증창으로 이동한다. */}
       <button
         type="button"
-        onClick={() => onSubmit({ channel: "kakao", value: "" })}
+        onClick={startKakao}
+        disabled={kakaoLoading}
         style={{
           ...ctaStyle,
           marginTop: 28,
@@ -84,9 +121,11 @@ export function MindsLeadCapture({ onSubmit, onBack }: Props) {
           color: "#191600",
           padding: "18px 20px",
           fontSize: 15,
+          opacity: kakaoLoading ? 0.6 : 1,
+          cursor: kakaoLoading ? "default" : "pointer",
         }}
       >
-        카카오로 시작하기
+        {kakaoLoading ? "카카오로 이동 중…" : "카카오로 시작하기"}
       </button>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
