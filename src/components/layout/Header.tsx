@@ -36,7 +36,7 @@ export function Header() {
         <nav className="flex items-center gap-6">
           <Link
             href="/essays"
-            className="text-sm font-medium text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-colors"
+            className="hidden sm:block text-sm font-medium text-[var(--foreground)]/80 hover:text-[var(--foreground)] transition-colors"
           >
             기분 레터
           </Link>
