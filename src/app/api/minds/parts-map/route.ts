@@ -10,6 +10,7 @@ import {
   readPartsMap,
   type PartsMap,
 } from "@/lib/self-workshop/core-belief-excavation";
+import { getSavedPartsMap } from "@/lib/minds/result-store";
 
 /**
  * POST /api/minds/parts-map  (공개 — 로그인 불필요)
@@ -61,28 +62,6 @@ async function withinDailyBudget(): Promise<boolean> {
   }
 }
 
-/**
- * 같은 리드가 이미 만든 마음지도를 조회한다(리드당 1회 = 비용 보호).
- * 저장본이 있으면 그걸 돌려줘 LLM 을 재호출하지 않는다. 없거나 조회 실패면 null →
- * 정상적으로 LLM 분석을 진행한다(fail-open).
- */
-async function readCachedPartsMap(leadId: string): Promise<PartsMap | null> {
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("minds_leads")
-      .select("parts_map")
-      .eq("id", leadId)
-      .maybeSingle();
-    if (error || !data?.parts_map) return null;
-    // 컬럼엔 PartsMap 객체가 그대로 저장돼 있으므로 readPartsMap 컨테이너 형태로 감싼다.
-    return readPartsMap({ parts_map: data.parts_map });
-  } catch (err) {
-    console.error("[minds/parts-map] 캐시 조회 실패:", err);
-    return null;
-  }
-}
-
 interface InAnswer {
   id: string;
   question: string;
@@ -106,6 +85,22 @@ function cleanAnswers(value: unknown): InAnswer[] {
   return out;
 }
 
+/**
+ * GET /api/minds/parts-map?leadId=...  — 저장된 결과 다시보기(읽기 전용, LLM 미호출).
+ * 결과 페이지(/minds/r/[id])·재방문 자동 복원이 사용한다.
+ */
+export async function GET(req: NextRequest) {
+  const leadId = req.nextUrl.searchParams.get("leadId")?.trim() ?? "";
+  if (!leadId) {
+    return NextResponse.json({ error: "leadId가 필요합니다." }, { status: 400 });
+  }
+  const partsMap = await getSavedPartsMap(leadId);
+  if (!partsMap) {
+    return NextResponse.json({ error: "결과를 찾을 수 없어요." }, { status: 404 });
+  }
+  return NextResponse.json({ parts_map: partsMap });
+}
+
 export async function POST(req: NextRequest) {
   const limited = checkRateLimit(req, RATE_LIMITS.ai);
   if (limited) return limited;
@@ -123,7 +118,7 @@ export async function POST(req: NextRequest) {
 
   // [0] 리드당 1회 — 이미 분석한 리드면 저장본을 돌려주고 LLM 재호출을 막는다(비용 보호).
   if (leadId) {
-    const cached = await readCachedPartsMap(leadId);
+    const cached = await getSavedPartsMap(leadId);
     if (cached) return NextResponse.json({ parts_map: cached, cached: true });
   }
 

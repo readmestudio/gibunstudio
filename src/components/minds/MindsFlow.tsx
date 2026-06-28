@@ -14,8 +14,10 @@
  * 전환 측정: 연락처 제출(Lead) · 결과 도달(ViewContent) 을 Meta 픽셀로 추적한다.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
+import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
 import { getAttribution } from "@/lib/attribution";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { MindsLanding } from "./MindsLanding";
@@ -30,6 +32,17 @@ export function MindsFlow() {
   const [phase, setPhase] = useState<Phase>("landing");
   const [leadId, setLeadId] = useState<string | null>(null);
   const [partsMap, setPartsMap] = useState<PartsMap | null>(null);
+  const router = useRouter();
+
+  // 재방문 자동 복원 — 이전에 분석을 마친 브라우저면 저장된 결과 페이지로 보낸다.
+  // (무효 id 면 결과 페이지가 안내를 띄우고 저장값을 정리하므로 무한 복원되지 않는다.)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(MINDS_LEAD_STORAGE_KEY);
+    if (saved) router.replace(`/minds/r/${saved}`);
+    // 마운트 시 1회만 — router 는 안정 참조.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 연락처 저장(fire-and-forget). 실패해도 사용자 흐름은 막지 않는다.
   const saveLead = async (lead: MindsLead) => {
@@ -62,6 +75,8 @@ export function MindsFlow() {
       const json = await res.json().catch(() => null);
       if (json?.parts_map) {
         setPartsMap(json.parts_map as PartsMap);
+        // 결과를 다시 볼 수 있도록 이 브라우저에 leadId 를 남긴다(재방문 자동 복원용).
+        if (leadId) localStorage.setItem(MINDS_LEAD_STORAGE_KEY, leadId);
         trackMetaEvent("ViewContent", { content_name: "minds_report" });
         setPhase("report");
         return;
