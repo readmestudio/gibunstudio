@@ -38,7 +38,18 @@ const bodyText = {
 } as const;
 
 export function MindsCharacterCard({ view, index, total }: Props) {
-  const { archetype, evidenceQuote, userGivenName } = view;
+  const {
+    archetype,
+    name,
+    tagline,
+    catchphrase,
+    description,
+    wants,
+    sayings,
+    fears,
+    triggers,
+    evidenceQuote,
+  } = view;
 
   return (
     <div
@@ -68,39 +79,34 @@ export function MindsCharacterCard({ view, index, total }: Props) {
             </span>
           </div>
         </div>
-        <CharacterPortrait src={archetype.portrait} alt={archetype.name} size={76} />
+        <CharacterPortrait src={archetype.portrait} alt={name} size={76} />
       </div>
 
       {/* 이름 블록 */}
       <div style={{ paddingTop: 24 }}>
         <h2 style={{ fontFamily: M.font, fontWeight: 700, fontSize: 32, letterSpacing: "-0.028em", lineHeight: 1.18, color: M.ink, margin: 0 }}>
-          {archetype.name}
+          {name}
         </h2>
-        <p style={{ marginTop: 10, fontSize: 15, color: M.ink2, fontFamily: M.font }}>{archetype.tagline}</p>
-        {userGivenName && (
-          <p style={{ marginTop: 12, fontSize: 11.5, color: M.mute, fontFamily: M.mono, letterSpacing: "0.02em" }}>
-            내가 부른 이름 · “{userGivenName}”
-          </p>
-        )}
+        <p style={{ marginTop: 10, fontSize: 15, color: M.ink2, fontFamily: M.font }}>{tagline}</p>
 
         {/* 풀-쿼트 */}
         <p style={{ marginTop: 24, fontFamily: M.font, fontWeight: 800, fontSize: 26, letterSpacing: "-0.02em", lineHeight: 1.3, color: M.ink }}>
-          “{archetype.catchphrase}”
+          “{catchphrase}”
         </p>
 
         {/* 본문 도입 단락 */}
-        <p style={{ ...bodyText, marginTop: 18 }}>{archetype.description}</p>
+        <p style={{ ...bodyText, marginTop: 18 }}>{description}</p>
       </div>
 
       {/* 데이터 그리드 */}
       <div style={{ marginTop: 14 }}>
         <ARow label="이 마음이 원하는 것">
-          <p style={bodyText}>{archetype.wants}</p>
+          <p style={bodyText}>{wants}</p>
         </ARow>
 
         <ARow label="자주 하는 말">
           <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-            {archetype.sayings.map((s, i) => (
+            {sayings.map((s, i) => (
               <div key={i} style={{ paddingLeft: 14, borderLeft: `2px solid ${M.line}`, fontSize: 15, lineHeight: 1.6, color: M.ink2, fontFamily: M.font }}>
                 “{s}”
               </div>
@@ -109,11 +115,11 @@ export function MindsCharacterCard({ view, index, total }: Props) {
         </ARow>
 
         <ARow label="두려워하는 것">
-          <p style={bodyText}>{archetype.fears}</p>
+          <p style={bodyText}>{fears}</p>
         </ARow>
 
         <ARow label="이 마음이 발동되는 순간" last={!evidenceQuote}>
-          <p style={bodyText}>{archetype.triggers}</p>
+          <p style={bodyText}>{triggers}</p>
         </ARow>
 
         {evidenceQuote && (

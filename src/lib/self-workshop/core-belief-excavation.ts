@@ -73,6 +73,22 @@ export interface PartCharacter {
   evidence_quote: string;
   /** IFS 역할 추정(내부용, 화면 비노출). */
   role?: PartRole;
+
+  /* ── 무료 /minds 캐릭터 카드용 풀 콘텐츠 (LLM 생성, 모두 optional) ──
+   * 유료 SCT/대화 흐름은 이 필드들을 만들지 않으므로 undefined로 둔다(영향 없음).
+   * 무료 /minds 만 LLM 이 채워, 캐릭터 카드 본문을 사용자 답변 기반으로 개인화한다. */
+  /** 한 줄 별명/직함. 예: "박수 소리로 숨 쉬는 마음" */
+  tagline?: string;
+  /** 이 마음이 어떤 마음인지(2~3문장). */
+  description?: string;
+  /** 이 마음이 진짜 바라는 것(1~2문장). */
+  wants?: string;
+  /** 자주 하는 말(대사) 2~3개. */
+  sayings?: string[];
+  /** 가장 두려워하는 것(1~2문장). */
+  fears?: string;
+  /** 언제 깨어나는지(1~2문장). */
+  triggers?: string;
 }
 
 /** 서로 자주 부딪치는 두 마음. a·b는 PartCharacter.id. */
@@ -317,6 +333,14 @@ export function readPartsMap(container: unknown): PartsMap | null {
       typeof pp.role === "string" && PART_ROLES.includes(pp.role as PartRole)
         ? (pp.role as PartRole)
         : undefined;
+    // 무료 /minds 캐릭터 카드용 풀 콘텐츠(있을 때만 보존 — 유료 흐름은 비어 있음).
+    const tagline = typeof pp.tagline === "string" ? pp.tagline.trim() : "";
+    const description =
+      typeof pp.description === "string" ? pp.description.trim() : "";
+    const wants = typeof pp.wants === "string" ? pp.wants.trim() : "";
+    const sayings = toStringArray(pp.sayings) ?? [];
+    const fears = typeof pp.fears === "string" ? pp.fears.trim() : "";
+    const triggers = typeof pp.triggers === "string" ? pp.triggers.trim() : "";
     parts.push({
       id,
       name,
@@ -325,6 +349,12 @@ export function readPartsMap(container: unknown): PartsMap | null {
       evidence_quote:
         typeof pp.evidence_quote === "string" ? pp.evidence_quote.trim() : "",
       ...(role ? { role } : {}),
+      ...(tagline ? { tagline } : {}),
+      ...(description ? { description } : {}),
+      ...(wants ? { wants } : {}),
+      ...(sayings.length ? { sayings } : {}),
+      ...(fears ? { fears } : {}),
+      ...(triggers ? { triggers } : {}),
     });
   }
   if (parts.length === 0) return null;

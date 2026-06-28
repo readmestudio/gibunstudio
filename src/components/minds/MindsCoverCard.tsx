@@ -26,7 +26,7 @@ export function MindsCoverCard({ views }: { views: CharacterView[] }) {
       </h1>
 
       <p style={{ ...leadStyle, marginTop: 18 }}>
-        일·성취 앞에서 흔들릴 때, 내 안에선 여러 마음이 동시에 무대에 올라요. 좋은
+        마음이 크게 흔들릴 때, 내 안에선 여러 마음이 동시에 무대에 올라요. 좋은
         마음도 나쁜 마음도 없어요. 각자 나를 지키려 애쓰는, 어엿한 등장인물들이죠.
       </p>
 
@@ -42,12 +42,12 @@ export function MindsCoverCard({ views }: { views: CharacterView[] }) {
         >
           {thumbs.map((v, i) => (
             <div key={v.archetype.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <CharacterPortrait src={v.archetype.portrait} alt={v.archetype.name} size={58} />
+              <CharacterPortrait src={v.archetype.portrait} alt={v.name} size={58} />
               <span style={{ fontFamily: M.mono, fontSize: 11, color: M.accent, fontVariantNumeric: "tabular-nums" }}>
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span style={{ fontSize: 11.5, color: M.ink2, textAlign: "center", lineHeight: 1.35, fontWeight: 500, fontFamily: M.font }}>
-                {v.archetype.name}
+                {v.name}
               </span>
             </div>
           ))}

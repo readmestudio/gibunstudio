@@ -331,19 +331,40 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
 
 /* ─────────────────── 매핑 ─────────────────── */
 
-/** 테스트 결과 한 part 에 캐스팅을 입힌 화면용 뷰. */
+/**
+ * 화면용 캐릭터 뷰 — 표시 콘텐츠는 *LLM 생성 우선, 캐스팅은 fallback*.
+ *
+ * 하이브리드(B) 정책: 시각 자산(초상)은 고정 캐스팅을 role로 재사용하지만,
+ * 이름·본문은 LLM 이 사용자 답변에서 생성한 값을 우선 쓴다. LLM 이 그 필드를
+ * 안 줬을 때만 캐스팅의 고정 텍스트로 메운다(분석 실패 폴백 등). → 같은 역할이라도
+ * 사람마다 다른 카드가 나온다.
+ */
 export interface CharacterView {
+  /** 초상·roleSlot·key 제공용 캐스팅(고정 시각 자산). */
   archetype: CharacterArchetype;
+  /* 아래 표시 필드는 모두 LLM 값 우선, 없으면 archetype fallback. */
+  name: string;
+  tagline: string;
+  catchphrase: string;
+  description: string;
+  wants: string;
+  sayings: string[];
+  fears: string;
+  triggers: string;
   /** 사용자 답에서 그대로 인용(없으면 빈 문자열). */
   evidenceQuote: string;
-  /** 사용자가 직접 붙인 이름(있으면 카드에 보조 표기). */
-  userGivenName: string;
+}
+
+/** 공백/undefined면 fallback 으로 넘어가는 문자열 선택기. */
+function pickText(llm: string | undefined, fallback: string): string {
+  const v = (llm ?? "").trim();
+  return v ? v : fallback;
 }
 
 /**
- * PartsMap.parts 를 캐스팅에 매핑한다. role 친화도로 후보를 고르되,
- * 같은 캐릭터가 중복되지 않게 소비하고, 부족하면 남은 캐스팅으로 채운다.
- * 항상 최소 FREE_CHARACTER_COUNT 명을 채워 카드가 비지 않게 한다.
+ * PartsMap.parts 를 화면용 뷰로 변환한다. 초상은 role 친화도로 캐스팅을 골라
+ * 중복 없이 소비하고(부족하면 남은 캐스팅으로 채움), 이름·본문은 LLM 값 우선으로
+ * 병합한다. 항상 최소 FREE_CHARACTER_COUNT 명을 채워 카드가 비지 않게 한다.
  */
 export function buildCharacterViews(partsMap: PartsMap): CharacterView[] {
   const used = new Set<string>();
@@ -353,8 +374,15 @@ export function buildCharacterViews(partsMap: PartsMap): CharacterView[] {
     used.add(archetype.id);
     views.push({
       archetype,
-      evidenceQuote: part?.evidence_quote ?? "",
-      userGivenName: part?.name ?? "",
+      name: pickText(part?.name, archetype.name),
+      tagline: pickText(part?.tagline, archetype.tagline),
+      catchphrase: pickText(part?.catchphrase, archetype.catchphrase),
+      description: pickText(part?.description, archetype.description),
+      wants: pickText(part?.wants, archetype.wants),
+      sayings: part?.sayings && part.sayings.length ? part.sayings : archetype.sayings,
+      fears: pickText(part?.fears, archetype.fears),
+      triggers: pickText(part?.triggers, archetype.triggers),
+      evidenceQuote: (part?.evidence_quote ?? "").trim(),
     });
   };
 

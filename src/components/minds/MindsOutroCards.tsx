@@ -17,8 +17,6 @@
  * 리더인지)은 무료 화면에 내려보내지 않는다 — 라벨·설명만 노출하고 배정은 잠금.
  */
 
-import Link from "next/link";
-import { trackMetaEvent } from "@/lib/meta-pixel";
 import { CardShell, CardKicker } from "./MindsCardShell";
 import { M, Hr, dispStyle, leadStyle, ctaStyle, IcLock } from "./quiet-editorial";
 import { ROLE_SLOTS, type CharacterView } from "@/lib/minds/characters";
@@ -188,7 +186,7 @@ export function MindsBenefitCard({ onCheckout }: { onCheckout: () => void }) {
 
 /* ───────────────── ⑤ 당신의 무대 (배역표 티저) ───────────────── */
 export function MindsActiveStageCard({ views }: { views: CharacterView[] }) {
-  const names = views.map((v) => v.archetype.name);
+  const names = views.map((v) => v.name);
 
   return (
     <CardShell>
@@ -281,16 +279,6 @@ export function MindsPricingCard({ onCheckout }: { onCheckout: () => void }) {
       <p style={{ textAlign: "center", marginTop: 14, fontSize: 12.5, color: M.mute, fontFamily: M.font }}>
         <span style={{ textDecoration: "line-through" }}>{won(WORKSHOP_ORIGINAL_PRICE)}</span> 에서 런칭 할인 {WORKSHOP_DISCOUNT_PERCENT}% 적용가
       </p>
-
-      <Link
-        href="/programs/counseling"
-        onClick={() =>
-          trackMetaEvent("Lead", { content_name: "minds_to_counseling" })
-        }
-        style={{ display: "block", marginTop: 14, padding: "15px 20px", borderRadius: 2, border: `1px solid ${M.line}`, textAlign: "center", fontSize: 14, fontWeight: 600, color: M.ink, fontFamily: M.font, textDecoration: "none" }}
-      >
-        혼자보다 함께가 편하다면, 1:1 심리상담 알아보기
-      </Link>
     </CardShell>
   );
 }
