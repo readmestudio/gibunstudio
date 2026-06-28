@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { isWorkshopTestUser } from "@/lib/self-workshop/test-users";
+import { KAKAO_CHANNEL_URL } from "@/app/programs/counseling/content";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,16 @@ export default async function WorkshopGeneratingPage() {
   if (!purchase && !isTestUser) {
     redirect("/dashboard/self-workshop");
   }
+
+  // 설문 제출 여부 — 본인 행만 읽는 RLS 정책으로 조회. 제출 전/후로 안내가 갈린다.
+  const { data: survey } = await supabase
+    .from("workshop_survey_responses")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("workshop_type", "achievement-addiction")
+    .maybeSingle();
+
+  const surveyDone = !!survey;
 
   const userName =
     (user.user_metadata?.name as string | undefined) ??
@@ -57,52 +68,84 @@ export default async function WorkshopGeneratingPage() {
         결제가 완료되었습니다
       </h1>
 
-      <p className="mt-4 text-base leading-relaxed text-[var(--foreground)]/80">
-        지금 <span className="font-semibold">{displayName}</span>님의 답변에 맞춰
-        <br />
-        워크북을 한 권 한 권 만들고 있어요.
+      <p className="mt-4 break-keep text-base leading-relaxed text-[var(--foreground)]/80">
+        워크북은 결제 이후 <span className="font-semibold">{displayName}</span>님의
+        고민에 맞춰 새롭게 제작하여 전달드립니다.
       </p>
 
-      <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]/60">
-        완성되면 바로 보내드릴게요.
-        <br />
-        제작에는 하루 정도 소요됩니다.
-      </p>
-
-      {/* 안내 박스 */}
+      {/* 안내 박스 — 진행 순서 3단계 */}
       <div className="mt-8 rounded-xl border-2 border-[var(--foreground)]/20 bg-white p-6 text-left">
         <p className="text-sm font-semibold text-[var(--foreground)]">
-          이렇게 진행돼요
+          이렇게 전달돼요
         </p>
         <ol className="mt-3 space-y-2.5 text-sm leading-relaxed text-[var(--foreground)]/70">
           <li className="flex gap-2">
             <span className="font-semibold text-[var(--foreground)]">1.</span>
-            <span>제출하신 진단 답변을 바탕으로 워크북을 개인화해서 제작합니다.</span>
+            <span className="break-keep">
+              아래 버튼을 클릭하여 설문을 제출해주세요.
+            </span>
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-[var(--foreground)]">2.</span>
-            <span>완성까지 하루 정도 걸려요. 이 페이지를 닫으셔도 괜찮습니다.</span>
+            <span className="break-keep">
+              심리 상담사와 명상 디렉터가 함께 답변을 분석하여 워크북을
+              제작합니다.
+            </span>
           </li>
           <li className="flex gap-2">
             <span className="font-semibold text-[var(--foreground)]">3.</span>
-            <span>
-              완성되면 다음 날, 가입하신 계정으로 워크북 링크를 보내드려요.
+            <span className="break-keep">
+              워크북이 완성되면 워크북 링크를 카카오톡으로 전달드립니다.
             </span>
           </li>
         </ol>
       </div>
 
-      <p className="mt-6 text-xs leading-relaxed text-[var(--foreground)]/45">
-        문의는 카카오톡 채널 <span className="font-medium">gibun_studio</span>로
-        남겨주세요.
+      <p className="mt-4 break-keep text-sm leading-relaxed text-[var(--foreground)]/60">
+        설문지 제출 이후 영업일 기준 1일에서 3일까지 소요될 수 있어요.
       </p>
 
-      <Link
-        href="/dashboard"
-        className="mt-8 inline-flex w-full items-center justify-center rounded-xl border-2 border-[var(--foreground)] px-6 py-4 text-base font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
-      >
-        대시보드로 돌아가기
-      </Link>
+      {surveyDone ? (
+        /* 설문 제출 완료 → 제작 중 안내 + 카카오톡 채널 추가 */
+        <>
+          <div className="mt-8 rounded-xl border-2 border-[var(--foreground)]/10 bg-[var(--surface)] p-5">
+            <p className="break-keep text-sm font-semibold text-[var(--foreground)]">
+              설문이 잘 접수되었어요 ✓
+            </p>
+            <p className="mt-1.5 break-keep text-sm leading-relaxed text-[var(--foreground)]/60">
+              지금부터 {displayName}님만을 위한 워크북을 제작합니다. 완성되면
+              카카오톡으로 링크를 보내드릴게요.
+            </p>
+          </div>
+
+          <a
+            href={KAKAO_CHANNEL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-4 text-base font-bold text-[var(--foreground)] transition-transform hover:-translate-y-0.5"
+          >
+            <span aria-hidden>💬</span> 카카오톡 채널 추가하고 알림 받기
+          </a>
+          <p className="mt-3 break-keep text-xs leading-relaxed text-[var(--foreground)]/55">
+            완성된 워크북 링크를 카카오톡으로 보내드려요. 채널을 미리 추가해
+            두시면 놓치지 않고 받아보실 수 있어요.
+          </p>
+        </>
+      ) : (
+        /* 설문 미제출 → 설문 작성 유도 */
+        <>
+          <Link
+            href="/dashboard/self-workshop/survey"
+            className="mt-8 inline-flex w-full items-center justify-center rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            설문지 작성하러 가기
+          </Link>
+          <p className="mt-3 break-keep text-xs leading-relaxed text-[var(--foreground)]/55">
+            설문을 제출해주시면 익일 영업 시간부터 워크북 제작을 시작해요. 설문
+            제출 이후에는 환불이 어렵습니다.
+          </p>
+        </>
+      )}
     </div>
   );
 }

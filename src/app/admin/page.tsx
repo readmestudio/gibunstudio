@@ -46,13 +46,20 @@ export default async function AdminHomePage() {
       .size;
   }
 
-  // 대기신청: 전체 건수 / 알림신청 버튼 누적 건수
-  const [{ count: waitlistCount }, { count: notifyCount }] = await Promise.all([
+  // 대기신청: 전체 건수 / 알림신청 버튼 누적 건수 / 워크북 제작 설문 건수
+  const [
+    { count: waitlistCount },
+    { count: notifyCount },
+    { count: surveyCount },
+  ] = await Promise.all([
     admin
       .from("workbook_waitlist")
       .select("*", { count: "exact", head: true }),
     admin
       .from("open_notifications")
+      .select("*", { count: "exact", head: true }),
+    admin
+      .from("workshop_survey_responses")
       .select("*", { count: "exact", head: true }),
   ]);
 
@@ -82,6 +89,14 @@ export default async function AdminHomePage() {
         { label: "대기신청", value: waitlistCount ?? 0, unit: "명" },
         { label: "알림신청", value: notifyCount ?? 0, unit: "건" },
       ],
+    },
+    {
+      href: "/admin/workshop-surveys",
+      eyebrow: "WORKBOOK · 설문 응답",
+      title: "워크북 제작 설문",
+      description:
+        "결제 후 회원이 제출한 맞춤 제작 설문(이름·연락처·고민·해결하고 싶은 부분)을 확인해요.",
+      stats: [{ label: "제출", value: surveyCount ?? 0, unit: "건" }],
     },
   ];
 
