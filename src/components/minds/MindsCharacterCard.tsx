@@ -40,6 +40,7 @@ const bodyText = {
 export function MindsCharacterCard({ view, index, total }: Props) {
   const {
     archetype,
+    derived,
     name,
     tagline,
     catchphrase,
@@ -67,8 +68,8 @@ export function MindsCharacterCard({ view, index, total }: Props) {
         }}
       >
         <div>
-          <div style={{ fontFamily: M.mono, fontSize: 11, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: M.accent }}>
-            The Cast
+          <div style={{ fontFamily: M.mono, fontSize: 11, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: derived ? M.accent : M.mute }}>
+            {derived ? "The Cast" : "Maybe · 가정"}
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10, whiteSpace: "nowrap" }}>
             <span style={{ fontFamily: M.font, fontWeight: 600, fontSize: 44, color: M.accent, lineHeight: 1, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
@@ -88,6 +89,16 @@ export function MindsCharacterCard({ view, index, total }: Props) {
           {name}
         </h2>
         <p style={{ marginTop: 10, fontSize: 15, color: M.ink2, fontFamily: M.font }}>{tagline}</p>
+
+        {/* 가정 배너 — 답변 근거 없이 채운 캐릭터는 확신 대신 가정으로 소개 */}
+        {!derived && (
+          <div style={{ marginTop: 16, padding: "12px 14px", border: `1px dashed ${M.line}`, borderRadius: 3, background: M.paper2 }}>
+            <p style={{ fontSize: 13, lineHeight: 1.65, color: M.mute2, fontFamily: M.font, margin: 0 }}>
+              이 마음은 당신 답변엔 또렷이 드러나진 않았어요. 다만 비슷한 결의 이야기에서 자주 함께 나타나는 마음이라,{" "}
+              <strong style={{ color: M.ink2, fontWeight: 600 }}>“이런 마음도 곁에 있을 수 있어요”</strong> 하고 가정으로 살짝 소개해드려요.
+            </p>
+          </div>
+        )}
 
         {/* 풀-쿼트 */}
         <p style={{ marginTop: 24, fontFamily: M.font, fontWeight: 800, fontSize: 26, letterSpacing: "-0.02em", lineHeight: 1.3, color: M.ink }}>

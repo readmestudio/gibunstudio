@@ -26,6 +26,7 @@ import { trackMetaEvent } from "@/lib/meta-pixel";
 import { MindsCoverCard } from "./MindsCoverCard";
 import { MindsCharacterCard } from "./MindsCharacterCard";
 import {
+  MindsSummaryCard,
   MindsConceptCard,
   MindsRolesCard,
   MindsWhyCard,
@@ -55,6 +56,8 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
         total={views.length}
       />
     )),
+    // 3 배역 다음 — 답변+배역을 합친 개인화 요약 한 장
+    <MindsSummaryCard key="summary" summary={partsMap.summary} views={views} />,
     // 아웃트로 — 개념·배역 → 당신의 무대 → 페이월
     <MindsConceptCard key="concept" />,
     <MindsRolesCard key="roles" />,

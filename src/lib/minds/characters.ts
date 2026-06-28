@@ -24,8 +24,8 @@
 import type { PartRole } from "@/lib/self-workshop/ifs-parts-data";
 import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
 
-/** 무료로 공개하는 캐릭터 카드 수(최소). 나머지(역할 배역표)는 유료. */
-export const FREE_CHARACTER_COUNT = 4;
+/** 무료로 공개하는 캐릭터 카드 수. 3명(최대한 유저 답변으로) + 이후 요약 카드 1장. */
+export const FREE_CHARACTER_COUNT = 3;
 
 /* ─────────────────── 역할 슬롯 (유료 배역표) ───────────────────
  *
@@ -342,6 +342,12 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
 export interface CharacterView {
   /** 초상·roleSlot·key 제공용 캐스팅(고정 시각 자산). */
   archetype: CharacterArchetype;
+  /**
+   * 유저 답변에서 도출된 마음인지 여부.
+   *  - true(확신): 답변 기반 LLM 캐릭터 → 카드에서 확신 톤.
+   *  - false(가정): 답변 근거 없이 채운 캐스팅 → 카드에서 "이런 마음도 함께 있을 수 있어요" 가정 톤.
+   */
+  derived: boolean;
   /* 아래 표시 필드는 모두 LLM 값 우선, 없으면 archetype fallback. */
   name: string;
   tagline: string;
@@ -370,10 +376,15 @@ export function buildCharacterViews(partsMap: PartsMap): CharacterView[] {
   const used = new Set<string>();
   const views: CharacterView[] = [];
 
-  const take = (archetype: CharacterArchetype, part?: PartsMap["parts"][number]) => {
+  const take = (
+    archetype: CharacterArchetype,
+    part: PartsMap["parts"][number] | undefined,
+    derived: boolean
+  ) => {
     used.add(archetype.id);
     views.push({
       archetype,
+      derived,
       name: pickText(part?.name, archetype.name),
       tagline: pickText(part?.tagline, archetype.tagline),
       catchphrase: pickText(part?.catchphrase, archetype.catchphrase),
@@ -386,17 +397,19 @@ export function buildCharacterViews(partsMap: PartsMap): CharacterView[] {
     });
   };
 
+  // 1) 유저 답변에서 나온 마음 — 확신 캐릭터. 최대 FREE_CHARACTER_COUNT 까지만.
   for (const part of partsMap.parts) {
+    if (views.length >= FREE_CHARACTER_COUNT) break;
     const match =
       CHARACTER_CAST.find((c) => !used.has(c.id) && c.role === part.role) ??
       CHARACTER_CAST.find((c) => !used.has(c.id));
-    if (match) take(match, part);
+    if (match) take(match, part, true);
   }
 
-  // 최소 인원 보장 — 남은 캐스팅으로 채운다.
+  // 2) 모자라면 캐스팅으로 채우되 '가정' 캐릭터로 표시(답변 근거 없음 → 카드에서 가정 톤).
   for (const c of CHARACTER_CAST) {
     if (views.length >= FREE_CHARACTER_COUNT) break;
-    if (!used.has(c.id)) take(c);
+    if (!used.has(c.id)) take(c, undefined, false);
   }
 
   return views;

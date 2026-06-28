@@ -66,6 +66,45 @@ function CardArt({ src, alt, maxW = 300 }: { src: string; alt: string; maxW?: nu
   );
 }
 
+/* ───────────────── ⓪ 요약 — 3 배역 + 답변을 한 장으로 (LLM summary) ─────────────────
+ *
+ * 캐릭터 카드(3장) 다음에 오는, "당신의 마음 속에는 지금 ~한 마음이 크고, 하지만
+ * 동시에 ~한 마음도 있어요" 식의 개인화 종합 카드. partsMap.summary 는 유저 답변과
+ * 마음들을 LLM 이 종합한 문단이라, 유저마다 다른 카드가 보인다.
+ */
+export function MindsSummaryCard({ summary, views }: { summary: string; views: CharacterView[] }) {
+  const names = views.map((v) => v.name);
+
+  return (
+    <CardShell>
+      <CardKicker>In Summary · 지금 당신의 마음</CardKicker>
+      <h2 style={{ ...headline, marginTop: 20 }}>
+        한 장으로 모으면,
+        <br />
+        이런 마음이에요
+      </h2>
+
+      <p style={{ ...para, marginTop: 22, fontSize: 16.5, lineHeight: 1.85, color: M.ink }}>
+        {summary}
+      </p>
+
+      <div style={{ marginTop: 28 }}>
+        <Hr />
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, padding: "22px 0 0" }}>
+          {names.map((n, i) => (
+            <span
+              key={i}
+              style={{ padding: "8px 14px", border: `1px solid ${M.line}`, borderRadius: 999, fontSize: 13, fontWeight: 600, color: M.ink2, fontFamily: M.font }}
+            >
+              {n}
+            </span>
+          ))}
+        </div>
+      </div>
+    </CardShell>
+  );
+}
+
 /* ───────────────── ① 개념 ───────────────── */
 export function MindsConceptCard() {
   return (
