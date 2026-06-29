@@ -20,7 +20,7 @@
  * 한쪽을 고치면 양쪽이 함께 정렬된다.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DIAGNOSIS_QUESTIONS,
   LIKERT_OPTIONS,
@@ -35,7 +35,7 @@ import {
   WORKSHOP_ORIGINAL_PRICE,
   WORKSHOP_DISCOUNT_PERCENT,
 } from "@/lib/self-workshop/landing-data";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
 import {
   D,
   COL,
@@ -1300,6 +1300,19 @@ export function AchievementTestFunnel({ skipIntro = false }: { skipIntro?: boole
   const [phase, setPhase] = useState<Phase>(skipIntro ? "test" : "intro");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<DiagnosisScores | null>(null);
+  const startedRef = useRef(false);
+
+  // 테스트 시작 신호(광고 최적화용 맞춤 이벤트) — 첫 문항에 답한 순간 1회만 발화.
+  // /achievement(skipIntro)는 인트로/시작 버튼 없이 바로 문항부터라 "시작 클릭"이
+  // 없어, 실제로 답을 고른 순간을 시작으로 본다. (단순 방문 PageView 와 구분되는
+  // '진짜 시작' 신호 → 광고 최적화 품질 향상)
+  useEffect(() => {
+    if (startedRef.current) return;
+    if (Object.keys(answers).length >= 1) {
+      startedRef.current = true;
+      trackMetaCustom("StartTest", { content_name: "achievement" });
+    }
+  }, [answers]);
 
   // 점수는 순수 함수로 클라이언트에서 계산 — 로그인/DB 불필요.
   const computeAndShow = useCallback(() => {
@@ -1325,7 +1338,8 @@ export function AchievementTestFunnel({ skipIntro = false }: { skipIntro?: boole
   return (
     // 결과 화면의 결제 CTA(카카오/네이버/카드)·스티키 버튼이 공유하는 결제 컨텍스트.
     // intro/test 단계에서도 감싸 두면 SDK가 미리 로드되어 결제 클릭 지연이 줄어든다.
-    <WorkshopCheckoutProvider>
+    // source 지정 → 결제수단 버튼 클릭 즉시(로그인 전에도) 운영자 슬랙에 "구매 시도" 알림.
+    <WorkshopCheckoutProvider source="achievement-test">
       <main style={{ background: D.bg, minHeight: "100vh" }}>
         {phase === "intro" && <Intro onStart={() => setPhase("test")} />}
         {phase === "test" && (
