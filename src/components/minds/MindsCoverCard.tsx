@@ -41,12 +41,16 @@ export function MindsCoverCard({ views }: { views: CharacterView[] }) {
           }}
         >
           {thumbs.map((v, i) => (
-            <div key={v.archetype.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <div key={v.archetype.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
               <CharacterPortrait src={v.archetype.portrait} alt={v.name} size={58} />
-              <span style={{ fontFamily: M.mono, fontSize: 11, color: M.accent, fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontFamily: M.mono, fontSize: 11, color: M.accent, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span style={{ fontSize: 11.5, color: M.ink2, textAlign: "center", lineHeight: 1.35, fontWeight: 500, fontFamily: M.font }}>
+              {/* 해석된 진짜 마음(tagline)을 주 라벨로, 익숙한 이름(name)은 작은 보조 라벨로. */}
+              <span style={{ fontSize: 11.5, color: M.ink2, textAlign: "center", lineHeight: 1.4, fontWeight: 600, fontFamily: M.font }}>
+                {v.tagline}
+              </span>
+              <span style={{ fontSize: 10, color: M.mute, textAlign: "center", lineHeight: 1.3, fontFamily: M.font }}>
                 {v.name}
               </span>
             </div>

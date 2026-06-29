@@ -83,12 +83,15 @@ export function MindsCharacterCard({ view, index, total }: Props) {
         <CharacterPortrait src={archetype.portrait} alt={name} size={76} />
       </div>
 
-      {/* 이름 블록 */}
+      {/* 이름 블록 — 표면 이름은 작은 꼬리표, '해석된 진짜 마음'(tagline)을 헤드라인으로.
+          "내가 아는 마음은 X지만, 진짜는 이런 마음이에요"의 위계. */}
       <div style={{ paddingTop: 24 }}>
-        <h2 style={{ fontFamily: M.font, fontWeight: 700, fontSize: 32, letterSpacing: "-0.028em", lineHeight: 1.18, color: M.ink, margin: 0 }}>
-          {name}
+        <div style={{ fontSize: 12.5, fontWeight: 500, letterSpacing: "-0.01em", color: M.mute2, fontFamily: M.font }}>
+          내가 아는 마음 · {name}
+        </div>
+        <h2 style={{ fontFamily: M.font, fontWeight: 700, fontSize: 29, letterSpacing: "-0.028em", lineHeight: 1.24, color: M.ink, margin: "8px 0 0" }}>
+          {tagline}
         </h2>
-        <p style={{ marginTop: 10, fontSize: 15, color: M.ink2, fontFamily: M.font }}>{tagline}</p>
 
         {/* 가정 배너 — 답변 근거 없이 채운 캐릭터는 확신 대신 가정으로 소개 */}
         {!derived && (

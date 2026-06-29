@@ -110,7 +110,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "mr_drive",
     name: "Mr.다그쳐",
-    tagline: "한순간도 봐주지 않는 내면의 감독관",
+    tagline: "무너질까 봐 한순간도 못 봐주는 마음",
     catchphrase: "더 해야 해. 이대론 부족해.",
     description:
       "이 마음은 한순간도 당신을 가만히 두지 않아요. 무언가를 잘 해낸 날에도 잘한 부분보다 빈틈을 먼저 찾아내고, ‘이 정도로 만족하면 도태된다’며 끊임없이 다음 목표를 들이밉니다. 겉으로는 냉정하고 가혹해 보이지만, 사실 그 모든 채찍질의 끝에는 ‘네가 무너지지 않았으면 좋겠다’는 마음이 숨어 있어요.",
@@ -132,7 +132,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "ms_perfect",
     name: "완벽주의 여사",
-    tagline: "빈틈을 못 견디는 깐깐한 설계자",
+    tagline: "통제를 놓치면 무너질까 두려운 마음",
     catchphrase: "완벽하게. 빈틈없이.",
     description:
       "모든 일을 빈틈없이 통제하려는 마음이에요. 계획표를 짜고, 몇 번이고 점검하고, 일어나지도 않은 만일의 상황까지 미리 대비하죠. 덕분에 실수는 눈에 띄게 줄지만, 정작 쉬는 시간조차 ‘제대로 쉬어야 한다’는 또 하나의 과제로 만들어 버리곤 해요.",
@@ -154,7 +154,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "needy",
     name: "인정받고파氏",
-    tagline: "박수 소리로 숨 쉬는 마음",
+    tagline: "인정받아야 비로소 안심하는 마음",
     catchphrase: "인정받아야 내가 있어.",
     description:
       "누군가 알아봐 줄 때 비로소 살아있다고 느끼는 마음입니다. 인정을 받으면 날아갈 듯 기뻐하지만, 반응이 미지근하거나 아무도 알아주지 않으면 금세 ‘난 별 거 아닌가’ 하며 쪼그라들어요. 그래서 늘 다른 사람의 표정과 반응을 살피느라 마음이 분주합니다.",
@@ -176,7 +176,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "rest",
     name: "쉬고싶어氏",
-    tagline: "구석에서 작게 손 흔드는 마음",
+    tagline: "더 망가지기 전에 멈추고 싶은 마음",
     catchphrase: "이제 좀 쉬어도 되지 않을까.",
     description:
       "‘이제 그만, 좀 쉬자’라고 조용히 속삭이는 마음이에요. 목소리가 워낙 작아서 다그치는 마음에 늘 묻히지만, 그래도 포기하지 않고 꾸준히 신호를 보냅니다. 다만 이 마음을 계속 외면하면, 어느 날 번아웃이라는 훨씬 큰 목소리가 되어 돌아오기도 해요.",
@@ -198,7 +198,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "runaway",
     name: "도망가",
-    tagline: "위기의 순간 딴짓으로 빠지는 탈주범",
+    tagline: "아픔에서 잠깐 도망쳐 숨 돌리려는 마음",
     catchphrase: "에라 모르겠다, 일단 딴거.",
     description:
       "압박이 턱밑까지 차오르면, 슬그머니 다른 곳으로 새어 버리는 마음입니다. 영상, 게임, 폭풍 검색, 과식… 무엇이든 붙잡고 잠깐이라도 숨통을 틔워 주죠. 얼핏 게으름처럼 보이지만, 사실은 너무 아픈 순간에서 당신을 잠시 떼어 놓으려는 응급처치에 가까워요.",
@@ -220,7 +220,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "anxious",
     name: "불안이",
-    tagline: "최악을 먼저 그려보는 척후병",
+    tagline: "다치지 않으려 최악부터 대비하는 마음",
     catchphrase: "잘못되면 어떡해.",
     description:
       "‘잘못되면 어떡하지’를 가장 먼저 떠올리는 마음이에요. 모두가 안심하고 있을 때 혼자 비상구의 위치를 살피고, 빠뜨린 건 없는지 몇 번이고 되짚습니다. 피곤한 마음처럼 보이지만, 덕분에 당신은 크게 휘청일 뻔한 순간들을 여러 번 무사히 넘겨 오기도 했어요.",
@@ -242,7 +242,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "unfair",
     name: "억울이",
-    tagline: "혼자만 손해 본다고 느끼는 마음",
+    tagline: "내 몫을 알아봐 달라 외치는 마음",
     catchphrase: "왜 나만 이래.",
     description:
       "‘왜 나만 이래’가 울컥 올라오는 마음이에요. 똑같이, 때로는 더 애썼는데도 인정은 자꾸 남에게로 가고 책임만 나에게 돌아올 때 속이 부글거립니다. 화가 난 것처럼 보이지만, 그 안에는 ‘내 몫을 제대로 알아봐 줘’라는 간절한 외침이 들어 있어요.",
@@ -264,7 +264,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "compare",
     name: "비교돌이",
-    tagline: "남의 트랙만 쳐다보는 옆자리 주자",
+    tagline: "뒤처질까 봐 끝없이 남과 재는 마음",
     catchphrase: "남들은 다 하는데.",
     description:
       "늘 남들과 나를 나란히 놓고 재는 마음이에요. SNS 사진 한 장에도 ‘쟤는 벌써 저만큼 갔구나’ 하며 초조해지고, 어느새 내 자리를 남의 기준으로 가늠합니다. 때로는 이 마음이 당신을 분발하게 만들기도 하지만, 동시에 내 속도와 내 길을 자꾸 잊게 만들기도 해요.",
@@ -286,7 +286,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "numb",
     name: "무기력씨",
-    tagline: "시작 전에 먼저 주저앉는 마음",
+    tagline: "기대했다 실망할까 미리 포기하는 마음",
     catchphrase: "어차피 안 될 거야.",
     description:
       "‘어차피 안 될 거야’라며 미리 스위치를 꺼 버리는 마음입니다. 시작도 하기 전에 기대를 접고, 힘을 빼 두죠. 게을러서가 아니에요. 기대를 품지 않으면 실망할 일도 없으니까, 더 다치지 않으려고 스스로를 미리 보호하는 거예요.",
@@ -308,7 +308,7 @@ export const CHARACTER_CAST: CharacterArchetype[] = [
   {
     id: "mediator",
     name: "중재가",
-    tagline: "싸움을 말리는 가장 어른스러운 마음",
+    tagline: "누구도 미워 않고 균형을 찾으려는 마음",
     catchphrase: "둘 다 일리가 있어. 천천히.",
     description:
       "‘둘 다 일리가 있어, 천천히 가자’라고 말하는 차분한 마음이에요. 평소엔 목소리가 작지만, 한 번 깨어나면 서로 다그치고 부딪치는 마음들 사이를 부드럽게 이어 줍니다. 어쩌면 워크북에서 가장 키우고 싶은, 당신 안의 가장 어른스러운 마음일지도 몰라요.",
