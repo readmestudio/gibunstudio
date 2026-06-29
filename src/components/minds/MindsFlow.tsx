@@ -20,7 +20,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
 import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
 import { getAttribution } from "@/lib/attribution";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
 import { MindsLanding } from "./MindsLanding";
 import { MindsLeadCapture, type MindsLead } from "./MindsLeadCapture";
 import { MindsConversation, type MindAnswer } from "./MindsConversation";
@@ -124,7 +124,14 @@ export function MindsFlow() {
   return (
     <div className="mx-auto w-full max-w-[448px] px-6 py-8 sm:py-10">
       {phase === "landing" && (
-        <MindsLanding onStart={() => setPhase("capture")} />
+        <MindsLanding
+          onStart={() => {
+            // 광고 최적화용 — "테스트 시작" 클릭을 맞춤 이벤트로 잡는다.
+            // 이 단계는 URL 이동이 없어 PageView 가 울리지 않으므로 코드로 직접 발화.
+            trackMetaCustom("StartTest", { content_name: "minds" });
+            setPhase("capture");
+          }}
+        />
       )}
 
       {phase === "capture" && (
