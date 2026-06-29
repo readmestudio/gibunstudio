@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { alertLimitReached } from '@/lib/cost-alert';
 
 /**
  * 인메모리 슬라이딩 윈도우 Rate Limiter
@@ -121,6 +122,18 @@ export function checkRateLimit(
     // 가장 오래된 요청이 빠질 때까지 남은 시간 계산
     const oldestInWindow = entry.timestamps[0];
     const retryAfterSeconds = Math.ceil((oldestInWindow + windowMs - now) / 1000);
+
+    // 운영 Slack 알림 (같은 IP+경로는 15분에 1회로 throttle, fire-and-forget)
+    alertLimitReached({
+      kind: 'rate-limit',
+      dedupeKey: `rate:${key}`,
+      title: `Rate Limit 도달: ${request.nextUrl.pathname}`,
+      fields: {
+        경로: request.nextUrl.pathname,
+        IP: ip,
+        한도: `${config.limit}회 / ${config.windowSeconds}초`,
+      },
+    });
 
     return NextResponse.json(
       {

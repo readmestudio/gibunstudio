@@ -1,5 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { consumeDailyBudget } from "@/lib/llm-budget";
 import {
   DIMENSIONS,
   DIAGNOSIS_QUESTIONS,
@@ -33,6 +35,21 @@ const LIKERT_LABEL: Record<number, string> = Object.fromEntries(
   LIKERT_OPTIONS.map((o) => [o.value, o.label])
 );
 
+/* ─── 비용 방어 상수 ───
+ * 무료·로그인 없는 리드 마그넷이라 인증·결제 게이트를 못 건다.
+ * 대신 (1) IP Rate Limit (2) 입력 길이 (3) 전역 일일 상한으로 막는다. */
+
+// 정상 답변(20문항 × 숫자)은 1KB 미만. 그 이상은 토큰 폭탄으로 간주.
+const MAX_BODY_BYTES = 10_000;
+// 정상 진단은 20문항. 비정상적으로 큰 답변 객체 차단.
+const MAX_ANSWER_KEYS = 100;
+// 하루 전체 호출 상한(서킷 브레이커). 운영 중 env로 조정 가능.
+// gemini-2.5-pro 단발 호출 비용 × 이 값 = 하루 최대 비용 천장.
+const DAILY_LIMIT = Math.max(
+  1,
+  Number(process.env.ACHIEVEMENT_DIAGNOSE_DAILY_LIMIT ?? 500)
+);
+
 interface DiagnoseOutput {
   state_summary: string;
   frequent_thoughts: string[];
@@ -40,7 +57,22 @@ interface DiagnoseOutput {
   bridge: string;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  /* ─── 1) IP Rate Limit ───
+   * 무거운 gemini-2.5-pro 단발 호출이라 ai 프리셋(IP당 5회/분).
+   * 인증 전(여기선 인증 자체가 없음)에 비용 폭주부터 막는다. */
+  const rateLimited = checkRateLimit(req, RATE_LIMITS.ai);
+  if (rateLimited) return rateLimited;
+
+  /* ─── 2) 입력 길이 ─── 토큰 폭탄 차단 (정상 답변은 1KB 미만). */
+  const contentLength = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json(
+      { error: "입력이 너무 큽니다." },
+      { status: 413 }
+    );
+  }
+
   let answers: Record<string, number>;
   try {
     const body = await req.json();
@@ -52,7 +84,8 @@ export async function POST(req: Request) {
   if (
     !answers ||
     typeof answers !== "object" ||
-    Object.keys(answers).length === 0
+    Object.keys(answers).length === 0 ||
+    Object.keys(answers).length > MAX_ANSWER_KEYS
   ) {
     return NextResponse.json(
       { error: "답변 데이터가 필요합니다." },
@@ -141,6 +174,20 @@ ${dimensionLines}
 ${strongItemsText}
 
 위 결과를 바탕으로 "지금 당신의 상태" 진단을 OUTPUT 형식의 JSON으로 작성하세요.`;
+
+  /* ─── 3) 전역 일일 상한 (서킷 브레이커) ───
+   * Rate Limit·입력 검증을 모두 통과한 정상 요청만 예산을 소비한다.
+   * 분산 공격(여러 IP)에도 하루 총 호출 수가 천장을 넘지 못하게 막는다. */
+  const budget = consumeDailyBudget("achievement-diagnose", DAILY_LIMIT);
+  if (!budget.allowed) {
+    console.warn(
+      `achievement-test/diagnose: 일일 상한(${budget.limit}) 도달 — LLM 호출 차단`
+    );
+    return NextResponse.json(
+      { error: "오늘 이용량이 많아 잠시 후 다시 시도해 주세요." },
+      { status: 503 }
+    );
+  }
 
   try {
     const response = await chatCompletion(
