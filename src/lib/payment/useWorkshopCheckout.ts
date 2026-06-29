@@ -14,6 +14,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { BuyAction } from "@/types/payment";
 import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
+import {
+  trackWorkshopBuyAttempt,
+  type WorkshopFunnelSource,
+} from "@/lib/workshop/track";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const BUYNOW_METHOD = process.env.NEXT_PUBLIC_NICEPAY_BUYNOW_METHOD || "";
@@ -27,6 +31,12 @@ export interface UseWorkshopCheckoutParams {
   goodsName: string;
   /** 이미 구매한 워크북일 때의 처리 (기본: alert 후 대시보드 이동 시도) */
   onAlreadyPurchased?: () => void;
+  /**
+   * 이 결제 훅이 특정 무료 퍼널(예: 성취중독 테스트)에 붙어 있을 때의 출처 키.
+   * 지정되면 결제수단 버튼 클릭 즉시(로그인 전에도) 운영자 슬랙에 "구매 시도"를
+   * 알린다. 미지정이면 알림을 보내지 않는다(일반 판매 화면 영향 없음).
+   */
+  funnelSource?: WorkshopFunnelSource;
 }
 
 function redirectToLogin(router: ReturnType<typeof useRouter>) {
@@ -57,6 +67,13 @@ export function useWorkshopCheckout(params: UseWorkshopCheckoutParams) {
 
     setSubmittingAction(action);
 
+    // 무료 퍼널(성취중독 테스트 등)에 붙어 있으면, 결제수단 버튼을 누른 "구매 시도"를
+    // 클릭 즉시 운영자 슬랙에 알린다(로그인 전에도). 결제 생성 라우트의 알림(④)은
+    // 로그인 인증 후에만 떠서 비로그인 시도를 놓치므로, 그 빈틈을 여기서 메운다.
+    if (params.funnelSource) {
+      trackWorkshopBuyAttempt(params.funnelSource, method ?? null);
+    }
+
     // 무료 /minds 를 거쳐온 사용자라면, 그때 저장해 둔 리드 id 를 결제에 실어
     // 보낸다(없으면 null). 결제 승인 시 워크북 진행에 복사돼, 워크북 단계에서
     // minds 배역(parts_map)을 이어서 보여줄 연결 키가 된다.
@@ -73,6 +90,9 @@ export function useWorkshopCheckout(params: UseWorkshopCheckoutParams) {
           workshopType: params.workshopType,
           amount: params.amount,
           mindsLeadId,
+          // 운영자 슬랙 알림에서 결제수단(카카오페이/네이버페이/카드)을 구분하기 위해
+          // NicePay method 코드를 함께 보낸다. 결제 로직엔 영향 없음.
+          method: method ?? null,
         }),
       });
 

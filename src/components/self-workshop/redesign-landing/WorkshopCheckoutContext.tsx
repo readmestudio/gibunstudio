@@ -4,6 +4,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
+import type { WorkshopFunnelSource } from "@/lib/workshop/track";
 import { WORKSHOP_PRICE } from "@/lib/self-workshop/landing-data";
 import { WorkbookCheckoutModal } from "./WorkbookCheckoutModal";
 
@@ -56,8 +57,15 @@ export function useWorkshopCheckoutCtx() {
  */
 export function WorkshopCheckoutProvider({
   children,
+  source,
 }: {
   children: ReactNode;
+  /**
+   * 이 결제 컨텍스트가 특정 무료 퍼널(예: 성취중독 테스트)에 붙어 있을 때의 출처 키.
+   * 지정하면 결제수단 버튼 클릭 즉시 운영자 슬랙에 "구매 시도"를 알린다.
+   * 미지정(일반 랜딩/스토어)이면 알림을 보내지 않는다.
+   */
+  source?: WorkshopFunnelSource;
 }) {
   const router = useRouter();
   const [sdkLoaded, setSdkLoaded] = useState(false);
@@ -72,6 +80,8 @@ export function WorkshopCheckoutProvider({
     // 이미 구매한 사용자 → 워크북 제작 현황(생성 중) 안내로.
     onAlreadyPurchased: () =>
       router.push("/dashboard/self-workshop/generating"),
+    // 무료 퍼널에 붙은 경우에만 "구매 시도" 슬랙 알림을 켠다(미지정이면 off).
+    funnelSource: source,
   });
 
   // 머천트 ID가 설정된 경우에만 SDK 로드를 기다린다. 미설정이면 버튼은
