@@ -19,21 +19,14 @@
 /** /api/workshop/track 의 SOURCE_LABELS 키와 일치해야 한다. */
 export type WorkshopFunnelSource = "achievement-test";
 
-// 모듈 스코프 — 같은 페이지 세션 동안 유지되는 "이미 보냄" 표시(source:method).
+// 모듈 스코프 — 같은 페이지 세션 동안 유지되는 "이미 보냄" 표시(이벤트별 dedupe 키).
 const alreadySent = new Set<string>();
 
-export function trackWorkshopBuyAttempt(
-  source: WorkshopFunnelSource,
-  method: string | null
-): void {
-  if (typeof window === "undefined") return;
-
-  const dedupeKey = `${source}:${method ?? "unknown"}`;
-  if (alreadySent.has(dedupeKey)) return;
-  alreadySent.add(dedupeKey);
-
-  const payload = JSON.stringify({ event: "buy_attempt", source, method });
-
+/**
+ * /api/workshop/track 으로 payload 를 보낸다(이탈 중에도 전송 보장).
+ * sendBeacon 우선, 미지원·실패 시 keepalive fetch 로 폴백.
+ */
+function postTrack(payload: string): void {
   try {
     if (typeof navigator !== "undefined" && navigator.sendBeacon) {
       const blob = new Blob([payload], { type: "application/json" });
@@ -51,6 +44,36 @@ export function trackWorkshopBuyAttempt(
     body: payload,
     keepalive: true,
   }).catch(() => {
-    // 알림은 부가 기능 — 실패해도 사용자 결제 흐름엔 영향 없음.
+    // 알림은 부가 기능 — 실패해도 사용자 흐름엔 영향 없음.
   });
+}
+
+export function trackWorkshopBuyAttempt(
+  source: WorkshopFunnelSource,
+  method: string | null
+): void {
+  if (typeof window === "undefined") return;
+
+  const dedupeKey = `buy_attempt:${source}:${method ?? "unknown"}`;
+  if (alreadySent.has(dedupeKey)) return;
+  alreadySent.add(dedupeKey);
+
+  postTrack(JSON.stringify({ event: "buy_attempt", source, method }));
+}
+
+/**
+ * 성취중독 무료 테스트 "시작"(첫 문항 응답)을 운영자 슬랙으로 알린다.
+ *
+ * 별도 "시작하기" 버튼이 없고(광고 유입은 인트로 스킵 → 바로 문항부터), 단순 방문과
+ * 진짜 시작을 구분하기 위해 첫 지문에 답을 고른 순간을 "시작"으로 본다. 세션당 1회만
+ * 전송한다(문항을 앞뒤로 넘겨도 슬랙엔 한 번만 뜬다).
+ */
+export function trackWorkshopTestStart(source: WorkshopFunnelSource): void {
+  if (typeof window === "undefined") return;
+
+  const dedupeKey = `test_start:${source}`;
+  if (alreadySent.has(dedupeKey)) return;
+  alreadySent.add(dedupeKey);
+
+  postTrack(JSON.stringify({ event: "test_start", source }));
 }

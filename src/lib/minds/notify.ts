@@ -12,6 +12,7 @@
  *    절대 막지 않는다.
  *
  * 단계:
+ *   ⓪ 테스트 시작(랜딩 클릭)  notifyMindsTestStart
  *   ① 카카오 로그인          notifyMindsLogin
  *   ② 배역표(Final) 도달     notifyMindsReachedPaywall
  *   ③ "워크북 구매하기" 클릭  notifyMindsCheckoutClick
@@ -79,6 +80,28 @@ function leadLabel(
   if (!lead) return "익명 방문자";
   const channel = lead.channel === "kakao" ? "카카오" : "이메일";
   return lead.email ? `${lead.email} (${channel})` : `(${channel} 리드)`;
+}
+
+/* ── ⓪ 테스트 시작("3분 무료 테스트" 버튼 클릭) ── */
+export async function notifyMindsTestStart(p: {
+  leadId: string | null;
+}): Promise<void> {
+  // 이 시점엔 아직 연락처 캡처 전이라 leadId 가 대개 없다 → 익명으로 뜬다.
+  const lead = await lookupLead(p.leadId);
+  await sendSlackMessage({
+    channel: SLACK_OPEN_NOTIFY_CHANNEL,
+    text: `🚀 /minds 테스트 시작: ${leadLabel(lead)}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `🚀 *테스트 시작* — "3분 무료 테스트" 버튼 클릭\n*${leadLabel(lead)}*`,
+        },
+      },
+      timeContext(),
+    ],
+  });
 }
 
 /* ── ① 카카오 로그인 ── */
@@ -160,6 +183,60 @@ export async function notifyMindsPaymentStart(p: {
         text: {
           type: "mrkdwn",
           text: `💳 *결제 시작* — ${methodLabel(p.method)} 버튼 클릭\n*${p.email || "(이메일 없음)"}* · ${won(p.amount)}${p.viaMinds ? "\n🎬 /minds 깔때기를 거쳐 온 결제예요." : ""}`,
+        },
+      },
+      timeContext(),
+    ],
+  });
+}
+
+/**
+ * 워크북 "구매 시도" — 결제수단(카카오페이/네이버페이/카드) 버튼 클릭 즉시.
+ *
+ * notifyMindsPaymentStart(④)는 /api/payment/workshop/create 안에서, 즉 로그인
+ * 인증을 통과한 뒤에야 발화한다. 그런데 성취중독 무료 테스트는 "로그인 불필요"
+ * 퍼널이라, 비로그인 사용자가 결제 버튼을 누르면 401 로 튕겨 ④ 알림이 안 뜬다.
+ * 이 함수는 그 빈틈을 메운다 — 클라이언트에서 클릭 즉시(로그인 전에도) 쏘는 신호.
+ * source 로 어느 퍼널(예: 성취중독 테스트)에서 눌렀는지 함께 표기한다.
+ */
+export async function notifyWorkshopBuyAttempt(p: {
+  method: string | null;
+  source: string;
+}): Promise<void> {
+  await sendSlackMessage({
+    channel: SLACK_OPEN_NOTIFY_CHANNEL,
+    text: `🛍️ ${p.source} 구매 시도 (${methodLabel(p.method)})`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `🛍️ *구매 시도* — ${methodLabel(p.method)} 버튼 클릭\n*${p.source}*`,
+        },
+      },
+      timeContext(),
+    ],
+  });
+}
+
+/* ── ⓪′ 성취중독 무료 테스트 "시작"(첫 문항 응답) ── */
+/**
+ * 성취중독 테스트는 별도 "시작하기" 버튼 흐름이 아니라(광고/카드뉴스 유입은 인트로를
+ * 건너뛰고 바로 문항부터 시작), 첫 지문에 답을 고른 순간을 "시작"으로 본다. 단순
+ * 방문(PageView)과 구분되는 '진짜 시작' 신호를 운영자가 실시간으로 보도록 쏜다.
+ */
+export async function notifyWorkshopTestStart(p: {
+  source: string;
+}): Promise<void> {
+  await sendSlackMessage({
+    channel: SLACK_OPEN_NOTIFY_CHANNEL,
+    text: `🚀 ${p.source} 시작 (첫 문항 응답)`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `🚀 *테스트 시작* — 첫 문항에 응답(지문 클릭)\n*${p.source}*`,
         },
       },
       timeContext(),

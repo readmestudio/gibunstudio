@@ -36,6 +36,7 @@ import {
   WORKSHOP_DISCOUNT_PERCENT,
 } from "@/lib/self-workshop/landing-data";
 import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
+import { trackWorkshopTestStart } from "@/lib/workshop/track";
 import {
   D,
   COL,
@@ -1311,6 +1312,8 @@ export function AchievementTestFunnel({ skipIntro = false }: { skipIntro?: boole
     if (Object.keys(answers).length >= 1) {
       startedRef.current = true;
       trackMetaCustom("StartTest", { content_name: "achievement" });
+      // 운영자 슬랙 알림 — 단순 방문과 구분되는 '진짜 시작'(첫 지문 응답) 신호.
+      trackWorkshopTestStart("achievement-test");
     }
   }, [answers]);
 
