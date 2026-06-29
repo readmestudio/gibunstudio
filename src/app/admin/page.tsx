@@ -51,6 +51,7 @@ export default async function AdminHomePage() {
     { count: waitlistCount },
     { count: notifyCount },
     { count: surveyCount },
+    { count: reviewCount },
   ] = await Promise.all([
     admin
       .from("workbook_waitlist")
@@ -60,6 +61,9 @@ export default async function AdminHomePage() {
       .select("*", { count: "exact", head: true }),
     admin
       .from("workshop_survey_responses")
+      .select("*", { count: "exact", head: true }),
+    admin
+      .from("test_reviews")
       .select("*", { count: "exact", head: true }),
   ]);
 
@@ -97,6 +101,14 @@ export default async function AdminHomePage() {
       description:
         "결제 후 회원이 제출한 맞춤 제작 설문(이름·연락처·고민·해결하고 싶은 부분)을 확인해요.",
       stats: [{ label: "제출", value: surveyCount ?? 0, unit: "건" }],
+    },
+    {
+      href: "/admin/reviews",
+      eyebrow: "REVIEW · 테스트 후기",
+      title: "테스트 후기",
+      description:
+        "성취중독·minds 테스트 후 페이월에서 이탈하려던 방문자가 남긴 후기를 테스트별로 보고, 추첨 연락처를 확인해요.",
+      stats: [{ label: "후기", value: reviewCount ?? 0, unit: "건" }],
     },
   ];
 

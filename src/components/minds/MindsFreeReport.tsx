@@ -18,11 +18,15 @@
  * 카드 넘김은 검증된 husband-match CardCarousel을 재사용한다(스와이프+화살표+도트).
  */
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CardCarousel } from "@/components/husband-match/CardCarousel";
+import { ReviewPopup } from "@/components/reviews/ReviewPopup";
+import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
 import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
 import { buildCharacterViews } from "@/lib/minds/characters";
 import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackMindsFunnel } from "@/lib/minds/track";
 import { MindsCoverCard } from "./MindsCoverCard";
 import { MindsCharacterCard } from "./MindsCharacterCard";
 import {
@@ -38,11 +42,22 @@ import {
 export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
   const views = buildCharacterViews(partsMap);
   const router = useRouter();
+
+  // 페이월(MindsPricingCard) 카드에 도달하면 후기 팝업의 이탈 감지를 켠다.
+  // 페이월을 본 방문자만 대상으로 하기 위해, 카드가 쏘는 window 이벤트를 듣고 무장한다.
+  const [paywallReached, setPaywallReached] = useState(false);
+  useEffect(() => {
+    const onReached = () => setPaywallReached(true);
+    window.addEventListener("minds:paywall-reached", onReached);
+    return () => window.removeEventListener("minds:paywall-reached", onReached);
+  }, []);
   const openCheckout = () => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "minds_to_store",
       currency: "KRW",
     });
+    // ③ 운영자 슬랙 알림 — 결제 페이지로 이탈하기 직전 신호(sendBeacon).
+    trackMindsFunnel("checkout_click");
     router.push("/payment/start");
   };
 
@@ -71,6 +86,18 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
   return (
     <div className="w-full">
       <CardCarousel cards={cards} />
+      {/* 페이월을 본 뒤, 결제 없이 이탈하려는 순간 후기 팝업. minds 는 leadId 로 누가 썼는지 잇는다. */}
+      <ReviewPopup
+        testType="minds"
+        armed={paywallReached}
+        getLeadId={() => {
+          try {
+            return localStorage.getItem(MINDS_LEAD_STORAGE_KEY);
+          } catch {
+            return null;
+          }
+        }}
+      />
     </div>
   );
 }

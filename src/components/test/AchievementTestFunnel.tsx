@@ -37,6 +37,7 @@ import {
 } from "@/lib/self-workshop/landing-data";
 import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
 import { trackWorkshopTestStart } from "@/lib/workshop/track";
+import { ReviewPopup } from "@/components/reviews/ReviewPopup";
 import {
   D,
   COL,
@@ -1289,6 +1290,10 @@ function Result({
           테스트 다시 하기
         </button>
       </div>
+
+      {/* 결과(=페이월)에 도달한 방문자에게, 결제 없이 이탈하려는 순간 후기 팝업을 띄운다.
+          성취중독은 비로그인 퍼널이라 식별자가 없어 leadId 없이 익명으로 저장된다. */}
+      <ReviewPopup testType="achievement" armed />
     </div>
   );
 }

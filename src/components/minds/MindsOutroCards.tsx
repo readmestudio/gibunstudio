@@ -320,6 +320,11 @@ export function MindsPricingCard({ onCheckout }: { onCheckout: () => void }) {
   // 처음 마운트되는 순간이 곧 "Final 배역표 도달". 세션당 1회만 전송된다(track.ts).
   useEffect(() => {
     trackMindsFunnel("reached_paywall");
+    // 이탈 리뷰 팝업(ReviewPopup)이 "페이월 도달"을 알도록 신호를 쏜다.
+    // 카드가 캐러셀 깊숙이 있어 prop 으로 직접 내리는 대신 window 이벤트로 느슨하게 연결.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("minds:paywall-reached"));
+    }
   }, []);
 
   return (
