@@ -45,13 +45,25 @@ interface QueryOpts {
 
 let publicClient: SupabaseClient | null = null;
 
-function getPublicClient(): SupabaseClient {
-  if (!publicClient) {
-    publicClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { persistSession: false } }
+/**
+ * env(NEXT_PUBLIC_SUPABASE_URL/ANON_KEY)가 없으면 createClient 가
+ * "supabaseUrl is required" 로 throw → generateStaticParams 같은 빌드 타임
+ * 호출에서 터지면 배포 전체가 실패한다. 그래서 env 부재 시 throw 대신 null 을
+ * 반환하고, 호출부는 빈 결과로 우회한다(dynamicParams=true 라 요청 시 렌더).
+ */
+function getPublicClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    console.error(
+      "[essays/data] Supabase env 누락 — NEXT_PUBLIC_SUPABASE_URL/ANON_KEY 확인 필요"
     );
+    return null;
+  }
+  if (!publicClient) {
+    publicClient = createClient(url, anonKey, {
+      auth: { persistSession: false },
+    });
   }
   return publicClient;
 }
@@ -74,7 +86,10 @@ function rowToEssay(row: EssayRow): Essay {
 }
 
 export async function getAllEssays(opts: QueryOpts = {}): Promise<Essay[]> {
-  let query = getPublicClient()
+  const client = getPublicClient();
+  if (!client) return [];
+
+  let query = client
     .from("essays")
     .select(SELECT_COLUMNS)
     .order("published_at", { ascending: false });
@@ -95,7 +110,10 @@ export async function getEssayBySlug(
   slug: string,
   opts: QueryOpts = {}
 ): Promise<Essay | null> {
-  let query = getPublicClient()
+  const client = getPublicClient();
+  if (!client) return null;
+
+  let query = client
     .from("essays")
     .select(SELECT_COLUMNS)
     .eq("slug", slug);
@@ -116,7 +134,10 @@ export async function getLatestEssays(
   count: number,
   opts: QueryOpts = {}
 ): Promise<Essay[]> {
-  let query = getPublicClient()
+  const client = getPublicClient();
+  if (!client) return [];
+
+  let query = client
     .from("essays")
     .select(SELECT_COLUMNS)
     .order("published_at", { ascending: false })
