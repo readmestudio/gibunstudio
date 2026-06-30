@@ -50,10 +50,7 @@ import {
 
 // ── 워크북 결제 + overview 섹션 재사용 (.lr 네임스페이스) ──
 import "@/components/self-workshop/redesign-landing/landing.css";
-import {
-  WorkshopCheckoutProvider,
-  useWorkshopCheckoutCtx,
-} from "@/components/self-workshop/redesign-landing/WorkshopCheckoutContext";
+import { WorkshopCheckoutProvider } from "@/components/self-workshop/redesign-landing/WorkshopCheckoutContext";
 import { useFadeIn } from "@/components/self-workshop/redesign-landing/useFadeIn";
 import { StickyCTA, Divider } from "@/components/self-workshop/redesign-landing/Chrome";
 import { OverviewIntroSection } from "@/components/self-workshop/redesign-landing/OverviewIntroSection";
@@ -987,12 +984,7 @@ function ResultLLMDiagnosis({ answers }: { answers: Record<string, number> }) {
 // ─────────────────── RESULT: 워크북 구매 CTA ─────────────────── //
 
 function ResultCTA() {
-  // 워크북 랜딩의 결제 컨텍스트를 그대로 공유 — 클릭 즉시 NicePay 결제창.
-  // (상품/금액/이미구매 처리는 모두 WorkshopCheckoutProvider 안에서 일괄)
-  const { payKakao, payNpay, openModal, isSubmitting, sdkPending } =
-    useWorkshopCheckoutCtx();
-  const blocked = isSubmitting || sdkPending;
-
+  // 정식 오픈 전 — 결제 대신 대기신청으로 연결한다.
   return (
     <section
       style={{
@@ -1111,86 +1103,30 @@ function ResultCTA() {
           </div>
         </Reveal>
 
-        {/* 결제 — 랜딩으로 보내지 않고 여기서 바로. 카카오페이 / 네이버페이 2버튼. */}
+        {/* 정식 오픈 전 — 결제 대신 대기신청 CTA */}
         <Reveal delay={480}>
-          <div
-            style={{
-              marginTop: 40,
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <button
-              type="button"
-              onClick={payKakao}
-              disabled={blocked}
-              aria-label="카카오페이로 워크북 결제"
-              style={{
-                fontFamily: D.font,
-                fontWeight: 700,
-                fontSize: 16,
-                color: "#191600",
-                background: "#FEE500",
-                border: "none",
-                borderRadius: 999,
-                padding: "16px 30px",
-                cursor: blocked ? "not-allowed" : "pointer",
-                opacity: blocked ? 0.6 : 1,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              {isSubmitting ? "결제 진행 중…" : "카카오페이로 결제"}
-            </button>
-            <button
-              type="button"
-              onClick={payNpay}
-              disabled={blocked}
-              aria-label="네이버페이로 워크북 결제"
+          <div style={{ marginTop: 40 }}>
+            <a
+              href="/waitlist"
+              aria-label="워크북 정식 오픈 대기 신청"
               style={{
                 fontFamily: D.font,
                 fontWeight: 700,
                 fontSize: 16,
                 color: "#fff",
-                background: "#03C75A",
+                background: D.accent,
                 border: "none",
                 borderRadius: 999,
-                padding: "16px 30px",
-                cursor: blocked ? "not-allowed" : "pointer",
-                opacity: blocked ? 0.6 : 1,
+                padding: "16px 34px",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
+                textDecoration: "none",
               }}
             >
-              {isSubmitting ? "결제 진행 중…" : "네이버페이로 결제"}
-            </button>
+              대기 신청하고 오픈 알림 받기 →
+            </a>
           </div>
-        </Reveal>
-
-        <Reveal delay={540}>
-          <button
-            type="button"
-            onClick={openModal}
-            disabled={blocked}
-            style={{
-              marginTop: 18,
-              fontFamily: D.font,
-              fontSize: 14,
-              fontWeight: 500,
-              color: "rgba(255,255,255,0.7)",
-              background: "transparent",
-              border: "none",
-              cursor: blocked ? "not-allowed" : "pointer",
-              textDecoration: "underline",
-              textUnderlineOffset: 4,
-            }}
-          >
-            신용·체크카드 등 다른 결제수단
-          </button>
         </Reveal>
 
         <Reveal delay={600}>
@@ -1200,7 +1136,7 @@ function ResultCTA() {
             tracking={0.14}
             style={{ marginTop: 24, display: "block" }}
           >
-            워크북 1인 1회 · 리포트 1년 보관 · 서베이 제출 전 전액 환불
+            정식 오픈 준비 중 · 대기 신청하면 오픈 시 특별가로 알려드려요
           </Mono>
         </Reveal>
       </div>

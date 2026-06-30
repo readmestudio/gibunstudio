@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { WorkbookBuyButton } from "./WorkbookBuyButton";
 
 /* ============================================================
  * PricingSection — 워크북 단독 vs 워크북+상담 비교 2단
@@ -52,10 +51,10 @@ export function PricingSection() {
                 </div>
               ))}
             </div>
-            <WorkbookBuyButton className="lr-cta-pill lr-cta-ghost">
-              오픈 특가로 구매하기
+            <a className="lr-cta-pill lr-cta-ghost" href="/waitlist">
+              워크북만 대기신청하기
               <span className="lr-arrow">→</span>
-            </WorkbookBuyButton>
+            </a>
           </div>
 
           {/* 플랜 ②: 워크북 + 심리 상담 (강조) */}
@@ -107,16 +106,16 @@ export function PricingSection() {
               </p>
             </div>
 
-            <a className="lr-cta-pill" href="/programs/counseling">
-              상담까지 함께 문의하기
+            <a className="lr-cta-pill" href="/waitlist">
+              상담까지 함께 대기신청하기
               <span className="lr-arrow">→</span>
             </a>
           </div>
         </div>
         <div className="lr-price-foot lr-f-up">
-          워크북은 지금 바로 시작할 수 있어요. 무료 진단 후 결제로 이어집니다.
+          현재 소수의 인원으로 소프트 런칭 후 고도화하고 있어요.
           <br />
-          상담까지 함께 원하시면 카카오톡으로 편하게 문의해 주세요.
+          추후 판매가 오픈되면 알림을 보내드릴게요.
         </div>
       </div>
     </section>
@@ -431,7 +430,7 @@ export function FinalCTA() {
           <div className="lr-grid-bg" />
           <span className="lr-eyebrow lr-dark">
             <span className="lr-dot" />
-            START NOW
+            JOIN THE WAITLIST
           </span>
           <h2>
             마음을 챙겨야
@@ -439,12 +438,12 @@ export function FinalCTA() {
             <em>퍼포먼스가 따라옵니다</em>
           </h2>
           <p className="lr-sub">
-            무료 자가 진단으로 지금 바로 시작해 보세요.
+            정식 오픈 시 알림과 함께 얼리 액세스 특별가를 보내드릴게요.
           </p>
-          <WorkbookBuyButton className="lr-cta-pill lr-invert">
-            오픈 특가로 구매하기
+          <a href="/waitlist" className="lr-cta-pill lr-invert">
+            대기자 등록하고 할인받기
             <span className="lr-arrow">→</span>
-          </WorkbookBuyButton>
+          </a>
         </div>
       </div>
     </section>

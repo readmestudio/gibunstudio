@@ -1,7 +1,5 @@
 "use client";
 
-import { WorkbookBuyButton } from "./WorkbookBuyButton";
-
 /**
  * 워크북 전반 상세 페이지(`/payment/self-workshop`) 전용 Hero.
  *
@@ -71,13 +69,13 @@ export function OverviewHero() {
         <div className="lr-hero-chips lr-f-up lr-d1">
           <span className="lr-chip">#내면가족체계</span>
           <span className="lr-chip">#셀프심리상담</span>
-          <span className="lr-chip">#무료자가진단</span>
+          <span className="lr-chip">#소프트런칭특가</span>
         </div>
         <div className="lr-hero-cta-row lr-f-up lr-d2">
-          <WorkbookBuyButton className="lr-cta-pill lr-accent">
-            오픈 특가로 구매하기
+          <a href="/waitlist" className="lr-cta-pill lr-accent">
+            대기자 등록하기
             <span className="lr-arrow">→</span>
-          </WorkbookBuyButton>
+          </a>
         </div>
         <div className="lr-scroll-cue">
           <span className="lr-line" />

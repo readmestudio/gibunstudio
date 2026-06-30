@@ -18,7 +18,6 @@ import { useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 import { getCounselingType } from "@/lib/counseling/types";
 import {
   WORKSHOP_PRICE,
@@ -32,7 +31,6 @@ const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL =
   process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "https://pay.nicepay.co.kr/v1/js/";
 
-const WORKBOOK_GOODS_NAME = "심리 상담 워크북 - 성취 중독";
 const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
 
 /**
@@ -87,18 +85,6 @@ export function StoreCheckout({ isLoggedIn = false }: { isLoggedIn?: boolean }) 
   const [counselingSubmitting, setCounselingSubmitting] = useState<
     string | null
   >(null);
-
-  // ── 워크북 결제 (로그인 필요, workshop_purchases) ──
-  const {
-    submittingAction: workbookAction,
-    handleKakao: workbookKakao,
-    handleNpay: workbookNpay,
-  } = useWorkshopCheckout({
-    productId: "achievement-addiction",
-    workshopType: "achievement-addiction",
-    amount: WORKSHOP_PRICE,
-    goodsName: WORKBOOK_GOODS_NAME,
-  });
 
   const sdkPending = !!NICEPAY_CLIENT_ID && !sdkLoaded;
 
@@ -211,19 +197,17 @@ export function StoreCheckout({ isLoggedIn = false }: { isLoggedIn?: boolean }) 
           </div>
 
           <div className="mt-5">
-            <PayButtons
-              stacked
-              onKakao={workbookKakao}
-              onNaver={workbookNpay}
-              kakaoLoading={workbookAction === "buyNow"}
-              naverLoading={workbookAction === "npay"}
-              disabled={sdkPending}
-            />
+            <Link
+              href="/waitlist"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-[var(--foreground)] bg-[var(--foreground)] px-5 py-3.5 text-sm font-bold text-white transition-transform hover:scale-[1.01] active:scale-[0.98]"
+            >
+              대기 신청하고 오픈 알림 받기 →
+            </Link>
           </div>
 
           <p className="mt-3 text-xs leading-relaxed text-[var(--foreground)]/45">
-            결제 후 답변에 맞춰 워크북을 제작해, 다음 날 워크북 링크를 보내드려요.
-            (바로 열람되는 상품이 아니에요.)
+            워크북은 정식 오픈을 준비 중이에요. 대기 신청하면 오픈 시
+            특별가로 알려드려요.
           </p>
         </div>
       </section>
