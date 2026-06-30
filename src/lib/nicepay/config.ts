@@ -1,10 +1,14 @@
 /**
  * NicePay 결제 설정
  *
- * .env.local에 아래 변수를 설정하세요:
- *   NEXT_PUBLIC_NICEPAY_MERCHANT_ID=your_client_id
+ * .env.local(로컬) + 배포 환경변수(실서버)에 아래 변수를 설정하세요:
+ *   NEXT_PUBLIC_NICEPAY_MERCHANT_ID=your_client_id   (운영키: R1_/R2_..., 테스트키: S2_...)
  *   NICEPAY_MERCHANT_KEY=your_secret_key
  *   NEXT_PUBLIC_NICEPAY_SDK_URL=https://pay.nicepay.co.kr/v1/js/
+ *
+ * 참고: NicePay V2 clientId 접두사 — R1_/R2_ = 운영(라이브), S2_ = 테스트(샌드박스).
+ *   카카오페이/네이버페이 간편결제는 NicePay 상점 활성화 + 각 페이사(카카오/네이버)
+ *   심사까지 끝나야 결제창이 열린다.
  */
 
 export const NICEPAY_CONFIG = {
@@ -14,7 +18,7 @@ export const NICEPAY_CONFIG = {
   sdkUrl:
     process.env.NEXT_PUBLIC_NICEPAY_SDK_URL ||
     "https://pay.nicepay.co.kr/v1/js/",
-  /** 서버 승인 API URL */
+  /** 서버 승인 API URL (운영키↔실서버 / 테스트키↔샌드박스로 짝을 맞출 것) */
   apiUrl:
     process.env.NODE_ENV === "production"
       ? "https://api.nicepay.co.kr/v1/payments"

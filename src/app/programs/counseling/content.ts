@@ -15,7 +15,7 @@ export const PACKAGE_PRICE = 792_000;
 export const PACKAGE_PER_SESSION = 99_000;
 
 /* ── 카카오톡 채널 ───────────────────────────────────────
-   검색용 아이디(gibun_studio)가 아니라 공개 채널 URL(밑줄 코드)을 써야 열린다. */
+   검색용 아이디(gibunstudio)가 아니라 공개 채널 URL(밑줄 코드)을 써야 열린다. */
 export const KAKAO_CHANNEL_URL = "https://pf.kakao.com/_WTDxfX";
 
 /* 프로그램 목록(뒤로가기) 경로 */
@@ -156,6 +156,8 @@ export const COUNSELOR = {
 /* ── 08. 가격 / 오퍼 ────────────────────────────────── */
 export interface OfferPlan {
   id: string;
+  /** 결제 페이지(/payment/counseling/[type]) 로 쓸 COUNSELING_TYPES id */
+  payType: string;
   tag: string; // 영문 라벨 (TRIAL / 8-SESSION PACKAGE)
   sessions: number; // 회차 수 (1 / 8) — 카드 상단에 크게 표기
   sessionKo: string; // 회차 성격 한글 라벨 (체험 상담 / 정규 커리큘럼)
@@ -170,6 +172,7 @@ export interface OfferPlan {
 export const OFFER_PLANS: OfferPlan[] = [
   {
     id: "trial",
+    payType: "trial",
     tag: "TRIAL",
     sessions: 1,
     sessionKo: "체험 상담",
@@ -186,6 +189,7 @@ export const OFFER_PLANS: OfferPlan[] = [
   },
   {
     id: "package",
+    payType: "package-8",
     tag: "8-SESSION PACKAGE",
     sessions: 8,
     sessionKo: "정규 커리큘럼",

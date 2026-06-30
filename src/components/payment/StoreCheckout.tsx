@@ -17,6 +17,7 @@
 import { useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
 import { getCounselingType } from "@/lib/counseling/types";
 import {
@@ -79,7 +80,8 @@ function PayButtons({
   );
 }
 
-export function StoreCheckout() {
+export function StoreCheckout({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
+  const router = useRouter();
   const [sdkLoaded, setSdkLoaded] = useState(false);
   // 결제 진행 중인 상담 버튼 키 `${typeId}:${method}` — 버튼 라벨/비활성용.
   const [counselingSubmitting, setCounselingSubmitting] = useState<
@@ -105,6 +107,13 @@ export function StoreCheckout() {
   function startCounselingPayment(typeId: string, method: string) {
     const ct = getCounselingType(typeId);
     if (!ct) return;
+
+    // 상담은 로그인 후에만 결제 가능 — 비로그인은 로그인 페이지로 보낸 뒤 되돌아온다.
+    if (!isLoggedIn) {
+      alert("로그인 후 상담 결제를 진행해주세요.");
+      router.push("/login?redirect=/payment/start");
+      return;
+    }
 
     if (!NICEPAY_CLIENT_ID) {
       alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");

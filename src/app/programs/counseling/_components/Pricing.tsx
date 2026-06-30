@@ -1,8 +1,10 @@
-import { KAKAO_CHANNEL_URL, OFFER_PLANS } from "../content";
+import Link from "next/link";
+import { OFFER_PLANS } from "../content";
 
 /**
  * [5] PRICING — 1회 체험 / 8회 패키지(추천) 2열.
- * 추천 카드는 다크 + 오프셋 블록 + 상단 배지. CTA는 카카오톡 채널로 연결.
+ * 추천 카드는 다크 + 오프셋 블록 + 상단 배지. CTA는 인앱 결제 페이지로 연결한다
+ * (로그인 → NicePay 결제 → 사전 설문 → 상담사 배정).
  */
 export function Pricing() {
   return (
@@ -50,14 +52,12 @@ export function Pricing() {
                   </div>
                 ))}
               </div>
-              <a
-                href={KAKAO_CHANNEL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={`/payment/counseling/${plan.payType}`}
                 className="cta-pill"
               >
                 {plan.cta} <span className="arrow">→</span>
-              </a>
+              </Link>
             </div>
           ))}
         </div>

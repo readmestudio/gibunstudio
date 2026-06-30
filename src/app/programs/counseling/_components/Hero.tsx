@@ -1,10 +1,10 @@
-import { KAKAO_CHANNEL_URL } from "../content";
+import Link from "next/link";
 import { ChatIcon } from "./Icons";
 import { MeshGradientBg } from "./MeshGradientBg";
 
 /**
  * [1] HERO — 다크. 텍스트만 중앙 정렬, 일렁이는 셰이더 배경 + 격자.
- * CTA 1개(카카오톡 문의하기).
+ * CTA 1개(상담 시작하기) — 입문가(1회 체험) 결제 페이지로 연결.
  */
 export function Hero() {
   return (
@@ -27,9 +27,9 @@ export function Hero() {
           IFS와 인지행동치료 기반으로 1급 심리상담사가 직접 상담합니다
         </p>
         <div className="f-up delay-3">
-          <a href={KAKAO_CHANNEL_URL} target="_blank" rel="noopener noreferrer" className="cta-pill accent">
-            <ChatIcon /> 카카오톡 문의하기 <span className="arrow">→</span>
-          </a>
+          <Link href="/payment/counseling/trial" className="cta-pill accent">
+            <ChatIcon /> 상담 시작하기 <span className="arrow">→</span>
+          </Link>
         </div>
       </div>
     </section>

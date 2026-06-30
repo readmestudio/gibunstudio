@@ -1,8 +1,9 @@
-import { KAKAO_CHANNEL_URL } from "../content";
+import Link from "next/link";
 import { ChatIcon } from "./Icons";
 
 /**
  * [11] FINAL CTA — 다크 라운드 박스. 8회 패키지(primary) + 1회 체험(ghost).
+ * 두 CTA 모두 인앱 결제 페이지로 연결한다(로그인 → 결제 → 사전 설문 → 상담사 배정).
  */
 export function FinalCta() {
   return (
@@ -23,18 +24,16 @@ export function FinalCta() {
             지금 마음이 따라주지 않는다면, 1급 심리상담사와 함께 시작해 보세요.
           </p>
           <div className="cta-row">
-            <a href={KAKAO_CHANNEL_URL} target="_blank" rel="noopener noreferrer" className="cta-pill invert">
+            <Link href="/payment/counseling/package-8" className="cta-pill invert">
               <ChatIcon /> 8회 패키지 시작하기 <span className="arrow">→</span>
-            </a>
-            <a
-              href={KAKAO_CHANNEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            </Link>
+            <Link
+              href="/payment/counseling/trial"
               className="cta-ghost"
               style={{ color: "#fff", borderColor: "rgba(255,255,255,0.6)" }}
             >
               1회 체험 신청하기 →
-            </a>
+            </Link>
           </div>
         </div>
       </div>

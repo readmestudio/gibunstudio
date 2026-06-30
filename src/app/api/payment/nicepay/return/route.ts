@@ -474,7 +474,10 @@ async function handleCounselingPayment(
     console.error("상담 결제 기록 저장 예외:", { orderId, error: e });
   }
 
-  return NextResponse.redirect(`${baseUrl}/payment/counseling/complete`);
+  // order 를 실어 보내 완료 페이지에서 사전 설문 제출 여부를 분기한다.
+  return NextResponse.redirect(
+    `${baseUrl}/payment/counseling/complete?order=${encodeURIComponent(orderId)}`
+  );
 }
 
 /* ── 남편상 분석 결제 처리 (기존 로직) ── */
