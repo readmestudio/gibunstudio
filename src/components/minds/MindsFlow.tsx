@@ -21,6 +21,7 @@ import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
 import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
 import { getAttribution } from "@/lib/attribution";
 import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
+import { trackMindsFunnel } from "@/lib/minds/track";
 import { MindsLanding } from "./MindsLanding";
 import { MindsLeadCapture, type MindsLead } from "./MindsLeadCapture";
 import { MindsConversation, type MindAnswer } from "./MindsConversation";
@@ -129,6 +130,8 @@ export function MindsFlow() {
             // 광고 최적화용 — "테스트 시작" 클릭을 맞춤 이벤트로 잡는다.
             // 이 단계는 URL 이동이 없어 PageView 가 울리지 않으므로 코드로 직접 발화.
             trackMetaCustom("StartTest", { content_name: "minds" });
+            // 운영자 슬랙에도 "테스트 시작" 신호를 보낸다(세션당 1회 dedupe).
+            trackMindsFunnel("test_start");
             setPhase("capture");
           }}
         />

@@ -11,15 +11,14 @@
  * 몰입시킨다. 프라이싱(페이월) *이후* 장(이유·좋은 점)은 전환을 한 번 더 끌어올리는
  * 잔상 — 그래서 이 장들에는 항상 결제 CTA가 따라붙는다.
  *
- * 결제: 페이월/이후 카드의 CTA는 통일 결제 페이지(/payment/start)로 이동한다.
- * 거기서 워크북(₩49,000) 또는 심리상담(1회 ₩129,000 / 8회 ₩792,000)을 같은 가격으로
- * 선택해 결제한다 — 성취중독·멘탈헬스 테스트와 동일한 화면.
+ * 결제: 페이월/이후 카드의 CTA는 페이지 이동 없이 그 자리에서 MindsCheckoutModal 을
+ * 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩9,900) — 비로그인 leadId 결제 →
+ * 승인 후 /minds/relationship/[id] 리포트 페이지로 이동.
  *
  * 카드 넘김은 검증된 husband-match CardCarousel을 재사용한다(스와이프+화살표+도트).
  */
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { CardCarousel } from "@/components/husband-match/CardCarousel";
 import { ReviewPopup } from "@/components/reviews/ReviewPopup";
 import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
@@ -27,21 +26,22 @@ import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
 import { buildCharacterViews } from "@/lib/minds/characters";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
+import { MindsCheckoutModal } from "./MindsCheckoutModal";
 import { MindsCoverCard } from "./MindsCoverCard";
 import { MindsCharacterCard } from "./MindsCharacterCard";
 import {
   MindsSummaryCard,
   MindsConceptCard,
   MindsRolesCard,
-  MindsWhyCard,
-  MindsBenefitCard,
   MindsActiveStageCard,
   MindsPricingCard,
+  MindsCategoryReviewCard,
+  MindsWhyBenefitCard,
 } from "./MindsOutroCards";
 
 export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
   const views = buildCharacterViews(partsMap);
-  const router = useRouter();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // 페이월(MindsPricingCard) 카드에 도달하면 후기 팝업의 이탈 감지를 켠다.
   // 페이월을 본 방문자만 대상으로 하기 위해, 카드가 쏘는 window 이벤트를 듣고 무장한다.
@@ -53,12 +53,13 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
   }, []);
   const openCheckout = () => {
     trackMetaEvent("InitiateCheckout", {
-      content_name: "minds_to_store",
+      content_name: "minds_to_relationship",
       currency: "KRW",
     });
-    // ③ 운영자 슬랙 알림 — 결제 페이지로 이탈하기 직전 신호(sendBeacon).
+    // ③ 운영자 슬랙 알림 — 결제 의향 신호(sendBeacon).
     trackMindsFunnel("checkout_click");
-    router.push("/payment/start");
+    // 워크북 페이지로 이동하지 않고, 그 자리에서 결제 모달을 연다(₩9,900 리포트).
+    setCheckoutOpen(true);
   };
 
   const cards = [
@@ -73,19 +74,21 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
     )),
     // 3 배역 다음 — 답변+배역을 합친 개인화 요약 한 장
     <MindsSummaryCard key="summary" summary={partsMap.summary} views={views} />,
-    // 아웃트로 — 개념·배역 → 당신의 무대 → 페이월
+    // 아웃트로 — 개념·배역 → 당신의 무대 → 판매 3장
     <MindsConceptCard key="concept" />,
     <MindsRolesCard key="roles" />,
     <MindsActiveStageCard key="stage" views={views} />,
-    <MindsPricingCard key="pricing" onCheckout={openCheckout} />,
-    // 페이월 이후 — 결제를 한 번 더 끌어올리는 장(상시 CTA 부착)
-    <MindsWhyCard key="why" onCheckout={openCheckout} />,
-    <MindsBenefitCard key="benefit" onCheckout={openCheckout} />,
+    // 판매 3장(모든 CTA → 결제 모달): 분석완료+배역표 → 카테고리+후기 → Why+Benefit
+    <MindsPricingCard key="analysis" onCheckout={openCheckout} />,
+    <MindsCategoryReviewCard key="categories" onCheckout={openCheckout} />,
+    <MindsWhyBenefitCard key="whybenefit" onCheckout={openCheckout} />,
   ];
 
   return (
     <div className="w-full">
       <CardCarousel cards={cards} />
+      {/* 페이월 CTA → 그 자리에서 결제 모달(₩9,900 관계 해설 리포트). */}
+      <MindsCheckoutModal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} />
       {/* 페이월을 본 뒤, 결제 없이 이탈하려는 순간 후기 팝업. minds 는 leadId 로 누가 썼는지 잇는다. */}
       <ReviewPopup
         testType="minds"

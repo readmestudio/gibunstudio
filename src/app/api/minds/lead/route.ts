@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { notifyMindsLogin } from "@/lib/minds/notify";
 
 /**
  * POST /api/minds/lead
@@ -93,6 +94,12 @@ export async function POST(req: NextRequest) {
     console.error("[minds/lead] INSERT 실패:", error);
     // 리드 저장 실패가 사용자 경험(결과 보기)을 막지 않도록 200 + id:null.
     return NextResponse.json({ ok: false, id: null });
+  }
+
+  // 카카오는 실제 로그인 → 운영자 채널에 "테스트 시작" 알림(fire-and-forget).
+  // email 채널은 비로그인 리드라 로그인 알림 대상이 아니다.
+  if (channel === "kakao" && userId) {
+    after(() => notifyMindsLogin({ email, userId }));
   }
 
   return NextResponse.json({ ok: true, id: data.id });

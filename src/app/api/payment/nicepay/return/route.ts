@@ -1,10 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  notifyMindsPurchaseComplete,
+  notifyMindsRelationshipPurchase,
+} from "@/lib/minds/notify";
 import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { approveNicepayPayment } from "@/lib/nicepay/approve";
 import { MIND_SPILL_DAILY_SUB_DAYS } from "@/lib/mind-spill/constants";
 import { COUNSELING_TYPES, getCounselingType } from "@/lib/counseling/types";
+import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
 
 /**
  * POST /api/payment/nicepay/return
@@ -16,6 +21,7 @@ import { COUNSELING_TYPES, getCounselingType } from "@/lib/counseling/types";
  *   CT- → cart_orders (장바구니 통합 결제, 여러 상품)
  *   MS- → mind_spill_report_purchases (Mind Spill 리포트 1건)
  *   CN- → 상담 결제 (CN-{typeId}-... ; DB 기록 없이 금액 검증 후 승인/캡처)
+ *   MR- → minds_relationship_purchases (/minds 다섯 배역+관계 해설 리포트, 비로그인 리드 기반)
  */
 export async function POST(request: NextRequest) {
   if (!isNicepayEnabled()) {
@@ -56,6 +62,7 @@ export async function POST(request: NextRequest) {
   const isMindSpill = orderId.startsWith("MS-");
   const isMindSpillDailySub = orderId.startsWith("MD-");
   const isCounseling = orderId.startsWith("CN-");
+  const isMindsRelationship = orderId.startsWith("MR-");
 
   // 1. 인증 실패 시 실패 페이지로 리다이렉트
   if (resultCode !== "0000") {
@@ -69,6 +76,8 @@ export async function POST(request: NextRequest) {
       failUrl = `/dashboard/mind-spill?error=${encodeURIComponent(resultMsg)}`;
     } else if (isCounseling) {
       failUrl = `/programs/counseling?error=${encodeURIComponent(resultMsg)}`;
+    } else if (isMindsRelationship) {
+      failUrl = `/minds?error=${encodeURIComponent(resultMsg)}`;
     } else {
       failUrl = `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
     }
@@ -90,6 +99,11 @@ export async function POST(request: NextRequest) {
   // ── 상담 결제 처리 (orderId 의 typeId 로 금액 검증 → 승인/캡처 → DB 기록) ──
   if (isCounseling) {
     return handleCounselingPayment(supabase, { tid, orderId, amount, baseUrl });
+  }
+
+  // ── /minds 관계 해설 리포트 결제 처리 (MR-) ──
+  if (isMindsRelationship) {
+    return handleMindsRelationshipPayment({ tid, orderId, amount, baseUrl });
   }
 
   // ── Mind Spill 리포트 결제 처리 ──
@@ -119,6 +133,95 @@ export async function POST(request: NextRequest) {
     amount,
     baseUrl,
   });
+}
+
+/* ── /minds 관계 해설 리포트 결제 처리 (MR-) ── */
+//
+// 비로그인 리드 기반(minds_relationship_purchases, RLS admin-only)이라 admin 클라이언트로
+// 조회/갱신한다. orderId 로 pending 레코드를 찾아 금액(서버 상수)을 검증하고, NicePay 승인 후
+// confirmed 로 전환한 다음 리포트 페이지로 보낸다(그 페이지에서 LLM 생성·캐시).
+async function handleMindsRelationshipPayment(params: {
+  tid: string;
+  orderId: string;
+  amount: number;
+  baseUrl: string;
+}) {
+  const { tid, orderId, amount, baseUrl } = params;
+  const admin = createAdminClient();
+  const failUrl = `${baseUrl}/minds?error=${encodeURIComponent("결제 처리 중 오류가 발생했습니다")}`;
+
+  const { data: purchase, error: queryError } = await admin
+    .from("minds_relationship_purchases")
+    .select("id, lead_id, amount, status")
+    .eq("order_id", orderId)
+    .single();
+
+  if (queryError || !purchase) {
+    console.error("[minds-relationship] 결제 레코드 조회 실패:", { orderId, queryError });
+    return NextResponse.redirect(failUrl);
+  }
+
+  const reportUrl = `${baseUrl}/minds/relationship/${purchase.id}`;
+
+  // 이미 승인됨 → 리포트로 직행(멱등성).
+  if (purchase.status === "confirmed") {
+    return NextResponse.redirect(reportUrl);
+  }
+  if (purchase.status !== "pending") {
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 금액 검증 — DB 금액·NicePay 금액·서버 상수가 모두 일치해야 한다(위변조 방지).
+  if (purchase.amount !== amount || amount !== MINDS_RELATIONSHIP_PRICE) {
+    console.error("[minds-relationship] 결제 금액 불일치:", {
+      dbAmount: purchase.amount,
+      nicepayAmount: amount,
+      expected: MINDS_RELATIONSHIP_PRICE,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // NicePay 최종 승인(캡처).
+  const approval = await approveNicepayPayment(tid, amount);
+  if (!approval.success) {
+    console.error("[minds-relationship] NicePay 승인 실패:", {
+      resultCode: approval.resultCode,
+      resultMsg: approval.resultMsg,
+      orderId,
+    });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // pending → confirmed (멱등성: pending 일 때만 전환).
+  const { error: updateError } = await admin
+    .from("minds_relationship_purchases")
+    .update({
+      status: "confirmed",
+      payment_key: tid,
+      paid_at: new Date().toISOString(),
+    })
+    .eq("id", purchase.id)
+    .eq("status", "pending");
+
+  if (updateError) {
+    console.error("[minds-relationship] 결제 상태 업데이트 실패:", { updateError, orderId });
+    return NextResponse.redirect(failUrl);
+  }
+
+  // 운영자 슬랙 알림 — 실제 구매 완료 시점(fire-and-forget). 리포트 링크를 함께 남겨,
+  // 생성 대기 중 이탈한 유저가 문의해 오면 운영자가 슬랙에서 찾아 전달할 수 있게 한다.
+  after(() =>
+    notifyMindsRelationshipPurchase({
+      amount,
+      orderId,
+      mindsLeadId: purchase.lead_id ?? null,
+      reportUrl,
+    })
+  );
+
+  // 리포트 페이지로 — 거기서 report_json 이 없으면 LLM 생성·캐시 후 렌더.
+  return NextResponse.redirect(reportUrl);
 }
 
 /* ── Mind Spill Period(3일치 종합) 결제 처리 ── */
@@ -336,6 +439,16 @@ async function handleWorkshopPayment(
     console.error("워크북 결제 상태 업데이트 실패:", { updateError, orderId });
     return NextResponse.redirect(failUrl);
   }
+
+  // ⑤ 운영자 슬랙 알림 — 승인/캡처 성공 후 confirmed 전환에 성공한 시점(실제 구매 완료).
+  // minds 를 거쳐온 결제면 리드 정보도 함께 표기(fire-and-forget).
+  after(() =>
+    notifyMindsPurchaseComplete({
+      amount,
+      orderId,
+      mindsLeadId: purchase.minds_lead_id ?? null,
+    })
+  );
 
   // workshop_progress 레코드가 없으면 자동 생성 (step 3부터 시작)
   // minds 를 거쳐온 결제라면 leadId 를 진행으로 복사해, 워크북 단계에서 배역을 잇는다.

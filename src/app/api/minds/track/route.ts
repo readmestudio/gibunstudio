@@ -1,6 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import {
+  notifyMindsTestStart,
   notifyMindsReachedPaywall,
   notifyMindsCheckoutClick,
 } from "@/lib/minds/notify";
@@ -11,7 +12,7 @@ import {
  * 브라우저에서만 일어나는 깔때기 이벤트(②③)를 받아 운영자 슬랙으로 중계한다.
  * 슬랙 봇 토큰은 서버 전용이라, 클라이언트가 직접 슬랙에 못 쏜다 — 이 라우트가 다리.
  *
- * Body: { event: "reached_paywall" | "checkout_click", leadId?: string(UUID) }
+ * Body: { event: "test_start" | "reached_paywall" | "checkout_click", leadId?: string(UUID) }
  *
  * 보안: 토큰 없이 누구나 호출 가능한 엔드포인트라 슬랙 스팸에 노출된다. 그래서
  *   · 이벤트 화이트리스트로만 분기하고,
@@ -38,7 +39,9 @@ export async function POST(req: NextRequest) {
     typeof b.leadId === "string" && UUID_RE.test(b.leadId) ? b.leadId : null;
 
   // 알림은 부가 기능 — fire-and-forget 으로 보내고 즉시 200.
-  if (b.event === "reached_paywall") {
+  if (b.event === "test_start") {
+    after(() => notifyMindsTestStart({ leadId }));
+  } else if (b.event === "reached_paywall") {
     after(() => notifyMindsReachedPaywall({ leadId }));
   } else if (b.event === "checkout_click") {
     after(() => notifyMindsCheckoutClick({ leadId }));

@@ -3,47 +3,35 @@
 /**
  * /minds 결제 모달 — 그 자리에서 카드 결제를 시작하는 오버레이.
  *
- * 기존엔 페이월 CTA가 워크북 랜딩(/payment/self-workshop/...)으로 *이동*했지만,
- * 이제 리포트 위에 이 모달이 떠서 바로 NicePay 결제창을 띄운다. 결제 로직은
- * 워크북 판매 화면들과 동일한 useWorkshopCheckout 훅을 재사용한다.
- *
- * [로그인 제약] 워크북 결제는 로그인 유저에 묶여 있다(workshop_purchases.user_id).
- * /minds 는 비로그인 리드젠 흐름이므로, 결제 버튼을 누르면 훅이 401을 받고 자동으로
- * /login?redirect=... 로 보낸 뒤, 로그인 후 결제를 잇는다. (제품 결정: 로그인 우선)
+ * 페이월 CTA 가 워크북 랜딩으로 이동하는 대신, 리포트 위에 이 모달이 떠서 바로 NicePay
+ * 결제창을 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩9,900)이며, 비로그인
+ * leadId 기반 결제 훅(useMindsRelationshipCheckout)을 쓴다 — 로그인 없이 결제 가능.
+ * 결제 완료 시 /minds/relationship/[id] 리포트 페이지로 이동한다(return 라우트가 처리).
  */
 
 import { useState } from "react";
 import Script from "next/script";
 import { trackMetaEvent } from "@/lib/meta-pixel";
-import { useWorkshopCheckout } from "@/lib/payment/useWorkshopCheckout";
+import { useMindsRelationshipCheckout } from "@/lib/payment/useMindsRelationshipCheckout";
 import { M, dispStyle, leadStyle, ctaStyle, Hr } from "./quiet-editorial";
-import {
-  WORKSHOP_PRICE,
-  WORKSHOP_ORIGINAL_PRICE,
-  WORKSHOP_DISCOUNT_PERCENT,
-} from "@/lib/self-workshop/landing-data";
+import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL = process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "";
 
 const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
 
-/** 결제 시 워크북에 포함되는 것 — 페이월에서 잠갔던 배역표·관계가 핵심. */
+/** 결제 시 받게 되는 것 — 페이월에서 잠갔던 배역표·관계가 핵심. */
 const INCLUDES = [
-  "누가 내 정서를 끌고 가는 리더·빌런·추방자인지 배역표 공개",
-  "자꾸 부딪치는 두 마음의 갈등 구도 분석",
-  "지금 만난 마음들을 그대로 이어받는 풀 워크북",
+  "누가 리더·빌런·난봉꾼·관리자·추방자인지 5배역 배역표",
+  "자꾸 부딪치는 두 마음의 갈등 구도 + 화해법",
+  "자주 쓰는 방어기제 · 마음의 목소리 TOP 5 · 맞춤 처방",
 ];
 
 export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  const { handleBuyNow, isSubmitting } = useWorkshopCheckout({
-    productId: "achievement-addiction",
-    workshopType: "achievement-addiction",
-    amount: WORKSHOP_PRICE,
-    goodsName: "심리 상담 워크북 - 성취 중독",
-  });
+  const { handleBuyNow, isSubmitting } = useMindsRelationshipCheckout();
 
   if (!open) return null;
 
@@ -51,8 +39,8 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
 
   const onPay = () => {
     trackMetaEvent("InitiateCheckout", {
-      content_name: "minds_to_workbook",
-      value: WORKSHOP_PRICE,
+      content_name: "minds_to_relationship",
+      value: MINDS_RELATIONSHIP_PRICE,
       currency: "KRW",
     });
     handleBuyNow();
@@ -96,7 +84,7 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
         {/* 핸들 + 닫기 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <span style={{ fontFamily: M.mono, fontSize: 10.5, letterSpacing: "0.22em", textTransform: "uppercase", color: M.mute }}>
-            워크북 결제
+            리포트 결제
           </span>
           <button
             type="button"
@@ -109,13 +97,13 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
         </div>
 
         <h2 style={{ ...dispStyle, fontSize: 23 }}>
-          워크북으로
+          다섯 배역과
           <br />
-          내 배역표 열기
+          그 관계 해설 받기
         </h2>
         <p style={{ ...leadStyle, fontSize: 14, marginTop: 12 }}>
-          지금 만난 마음들을 그대로 이어받아, 누가 리더이고 빌런인지·어떤 두 마음이
-          부딪치는지를 워크북에서 풀어가요.
+          지금 만난 마음들을 그대로 이어받아, 누가 리더·빌런인지 배역표와 두 마음이
+          부딪치는 관계까지 한 편의 리포트로 풀어드려요.
         </p>
 
         {/* 포함 내용 */}
@@ -131,13 +119,7 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
 
         {/* 가격 */}
         <div style={{ marginTop: 20, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 10 }}>
-          <span style={{ fontSize: 13, color: M.mute, textDecoration: "line-through", fontFamily: M.font }}>
-            {won(WORKSHOP_ORIGINAL_PRICE)}
-          </span>
-          <span style={{ ...dispStyle, fontSize: 26 }}>{won(WORKSHOP_PRICE)}</span>
-          <span style={{ fontSize: 12.5, color: M.accent, fontWeight: 700, fontFamily: M.mono }}>
-            -{WORKSHOP_DISCOUNT_PERCENT}%
-          </span>
+          <span style={{ ...dispStyle, fontSize: 26 }}>{won(MINDS_RELATIONSHIP_PRICE)}</span>
         </div>
 
         {/* 카드 결제 CTA */}
@@ -151,7 +133,7 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
           {isSubmitting ? "결제 진행 중…" : sdkPending ? "결제 모듈 로딩 중…" : "카드로 결제하기"}
         </button>
         <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: M.mute, fontFamily: M.font }}>
-          결제는 NicePay 안전결제로 진행돼요.
+          결제 후 바로 리포트를 만들어 드려요(20~50초). NicePay 안전결제.
         </p>
       </div>
     </div>

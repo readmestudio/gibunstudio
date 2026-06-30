@@ -4,8 +4,9 @@
  * /minds 깔때기의 클라이언트 전용 이벤트를 서버(/api/minds/track)로 보내는 헬퍼.
  *
  * 보내는 이벤트:
+ *   · test_start      — 랜딩 "3분 무료 테스트" 버튼 클릭(테스트 시작)
  *   · reached_paywall — 배역표(Final/페이월) 카드에 도달
- *   · checkout_click  — "워크북 구매하기" CTA 클릭(곧 결제 페이지로 이탈)
+ *   · checkout_click  — "관계 해설 리포트 받기" CTA 클릭(결제 모달 오픈)
  *
  * 설계 메모:
  *  - 세션(JS 컨텍스트)당 이벤트별 1회만 전송한다. 캐러셀을 앞뒤로 넘겨 페이월 카드가
@@ -18,7 +19,7 @@
 
 import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
 
-type MindsFunnelEvent = "reached_paywall" | "checkout_click";
+type MindsFunnelEvent = "test_start" | "reached_paywall" | "checkout_click";
 
 // 모듈 스코프 — 같은 페이지 세션 동안 유지되는 "이미 보냄" 표시.
 const alreadySent = new Set<MindsFunnelEvent>();

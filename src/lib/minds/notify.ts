@@ -15,7 +15,7 @@
  *   ⓪ 테스트 시작(랜딩 클릭)  notifyMindsTestStart
  *   ① 카카오 로그인          notifyMindsLogin
  *   ② 배역표(Final) 도달     notifyMindsReachedPaywall
- *   ③ "워크북 구매하기" 클릭  notifyMindsCheckoutClick
+ *   ③ "관계 해설 리포트" CTA 클릭  notifyMindsCheckoutClick
  *   ④ 카카오/네이버 결제 시작 notifyMindsPaymentStart
  *   ⑤ 실제 구매 완료         notifyMindsPurchaseComplete
  */
@@ -146,20 +146,20 @@ export async function notifyMindsReachedPaywall(p: {
   });
 }
 
-/* ── ③ "워크북 구매하기" CTA 클릭 ── */
+/* ── ③ "관계 해설 리포트 받기" CTA 클릭(결제 모달 열림) ── */
 export async function notifyMindsCheckoutClick(p: {
   leadId: string | null;
 }): Promise<void> {
   const lead = await lookupLead(p.leadId);
   await sendSlackMessage({
     channel: SLACK_OPEN_NOTIFY_CHANNEL,
-    text: `🛒 /minds 워크북 구매하기 클릭: ${leadLabel(lead)}`,
+    text: `🛒 /minds 관계 해설 리포트 CTA 클릭: ${leadLabel(lead)}`,
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `🛒 *"워크북 구매하기" 클릭* — 결제 페이지로 이동\n*${leadLabel(lead)}*`,
+          text: `🛒 *"관계 해설 리포트 받기" 클릭* — 결제 모달 오픈\n*${leadLabel(lead)}*`,
         },
       },
       timeContext(),
@@ -260,6 +260,36 @@ export async function notifyMindsPurchaseComplete(p: {
         text: {
           type: "mrkdwn",
           text: `✅ *워크북 결제 완료!* 🎉\n*${won(p.amount)}* · 주문 \`${p.orderId}\`${lead ? `\n🎬 ${leadLabel(lead)} — /minds 깔때기 전환` : ""}`,
+        },
+      },
+      timeContext(),
+    ],
+  });
+}
+
+/**
+ * ⑤' "다섯 배역+관계 해설" 리포트(₩9,900) 결제 완료.
+ *
+ * 워크북과 달리 *리포트 링크*를 함께 남긴다 — 유저에게 따로 발송하지 않으므로(이메일·
+ * 알림톡 미사용), 생성 대기 중 이탈한 유저가 문의해 오면 운영자가 슬랙에서 이메일·시간으로
+ * 검색해 이 링크를 찾아 전달할 수 있게 하는 게 목적이다.
+ */
+export async function notifyMindsRelationshipPurchase(p: {
+  amount: number;
+  orderId: string;
+  mindsLeadId: string | null;
+  reportUrl: string;
+}): Promise<void> {
+  const lead = await lookupLead(p.mindsLeadId);
+  await sendSlackMessage({
+    channel: SLACK_OPEN_NOTIFY_CHANNEL,
+    text: `✅ 관계 해설 리포트 결제 완료 ${won(p.amount)}${lead ? ` · ${leadLabel(lead)}` : ""}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `✅ *관계 해설 리포트 결제 완료!* 🎭\n*${won(p.amount)}* · 주문 \`${p.orderId}\`${lead ? `\n🎬 ${leadLabel(lead)}` : ""}\n🔗 리포트 링크: ${p.reportUrl}\n_(유저 문의 시 위 링크 전달 — 따로 발송하지 않음)_`,
         },
       },
       timeContext(),
