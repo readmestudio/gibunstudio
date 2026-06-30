@@ -264,7 +264,7 @@ export default function PrivacyPolicyPage() {
           <ul className="list-none space-y-1">
             <li>회사명: 올핸즈라운지 (대표 김지안)</li>
             <li>이메일: allhandslounge@gmail.com</li>
-            <li>카카오톡: gibun_studio</li>
+            <li>카카오톡: gibunstudio</li>
             <li>전화: 070-7954-9188</li>
           </ul>
         </section>

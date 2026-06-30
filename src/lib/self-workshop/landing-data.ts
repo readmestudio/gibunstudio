@@ -185,7 +185,7 @@ export const WORKBOOK_FAQ: { question: string; answer: string }[] = [
   {
     question: "환불이 가능한가요?",
     answer:
-      "워크북 1단계 진단을 시작하기 전까지는 전액 환불이 가능합니다. 진단을 시작한 이후에는 환불이 제한될 수 있으니, 카카오톡 gibun_studio로 먼저 문의해 주세요.",
+      "워크북 1단계 진단을 시작하기 전까지는 전액 환불이 가능합니다. 진단을 시작한 이후에는 환불이 제한될 수 있으니, 카카오톡 gibunstudio로 먼저 문의해 주세요.",
   },
 ];
 

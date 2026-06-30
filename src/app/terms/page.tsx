@@ -148,7 +148,7 @@ export default function TermsPage() {
               </ul>
             </li>
             <li>
-              환불 신청은 카카오톡 <span className="font-medium">gibun_studio</span>로
+              환불 신청은 카카오톡 <span className="font-medium">gibunstudio</span>로
               문의해주세요.
             </li>
           </ul>

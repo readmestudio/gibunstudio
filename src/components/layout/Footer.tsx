@@ -14,7 +14,7 @@ export function Footer() {
           <div>
             <p className="font-semibold text-white/60 mb-2">고객센터</p>
             <p className="mt-1">
-              카카오톡 채널 gibun_studio 로 문의해주세요
+              카카오톡 채널 gibunstudio 로 문의해주세요
             </p>
             <p className="mt-1">전화 010-2155-4772</p>
             <p className="mt-2">

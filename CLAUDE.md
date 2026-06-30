@@ -136,7 +136,7 @@ src/components/husband-match/                     # ReportCard, CardCarousel, Pa
 | 테스트 횟수 | 1인 1회 (재분석 불가) |
 | 리포트 보관 | 1년 |
 | 환불 | 서베이 제출 전: 전액 / 제출 후: 불가 |
-| 환불 신청 | 카카오톡 `gibun_studio` |
+| 환불 신청 | 카카오톡 `gibunstudio` |
 
 ### 주요 타입
 

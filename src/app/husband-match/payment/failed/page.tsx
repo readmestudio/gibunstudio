@@ -56,7 +56,7 @@ export default async function PaymentFailedPage({
         </div>
 
         <p className="mt-6 text-xs text-[var(--foreground)]/60">
-          문제가 계속되면 카카오톡 <span className="font-medium">gibun_studio</span>로 문의해주세요
+          문제가 계속되면 카카오톡 <span className="font-medium">gibunstudio</span>로 문의해주세요
         </p>
       </div>
     </div>
