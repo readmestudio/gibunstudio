@@ -14,7 +14,7 @@ import Script from "next/script";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { createClient } from "@/lib/supabase/client";
 import { useMindsRelationshipCheckout } from "@/lib/payment/useMindsRelationshipCheckout";
-import { M, dispStyle, leadStyle, ctaStyle, Hr } from "./quiet-editorial";
+import { M, dispStyle, leadStyle, Hr } from "./quiet-editorial";
 import { MindsAuthGate } from "./MindsAuthGate";
 import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
 
@@ -36,7 +36,7 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [authState, setAuthState] = useState<AuthState>("checking");
 
-  const { handleBuyNow, isSubmitting } = useMindsRelationshipCheckout();
+  const { handleKakao, handleNpay, isSubmitting } = useMindsRelationshipCheckout();
 
   // 모달이 열릴 때 로그인 상태를 확인한다. 비로그인이면 결제 대신 로그인 관문을 먼저 보여준다.
   // ("무료 리포트 후 결제 직전 로그인" 정책 — 로그인 한 번이면 결제까지 추가 로그인 없음.)
@@ -65,14 +65,19 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
 
   const sdkPending = !!NICEPAY_CLIENT_ID && !sdkLoaded;
 
-  const onPay = () => {
+  // 결제 수단별 버튼이 공유하는 진입 — 추적 이벤트를 한 번 쏘고 해당 결제를 시작한다.
+  const payWith = (run: () => void) => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "minds_to_relationship",
       value: MINDS_RELATIONSHIP_PRICE,
       currency: "KRW",
     });
-    handleBuyNow();
+    run();
   };
+  const payDisabled = isSubmitting || sdkPending;
+  // 진행/로딩 중이면 모든 버튼이 같은 상태 문구를 보인다.
+  const payLabel = (base: string) =>
+    isSubmitting ? "결제 진행 중…" : sdkPending ? "결제 모듈 로딩 중…" : base;
 
   return (
     <div
@@ -182,15 +187,50 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
           </div>
         </div>
 
-        {/* 카드 결제 CTA */}
+        {/* 결제 수단 CTA — 카카오페이 · 네이버페이 (브랜드 컬러는 모노톤 예외) */}
         <button
           type="button"
-          onClick={onPay}
-          disabled={isSubmitting || sdkPending}
-          style={{ ...ctaStyle, marginTop: 18, opacity: isSubmitting || sdkPending ? 0.5 : 1 }}
+          onClick={() => payWith(handleKakao)}
+          disabled={payDisabled}
+          style={{
+            width: "100%",
+            marginTop: 18,
+            padding: "16px",
+            borderRadius: 2,
+            background: "#FEE500",
+            color: "#191919",
+            fontFamily: M.font,
+            fontWeight: 800,
+            fontSize: 15.5,
+            border: "none",
+            cursor: "pointer",
+            opacity: payDisabled ? 0.5 : 1,
+          }}
           className="transition-transform active:scale-[0.99]"
         >
-          {isSubmitting ? "결제 진행 중…" : sdkPending ? "결제 모듈 로딩 중…" : "카드로 결제하기"}
+          {payLabel("카카오페이로 결제하기")}
+        </button>
+        <button
+          type="button"
+          onClick={() => payWith(handleNpay)}
+          disabled={payDisabled}
+          style={{
+            width: "100%",
+            marginTop: 10,
+            padding: "16px",
+            borderRadius: 2,
+            background: "#03C75A",
+            color: "#FFFFFF",
+            fontFamily: M.font,
+            fontWeight: 800,
+            fontSize: 15.5,
+            border: "none",
+            cursor: "pointer",
+            opacity: payDisabled ? 0.5 : 1,
+          }}
+          className="transition-transform active:scale-[0.99]"
+        >
+          {payLabel("네이버페이로 결제하기")}
         </button>
         <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: M.mute, fontFamily: M.font }}>
           결제 후 바로 리포트를 만들어 드려요(20~50초). NicePay 안전결제.

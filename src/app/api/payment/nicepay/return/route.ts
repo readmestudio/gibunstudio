@@ -36,19 +36,27 @@ export async function POST(request: NextRequest) {
   let orderId: string;
   let amount: number;
 
-  // NicePay는 form-encoded 또는 JSON으로 POST할 수 있음
+  // NicePay는 form-encoded 또는 JSON으로 POST할 수 있음.
+  // NicePay V2 결제창 콜백은 인증 결과를 authResultCode/authResultMsg 로 보낸다.
+  // (구버전/일부 흐름은 resultCode 로 보낼 수 있어 폴백으로 함께 읽는다.)
   const contentType = request.headers.get("content-type") || "";
   if (contentType.includes("application/x-www-form-urlencoded")) {
     const formData = await request.formData();
-    resultCode = (formData.get("resultCode") as string) || "";
-    resultMsg = (formData.get("resultMsg") as string) || "";
+    resultCode =
+      (formData.get("authResultCode") as string) ||
+      (formData.get("resultCode") as string) ||
+      "";
+    resultMsg =
+      (formData.get("authResultMsg") as string) ||
+      (formData.get("resultMsg") as string) ||
+      "";
     tid = (formData.get("tid") as string) || "";
     orderId = (formData.get("orderId") as string) || "";
     amount = Number(formData.get("amount")) || 0;
   } else {
     const body = await request.json();
-    resultCode = body.resultCode || "";
-    resultMsg = body.resultMsg || "";
+    resultCode = body.authResultCode || body.resultCode || "";
+    resultMsg = body.authResultMsg || body.resultMsg || "";
     tid = body.tid || "";
     orderId = body.orderId || "";
     amount = Number(body.amount) || 0;
