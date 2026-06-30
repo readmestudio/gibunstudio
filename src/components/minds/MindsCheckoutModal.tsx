@@ -9,12 +9,14 @@
  * 결제 완료 시 /minds/relationship/[id] 리포트 페이지로 이동한다(return 라우트가 처리).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Script from "next/script";
 import { trackMetaEvent } from "@/lib/meta-pixel";
+import { createClient } from "@/lib/supabase/client";
 import { useMindsRelationshipCheckout } from "@/lib/payment/useMindsRelationshipCheckout";
 import { M, dispStyle, leadStyle, ctaStyle, Hr } from "./quiet-editorial";
-import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
+import { MindsAuthGate } from "./MindsAuthGate";
+import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL = process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "";
@@ -28,10 +30,36 @@ const INCLUDES = [
   "자주 쓰는 방어기제 · 마음의 목소리 TOP 5 · 맞춤 처방",
 ];
 
+type AuthState = "checking" | "anon" | "authed";
+
 export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [authState, setAuthState] = useState<AuthState>("checking");
 
   const { handleBuyNow, isSubmitting } = useMindsRelationshipCheckout();
+
+  // 모달이 열릴 때 로그인 상태를 확인한다. 비로그인이면 결제 대신 로그인 관문을 먼저 보여준다.
+  // ("무료 리포트 후 결제 직전 로그인" 정책 — 로그인 한 번이면 결제까지 추가 로그인 없음.)
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
+      // "checking" 리셋도 async 콜백 안에서 — effect 동기 본문에서 setState 하지 않는다.
+      setAuthState("checking");
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!cancelled) setAuthState(user ? "authed" : "anon");
+      } catch {
+        if (!cancelled) setAuthState("anon");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -96,6 +124,18 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
           </button>
         </div>
 
+        {authState === "checking" && (
+          <div style={{ padding: "44px 0", textAlign: "center", fontFamily: M.font, fontSize: 14, color: M.mute }}>
+            불러오는 중…
+          </div>
+        )}
+
+        {authState === "anon" && (
+          <MindsAuthGate onAuthed={() => setAuthState("authed")} />
+        )}
+
+        {authState === "authed" && (
+        <>
         <h2 style={{ ...dispStyle, fontSize: 23 }}>
           다섯 배역과
           <br />
@@ -117,9 +157,29 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
           ))}
         </div>
 
-        {/* 가격 */}
-        <div style={{ marginTop: 20, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 10 }}>
-          <span style={{ ...dispStyle, fontSize: 26 }}>{won(MINDS_RELATIONSHIP_PRICE)}</span>
+        {/* 가격 — 런칭 할인 앵커링(정가 취소선 → 판매가) */}
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          <span
+            style={{
+              display: "inline-block",
+              fontFamily: M.mono,
+              fontSize: 10.5,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: M.accent,
+              border: `1px solid ${M.accent}`,
+              borderRadius: 999,
+              padding: "4px 10px",
+            }}
+          >
+            런칭 할인
+          </span>
+          <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 10 }}>
+            <span style={{ fontFamily: M.font, fontSize: 17, color: M.mute2, textDecoration: "line-through" }}>
+              {won(MINDS_RELATIONSHIP_ORIGINAL_PRICE)}
+            </span>
+            <span style={{ ...dispStyle, fontSize: 28 }}>{won(MINDS_RELATIONSHIP_PRICE)}</span>
+          </div>
         </div>
 
         {/* 카드 결제 CTA */}
@@ -135,6 +195,8 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
         <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: M.mute, fontFamily: M.font }}>
           결제 후 바로 리포트를 만들어 드려요(20~50초). NicePay 안전결제.
         </p>
+        </>
+        )}
       </div>
     </div>
   );

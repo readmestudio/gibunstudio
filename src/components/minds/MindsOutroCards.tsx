@@ -24,6 +24,9 @@ import { trackMindsFunnel } from "@/lib/minds/track";
 import { CardShell, CardKicker } from "./MindsCardShell";
 import { M, COLUMN, Hr, dispStyle, leadStyle, ctaStyle, IcLock } from "./quiet-editorial";
 import { ROLE_SLOTS, type CharacterView } from "@/lib/minds/characters";
+import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
+
+const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
 
 const headline = { ...dispStyle, fontSize: 28, fontWeight: 700 } as const;
 const para = { ...leadStyle, fontSize: 15 } as const;
@@ -64,10 +67,23 @@ function StickyCheckoutBar({
         <button
           type="button"
           onClick={onCheckout}
-          style={{ ...ctaStyle, pointerEvents: "auto", boxShadow: "0 8px 28px rgba(16,15,14,0.18)" }}
+          style={{
+            ...ctaStyle,
+            flexDirection: "column",
+            gap: 4,
+            padding: "15px 20px",
+            pointerEvents: "auto",
+            boxShadow: "0 8px 28px rgba(16,15,14,0.18)",
+          }}
           className="transition-transform active:scale-[0.99]"
         >
-          {label}
+          <span style={{ fontSize: 16, fontWeight: 700 }}>{label}</span>
+          {/* 런칭 할인 앵커링 — 정가(취소선) → 판매가. 다크 버튼 위라 가독성 확보. */}
+          <span style={{ display: "flex", alignItems: "baseline", gap: 7, fontFamily: M.font }}>
+            <span style={{ fontSize: 13, opacity: 0.55, textDecoration: "line-through" }}>{won(MINDS_RELATIONSHIP_ORIGINAL_PRICE)}</span>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>{won(MINDS_RELATIONSHIP_PRICE)}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: M.accent }}>런칭 할인</span>
+          </span>
         </button>
         {caption && (
           <p style={{ textAlign: "center", margin: "10px 0 0", fontSize: 12, color: M.mute, fontFamily: M.font }}>

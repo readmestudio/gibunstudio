@@ -1,0 +1,103 @@
+/* ============================================================
+   기분 스튜디오 — "내 안의 다섯 배역" 카드뉴스 (MINDS · 5 ROLES)
+   ------------------------------------------------------------
+   shared.css(다크 모노톤) 위에 얹는 추가 스타일.
+   - 5배역 크레파스 캐릭터(흰 선화 on #0e0e10)를 그대로 합성
+   - 캐릭터 PNG가 카드 배경색과 같은 near-black → 자연스럽게 떠 있음
+   캔버스: 1080 × 1350
+   ============================================================ */
+
+/* ───────────── 상단바 (개념·브릿지 카드) ───────────── */
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 60px; }
+.topbar .category { margin-bottom: 0; }
+.portrait {
+  flex: none; width: 132px; height: 132px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  display: flex; align-items: center; justify-content: center;
+}
+.portrait img {
+  width: 76px; height: 76px;
+  filter: invert(1) brightness(1.05); opacity: 0.92;
+}
+
+/* ───────────── 「무료」 도장 딱지 ───────────── */
+.stamp {
+  position: absolute; top: 84px; right: 80px; z-index: 3;
+  width: 138px; height: 138px; border-radius: 50%;
+  border: 3px solid var(--accent); color: var(--accent);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transform: rotate(-12deg); background: rgba(14, 14, 16, 0.55);
+}
+.stamp .big { font-size: 48px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+.stamp .small { margin-top: 8px; font-size: 18px; font-weight: 700; letter-spacing: 0.18em; }
+
+/* ============================================================
+   03 · 다섯 배역 라인업
+   ============================================================ */
+.lineup { display: flex; flex-direction: column; gap: 30px; }
+.cast-row { display: flex; align-items: center; gap: 36px; }
+.cast-thumb {
+  flex: none; width: 158px; height: 158px; border-radius: 22px;
+  background: #000; border: 2px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+}
+.cast-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.cast-meta { display: flex; flex-direction: column; gap: 8px; }
+.cast-name {
+  font-size: 54px; font-weight: 800; color: #fff; letter-spacing: -0.035em; line-height: 1;
+}
+.cast-desc {
+  font-size: 32px; font-weight: 400; color: var(--text-secondary); letter-spacing: -0.015em;
+}
+
+/* ============================================================
+   05 · 불균형 — "빌런이 리더 자리에 앉으면"
+   ============================================================ */
+.card.stage { position: relative; padding: 0; overflow: hidden; }
+
+/* 무대 스포트라이트 */
+.stage-spot { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 58% 46% at 50% 40%,
+    rgba(232, 93, 58, 0.16) 0%, rgba(232, 93, 58, 0.05) 42%, rgba(14, 14, 16, 0) 70%); }
+
+/* 밀려난 배역들(작고 흐릿) — 투명 컷아웃 사용 */
+.pushed { position: absolute; z-index: 1; opacity: 0.2; }
+.pushed img { width: 100%; height: 100%; object-fit: contain; }
+.pushed.p1 { width: 220px; height: 280px; top: 120px; left: -28px; transform: rotate(-8deg); }
+.pushed.p2 { width: 200px; height: 260px; top: 90px; right: -18px; transform: rotate(7deg); }
+.pushed.p3 { width: 190px; height: 240px; bottom: 360px; left: 30px; transform: rotate(5deg); }
+.pushed.p4 { width: 180px; height: 230px; bottom: 380px; right: 24px; transform: rotate(-6deg); }
+
+/* 무대 중앙을 차지한 빌런(크게) */
+/* 무대 중앙을 차지한 배역 — 투명 컷아웃 + 오렌지 글로우 */
+.usurper { position: absolute; z-index: 2; top: 96px; left: 50%;
+  width: 620px; height: 760px; transform: translateX(-50%); }
+.usurper img { width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 0 50px rgba(232, 93, 58, 0.3)); }
+
+/* 텍스트존 스크림 */
+.stage-scrim { position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(14,14,16,0.2) 0%, rgba(14,14,16,0) 30%, rgba(14,14,16,0) 50%,
+    rgba(14,14,16,0.66) 66%, rgba(14,14,16,0.93) 82%, rgba(14,14,16,0.99) 100%); }
+
+.stage-layer { position: relative; z-index: 4; height: 100%; box-sizing: border-box;
+  padding: 70px 80px 84px; display: flex; flex-direction: column; }
+.stage-cat { display: flex; align-items: center; gap: 18px; }
+.stage-cat .dot { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); }
+.stage-cat .text { font-size: 25px; font-weight: 700; letter-spacing: 0.22em; color: var(--text-tertiary); }
+
+.stage-main { margin-top: auto; }
+.stage-title { font-size: 72px; font-weight: 800; line-height: 1.16; letter-spacing: -0.04em;
+  color: #fff; text-shadow: 0 6px 40px rgba(0,0,0,0.8); }
+.stage-title .accent { color: var(--accent); }
+.stage-body { margin-top: 32px; font-size: 46px; font-weight: 400; line-height: 1.6;
+  letter-spacing: -0.015em; color: var(--text-secondary); text-shadow: 0 3px 20px rgba(0,0,0,0.85); }
+.stage-body .strong { color: #fff; font-weight: 700; }
+.stage-note { margin-top: 26px; padding-left: 26px; border-left: 3px solid var(--accent);
+  font-size: 34px; font-weight: 700; line-height: 1.4; color: #fff; letter-spacing: -0.02em;
+  text-shadow: 0 3px 20px rgba(0,0,0,0.85); }
+.stage-note .hl { color: var(--accent); }
+.stage-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; }
+.stage-foot .pg { font-size: 22px; color: var(--text-muted); }
+.stage-foot .next { font-size: 22px; color: var(--accent); font-weight: 700; }

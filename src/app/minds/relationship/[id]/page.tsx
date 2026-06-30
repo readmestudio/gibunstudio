@@ -11,7 +11,9 @@
  */
 
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { RelationshipReport } from "@/lib/minds/relationship-report";
 import { MindsRelationshipView } from "./MindsRelationshipView";
 
@@ -29,19 +31,34 @@ export default async function MindsRelationshipPage({
 
   let status: string | null = null;
   let initialReport: RelationshipReport | null = null;
+  let ownerId: string | null = null;
   try {
     const admin = createAdminClient();
     const { data } = await admin
       .from("minds_relationship_purchases")
-      .select("status, report_json")
+      .select("status, report_json, user_id")
       .eq("id", id)
       .maybeSingle();
     if (data) {
       status = data.status;
       initialReport = (data.report_json as RelationshipReport | null) ?? null;
+      ownerId = (data.user_id as string | null) ?? null;
     }
   } catch {
     // 조회 실패 — 클라이언트가 생성 호출로 재시도/안내.
+  }
+
+  // 소유권 — 계정에 묶인 리포트는 주인만 볼 수 있다(URL 만 알면 보던 구조 보완).
+  // 비로그인으로 결제했던 과거 건(ownerId=null)은 그대로 링크로 접근 가능(하위호환).
+  if (ownerId) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user || user.id !== ownerId) {
+      // 로그인하면 본인 리포트로 돌아오도록 next 를 실어 보낸다.
+      redirect(`/login?next=/minds/relationship/${id}`);
+    }
   }
 
   return (

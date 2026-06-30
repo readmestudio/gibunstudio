@@ -4,7 +4,8 @@
  * /minds 리포트 1번 카드 — 커버/인트로 (콰이엇 에디토리얼).
  *
  * "내 마음 속엔 N명이 살고 있어요" 표지. 키커 → 헤드라인 → 리드 → 헤어라인 사이
- * 4열 캐스트 그리드(초상 + 주황 인덱스 + 이름) → 넘김 안내. 한 명씩 만나보도록 유도.
+ * 세로 캐스트 목록(한 줄에 한 명: 초상 + 주황 인덱스 + 제목 + 이름) → 넘김 안내.
+ * 한 명씩 만나보도록 유도.
  */
 
 import { CardShell } from "./MindsCardShell";
@@ -32,27 +33,32 @@ export function MindsCoverCard({ views }: { views: CharacterView[] }) {
 
       <div style={{ marginTop: 32 }}>
         <Hr />
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${thumbs.length}, 1fr)`,
-            gap: 8,
-            padding: "28px 0 24px",
-          }}
-        >
+        {/* 세로 3줄 — 한 명씩 한 줄. 왼쪽 초상 + 오른쪽 번호·제목·이름(좌측 정렬). */}
+        <div style={{ padding: "12px 0" }}>
           {thumbs.map((v, i) => (
-            <div key={v.archetype.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div
+              key={v.archetype.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                padding: "16px 0",
+                borderBottom: i < thumbs.length - 1 ? `1px solid ${M.line2}` : "none",
+              }}
+            >
               <CharacterPortrait src={v.archetype.portrait} alt={v.name} size={58} />
-              <span style={{ fontFamily: M.mono, fontSize: 11, color: M.accent, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              {/* 해석된 진짜 마음(tagline)을 주 라벨로, 익숙한 이름(name)은 작은 보조 라벨로. */}
-              <span style={{ fontSize: 11.5, color: M.ink2, textAlign: "center", lineHeight: 1.4, fontWeight: 600, fontFamily: M.font }}>
-                {v.tagline}
-              </span>
-              <span style={{ fontSize: 10, color: M.mute, textAlign: "center", lineHeight: 1.3, fontFamily: M.font }}>
-                {v.name}
-              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontFamily: M.mono, fontSize: 11, color: M.accent, fontVariantNumeric: "tabular-nums" }}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                {/* 해석된 진짜 마음(tagline)을 주 라벨로, 익숙한 이름(name)은 작은 보조 라벨로. */}
+                <span style={{ display: "block", marginTop: 3, fontSize: 14.5, color: M.ink, lineHeight: 1.4, fontWeight: 600, fontFamily: M.font }}>
+                  {v.tagline}
+                </span>
+                <span style={{ display: "block", marginTop: 2, fontSize: 11.5, color: M.mute, lineHeight: 1.3, fontFamily: M.font }}>
+                  {v.name}
+                </span>
+              </div>
             </div>
           ))}
         </div>

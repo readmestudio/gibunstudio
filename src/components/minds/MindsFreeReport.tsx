@@ -43,6 +43,21 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
   const views = buildCharacterViews(partsMap);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
+  // 카카오 로그인 복귀 자동 결제 재개 — 인증 관문에서 카카오로 로그인하면 /auth/callback 이
+  // /minds/r/[leadId]?checkout=1 로 되돌려보낸다. 그 표식을 보면 결제 모달을 자동으로 다시
+  // 연다(이제 로그인 상태라 모달이 곧장 결제 화면을 보여준다). 표식은 URL 에서 즉시 지운다.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") !== "1") return;
+    // 표식은 URL 에서 즉시 지운다(새로고침/뒤로가기 재트리거 방지).
+    const url = window.location.pathname + window.location.hash;
+    window.history.replaceState(null, "", url);
+    // 모달 열기는 마이크로태스크로 미뤄 effect 동기 본문에서 setState 하지 않는다.
+    const id = window.setTimeout(() => setCheckoutOpen(true), 0);
+    return () => window.clearTimeout(id);
+  }, []);
+
   // 페이월(MindsPricingCard) 카드에 도달하면 후기 팝업의 이탈 감지를 켠다.
   // 페이월을 본 방문자만 대상으로 하기 위해, 카드가 쏘는 window 이벤트를 듣고 무장한다.
   const [paywallReached, setPaywallReached] = useState(false);

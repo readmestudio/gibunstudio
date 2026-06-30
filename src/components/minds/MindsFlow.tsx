@@ -38,10 +38,39 @@ export function MindsFlow() {
 
   // 재방문 자동 복원 — 이전에 분석을 마친 브라우저면 저장된 결과 페이지로 보낸다.
   // (무효 id 면 결과 페이지가 안내를 띄우고 저장값을 정리하므로 무한 복원되지 않는다.)
+  //
+  // 저장값이 없어도 로그인 상태라면, 계정에 귀속된 내 최근 리포트로 복원한다(기기/브라우저
+  // 무관). 카카오 신규 진입(?auth=kakao)은 아래 전용 effect 가 새 테스트를 시작하므로 양보한다.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(MINDS_LEAD_STORAGE_KEY);
-    if (saved) router.replace(`/minds/r/${saved}`);
+    if (saved) {
+      router.replace(`/minds/r/${saved}`);
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth") === "kakao") return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (cancelled || !user) return;
+        const res = await fetch("/api/minds/my-reports");
+        const json = await res.json().catch(() => null);
+        if (cancelled || !json?.latestLeadId) return;
+        localStorage.setItem(MINDS_LEAD_STORAGE_KEY, json.latestLeadId);
+        router.replace(`/minds/r/${json.latestLeadId}`);
+      } catch {
+        // 복원 실패 — 그냥 랜딩을 보여준다.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // 마운트 시 1회만 — router 는 안정 참조.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

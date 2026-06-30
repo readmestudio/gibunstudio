@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
 import {
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     // [1] 결제 게이트 — confirmed 구매만 리포트를 받을 수 있다.
     const { data: purchase, error: purchaseError } = await admin
       .from("minds_relationship_purchases")
-      .select("id, lead_id, status, report_json")
+      .select("id, lead_id, status, report_json, user_id")
       .eq("id", purchaseId)
       .maybeSingle();
 
@@ -65,6 +66,21 @@ export async function POST(req: NextRequest) {
         { error: "결제가 완료되지 않았어요." },
         { status: 403 }
       );
+    }
+
+    // 소유권 — 계정에 묶인 리포트는 주인만 생성·열람 가능(URL 추측 차단).
+    // 비로그인으로 결제했던 과거 건(user_id=null)은 하위호환으로 통과.
+    if (purchase.user_id) {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || user.id !== purchase.user_id) {
+        return NextResponse.json(
+          { error: "이 리포트를 볼 권한이 없어요." },
+          { status: 403 }
+        );
+      }
     }
 
     // [2] 이미 생성된 리포트가 있으면 그대로 반환(캐시).
