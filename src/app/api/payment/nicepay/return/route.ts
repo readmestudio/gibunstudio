@@ -12,6 +12,18 @@ import { COUNSELING_TYPES, getCounselingType } from "@/lib/counseling/types";
 import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
 
 /**
+ * 결제 후 페이지로 보내는 리다이렉트는 반드시 303(See Other)을 쓴다.
+ *
+ * NicePay 결제창은 returnUrl 로 **POST** 한다. 기본 NextResponse.redirect 는 307이라
+ * HTTP 메서드를 보존 → 브라우저가 목적지 페이지(예: /minds)로 다시 POST 하고, 페이지는
+ * GET 만 받으므로 405(Method Not Allowed)가 난다. 303은 브라우저가 GET 으로 전환해
+ * 따라가게 하여(Post/Redirect/Get) 정상적으로 페이지를 연다.
+ */
+function seeOther(url: string | URL) {
+  return NextResponse.redirect(url, 303);
+}
+
+/**
  * POST /api/payment/nicepay/return
  *
  * NicePay Server 승인 모델의 returnUrl 콜백입니다.
@@ -25,7 +37,7 @@ import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
  */
 export async function POST(request: NextRequest) {
   if (!isNicepayEnabled()) {
-    return NextResponse.redirect(
+    return seeOther(
       new URL("/payment/failed?message=결제가+설정되지+않았습니다", request.url)
     );
   }
@@ -89,7 +101,7 @@ export async function POST(request: NextRequest) {
     } else {
       failUrl = `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
     }
-    return NextResponse.redirect(`${baseUrl}${failUrl}`);
+    return seeOther(`${baseUrl}${failUrl}`);
   }
 
   const supabase = await createClient();
@@ -156,7 +168,10 @@ async function handleMindsRelationshipPayment(params: {
 }) {
   const { tid, orderId, amount, baseUrl } = params;
   const admin = createAdminClient();
-  const failUrl = `${baseUrl}/minds?error=${encodeURIComponent("결제 처리 중 오류가 발생했습니다")}`;
+  // [임시 진단] 운영 로그 접근이 어려워, 어느 단계에서 왜 실패했는지 URL error 파라미터로
+  // 노출한다. 원인 확인 후 다시 일반 메시지로 되돌릴 것.
+  const fail = (step: string, detail = "") =>
+    seeOther(`${baseUrl}/minds?error=${encodeURIComponent(`[${step}] ${detail}`.trim())}`);
 
   const { data: purchase, error: queryError } = await admin
     .from("minds_relationship_purchases")
@@ -166,17 +181,17 @@ async function handleMindsRelationshipPayment(params: {
 
   if (queryError || !purchase) {
     console.error("[minds-relationship] 결제 레코드 조회 실패:", { orderId, queryError });
-    return NextResponse.redirect(failUrl);
+    return fail("record", queryError?.message ?? "no purchase");
   }
 
   const reportUrl = `${baseUrl}/minds/relationship/${purchase.id}`;
 
   // 이미 승인됨 → 리포트로 직행(멱등성).
   if (purchase.status === "confirmed") {
-    return NextResponse.redirect(reportUrl);
+    return seeOther(reportUrl);
   }
   if (purchase.status !== "pending") {
-    return NextResponse.redirect(failUrl);
+    return fail("status", String(purchase.status));
   }
 
   // 금액 검증 — DB 금액·NicePay 금액·서버 상수가 모두 일치해야 한다(위변조 방지).
@@ -187,7 +202,7 @@ async function handleMindsRelationshipPayment(params: {
       expected: MINDS_RELATIONSHIP_PRICE,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return fail("amount", `db=${purchase.amount} np=${amount} expect=${MINDS_RELATIONSHIP_PRICE}`);
   }
 
   // NicePay 최종 승인(캡처).
@@ -198,7 +213,7 @@ async function handleMindsRelationshipPayment(params: {
       resultMsg: approval.resultMsg,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return fail("approve", `${approval.resultCode} ${approval.resultMsg}`);
   }
 
   // pending → confirmed (멱등성: pending 일 때만 전환).
@@ -214,7 +229,7 @@ async function handleMindsRelationshipPayment(params: {
 
   if (updateError) {
     console.error("[minds-relationship] 결제 상태 업데이트 실패:", { updateError, orderId });
-    return NextResponse.redirect(failUrl);
+    return fail("update", updateError.message);
   }
 
   // 운영자 슬랙 알림 — 실제 구매 완료 시점(fire-and-forget). 리포트 링크를 함께 남겨,
@@ -229,7 +244,7 @@ async function handleMindsRelationshipPayment(params: {
   );
 
   // 리포트 페이지로 — 거기서 report_json 이 없으면 LLM 생성·캐시 후 렌더.
-  return NextResponse.redirect(reportUrl);
+  return seeOther(reportUrl);
 }
 
 /* ── Mind Spill Period(3일치 종합) 결제 처리 ── */
@@ -250,7 +265,7 @@ async function handleMindSpillReportPayment(
 
   if (queryError || !purchase) {
     console.error("Mind Spill period 결제 레코드 조회 실패:", { orderId, queryError });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 결제 후 리다이렉트 — period 리포트 페이지에서 LLM 자동 트리거.
@@ -258,11 +273,11 @@ async function handleMindSpillReportPayment(
 
   // 이미 confirmed → 리포트 페이지로 직행 (멱등성).
   if (purchase.status === "confirmed") {
-    return NextResponse.redirect(reportUrl);
+    return seeOther(reportUrl);
   }
 
   if (purchase.status !== "pending") {
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 금액 검증.
@@ -272,7 +287,7 @@ async function handleMindSpillReportPayment(
       nicepayAmount: amount,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // NicePay 승인.
@@ -283,7 +298,7 @@ async function handleMindSpillReportPayment(
       resultMsg: approval.resultMsg,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // pending → confirmed (optimistic concurrency + partial unique index).
@@ -299,10 +314,10 @@ async function handleMindSpillReportPayment(
 
   if (updateError) {
     console.error("Mind Spill period 결제 상태 업데이트 실패:", { updateError, orderId });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
-  return NextResponse.redirect(reportUrl);
+  return seeOther(reportUrl);
 }
 
 /* ── Mind Spill 데일리 구독 결제 처리 ── */
@@ -324,15 +339,15 @@ async function handleMindSpillDailySubscription(
 
   if (queryError || !sub) {
     console.error("Mind Spill 데일리 구독 레코드 조회 실패:", { orderId, queryError });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 이미 활성화됨 → 멱등성.
   if (sub.status === "active") {
-    return NextResponse.redirect(successUrl);
+    return seeOther(successUrl);
   }
   if (sub.status !== "pending") {
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 금액 검증.
@@ -342,7 +357,7 @@ async function handleMindSpillDailySubscription(
       nicepayAmount: amount,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // NicePay 승인.
@@ -353,7 +368,7 @@ async function handleMindSpillDailySubscription(
       resultMsg: approval.resultMsg,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // pending → active. started_at = now, expires_at = now + 31일.
@@ -373,10 +388,10 @@ async function handleMindSpillDailySubscription(
 
   if (updateError) {
     console.error("Mind Spill 데일리 구독 활성화 실패:", { updateError, orderId });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
-  return NextResponse.redirect(successUrl);
+  return seeOther(successUrl);
 }
 
 /* ── 워크북 결제 처리 ── */
@@ -397,18 +412,18 @@ async function handleWorkshopPayment(
 
   if (queryError || !purchase) {
     console.error("워크북 결제 레코드 조회 실패:", { orderId, queryError });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 이미 승인됨 → 생성 중 안내로 (워크북은 답변 기반 제작 후 별도 전달)
   if (purchase.status === "confirmed") {
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/dashboard/self-workshop/generating`
     );
   }
 
   if (purchase.status !== "pending") {
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 금액 검증
@@ -418,7 +433,7 @@ async function handleWorkshopPayment(
       nicepayAmount: amount,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // NicePay 승인 호출
@@ -429,7 +444,7 @@ async function handleWorkshopPayment(
       resultMsg: approval.resultMsg,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 결제 상태 업데이트
@@ -445,7 +460,7 @@ async function handleWorkshopPayment(
 
   if (updateError) {
     console.error("워크북 결제 상태 업데이트 실패:", { updateError, orderId });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // ⑤ 운영자 슬랙 알림 — 승인/캡처 성공 후 confirmed 전환에 성공한 시점(실제 구매 완료).
@@ -496,7 +511,7 @@ async function handleWorkshopPayment(
   }
 
   // 결제 직후: 워크북은 답변에 맞춰 제작 후 별도 전달 → "생성 중" 안내로 이동
-  return NextResponse.redirect(
+  return seeOther(
     `${baseUrl}/dashboard/self-workshop/generating`
   );
 }
@@ -526,7 +541,7 @@ async function handleCounselingPayment(
 
   if (!ct) {
     console.error("상담 결제 유형 식별 실패:", { orderId });
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/programs/counseling?error=${encodeURIComponent("결제 정보를 확인할 수 없습니다")}`
     );
   }
@@ -540,7 +555,7 @@ async function handleCounselingPayment(
       nicepayAmount: amount,
       orderId,
     });
-    return NextResponse.redirect(
+    return seeOther(
       `${failUrl}?error=${encodeURIComponent("결제 금액이 일치하지 않습니다")}`
     );
   }
@@ -553,7 +568,7 @@ async function handleCounselingPayment(
       resultMsg: approval.resultMsg,
       orderId,
     });
-    return NextResponse.redirect(
+    return seeOther(
       `${failUrl}?error=${encodeURIComponent(approval.resultMsg)}`
     );
   }
@@ -596,7 +611,7 @@ async function handleCounselingPayment(
   }
 
   // order 를 실어 보내 완료 페이지에서 사전 설문 제출 여부를 분기한다.
-  return NextResponse.redirect(
+  return seeOther(
     `${baseUrl}/payment/counseling/complete?order=${encodeURIComponent(orderId)}`
   );
 }
@@ -617,19 +632,19 @@ async function handleHusbandMatchPayment(
 
   if (paymentError || !payment) {
     console.error("결제 레코드 조회 실패:", { orderId, paymentError });
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent("결제 정보를 찾을 수 없습니다")}`
     );
   }
 
   if (payment.status === "confirmed") {
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/husband-match/payment/complete/${payment.id}`
     );
   }
 
   if (payment.status !== "pending") {
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent("처리할 수 없는 결제 상태입니다")}`
     );
   }
@@ -640,7 +655,7 @@ async function handleHusbandMatchPayment(
       nicepayAmount: amount,
       orderId,
     });
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent("결제 금액이 일치하지 않습니다")}`
     );
   }
@@ -653,7 +668,7 @@ async function handleHusbandMatchPayment(
       resultMsg: approval.resultMsg,
       orderId,
     });
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(approval.resultMsg)}`
     );
   }
@@ -671,12 +686,12 @@ async function handleHusbandMatchPayment(
 
   if (updateError) {
     console.error("결제 상태 업데이트 실패:", { updateError, orderId });
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent("결제 처리 중 오류가 발생했습니다")}`
     );
   }
 
-  return NextResponse.redirect(
+  return seeOther(
     `${baseUrl}/husband-match/payment/complete/${payment.id}`
   );
 }
@@ -708,18 +723,18 @@ async function handleCartOrder(
 
   if (queryError || !cartOrder) {
     console.error("cart_orders 조회 실패:", { orderId, queryError });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 이미 승인됨 → 완료 페이지
   if (cartOrder.status === "confirmed") {
-    return NextResponse.redirect(
+    return seeOther(
       `${baseUrl}/cart/complete/${cartOrder.id}`
     );
   }
 
   if (cartOrder.status !== "pending") {
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 금액 검증
@@ -729,7 +744,7 @@ async function handleCartOrder(
       nicepayAmount: amount,
       orderId,
     });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // NicePay 승인 호출
@@ -745,7 +760,7 @@ async function handleCartOrder(
       .update({ status: "cancelled" })
       .eq("id", cartOrder.id)
       .eq("status", "pending");
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 멱등성: pending일 때만 confirmed로
@@ -761,7 +776,7 @@ async function handleCartOrder(
 
   if (updateError) {
     console.error("cart_orders 상태 업데이트 실패:", { updateError, orderId });
-    return NextResponse.redirect(failUrl);
+    return seeOther(failUrl);
   }
 
   // 각 상품 카테고리별 소유권 부여 (admin client 사용)
@@ -841,5 +856,5 @@ async function handleCartOrder(
       .in("product_id", purchasedProductIds);
   }
 
-  return NextResponse.redirect(`${baseUrl}/cart/complete/${cartOrder.id}`);
+  return seeOther(`${baseUrl}/cart/complete/${cartOrder.id}`);
 }
