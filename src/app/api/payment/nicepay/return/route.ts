@@ -10,6 +10,7 @@ import { approveNicepayPayment } from "@/lib/nicepay/approve";
 import { MIND_SPILL_DAILY_SUB_DAYS } from "@/lib/mind-spill/constants";
 import { COUNSELING_TYPES, getCounselingType } from "@/lib/counseling/types";
 import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
+import { sendPaidReportAlimtalk } from "@/lib/solapi/messages";
 
 /**
  * 결제 후 페이지로 보내는 리다이렉트는 반드시 303(See Other)을 쓴다.
@@ -175,7 +176,7 @@ async function handleMindsRelationshipPayment(params: {
 
   const { data: purchase, error: queryError } = await admin
     .from("minds_relationship_purchases")
-    .select("id, lead_id, amount, status")
+    .select("id, lead_id, amount, status, phone, user_id")
     .eq("order_id", orderId)
     .single();
 
@@ -242,6 +243,27 @@ async function handleMindsRelationshipPayment(params: {
       reportUrl,
     })
   );
+
+  // 구매자에게 '결제(제작) 완료' 카카오 알림톡 발송(fire-and-forget). 수신번호는 결제 시
+  // 입력받은 purchase.phone 을 우선 쓰고, 없으면 로그인 계정의 profiles.phone 으로 대체한다.
+  after(async () => {
+    let phone = (purchase.phone ?? "").trim();
+    let name: string | null = null;
+    if (purchase.user_id) {
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("phone, name")
+        .eq("id", purchase.user_id)
+        .maybeSingle();
+      if (!phone) phone = (prof?.phone ?? "").trim();
+      name = prof?.name ?? null;
+    }
+    if (!phone) return; // 번호가 없으면 발송 불가(조용히 스킵).
+    const res = await sendPaidReportAlimtalk({ phone, reportUrl, name });
+    if (!res.success) {
+      console.error("[minds-relationship] 결제완료 알림톡 실패:", res.reason);
+    }
+  });
 
   // 리포트 페이지로 — 거기서 report_json 이 없으면 LLM 생성·캐시 후 렌더.
   return seeOther(reportUrl);

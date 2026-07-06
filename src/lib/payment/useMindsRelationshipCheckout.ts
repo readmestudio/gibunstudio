@@ -23,7 +23,7 @@ export function useMindsRelationshipCheckout() {
   const router = useRouter();
   const [isSubmitting, setSubmitting] = useState(false);
 
-  async function startPayment(method?: string) {
+  async function startPayment(method?: string, phone?: string) {
     if (!NICEPAY_CLIENT_ID) {
       alert("결제 모듈이 아직 설정되지 않았어요. 잠시 후 다시 시도해주세요.");
       return;
@@ -47,7 +47,8 @@ export function useMindsRelationshipCheckout() {
       const res = await fetch("/api/payment/minds-relationship/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId }),
+        // phone: 결제완료 알림톡 수신번호(결제 모달에서 입력받아 결제 레코드에 저장).
+        body: JSON.stringify({ leadId, phone: phone ?? "" }),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -84,8 +85,9 @@ export function useMindsRelationshipCheckout() {
   return {
     isSubmitting,
     // method 는 NicePay 필수 파라미터(P007). env 가 비면 카드 결제로 폴백.
-    handleBuyNow: () => startPayment(BUYNOW_METHOD || "card"),
-    handleKakao: () => startPayment("kakaopay"),
-    handleNpay: () => startPayment("naverpayCard"),
+    // phone 은 결제완료 알림톡 수신번호로 함께 전달한다.
+    handleBuyNow: (phone?: string) => startPayment(BUYNOW_METHOD || "card", phone),
+    handleKakao: (phone?: string) => startPayment("kakaopay", phone),
+    handleNpay: (phone?: string) => startPayment("naverpayCard", phone),
   };
 }

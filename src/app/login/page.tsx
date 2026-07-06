@@ -126,6 +126,12 @@ function LoginContent() {
         },
         { onConflict: "id" }
       );
+      // 가입 환영 알림톡 — 서버가 세션·profiles.phone 으로 1회 발송(멱등). 실패해도 가입은 진행.
+      try {
+        await fetch("/api/notify/signup-welcome", { method: "POST" });
+      } catch {
+        /* 알림톡 실패는 가입 흐름을 막지 않는다 */
+      }
       redirectAfterAuth();
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "가입에 실패했습니다." });

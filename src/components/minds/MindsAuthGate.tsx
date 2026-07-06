@@ -20,6 +20,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
 import { M, ctaStyle } from "./quiet-editorial";
+import { isValidKrMobile } from "@/lib/solapi/client";
 
 type Tab = "login" | "signup";
 
@@ -71,6 +72,7 @@ export function MindsAuthGate({ onAuthed }: { onAuthed: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -94,7 +96,11 @@ export function MindsAuthGate({ onAuthed }: { onAuthed: () => void }) {
         return;
       }
 
-      // 가입
+      // 가입 — 알림톡 발송·결제 안내를 위해 휴대폰 번호를 필수로 받는다.
+      if (!isValidKrMobile(phone)) {
+        setMessage("알림톡을 받을 휴대폰 번호를 정확히 입력해주세요.");
+        return;
+      }
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       if (!data.session) {
@@ -104,17 +110,24 @@ export function MindsAuthGate({ onAuthed }: { onAuthed: () => void }) {
         );
         return;
       }
-      // 프로필 보강(있으면 이름 저장). 실패해도 결제 흐름은 진행.
+      // 프로필 보강(이름·전화번호 저장). 실패해도 결제 흐름은 진행.
       if (data.user) {
         await supabase.from("profiles").upsert(
           {
             id: data.user.id,
             email: email.trim().toLowerCase(),
             name: name || null,
+            phone: phone.trim() || null,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "id" }
         );
+      }
+      // 가입 환영 알림톡 — 서버가 profiles.phone 으로 1회 발송(멱등). 실패해도 흐름 유지.
+      try {
+        await fetch("/api/notify/signup-welcome", { method: "POST" });
+      } catch {
+        /* 알림톡 실패는 가입/결제 흐름을 막지 않는다 */
       }
       await claimLead();
       onAuthed();
@@ -259,6 +272,19 @@ export function MindsAuthGate({ onAuthed }: { onAuthed: () => void }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="홍길동"
+                style={inputStyle}
+              />
+            </label>
+            <div style={{ height: 12 }} />
+            <label style={labelStyle}>
+              휴대폰
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                placeholder="010-1234-5678"
                 style={inputStyle}
               />
             </label>

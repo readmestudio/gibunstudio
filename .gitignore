@@ -72,3 +72,6 @@ supabase/.temp/
 
 # Claude Code 로컬 설정
 .claude/
+
+# 로컬 분석/스크래치 스크립트 (커밋 제외)
+tmp/

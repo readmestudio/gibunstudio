@@ -17,6 +17,7 @@ import { useMindsRelationshipCheckout } from "@/lib/payment/useMindsRelationship
 import { M, dispStyle, leadStyle, Hr } from "./quiet-editorial";
 import { MindsAuthGate } from "./MindsAuthGate";
 import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
+import { isValidKrMobile } from "@/lib/solapi/client";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL = process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "";
@@ -35,6 +36,8 @@ type AuthState = "checking" | "anon" | "authed";
 export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [authState, setAuthState] = useState<AuthState>("checking");
+  // 결제완료 알림톡 수신번호 — profiles.phone 이 있으면 프리필하고, 사용자가 수정 가능.
+  const [phone, setPhone] = useState("");
 
   const { handleKakao, handleNpay, isSubmitting } = useMindsRelationshipCheckout();
 
@@ -52,6 +55,15 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
           data: { user },
         } = await supabase.auth.getUser();
         if (!cancelled) setAuthState(user ? "authed" : "anon");
+        // 로그인 상태면 저장된 전화번호를 미리 채워 재입력 부담을 줄인다.
+        if (user) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("phone")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (!cancelled && prof?.phone) setPhone(prof.phone);
+        }
       } catch {
         if (!cancelled) setAuthState("anon");
       }
@@ -65,14 +77,19 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
 
   const sdkPending = !!NICEPAY_CLIENT_ID && !sdkLoaded;
 
-  // 결제 수단별 버튼이 공유하는 진입 — 추적 이벤트를 한 번 쏘고 해당 결제를 시작한다.
-  const payWith = (run: () => void) => {
+  // 결제 수단별 버튼이 공유하는 진입 — 번호 검증 후 추적 이벤트를 쏘고 결제를 시작한다.
+  // phone 은 결제완료 알림톡 수신번호로 결제 훅에 함께 넘긴다(필수).
+  const payWith = (run: (phone: string) => void) => {
+    if (!isValidKrMobile(phone)) {
+      alert("알림톡을 받을 휴대폰 번호를 정확히 입력해주세요. (예: 010-1234-5678)");
+      return;
+    }
     trackMetaEvent("InitiateCheckout", {
       content_name: "minds_to_relationship",
       value: MINDS_RELATIONSHIP_PRICE,
       currency: "KRW",
     });
-    run();
+    run(phone);
   };
   const payDisabled = isSubmitting || sdkPending;
   // 진행/로딩 중이면 모든 버튼이 같은 상태 문구를 보인다.
@@ -185,6 +202,39 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
             </span>
             <span style={{ ...dispStyle, fontSize: 28 }}>{won(MINDS_RELATIONSHIP_PRICE)}</span>
           </div>
+        </div>
+
+        {/* 알림톡 수신번호 — 결제·리포트 완료 안내를 이 번호로 보낸다(필수) */}
+        <div style={{ marginTop: 20 }}>
+          <label
+            htmlFor="minds-alimtalk-phone"
+            style={{ fontFamily: M.mono, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: M.mute }}
+          >
+            알림톡 받을 휴대폰
+          </label>
+          <input
+            id="minds-alimtalk-phone"
+            type="tel"
+            inputMode="numeric"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="010-1234-5678"
+            style={{
+              width: "100%",
+              marginTop: 6,
+              padding: "13px 14px",
+              borderRadius: 2,
+              border: `1.5px solid ${M.line}`,
+              background: M.paper2,
+              fontFamily: M.font,
+              fontSize: 15,
+              color: M.ink,
+              outline: "none",
+            }}
+          />
+          <p style={{ margin: "6px 0 0", fontSize: 11.5, color: M.mute, fontFamily: M.font, lineHeight: 1.5 }}>
+            결제·리포트 제작 완료 안내를 카카오 알림톡으로 보내드려요.
+          </p>
         </div>
 
         {/* 결제 수단 CTA — 카카오페이 · 네이버페이 (브랜드 컬러는 모노톤 예외) */}

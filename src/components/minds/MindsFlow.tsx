@@ -3,15 +3,20 @@
 /**
  * 무료 "마음 확인"(/minds) 상태머신 오케스트레이터.
  *
- *   landing → capture → conversation → analyzing → report
+ *   landing → conversation → analyzing → report
+ *
+ * [개편 2026-07-06] 연락처 캡처 단계를 제거했다. "결과부터 보여주고 지갑은 나중에"
+ * 원칙으로, 무료 흐름에선 연락처를 받지 않는다(알림톡용 연락처는 결제 시점에 받는다).
+ * 대신 테스트 시작 순간 *익명 리드*(email 없이)를 1행 만들어 id 를 확보하고, 이후
+ * 답변·마음지도를 그 행에 붙여 재방문 시 결과를 복원한다.
  *
  * 공유 상태(리드 id·마음지도)를 들고 단계를 전환한다.
- *  - capture 완료 즉시 /api/minds/lead 로 연락처를 저장하고 id 를 받아 둔다(이탈 대비).
+ *  - landing 시작 즉시 /api/minds/lead(channel:"anon") 로 익명 리드를 만들고 id 확보.
  *  - conversation 완료 시 /api/minds/parts-map 로 실제 LLM 분석을 호출해 마음지도를
  *    만들고(leadId 동봉 → 같은 리드 행에 답변·결과가 붙는다), report 로 넘어간다.
  *  - 분석 호출이 길어질 수 있어 그 사이 analyzing 로딩 화면을 보여준다.
  *
- * 전환 측정: 연락처 제출(Lead) · 결과 도달(ViewContent) 을 Meta 픽셀로 추적한다.
+ * 전환 측정: 테스트 시작(Lead) · 결과 도달(ViewContent) 을 Meta 픽셀로 추적한다.
  */
 
 import { useEffect, useState } from "react";
@@ -23,12 +28,11 @@ import { getAttribution } from "@/lib/attribution";
 import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
 import { MindsLanding } from "./MindsLanding";
-import { MindsLeadCapture, type MindsLead } from "./MindsLeadCapture";
 import { MindsConversation, type MindAnswer } from "./MindsConversation";
 import { MindsFreeReport } from "./MindsFreeReport";
 import { MindsAnalyzing } from "./MindsAnalyzing";
 
-type Phase = "landing" | "capture" | "conversation" | "analyzing" | "report";
+type Phase = "landing" | "conversation" | "analyzing" | "report";
 
 export function MindsFlow() {
   const [phase, setPhase] = useState<Phase>("landing");
@@ -75,15 +79,15 @@ export function MindsFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 연락처 저장(fire-and-forget). 실패해도 사용자 흐름은 막지 않는다.
-  const saveLead = async (lead: MindsLead) => {
+  // 익명 리드 생성(fire-and-forget). 연락처 없이 email=null 로 1행 만들고 id 만 확보한다.
+  // 실패해도 사용자 흐름은 막지 않는다(leadId 없으면 결과 저장·재방문 복원만 생략).
+  const createAnonLead = async () => {
     try {
       const res = await fetch("/api/minds/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          channel: lead.channel,
-          email: lead.value,
+          channel: "anon",
           attribution: getAttribution(),
         }),
       });
@@ -93,36 +97,6 @@ export function MindsFlow() {
       // 네트워크 실패 — 결과 보기는 계속 진행.
     }
   };
-
-  // 카카오 OAuth 복귀 처리.
-  // /auth/callback 이 세션을 굽고 /minds?auth=kakao 로 되돌려보내면, 로그인된 세션에서
-  // 실제 카카오 이메일을 읽어 리드를 저장하고 곧장 대화 단계로 진입시킨다(capture 생략).
-  // 표식은 곧바로 URL 에서 지워 새로고침/뒤로가기 시 재진입을 막는다.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("auth") !== "kakao") return;
-    // 이미 분석을 마친 브라우저면 위 복원 effect가 결과 페이지로 보내므로 양보한다.
-    if (localStorage.getItem(MINDS_LEAD_STORAGE_KEY)) return;
-
-    let cancelled = false;
-    void (async () => {
-      const supabase = createClient();
-      const { data } = await supabase.auth.getUser();
-      // URL 에서 auth 표식 제거 (히스토리 치환).
-      router.replace("/minds");
-      if (cancelled || !data.user) return;
-      // 실제 카카오 이메일로 리드 저장(서버가 세션에서 신원을 다시 확인) → 대화로.
-      await saveLead({ channel: "kakao", value: data.user.email ?? "" });
-      trackMetaEvent("Lead", { content_name: "minds" });
-      if (!cancelled) setPhase("conversation");
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // 마운트 시 1회만 — router 는 안정 참조, saveLead 는 매 렌더 동일 동작.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // 대화 완료 → 실제 LLM 분석 호출 → 리포트.
   const runAnalysis = async (answers: MindAnswer[]) => {
@@ -161,19 +135,12 @@ export function MindsFlow() {
             trackMetaCustom("StartTest", { content_name: "minds" });
             // 운영자 슬랙에도 "테스트 시작" 신호를 보낸다(세션당 1회 dedupe).
             trackMindsFunnel("test_start");
-            setPhase("capture");
-          }}
-        />
-      )}
-
-      {phase === "capture" && (
-        <MindsLeadCapture
-          onSubmit={(lead) => {
-            void saveLead(lead);
+            // 연락처 없이 익명 리드 1행 확보 → 이후 답변·결과가 이 id 에 붙는다.
+            void createAnonLead();
+            // 유입 신호(Lead) — 연락처는 없지만 '진짜 시작' 볼륨을 광고 최적화에 넘긴다.
             trackMetaEvent("Lead", { content_name: "minds" });
             setPhase("conversation");
           }}
-          onBack={() => setPhase("landing")}
         />
       )}
 

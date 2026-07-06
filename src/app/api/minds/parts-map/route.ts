@@ -216,8 +216,10 @@ ${buildPartTypeReference()}
 
 ${IFS_TERM_BAN_RULES}`;
 
-  const userMessage = `## 유저가 보고한 답변 (상담 대화)
+  const userMessage = `## 유저가 보고한 답변 (진단)
 ${userContent}
+
+[읽는 법] 앞부분(상황·몸과 마음의 신호·첫 반응)은 보기에서 고른 *맥락*이고, 큰따옴표로 옮긴 뒤쪽 답변(가장 큰 목소리·다른 목소리·진짜 바란 것)은 유저가 직접 쓴 *실제 속말*이다. name·catchphrase·evidence_quote 는 이 직접 쓴 말에서 우선 인용하고, 앞부분 선택지는 그 마음들이 놓인 상황·감정 배경으로 활용하라.
 
 위 답변을 바탕으로 parts · leader_id · conflicts · summary를 JSON으로 응답하세요.`;
 

@@ -70,7 +70,7 @@ export const RATE_LIMITS = {
  * Next.js에서는 프록시/로드밸런서 뒤에 있을 수 있으므로
  * x-forwarded-for 헤더를 우선 확인함
  */
-function getClientIp(request: NextRequest): string {
+export function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) {
     // x-forwarded-for는 "client, proxy1, proxy2" 형태일 수 있음

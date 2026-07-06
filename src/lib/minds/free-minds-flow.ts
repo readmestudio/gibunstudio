@@ -1,23 +1,25 @@
 /**
- * 무료 "마음 확인"(/minds) 축약 대화 흐름.
+ * 무료 "마음 확인"(/minds) 축약 진단 흐름.
  *
- * 유료 워크북 Step 3(7문항, 15~25분)을 무료 깔때기에 맞게 5문항(~7~10분)으로 축약하되,
- * `parts-map` 분석이 *납득되는 마음 리스트*를 뽑아낼 최소 재료는 반드시 확보하도록 설계.
+ * [개편 2026-07-06] 자유서술 5문항(타이핑 부담 → 대량 이탈)을
+ *   · 앞부분 = 객관식(탭) 3문항 → 1~2분 만에 사건·감정·반응의 골격을 빠르게 세우고,
+ *   · 뒷부분 = 문장 완성 검사 3문항 → 캐릭터 분석의 *정확도*를 끌어올리는 원문 인용을 확보
+ * 하는 하이브리드로 재구성했다. 연락처 캡처는 무료 흐름에서 제거(결제 시 알림톡용으로만
+ * 받는다) — "결과부터 보여주고 지갑은 나중에" 원칙.
  *
- * 마음 리스트 품질을 좌우하는 3가지 재료:
- *  1. 구체적 한 사건         → 모든 마음의 evidence_quote 근거가 됨
- *  2. 그 순간의 *여러* 감정/생각 → 마음이 2~3개로 갈라지는 핵심 엔진 (active_minds)
- *  3. 자동사고 원문 인용       → "내 답에서: …" 카드의 신뢰감
+ * 캐릭터(마음 리스트) 품질을 좌우하는 재료:
+ *  1. 구체적 사건 맥락      → situation(객관식) : 모든 마음의 배경
+ *  2. 그 순간의 몸·감정 신호 → body_signal(다중선택) : 마음이 2~3개로 갈라지는 엔진
+ *  3. 반사적 첫 반응        → first_reaction(객관식) : 가장 앞에 나선 마음(리더) 단서
+ *  4. 자동사고 원문 인용     → loudest_voice(문장완성) : evidence_quote·catchphrase 직접 근거
+ *  5. 반대/거드는 목소리     → counter_voice(문장완성) : 갈등 구도(conflicts) 재료
+ *  6. 숨은 욕구             → hidden_need(문장완성) : exile(여린 속마음) → 정확도·깊이
  *
- * 4번(counter_voice)은 방향이 반대인 두 번째 마음을 끌어내, 유료에서 공개할
- * "갈등 구도(conflicts)"의 재료까지 미리 확보한다 — 무료에선 캐릭터만, 관계는 유료.
+ * [id 안정성] situation·loudest_voice·counter_voice 는 분석 실패 시 폴백
+ * (parts-map/route.ts · MindsFlow.tsx)이 id로 답을 골라 개인화한다. 문구·보기는
+ * 바꿔도 이 id 들과 {대사} 토큰은 그대로 둔다.
  *
- * [범위 결정] 무료 /minds 는 유료 워크북과 *독립된 유입(lead)용* 콘텐츠다. 이 5문항
- * 대화로 워크북 Step 3·4 를 대체하지 않는다 — 5문항만으로는 핵심신념 발굴 등 후속
- * 단계의 재료가 부족하기 때문. 구매자는 워크북 Step 1 부터 끝까지 온전히 진행한다.
- * (무료 대화를 워크북으로 이관하는 연속성 스킵은 의도적으로 만들지 않는다.)
- *
- * IFS 용어 금지(IFS_TERM_BAN_RULES)는 *유료 워크북*의 분석 프롬프트에서만 강제된다.
+ * IFS 용어 금지(IFS_TERM_BAN_RULES)는 *유료 워크북* 분석 프롬프트에서만 강제된다.
  * 무료 /minds 는 드라마 배역명(리더/빌런/난봉꾼/관리자/추방자)을 그대로 노출한다.
  */
 
@@ -26,84 +28,139 @@ import type { StepKey } from "@/lib/self-workshop/conversation";
 /** 무료 흐름의 transcript step_key. 유료 parts_discovery 와 구분해 추적/분석에 쓴다. */
 export const FREE_MINDS_STEP_KEY: StepKey = "parts_discovery";
 
+/** 문항 유형 — single: 택1, multi: 다중선택, sentence: 문장 완성(빈칸 채우기). */
+export type MindStepType = "single" | "multi" | "sentence";
+
+export interface MindOption {
+  /** 분석/저장용 안정 값(영문 slug). */
+  value: string;
+  /** 화면에 보이는 보기 문구. 분석에는 이 label 이 답변 텍스트로 들어간다. */
+  label: string;
+}
+
 export interface FreeMindStep {
-  /** 안정적 slug. ConversationTurn.explore_point_id 와 매핑. */
+  /** 안정적 slug. 분석/폴백이 id 로 답을 참조한다. */
   id: string;
-  /** 화면에 보이는 질문 문구. {대사} 토큰은 loudest_voice 답으로 런타임 치환. */
+  /** 문항 유형. */
+  type: MindStepType;
+  /** 화면 질문 문구. {대사} 토큰은 loudest_voice 답으로 런타임 치환. */
   opening: string;
-  /** 질문 아래 보조 안내(placeholder/도움말). 없으면 생략. */
+  /** 질문 아래 보조 안내. 없으면 생략. */
   hint?: string;
   /** 분석 프롬프트가 참조할 주제 가이드(내부용, 화면 비노출). */
   topic: string;
-  /** 빈 답이어도 다음으로 넘어갈 수 있는지. */
+  /** 빈 답이어도 다음으로 넘어갈 수 있는지(주로 뒤쪽 문장완성). */
   optional?: boolean;
-  /** 이 답이 이 길이 미만이면 "너무 얕음" 힌트(클라이언트 진행 가드용). */
+
+  /* ── single / multi 전용 ── */
+  /** 보기 목록. */
+  options?: MindOption[];
+  /** multi 에서 최대 선택 개수(없으면 제한 없음). */
+  maxSelect?: number;
+
+  /* ── sentence 전용 ── */
+  /** 빈칸 앞에 붙는 유도 문구(문장 완성 느낌을 주는 리드). */
+  stemLead?: string;
+  /** 답을 큰따옴표로 감쌀지(대사 인용형 문항). */
+  quoted?: boolean;
+  /** 이 답이 이 길이 미만이면 "조금만 더" 힌트. */
   minChars?: number;
 }
 
 /**
- * 5문항 축약 흐름 — "2~3명을 깊게" 깔때기.
+ * 6문항 하이브리드 흐름 — 앞 3문항 객관식(탭) → 뒤 3문항 문장 완성.
  *
- * 설계 원칙: 매 문항이 *서로 다른 인지 작업(렌즈)*을 시킨다. 같은 "마음을 더 말해보세요"
- * 를 문구만 바꿔 반복하면 사용자는 같은 질문을 5번 받는다고 느낀다. 그래서 회상→몸/충동→
- * 인용→입장(찬반)→현재회고 로 렌즈를 매번 바꿔(2번은 몸·반사 반응), 반복감 없이 서로 다른 마음이 갈라지게 한다.
- * 앞 2문항으로 캐릭터 골격(2명)을 빠르게 세우고, 뒤 2문항으로 그들을 *깊게* 파낸 뒤,
- * 마지막엔 사건이 지난 '지금' 시점으로 돌아와 리포트를 닫는다.
- *
- *   1. situation      — 감정이 크게 흔들린 한 사건 (회상 · 근거 앵커)
- *   2. active_minds   — 그 순간의 몸 + 나도 모르게 한 첫 행동·말 (반사 반응)
- *   3. loudest_voice  — 가장 큰 목소리의 대사 원문 (인용 · 캐릭터 A를 또렷하게)
- *   4. counter_voice  — 그 목소리에 맞서거나 거든 또 다른 목소리 (입장 · 캐릭터 B)
- *   5. other_minds    — 그 순간이 지난 '지금' 드는 생각·마음 (현재 회고 · 잔상)
- *
- * [id 안정성] situation·loudest_voice·counter_voice 는 분석 실패 시 폴백
- * (MindsFlow.tsx / parts-map/route.ts)이 id로 답을 골라 개인화한다. 문구는 바꿔도
- * id·optional·{대사} 토큰은 그대로 둔다.
+ *   1. situation      [single] 마음이 흔들린 사건의 영역 (회상 · 근거 앵커)
+ *   2. body_signal    [multi]  그 순간의 몸·마음 신호 (마음이 갈라지는 엔진)
+ *   3. first_reaction [single] 반사적 첫 반응 (가장 앞에 나선 마음 · 리더)
+ *   4. loudest_voice  [sentence] 가장 큰 목소리의 대사 원문 (캐릭터 A · 인용)
+ *   5. counter_voice  [sentence] 맞서거나 거든 또 다른 목소리 (캐릭터 B · 갈등)
+ *   6. hidden_need    [sentence] 사실 진짜 바랐던 것 (여린 속마음 · exile)
  */
 export const FREE_MINDS_STEPS: FreeMindStep[] = [
   {
     id: "situation",
-    opening:
-      "최근에 마음이 크게 흔들렸던 순간을 하나만 떠올려보세요. 화가 났거나, 속상했거나, 괜히 마음이 무거웠던 그 장면이요. 어떤 상황이었나요?",
-    hint: "예: 누군가의 말에 욱했을 때 · 일이 뜻대로 안 풀렸을 때 · 혼자 있는데 갑자기 마음이 가라앉았을 때",
+    type: "single",
+    opening: "요즘, 마음이 가장 크게 흔들렸던 순간은 어떤 때였나요?",
+    hint: "가장 먼저 떠오르는 하나를 골라주세요.",
     topic:
-      "일상에서 감정이 크게 흔들린 구체적 한 사건(관계·일·자기 자신 등 영역 제한 없음). 시간·장소·계기가 드러나게.",
-    minChars: 10,
+      "감정이 크게 흔들린 사건의 영역(관계·일·자기 자신·미래 등). 모든 마음 해석의 배경 맥락으로 쓴다.",
+    options: [
+      { value: "rel_hurt", label: "가까운 사람의 말이나 행동에 상처받았을 때" },
+      { value: "work_pressure", label: "일이나 해야 할 일이 뜻대로 안 풀렸을 때" },
+      { value: "alone_down", label: "혼자 있는데 마음이 툭 가라앉았을 때" },
+      { value: "conflict", label: "누군가와 부딪치고 갈등했을 때" },
+      { value: "future_anx", label: "앞날이 막막하고 불안했을 때" },
+      { value: "self_disappoint", label: "내 모습에 실망하고 자책했을 때" },
+      { value: "other", label: "그 밖의 다른 순간" },
+    ],
   },
   {
-    id: "active_minds",
-    opening:
-      "그 순간, 몸은 어땠나요? (가슴이 답답했다, 손이 떨렸다, 어깨에 힘이 들어갔다…) 그리고 그 상황에서 나도 모르게 제일 먼저 했던 행동이나 말이 있었나요?",
-    hint: "몸의 신호와, 생각하기도 전에 반사적으로 튀어나온 첫 행동이나 말을 적어주세요. 그 즉각적인 반응에 마음이 드러나요.",
+    id: "body_signal",
+    type: "multi",
+    opening: "그 순간, 몸과 마음에는 어떤 신호가 왔나요?",
+    hint: "느꼈던 걸 모두 골라주세요. (여러 개 괜찮아요)",
     topic:
-      "신체 감각과 반사적 첫 반응(나도 모르게 한 행동·말)으로 마음을 끌어낸다. 즉각 튀어나온 반응이 가장 앞에 나선 마음의 단서 — 감정 나열이 아니라 '몸·반사 반응'으로 받는다.",
-    minChars: 10,
+      "신체 감각·각성 신호(다중). 몸의 반응은 아직 말이 되지 못한 마음의 단서 — 서로 다른 마음이 갈라지는 재료로 쓴다.",
+    maxSelect: 5,
+    options: [
+      { value: "chest_tight", label: "가슴이 답답하고 조여왔다" },
+      { value: "trembling", label: "손발이 떨리거나 몸이 굳었다" },
+      { value: "hot", label: "열이 오르고 얼굴이 화끈했다" },
+      { value: "drained", label: "기운이 쭉 빠졌다" },
+      { value: "blank", label: "머리가 하얘지고 멍했다" },
+      { value: "tears", label: "눈물이 나거나 목이 메었다" },
+      { value: "nausea", label: "속이 울렁이고 답답했다" },
+      { value: "numb", label: "오히려 아무 느낌이 없었다" },
+    ],
+  },
+  {
+    id: "first_reaction",
+    type: "single",
+    opening: "그때, 나도 모르게 가장 먼저 한 행동은 무엇이었나요?",
+    hint: "생각하기 전에 반사적으로 튀어나온 반응이요.",
+    topic:
+      "반사적 첫 반응. 즉각 튀어나온 행동이 가장 앞에 나선 마음(리더/보호자)의 가장 강한 단서.",
+    options: [
+      { value: "endure", label: "꾹 참고 아무렇지 않은 척했다" },
+      { value: "burst", label: "감정을 그대로 드러내거나 터뜨렸다" },
+      { value: "avoid", label: "그 자리를 피하고 혼자 있고 싶었다" },
+      { value: "blame_self", label: "'내가 문제야'라며 나를 탓했다" },
+      { value: "blame_other", label: "상대나 상황을 원망했다" },
+      { value: "fix", label: "어떻게든 바로잡으려 애썼다" },
+    ],
   },
   {
     id: "loudest_voice",
-    opening:
-      "이번엔 그 순간 머릿속에서 가장 크게 들렸던 목소리에 머물러볼게요. 그 마음은 뭐라고 말하고 있었나요? 들렸던 말을 대사처럼 그대로 적어보세요.",
-    hint: "예: \"왜 나한테만 이래\" · \"내가 또 망쳤어\" · \"이러다 다 잃을 거야\"",
+    type: "sentence",
+    opening: "그 순간, 머릿속에서 가장 크게 들렸던 목소리를 그대로 옮겨볼게요.",
+    stemLead: "그 마음은 나에게 이렇게 말하고 있었어요 —",
+    quoted: true,
+    hint: "예: 왜 나한테만 이래 · 내가 또 망쳤어 · 이러다 다 잃을 거야",
     topic:
-      "가장 전면에 나선 마음의 자동사고 원문. evidence_quote·catchphrase 의 직접 근거. 캐릭터 A를 또렷하게.",
-    minChars: 6,
+      "가장 전면에 나선 마음의 자동사고 원문. evidence_quote·catchphrase 의 직접 근거이자 캐릭터 A를 또렷하게 만드는 핵심 인용.",
+    minChars: 4,
   },
   {
     id: "counter_voice",
+    type: "sentence",
     opening:
-      "'{대사}' — 이 목소리에 맞섰던 목소리나, 반대로 편을 들어 거들었던 목소리는 없었나요?",
-    hint: "예: '아니야, 넌 충분히 했어'라고 달래던 목소리 · '그래 더 했어야지'라고 거들던 목소리. 없었던 것 같으면 비워두고 넘어가도 괜찮아요.",
+      "'{대사}' — 그런데 마음 한편에서, 이 목소리와 다르게 말하던 또 다른 목소리는 없었나요?",
+    stemLead: "다른 한 마음은 이렇게 말했어요 —",
+    quoted: true,
+    hint: "맞서 달래던 목소리든, 거들며 부추기던 목소리든 좋아요. 없었던 것 같으면 건너뛰어도 괜찮아요.",
     topic:
-      "가장 큰 목소리에 맞서거나(반대) 거든(찬성) 또 다른 마음. 입장(찬반)으로 두 번째 캐릭터를 끌어내고 conflicts(대립) 재료를 확보한다.",
+      "가장 큰 목소리에 맞서거나 거든 또 다른 마음. 두 번째 캐릭터와 conflicts(대립) 재료를 확보한다.",
     optional: true,
   },
   {
-    id: "other_minds",
-    opening:
-      "그 순간이 한참 지난 지금, 그때 일을 다시 떠올리면 어떤 생각이나 마음이 드나요?",
-    hint: "예: '그때 왜 그랬을까' 하는 아쉬움 · '그래도 잘 버텼다'는 마음 · 여전히 남아 있는 답답함. 떠오르는 대로 적어주세요.",
+    id: "hidden_need",
+    type: "sentence",
+    opening: "마지막으로. 그 순간, 사실 내가 진짜 바랐던 건 무엇이었을까요?",
+    stemLead: "사실 내가 진짜 바랐던 건",
+    hint: "예: 그냥 이해받고 싶었다 · 잠깐이라도 쉬고 싶었다 · 내가 틀리지 않았다는 말",
     topic:
-      "사건이 지난 현재 시점의 생각·감정. 시간이 흐른 뒤에도 남아 있는 마음(잔상)이나 새로 든 관점을 끌어내, 또 하나의 마음을 잡고 리포트를 '지금'으로 닫는다.",
+      "겉 행동 아래의 진짜 욕구. 여리고 상처받기 쉬운 속마음(exile)을 끌어내 캐릭터 해석의 정확도와 깊이를 높인다.",
     optional: true,
   },
 ];
@@ -113,5 +170,5 @@ export const FREE_MINDS_TOKENS: Record<string, string> = {
   "{대사}": "loudest_voice",
 };
 
-/** 분석(마음 리스트 생성)을 시작해도 좋은 최소 답변 수. 도입 2문항 + 핵심 1문항. */
-export const FREE_MINDS_MIN_ANSWERS = 3;
+/** 분석(마음 리스트 생성)을 시작해도 좋은 최소 답변 수. 객관식 3 + 핵심 인용 1. */
+export const FREE_MINDS_MIN_ANSWERS = 4;

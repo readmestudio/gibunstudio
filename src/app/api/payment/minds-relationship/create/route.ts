@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const leadId = typeof body?.leadId === "string" ? body.leadId.trim() : "";
+    // 결제완료 알림톡 수신번호(선택). 없으면 나중에 profiles.phone 으로 대체한다.
+    const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
     if (!leadId) {
       return NextResponse.json(
         { error: "leadId가 필요합니다." },
@@ -123,6 +125,7 @@ export async function POST(request: NextRequest) {
         amount: MINDS_RELATIONSHIP_PRICE,
         order_id: orderId,
         status: "pending",
+        phone: phone || null,
       })
       .select("id, order_id, amount")
       .single();
