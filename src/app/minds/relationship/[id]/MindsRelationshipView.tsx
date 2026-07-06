@@ -170,7 +170,15 @@ function LoadingView() {
         <p style={{ fontFamily: M.font, fontSize: 13, color: M.mute, lineHeight: 1.7, margin: 0 }}>
           내 답변을 다시 읽고 다섯 배역과 그 관계를 분석하고 있어요.
           <br />
-          20~50초쯤 걸려요. 이 화면을 닫아도, 같은 링크로 다시 오면 볼 수 있어요.
+          20~50초쯤 걸려요. 이 화면을 닫아도 괜찮아요 — 제작이 끝나면
+          <br />
+          <a
+            href="/minds/my"
+            style={{ color: M.ink, fontWeight: 700, textDecoration: "underline" }}
+          >
+            내 리포트 대시보드
+          </a>
+          에서 언제든 다시 확인할 수 있어요.
         </p>
         <style>{`@keyframes mr-spin{to{transform:rotate(360deg)}}`}</style>
       </div>

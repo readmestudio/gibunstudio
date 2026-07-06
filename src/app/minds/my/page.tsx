@@ -49,7 +49,7 @@ export default async function MindsMyReportsPage() {
 
   const { data: purchases } = await admin
     .from("minds_relationship_purchases")
-    .select("id, created_at, paid_at")
+    .select("id, created_at, paid_at, report_json")
     .eq("user_id", user.id)
     .eq("status", "confirmed")
     .order("created_at", { ascending: false });
@@ -57,6 +57,9 @@ export default async function MindsMyReportsPage() {
   const paidReports = (purchases ?? []).map((p) => ({
     purchaseId: p.id as string,
     paidAt: (p.paid_at ?? p.created_at) as string,
+    // 결제 승인(confirmed)과 리포트 생성(~50초 LLM)이 분리돼 있어, 결제 직후
+    // 이탈하면 report_json 이 아직 비어 있다 → "제작 중"으로 안내.
+    ready: !!p.report_json,
   }));
 
   const empty = freeReports.length === 0 && paidReports.length === 0;
@@ -97,11 +100,25 @@ export default async function MindsMyReportsPage() {
                   <span className="text-sm font-semibold text-[var(--foreground)]">
                     다섯 배역 + 관계 해설 리포트
                   </span>
-                  <span className="text-xs text-neutral-400">{fmtDate(r.paidAt)}</span>
+                  {r.ready ? (
+                    <span className="text-xs text-neutral-400">{fmtDate(r.paidAt)}</span>
+                  ) : (
+                    // 제작 중 — 결제는 됐지만 아직 리포트 생성 전. 눌러서 이어보기 가능.
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--foreground)]">
+                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--foreground)]" />
+                      제작 중
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
           </ul>
+          {paidReports.some((r) => !r.ready) && (
+            <p className="mt-3 text-xs leading-relaxed text-neutral-500">
+              결제가 확인됐어요. 리포트를 만드는 데 20~50초쯤 걸려요. 제작이 끝나면 이
+              대시보드에서 언제든 다시 확인할 수 있어요.
+            </p>
+          )}
         </section>
       )}
 
