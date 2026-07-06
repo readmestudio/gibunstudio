@@ -14,7 +14,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { RelationshipReport } from "@/lib/minds/relationship-report";
+import {
+  readRelationshipReport,
+  type RelationshipReport,
+} from "@/lib/minds/relationship-report";
 import { MindsRelationshipView } from "./MindsRelationshipView";
 
 export const metadata: Metadata = {
@@ -41,7 +44,11 @@ export default async function MindsRelationshipPage({
       .maybeSingle();
     if (data) {
       status = data.status;
-      initialReport = (data.report_json as RelationshipReport | null) ?? null;
+      // 캐시된 report_json 은 옛 포맷(예: innerVoices 가 string[])일 수 있어,
+      // 뷰가 기대하는 현재 스키마로 반드시 정규화해서 넘긴다(그냥 캐스팅 금지).
+      initialReport = readRelationshipReport(
+        (data.report_json as Record<string, unknown> | null) ?? null
+      );
       ownerId = (data.user_id as string | null) ?? null;
     }
   } catch {

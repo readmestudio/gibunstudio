@@ -80,6 +80,14 @@ export interface DefenseMechanism {
   fromRoles: RoleSlotKey[];
 }
 
+/** 마음의 목소리 하나 — 대사(독백) + 그 대사에 대한 세부 설명. */
+export interface InnerVoice {
+  /** 자주 되뇌는 1인칭 독백/생각(짧은 한 문장). 예: "이 정도론 부족해, 더 해야 해." */
+  voice: string;
+  /** 이 대사가 어떤 배역·마음에서 나오는지, 어떤 순간에 떠오르는지 3~4줄 설명. */
+  detail: string;
+}
+
 /** "이런 생각이 들 때 → 이렇게 해라" 실천 처방 하나. */
 export interface ActionItem {
   /** 이런 생각/순간이 들 때 — 이 사람 특유의 트리거. 예: "'이 정도론 부족해'라는 생각이 들 때" */
@@ -97,8 +105,8 @@ export interface RelationshipReport {
   roles: RoleSlotAnalysis[]; // 항상 5개(모든 슬롯)
   /** 배역들이 만든 방어기제(2~4개). 5배역 다음에 보여준다. */
   defenseMechanisms: DefenseMechanism[];
-  /** 마음의 목소리 TOP 5 — 이 사람이 자주 할 법한 독백/생각(정확히 5개, 강한 순). */
-  innerVoices: string[];
+  /** 마음의 목소리 TOP 5 — 대사 + 세부 설명(정확히 5개, 강한 순). */
+  innerVoices: InnerVoice[];
   headlineConflict: HeadlineConflict;
   relationships: RelationshipEdge[]; // 0~4개
   /** "이런 생각이 들 때 → 이렇게 해라" 실천 처방(정확히 3개). */
@@ -162,8 +170,11 @@ ${buildPartTypeReference()}
     // ↑ 배역들이 *만들어낸* 방어기제 2~4개. "당신이 자주 쓰는 방어기제는 이거예요" 톤
   ],
   "innerVoices": [
-    "이 정도론 부족해, 더 해야 해.",   // 마음의 목소리 TOP 5 — 이 사람이 자주 할 법한 *독백/생각* (1인칭, 짧고 생생하게)
-    "...", "...", "...", "..."        // 정확히 5개, 자주 떠오르는 강한 순서대로
+    {
+      "voice": "이 정도론 부족해, 더 해야 해.",  // 마음의 목소리 — *위 roles(5배역)의 목소리를 근거로 추정한* 1인칭 독백(짧고 생생하게)
+      "detail": "..."                          // 이 대사가 어느 배역/마음에서 나오는지, 어떤 순간에 떠오르고 무엇을 지키려는지 3~4줄 설명
+    }
+    // ↑ 위 형식으로 **정확히 5개**, 자주 떠오르는 강한 순서대로
   ],
   "headlineConflict": {
     "a": "leader", "b": "rake",    // 답변에서 *가장 세게 부딪치는* 두 배역
@@ -195,7 +206,10 @@ ${buildPartTypeReference()}
 7. 답변 주제에 맞춰 쓴다(관계 고민이면 관계 언어로, 일·성취면 그 언어로). 특정 주제로 미리 몰아가지 말 것.
 8. 배역명(리더/빌런/난봉꾼/관리자/추방자)은 그대로 써도 된다(제품 어휘). 그 외 임상 용어는 아래 규칙을 따른다.
 9. **defenseMechanisms**: 위 배역들이 *함께 만들어낸* 실제 행동 패턴(방어 전략)을 2~4개. "당신이 자주 쓰는 방어기제는 이거예요"처럼, 임상용어가 아니라 그 사람이 실제로 하는 행동의 언어로 이름 짓고("완벽함으로 무장하기", "괜찮은 척 삼키기", "충동적으로 도망치기" 등), howYouUseIt 은 답변에 근거해 "당신은 ~할 때 …하곤 해요" 톤으로 쓴다. roles 와 그대로 겹치지 말고, 배역들이 *합쳐져* 빚어내는 패턴에 초점.
-10. **innerVoices**: 이 사람이 머릿속에서 자주 되뇔 법한 *독백/생각* 을 정확히 5개. 1인칭, 짧고(한 문장) 생생하게, 답변의 결을 반영해서. 자주·강하게 떠오르는 순서로 정렬. 서로 다른 배역의 목소리가 고루 섞이게(다그침·자책·도피충동·괜찮은 척·지친 속마음 등).
+10. **innerVoices**: 이 사람이 머릿속에서 자주 되뇔 법한 *독백/생각* 을 정확히 5개, 각각 "voice"(대사)와 "detail"(세부 설명)로.
+    - **voice**: **답변을 그대로 옮겨 적지 말고**, 위에서 캐스팅한 roles(5배역)가 그 사람 안에서 *실제로 이렇게 속삭일 것 같다*고 추정해서 쓴다 — 즉 (a)각 배역의 innerVoice·howItWorks 와 (b)유저가 보고한 마음, 이 둘을 근거로 *역할별 속마음을 상상해 재구성*한 1인칭 한 문장. 짧고 생생하게. 근거 없는 창작이 아니라, 분석된 배역에서 자연스럽게 흘러나올 법한 독백이어야 한다.
+    - **detail**: 그 대사에 대한 **3~4줄 설명**. 이 목소리가 *어느 배역/마음에서 나오는지*, 주로 *어떤 순간에* 떠오르는지, 그리고 겉으론 그렇게 말하지만 *사실은 무엇을 지키려는 마음*인지를 따뜻한 가설 톤(~인 것 같아요/~로 보여요)으로 풀어 쓴다. 대사를 그대로 반복하지 말고 한 걸음 더 들어가 해설한다.
+    - 자주·강하게 떠오르는 순서로 정렬하되, 서로 다른 배역의 목소리가 고루 섞이게(리더의 다그침·빌런의 남 탓/자책·난봉꾼의 도피충동·관리자의 괜찮은 척·추방자의 지친 속마음 등).
 11. **actions**: 정확히 3개. "이런 생각이 들 때 → 이렇게 해라"의 *실질적 처방*이다. 절대 영혼 없는 일반론("긍정적으로 생각하기", "충분히 쉬기", "자신을 사랑하기")을 쓰지 마라.
     - trigger 는 이 사람이 *실제로 자주 겪는* 구체적 생각·순간(innerVoices·답변에서 끌어온다). 예: "마감을 끝냈는데도 '부족해'라는 생각에 잠 못 들 때"
     - action 은 *지금 당장 몸으로 할 수 있는* 행동이어야 한다. 추상("마음을 다스리세요") 금지, 구체("타이머 10분 맞추고 그 시간 동안만 '못 끝낸 일 목록'을 종이에 적어 책상 밖으로 치워두세요")로.
@@ -320,13 +334,21 @@ export function readRelationshipReport(
     }
   }
 
-  // 마음의 목소리 TOP 5 — 문자열만, 빈 값 제거 후 최대 5개.
-  const innerVoices: string[] = Array.isArray(parsed.innerVoices)
-    ? parsed.innerVoices
-        .map(str)
-        .filter((v) => v.length > 0)
-        .slice(0, 5)
-    : [];
+  // 마음의 목소리 TOP 5 — {voice, detail}. 구버전(문자열 배열) 캐시도 관대하게 수용.
+  const innerVoices: InnerVoice[] = [];
+  if (Array.isArray(parsed.innerVoices)) {
+    for (const v of parsed.innerVoices) {
+      if (typeof v === "string") {
+        const voice = str(v);
+        if (voice) innerVoices.push({ voice, detail: "" });
+      } else if (v && typeof v === "object") {
+        const o = v as Record<string, unknown>;
+        const voice = str(o.voice);
+        if (voice) innerVoices.push({ voice, detail: str(o.detail) });
+      }
+      if (innerVoices.length >= 5) break;
+    }
+  }
 
   // 실천 처방 — trigger·action 둘 다 있어야 유효. why 는 비어도 통과(있으면 더 좋음).
   const actions: ActionItem[] = [];
