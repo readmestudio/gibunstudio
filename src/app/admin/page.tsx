@@ -67,6 +67,28 @@ export default async function AdminHomePage() {
       .select("*", { count: "exact", head: true }),
   ]);
 
+  // 결제완료(confirmed) 금액 합계 — 4개 결제 테이블을 합산해 환불 카드에 보여준다.
+  const PAYMENT_TABLES = [
+    "husband_match_payments",
+    "counseling_purchases",
+    "workshop_purchases",
+    "minds_relationship_purchases",
+  ];
+  const paymentSums = await Promise.all(
+    PAYMENT_TABLES.map((t) =>
+      admin.from(t).select("amount").eq("status", "confirmed")
+    )
+  );
+  const confirmedTotal = paymentSums.reduce(
+    (sum, res) =>
+      sum +
+      (res.data ?? []).reduce(
+        (s, r) => s + ((r as { amount: number }).amount ?? 0),
+        0
+      ),
+    0
+  );
+
   const cards: DashboardCard[] = [
     {
       href: "/admin/essays",
@@ -109,6 +131,14 @@ export default async function AdminHomePage() {
       description:
         "성취중독·minds 테스트 후 페이월에서 이탈하려던 방문자가 남긴 후기를 테스트별로 보고, 추첨 연락처를 확인해요.",
       stats: [{ label: "후기", value: reviewCount ?? 0, unit: "건" }],
+    },
+    {
+      href: "/admin/payments",
+      eyebrow: "PAYMENT · 결제 · 환불",
+      title: "결제 · 환불 관리",
+      description:
+        "이메일로 유저의 결제 내역(남편상·상담·워크북·관계 리포트)을 조회하고, 결제완료 건을 바로 환불해요.",
+      stats: [{ label: "결제완료 합계", value: confirmedTotal ?? 0, unit: "원" }],
     },
   ];
 

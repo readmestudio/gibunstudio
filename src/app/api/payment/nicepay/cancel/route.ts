@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isCoachEmail } from "@/lib/auth/coach";
+import { isAdminEmail } from "@/lib/admin/auth";
 import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { cancelNicepayPayment } from "@/lib/nicepay/approve";
 
@@ -53,9 +54,11 @@ export async function POST(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !isCoachEmail(user.email)) {
+  // 환불은 코치뿐 아니라 관리자(ADMIN_EMAILS)도 처리할 수 있어야 한다.
+  // (어드민 결제/환불 화면 /admin/payments 이 이 라우트를 호출한다.)
+  if (!user || (!isCoachEmail(user.email) && !isAdminEmail(user.email))) {
     return NextResponse.json(
-      { error: "코치 권한이 필요합니다" },
+      { error: "코치 또는 관리자 권한이 필요합니다" },
       { status: 403 }
     );
   }
