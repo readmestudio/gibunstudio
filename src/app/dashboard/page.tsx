@@ -209,6 +209,44 @@ function resolveCounselingState(
   };
 }
 
+/* ─── 마음 배역(minds) 상태 판별 ─── */
+
+interface MindsState {
+  badge: string;
+  description: string;
+  ctaLabel: string;
+  ctaHref: string;
+}
+
+function resolveMindsState(
+  hasPaid: boolean,
+  paidReady: boolean,
+  hasFree: boolean
+): MindsState | null {
+  if (!hasPaid && !hasFree) return null;
+
+  // 유료(다섯 배역 + 관계 해설)가 우선. 결제 승인과 리포트 생성이 분리돼 있어
+  // report_json 이 아직이면 "제작 중"으로 안내한다.
+  if (hasPaid) {
+    return {
+      badge: paidReady ? "완료" : "제작 중",
+      description: paidReady
+        ? "다섯 배역 + 관계 해설 리포트가 준비됐어요."
+        : "결제가 확인됐어요. 리포트를 만들고 있어요(20~50초). 완성되면 여기서 확인돼요.",
+      ctaLabel: paidReady ? "리포트 보기" : "제작 현황 보기",
+      ctaHref: "/minds/my",
+    };
+  }
+
+  // 무료 분석만 한 사용자
+  return {
+    badge: "무료 분석 완료",
+    description: "내 마음 배역 결과를 다시 볼 수 있어요.",
+    ctaLabel: "결과 보기",
+    ctaHref: "/minds/my",
+  };
+}
+
 /* ─── 상태 배지 컴포넌트 ─── */
 
 function StatusBadge({ text }: { text: string }) {
@@ -326,7 +364,34 @@ export default async function DashboardPage() {
     TEST_EMAILS.includes(user.email ?? "")
   );
 
-  const hasMyPrograms = !!husbandMatch || !!counseling || !!workshopProgress;
+  // 마음 배역(minds) — RLS 공개 정책이 없어 admin 클라이언트로 user_id 필터 조회한다.
+  // /minds/my 와 동일한 판별(유료 confirmed + 무료 parts_map)을 대시보드 카드로 노출.
+  const mindsAdmin = createAdminClient();
+  const [mindsPaidRes, mindsFreeRes] = await Promise.all([
+    mindsAdmin
+      .from("minds_relationship_purchases")
+      .select("id, report_json")
+      .eq("user_id", user.id)
+      .eq("status", "confirmed")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    mindsAdmin
+      .from("minds_leads")
+      .select("id")
+      .eq("user_id", user.id)
+      .not("parts_map", "is", null)
+      .limit(1),
+  ]);
+  const mindsPaid = mindsPaidRes.data;
+  const minds = resolveMindsState(
+    !!mindsPaid,
+    !!mindsPaid?.report_json,
+    (mindsFreeRes.data ?? []).length > 0
+  );
+
+  const hasMyPrograms =
+    !!husbandMatch || !!counseling || !!workshopProgress || !!minds;
 
   return (
     <div className="relative mx-auto max-w-6xl px-4 py-12">
@@ -349,6 +414,27 @@ export default async function DashboardPage() {
             내 프로그램
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
+            {/* 내 마음 속 다섯 배역 (minds) */}
+            {minds && (
+              <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold text-[var(--foreground)]">
+                    내 마음 속 다섯 배역
+                  </h3>
+                  <StatusBadge text={minds.badge} />
+                </div>
+                <p className="text-sm text-[var(--foreground)]/60 mb-4">
+                  {minds.description}
+                </p>
+                <Link
+                  href={minds.ctaHref}
+                  className="inline-flex items-center rounded-lg border-2 border-[var(--foreground)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
+                >
+                  {minds.ctaLabel}
+                </Link>
+              </div>
+            )}
+
             {/* 남편상 분석 */}
             {husbandMatch && (
               <div className="rounded-xl border-2 border-[var(--foreground)] bg-white p-6">
