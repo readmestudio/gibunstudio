@@ -232,9 +232,23 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
         >
           {payLabel("네이버페이로 결제하기")}
         </button>
-        <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: M.mute, fontFamily: M.font }}>
-          결제 후 바로 리포트를 만들어 드려요(20~50초). NicePay 안전결제.
-        </p>
+        {/* 결제 전 고지 — 즉시 제작 · 환불 제한(주문 제작형 디지털 콘텐츠 청약철회 제한 사전고지).
+            법적 효력을 위해 결제 버튼 바로 아래에 눈에 띄게 배치한다. */}
+        <div
+          style={{
+            marginTop: 14,
+            padding: "12px 14px",
+            border: `1.5px solid ${M.ink2}`,
+            borderRadius: 6,
+            background: M.paper,
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: M.ink2, fontFamily: M.font }}>
+            <strong style={{ fontWeight: 800 }}>결제 즉시 리포트 제작이 시작</strong>돼요(20~50초).
+            주문과 동시에 만들어지는 디지털 콘텐츠라,{" "}
+            <strong style={{ fontWeight: 800 }}>결제 후에는 환불이 어려운</strong> 점 꼭 확인 후 진행해 주세요.
+          </p>
+        </div>
         </>
         )}
       </div>
