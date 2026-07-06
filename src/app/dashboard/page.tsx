@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DoodleDecoration } from "@/components/DoodleDecoration";
+import { claimMindsLeadsByEmail } from "@/lib/minds/claim";
+import { MindsAutoClaim } from "@/components/minds/MindsAutoClaim";
 
 /* ─── 남편상 분석 상태 판별 ─── */
 
@@ -364,7 +366,12 @@ export default async function DashboardPage() {
     TEST_EMAILS.includes(user.email ?? "")
   );
 
-  // 마음 배역(minds) — RLS 공개 정책이 없어 admin 클라이언트로 user_id 필터 조회한다.
+  // 마음 배역(minds) — 조회 전에 먼저 자동 귀속: 결제를 안 한 무료 유저도 로그인만
+  // 하면 같은 이메일 익명 리드가 계정에 붙어 아래 카드에 뜬다(트리거를 결제→로그인 확장).
+  // 이 기기에만 있는(이메일 없는) 익명 리드는 <MindsAutoClaim/>(클라이언트)가 보완한다.
+  await claimMindsLeadsByEmail(user.id, user.email);
+
+  // RLS 공개 정책이 없어 admin 클라이언트로 user_id 필터 조회한다.
   // /minds/my 와 동일한 판별(유료 confirmed + 무료 parts_map)을 대시보드 카드로 노출.
   const mindsAdmin = createAdminClient();
   const [mindsPaidRes, mindsFreeRes] = await Promise.all([
@@ -395,6 +402,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="relative mx-auto max-w-6xl px-4 py-12">
+      <MindsAutoClaim />
       <DoodleDecoration
         name="star-sparkle"
         sizeClass="w-12 h-12"

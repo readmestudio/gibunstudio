@@ -13,6 +13,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { claimMindsLeadsByEmail } from "@/lib/minds/claim";
 
 export const metadata: Metadata = {
   title: "내 마음 리포트 · 기분",
@@ -34,6 +35,9 @@ export default async function MindsMyReportsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/minds/my");
+
+  // 조회 전 자동 귀속 — 직접 방문/북마크로 와도 같은 이메일 익명 리드를 계정에 붙인다.
+  await claimMindsLeadsByEmail(user.id, user.email);
 
   const admin = createAdminClient();
 
