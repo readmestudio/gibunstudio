@@ -45,7 +45,13 @@ export async function POST(req: NextRequest) {
   const b = (body ?? {}) as Record<string, unknown>;
 
   const channel =
-    b.channel === "kakao" ? "kakao" : b.channel === "anon" ? "anon" : "email";
+    b.channel === "kakao"
+      ? "kakao"
+      : b.channel === "inner_child"
+        ? "inner_child"
+        : b.channel === "anon"
+          ? "anon"
+          : "email";
   let email =
     typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
   let userId: string | null = null;
@@ -64,8 +70,9 @@ export async function POST(req: NextRequest) {
     }
     userId = user.id;
     email = (user.email ?? "").trim().toLowerCase();
-  } else if (channel === "anon") {
+  } else if (channel === "anon" || channel === "inner_child") {
     // 익명 리드 — 연락처를 받지 않는다. email 은 비워 둔다(아래에서 null 저장).
+    // inner_child(내면 아이 퍼널)도 anon 과 동일 처리하되 channel 태그로만 구분한다.
     email = "";
   } else if (!EMAIL_REGEX.test(email)) {
     // email 채널이면 형식 검증.

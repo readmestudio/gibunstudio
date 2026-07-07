@@ -8,12 +8,19 @@
 import { useState } from "react";
 import { M } from "./quiet-editorial";
 
-export function MindsResultLinkBar({ leadId }: { leadId: string }) {
+export function MindsResultLinkBar({
+  leadId,
+  base = "/minds/r",
+}: {
+  leadId: string;
+  /** 결과 페이지 베이스 경로. 기본값은 현행 /minds — /inner-child 는 "/inner-child/r". */
+  base?: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
     try {
-      const url = `${window.location.origin}/minds/r/${leadId}`;
+      const url = `${window.location.origin}${base}/${leadId}`;
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
