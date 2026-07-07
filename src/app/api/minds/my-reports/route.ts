@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -14,7 +14,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *
  * Resp: { freeReports[], paidReports[], latestLeadId } | { error }
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -25,11 +25,22 @@ export async function GET() {
 
   const admin = createAdminClient();
 
-  const { data: leads } = await admin
+  // 퍼널 분리 — /minds(무파라미터)는 내면 아이 리드를 제외하고, ?product=inner_child 는
+  // 반대로 내면 아이 리드만 조회한다. 두 퍼널이 서로의 리드를 자동복원하지 않게 한다.
+  const isInnerChild =
+    request.nextUrl.searchParams.get("product") === "inner_child";
+
+  let leadQuery = admin
     .from("minds_leads")
     .select("id, created_at, parts_map")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .eq("user_id", user.id);
+  leadQuery = isInnerChild
+    ? leadQuery.eq("channel", "inner_child")
+    : leadQuery.neq("channel", "inner_child");
+
+  const { data: leads } = await leadQuery.order("created_at", {
+    ascending: false,
+  });
 
   const freeReports = (leads ?? [])
     .filter((l) => !!l.parts_map)

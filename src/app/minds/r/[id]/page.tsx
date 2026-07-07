@@ -7,6 +7,8 @@
  */
 
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getSavedPartsMap } from "@/lib/minds/result-store";
 import { MindsResultView } from "./MindsResultView";
 
@@ -21,6 +23,28 @@ export default async function MindsResultPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // 퍼널 교차 가드 — 내면 아이 블롭(test_version="v2.0")이 이 URL 로 들어오면
+  // 다섯 배역 뷰로 렌더하지 않고 내면 아이 결과 페이지로 보낸다. 기존 PartsMap 은
+  // test_version 이 없으므로 이 분기를 타지 않는다(무영향).
+  // 주의: redirect() 는 제어용 예외를 던지므로 try/catch 밖에서 호출한다.
+  let isInnerChildBlob = false;
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("minds_leads")
+      .select("parts_map")
+      .eq("id", id)
+      .maybeSingle();
+    const pm = data?.parts_map as { test_version?: string } | null;
+    isInnerChildBlob = pm?.test_version === "v2.0";
+  } catch {
+    // 조회 실패는 무시하고 기존 흐름(getSavedPartsMap)로 진행한다.
+  }
+  if (isInnerChildBlob) {
+    redirect(`/inner-child/r/${id}`);
+  }
+
   const partsMap = await getSavedPartsMap(id);
   return <MindsResultView leadId={id} partsMap={partsMap} />;
 }

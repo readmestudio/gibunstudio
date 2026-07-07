@@ -17,6 +17,7 @@ import { useMindsRelationshipCheckout } from "@/lib/payment/useMindsRelationship
 import { M, dispStyle, leadStyle, Hr } from "./quiet-editorial";
 import { MindsAuthGate } from "./MindsAuthGate";
 import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
+import { MINDS_FUNNEL, type MindsFunnelConfig } from "@/lib/minds/funnel-config";
 import { isValidKrMobile } from "@/lib/solapi/client";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
@@ -24,22 +25,26 @@ const NICEPAY_SDK_URL = process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "";
 
 const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
 
-/** 결제 시 받게 되는 것 — 페이월에서 잠갔던 배역표·관계가 핵심. */
-const INCLUDES = [
-  "누가 리더·빌런·난봉꾼·관리자·추방자인지 5배역 배역표",
-  "자꾸 부딪치는 두 마음의 갈등 구도 + 화해법",
-  "자주 쓰는 방어기제 · 마음의 목소리 TOP 5 · 맞춤 처방",
-];
-
 type AuthState = "checking" | "anon" | "authed";
 
-export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function MindsCheckoutModal({
+  open,
+  onClose,
+  funnel = MINDS_FUNNEL,
+}: {
+  open: boolean;
+  onClose: () => void;
+  funnel?: MindsFunnelConfig;
+}) {
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [authState, setAuthState] = useState<AuthState>("checking");
   // 결제완료 알림톡 수신번호 — profiles.phone 이 있으면 프리필하고, 사용자가 수정 가능.
   const [phone, setPhone] = useState("");
 
-  const { handleKakao, handleNpay, isSubmitting } = useMindsRelationshipCheckout();
+  // 상품 설명(제목·리드·포함목록)만 퍼널별로 갈라진다. 기본값 = 현행 /minds 카피.
+  const copy = funnel.checkoutCopy;
+
+  const { handleKakao, handleNpay, isSubmitting } = useMindsRelationshipCheckout(funnel);
 
   // 모달이 열릴 때 로그인 상태를 확인한다. 비로그인이면 결제 대신 로그인 관문을 먼저 보여준다.
   // ("무료 리포트 후 결제 직전 로그인" 정책 — 로그인 한 번이면 결제까지 추가 로그인 없음.)
@@ -85,7 +90,11 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
       return;
     }
     trackMetaEvent("InitiateCheckout", {
-      content_name: "minds_to_relationship",
+      // 광고 최적화 신호가 퍼널별로 섞이지 않게 variant 로 분리(기본 minds_to_relationship).
+      content_name:
+        funnel.variant === "minds"
+          ? "minds_to_relationship"
+          : "inner_child_to_report",
       value: MINDS_RELATIONSHIP_PRICE,
       currency: "KRW",
     });
@@ -153,25 +162,18 @@ export function MindsCheckoutModal({ open, onClose }: { open: boolean; onClose: 
         )}
 
         {authState === "anon" && (
-          <MindsAuthGate onAuthed={() => setAuthState("authed")} />
+          <MindsAuthGate onAuthed={() => setAuthState("authed")} funnel={funnel} />
         )}
 
         {authState === "authed" && (
         <>
-        <h2 style={{ ...dispStyle, fontSize: 23 }}>
-          다섯 배역과
-          <br />
-          그 관계 해설 받기
-        </h2>
-        <p style={{ ...leadStyle, fontSize: 14, marginTop: 12 }}>
-          지금 만난 마음들을 그대로 이어받아, 누가 리더·빌런인지 배역표와 두 마음이
-          부딪치는 관계까지 한 편의 리포트로 풀어드려요.
-        </p>
+        <h2 style={{ ...dispStyle, fontSize: 23 }}>{copy.title}</h2>
+        <p style={{ ...leadStyle, fontSize: 14, marginTop: 12 }}>{copy.lead}</p>
 
         {/* 포함 내용 */}
         <div style={{ marginTop: 20 }}>
           <Hr />
-          {INCLUDES.map((t, i) => (
+          {copy.includes.map((t, i) => (
             <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 0", borderBottom: `1px solid ${M.line2}` }}>
               <span style={{ color: M.accent, fontWeight: 700, fontSize: 14, lineHeight: 1.5, flex: "0 0 auto" }}>✓</span>
               <span style={{ fontSize: 13.5, color: M.ink2, lineHeight: 1.55, fontFamily: M.font }}>{t}</span>

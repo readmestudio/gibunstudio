@@ -84,6 +84,8 @@ export async function POST(request: NextRequest) {
   const isMindSpillDailySub = orderId.startsWith("MD-");
   const isCounseling = orderId.startsWith("CN-");
   const isMindsRelationship = orderId.startsWith("MR-");
+  // 내면 아이 리포트 결제 — MR- 와 같은 테이블·핸들러를 쓰되 리다이렉트 경로만 갈라진다.
+  const isInnerChild = orderId.startsWith("IC-");
 
   // 1. 인증 실패 시 실패 페이지로 리다이렉트
   if (resultCode !== "0000") {
@@ -99,6 +101,8 @@ export async function POST(request: NextRequest) {
       failUrl = `/programs/counseling?error=${encodeURIComponent(resultMsg)}`;
     } else if (isMindsRelationship) {
       failUrl = `/minds?error=${encodeURIComponent(resultMsg)}`;
+    } else if (isInnerChild) {
+      failUrl = `/inner-child?error=${encodeURIComponent(resultMsg)}`;
     } else {
       failUrl = `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
     }
@@ -125,6 +129,19 @@ export async function POST(request: NextRequest) {
   // ── /minds 관계 해설 리포트 결제 처리 (MR-) ──
   if (isMindsRelationship) {
     return handleMindsRelationshipPayment({ tid, orderId, amount, baseUrl });
+  }
+
+  // ── /inner-child 내면 아이 리포트 결제 처리 (IC-) ──
+  // 같은 핸들러·테이블·금액검증·승인·알림을 공유하되 리다이렉트 경로만 갈라진다.
+  if (isInnerChild) {
+    return handleMindsRelationshipPayment({
+      tid,
+      orderId,
+      amount,
+      baseUrl,
+      reportBase: "/inner-child/full",
+      failBase: "/inner-child",
+    });
   }
 
   // ── Mind Spill 리포트 결제 처리 ──
@@ -166,13 +183,25 @@ async function handleMindsRelationshipPayment(params: {
   orderId: string;
   amount: number;
   baseUrl: string;
+  // 유료 리포트 페이지 베이스 — MR- 는 기본값(/minds/relationship)으로 현행과 동일.
+  // IC- 는 /inner-child/full 로 호출된다. 알림톡 리포트 링크도 이 경로를 따른다.
+  reportBase?: string;
+  // 실패 리다이렉트 베이스 — MR- 는 /minds, IC- 는 /inner-child.
+  failBase?: string;
 }) {
-  const { tid, orderId, amount, baseUrl } = params;
+  const {
+    tid,
+    orderId,
+    amount,
+    baseUrl,
+    reportBase = "/minds/relationship",
+    failBase = "/minds",
+  } = params;
   const admin = createAdminClient();
   // [임시 진단] 운영 로그 접근이 어려워, 어느 단계에서 왜 실패했는지 URL error 파라미터로
   // 노출한다. 원인 확인 후 다시 일반 메시지로 되돌릴 것.
   const fail = (step: string, detail = "") =>
-    seeOther(`${baseUrl}/minds?error=${encodeURIComponent(`[${step}] ${detail}`.trim())}`);
+    seeOther(`${baseUrl}${failBase}?error=${encodeURIComponent(`[${step}] ${detail}`.trim())}`);
 
   const { data: purchase, error: queryError } = await admin
     .from("minds_relationship_purchases")
@@ -185,7 +214,9 @@ async function handleMindsRelationshipPayment(params: {
     return fail("record", queryError?.message ?? "no purchase");
   }
 
-  const reportUrl = `${baseUrl}/minds/relationship/${purchase.id}`;
+  // Step 4 대기: IC- 의 경우 /inner-child/full/[id] 페이지는 아직 미구현이다.
+  // 실결제가 완료되면 이 URL 로 리다이렉트되며, Step 4 에서 페이지가 생기기 전까지는 404 다(의도된 갭).
+  const reportUrl = `${baseUrl}${reportBase}/${purchase.id}`;
 
   // 이미 승인됨 → 리포트로 직행(멱등성).
   if (purchase.status === "confirmed") {

@@ -10,16 +10,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
-import {
-  MINDS_RELATIONSHIP_PRICE,
-  MINDS_RELATIONSHIP_GOODS_NAME,
-} from "@/lib/minds/relationship-constants";
+import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
+import { MINDS_FUNNEL, type MindsFunnelConfig } from "@/lib/minds/funnel-config";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const BUYNOW_METHOD = process.env.NEXT_PUBLIC_NICEPAY_BUYNOW_METHOD || "";
 
-export function useMindsRelationshipCheckout() {
+/**
+ * funnel 인자로 저장키·상품구분·리다이렉트 베이스·상품명이 갈라진다(기본값 = /minds).
+ * 무인자 호출은 현행 /minds 동작과 바이트 단위로 동일하다(무회귀).
+ */
+export function useMindsRelationshipCheckout(
+  funnel: MindsFunnelConfig = MINDS_FUNNEL
+) {
   const router = useRouter();
   const [isSubmitting, setSubmitting] = useState(false);
 
@@ -35,7 +38,7 @@ export function useMindsRelationshipCheckout() {
 
     const leadId =
       typeof window !== "undefined"
-        ? localStorage.getItem(MINDS_LEAD_STORAGE_KEY)
+        ? localStorage.getItem(funnel.leadStorageKey)
         : null;
     if (!leadId) {
       alert("테스트 기록을 찾을 수 없어요. 무료 테스트를 먼저 완료해주세요.");
@@ -48,13 +51,14 @@ export function useMindsRelationshipCheckout() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // phone: 결제완료 알림톡 수신번호(결제 모달에서 입력받아 결제 레코드에 저장).
-        body: JSON.stringify({ leadId, phone: phone ?? "" }),
+        // product: 서버가 orderId prefix(MR-/IC-)를 결정한다(기본 relationship).
+        body: JSON.stringify({ leadId, phone: phone ?? "", product: funnel.product }),
       });
       const data = await res.json().catch(() => ({}));
 
       // 이미 결제한 리드 → 새 결제 없이 리포트로.
       if (data.already_purchased && data.purchase_id) {
-        router.push(`/minds/relationship/${data.purchase_id}`);
+        router.push(`${funnel.paidReportBase}/${data.purchase_id}`);
         return;
       }
 
@@ -67,7 +71,7 @@ export function useMindsRelationshipCheckout() {
         ...(method ? { method } : {}),
         orderId: data.order_id,
         amount: MINDS_RELATIONSHIP_PRICE,
-        goodsName: MINDS_RELATIONSHIP_GOODS_NAME,
+        goodsName: funnel.goodsName,
         returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
         fnError: (result: { errorMsg: string }) => {
           console.error("NicePay 에러:", result);

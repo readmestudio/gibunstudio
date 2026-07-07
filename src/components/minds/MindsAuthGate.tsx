@@ -18,7 +18,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
+import { MINDS_FUNNEL, type MindsFunnelConfig } from "@/lib/minds/funnel-config";
 import { M, ctaStyle } from "./quiet-editorial";
 import { isValidKrMobile } from "@/lib/solapi/client";
 
@@ -45,29 +45,35 @@ const labelStyle: React.CSSProperties = {
   color: M.mute,
 };
 
-/** 이 브라우저의 leadId(없으면 null). */
-function readLeadId(): string | null {
+/** 이 브라우저의 leadId(없으면 null). 저장키는 퍼널별로 다르다. */
+function readLeadId(storageKey: string): string | null {
   try {
-    return localStorage.getItem(MINDS_LEAD_STORAGE_KEY);
+    return localStorage.getItem(storageKey);
   } catch {
     return null;
   }
 }
 
 /** 로그인/가입 직후 이 브라우저의 리드를 계정에 귀속(claim). 실패해도 흐름은 막지 않는다. */
-async function claimLead() {
+async function claimLead(storageKey: string) {
   try {
     await fetch("/api/minds/lead/claim", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leadId: readLeadId() }),
+      body: JSON.stringify({ leadId: readLeadId(storageKey) }),
     });
   } catch {
     // 결제 라우트가 한 번 더 바인딩하므로, 여기 실패는 치명적이지 않다.
   }
 }
 
-export function MindsAuthGate({ onAuthed }: { onAuthed: () => void }) {
+export function MindsAuthGate({
+  onAuthed,
+  funnel = MINDS_FUNNEL,
+}: {
+  onAuthed: () => void;
+  funnel?: MindsFunnelConfig;
+}) {
   const [tab, setTab] = useState<Tab>("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,7 +97,7 @@ export function MindsAuthGate({ onAuthed }: { onAuthed: () => void }) {
       if (tab === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        await claimLead();
+        await claimLead(funnel.leadStorageKey);
         onAuthed();
         return;
       }
@@ -129,7 +135,7 @@ export function MindsAuthGate({ onAuthed }: { onAuthed: () => void }) {
       } catch {
         /* 알림톡 실패는 가입/결제 흐름을 막지 않는다 */
       }
-      await claimLead();
+      await claimLead(funnel.leadStorageKey);
       onAuthed();
     } catch (err) {
       setMessage(
@@ -150,10 +156,10 @@ export function MindsAuthGate({ onAuthed }: { onAuthed: () => void }) {
     try {
       // 카카오는 페이지를 떠난다 → 돌아올 곳을 쿠키에 심는다.
       // 현재 리드의 결과 페이지로 복귀하며 ?checkout=1 로 결제 모달을 자동으로 다시 연다.
-      const leadId = readLeadId();
+      const leadId = readLeadId(funnel.leadStorageKey);
       if (leadId) {
         document.cookie = `auth_redirect=${encodeURIComponent(
-          `/minds/r/${leadId}?checkout=1`
+          `${funnel.freeReportBase}/${leadId}?checkout=1`
         )}; path=/; max-age=600; SameSite=Lax`;
       }
       const origin = window.location.origin;

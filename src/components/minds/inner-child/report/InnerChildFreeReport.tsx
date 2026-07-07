@@ -8,12 +8,16 @@
  * 랜딩·테스트 UI(라이트)는 그대로 두고 결과 리포트만 다크로 전환된다.
  *
  * 데이터: 유형카드 고정필드 + metrics(측정 지표) + 생성필드(gap·relation, free 있을 때).
- * ⚠️ 결제 배선은 Step 3 — 페이월 CTA 는 아직 결제 모달을 열지 않는다(TODO).
+ * 결제 배선(Step 3): 페이월 CTA → 공용 MindsCheckoutModal(funnel=INNER_CHILD_FUNNEL) 오픈.
+ * 카카오 로그인 복귀 시 ?checkout=1 표식으로 모달이 자동 재개된다(/minds 패턴 이식).
  */
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
 import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
+import { MindsCheckoutModal } from "@/components/minds/MindsCheckoutModal";
+import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import type { TypeCard, FreeReportGenerated } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
@@ -54,6 +58,31 @@ export function InnerChildFreeReport({
   free: FreeReportGenerated | null;
   footerExtra?: ReactNode;
 }) {
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  // 결제 모달 오픈 — InitiateCheckout 추적(퍼널 분리 content_name)을 함께 쏜다(/minds 미러).
+  const openCheckout = () => {
+    trackMetaEvent("InitiateCheckout", {
+      content_name: "inner_child_full",
+      value: MINDS_RELATIONSHIP_PRICE,
+      currency: "KRW",
+    });
+    setCheckoutOpen(true);
+  };
+
+  // 카카오 로그인 복귀 자동 재개 — 인증 관문에서 카카오로 로그인하면 /auth/callback 이
+  // /inner-child/r/[leadId]?checkout=1 로 되돌려보낸다. 그 표식을 보면 결제 모달을 자동으로
+  // 다시 연다(이제 로그인 상태). 표식은 URL 에서 즉시 지운다(재트리거 방지).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") !== "1") return;
+    const url = window.location.pathname + window.location.hash;
+    window.history.replaceState(null, "", url);
+    const id = window.setTimeout(() => setCheckoutOpen(true), 0);
+    return () => window.clearTimeout(id);
+  }, []);
+
   const cards: { key: string; node: ReactNode }[] = [
     // 1장: 유형 판정 + 내면의 목소리 + 측정 지표 (설명과 함께 한 장에)
     { key: "identity", node: <IdentityCard card={card} /> },
@@ -87,12 +116,19 @@ export function InnerChildFreeReport({
       }}
     >
       <div style={{ width: "100%", maxWidth: 440, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        <CardDeck cards={cards} lastCta={<PaywallCta />} />
+        <CardDeck cards={cards} lastCta={<PaywallCta onCheckout={openCheckout} />} />
         <p style={{ flex: "0 0 auto", fontFamily: INK.mono, fontSize: 10, color: INK.t38, lineHeight: 1.7, textAlign: "center", marginTop: 12 }}>
           기분 리포트 · INNER CHILD REPORT · {DISCLAIMER}
         </p>
         {footerExtra ? <div style={{ flex: "0 0 auto", marginTop: 8 }}>{footerExtra}</div> : null}
       </div>
+
+      {/* 페이월 CTA → 그 자리에서 공용 결제 모달(내면 아이 카피·₩9,900). */}
+      <MindsCheckoutModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        funnel={INNER_CHILD_FUNNEL}
+      />
     </div>
   );
 }
@@ -551,14 +587,13 @@ const PAY_TEASERS: { title: string; body: string }[] = [
   },
 ];
 
-/** 페이월 CTA — 덱 하단 네비에 스티키로 고정(스크롤 무관 항상 노출). 결제 배선은 Step 3. */
-function PaywallCta() {
+/** 페이월 CTA — 덱 하단 네비에 스티키로 고정(스크롤 무관 항상 노출). 결제 모달을 연다. */
+function PaywallCta({ onCheckout }: { onCheckout: () => void }) {
   return (
     <button
       type="button"
       className="ic-cta"
-      // TODO Step 3: open MindsCheckoutModal with funnel=INNER_CHILD_FUNNEL
-      onClick={() => {}}
+      onClick={onCheckout}
       style={{
         width: "100%",
         padding: "14px 18px",

@@ -6,6 +6,7 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import {
   MINDS_RELATIONSHIP_PRICE,
   MINDS_RELATIONSHIP_ORDER_PREFIX,
+  INNER_CHILD_ORDER_PREFIX,
 } from "@/lib/minds/relationship-constants";
 
 /**
@@ -37,6 +38,10 @@ export async function POST(request: NextRequest) {
     const leadId = typeof body?.leadId === "string" ? body.leadId.trim() : "";
     // 결제완료 알림톡 수신번호(선택). 없으면 나중에 profiles.phone 으로 대체한다.
     const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+    // 상품 구분 — 기본은 다섯 배역("relationship"). /inner-child 퍼널만 "inner_child" 를 보낸다.
+    // 이 값에 따라 orderId prefix(MR-/IC-)만 갈라지고, 나머지 흐름은 완전히 동일하다.
+    const product =
+      body?.product === "inner_child" ? "inner_child" : "relationship";
     if (!leadId) {
       return NextResponse.json(
         { error: "leadId가 필요합니다." },
@@ -116,7 +121,12 @@ export async function POST(request: NextRequest) {
     }
 
     // pending 결제 레코드 생성. 금액은 서버 상수로 고정(위변조 방지).
-    const orderId = `${MINDS_RELATIONSHIP_ORDER_PREFIX}${Date.now()}-${nanoid(8)}`;
+    // orderId prefix 로 결제 유형을 영속화한다(return 라우트가 prefix 로 분기).
+    const orderPrefix =
+      product === "inner_child"
+        ? INNER_CHILD_ORDER_PREFIX
+        : MINDS_RELATIONSHIP_ORDER_PREFIX;
+    const orderId = `${orderPrefix}${Date.now()}-${nanoid(8)}`;
     const { data: purchase, error: purchaseError } = await admin
       .from("minds_relationship_purchases")
       .insert({
@@ -146,6 +156,8 @@ export async function POST(request: NextRequest) {
       order_id: purchase.order_id,
       amount: purchase.amount,
       purchase_id: purchase.id,
+      // 훅이 리다이렉트 베이스를 재확인할 수 있게 상품 구분을 에코한다(선택).
+      product,
     });
   } catch (err) {
     console.error("[minds-relationship/create] 오류:", err);

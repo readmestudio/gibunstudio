@@ -2,24 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
-import {
-  generateRelationshipReport,
-  type RelationshipAnswer,
-} from "@/lib/minds/relationship-report";
+import { readFreeReportBlob } from "@/lib/minds/inner-child/free-report-store";
+import { generateInnerChildPaidReport } from "@/lib/minds/inner-child/paid-report";
 
 /**
- * POST /api/minds/relationship  (결제 게이트 — confirmed 구매만)
+ * POST /api/inner-child/report  (결제 게이트 — confirmed IC- 구매만)
  *
- * "내 마음 속 다섯 가지 배역과 그 관계" 유료 리포트를 생성하거나, 이미 만들어 둔
- * 캐시를 돌려준다. 결제 직후 리포트 페이지(/minds/relationship/[id])가 호출한다.
+ * "내면 아이 심층 리포트" 유료 산출물(5생성필드)을 만들거나 캐시를 돌려준다. 결제 직후
+ * 리포트 페이지(/inner-child/full/[id])가 호출한다. /api/minds/relationship 과 동형 골격이되,
+ * 데이터 소스가 다르다 — 원응답 재분석이 아니라 무료에서 이미 만든 권위 채점본(score_result)을
+ * 재사용해 gemini-2.5-pro 로 5필드만 생성한다.
  *
  * 흐름:
- *   1) purchaseId 로 결제 레코드 조회 → status=confirmed 가 아니면 거부(결제 게이트).
- *   2) report_json 이 이미 있으면 그대로 반환(1회 생성·캐시 — 재방문 재생성 0).
- *   3) 없으면 같은 리드(minds_leads)의 답변으로 generateRelationshipReport 실행
- *      (일시적 실패 대비 최대 2회 재시도). 유료 산출물이라 폴백을 만들지 않는다.
- *   4) 성공 시 report_json 에 저장하고 반환.
+ *   1) purchaseId 로 결제 레코드 조회 → 없으면 404.
+ *   2) IC- 가드: order_id 가 IC- 로 시작하지 않으면 400(MR- 교차사용 차단).
+ *   3) status=confirmed 게이트 + user_id 소유권 게이트.
+ *   4) report_json 있으면 캐시 반환.
+ *   5) 리드의 parts_map(FreeReportBlob)에서 score_result 로드(없거나 v2.0 아니면 500).
+ *   6) generateInnerChildPaidReport 최대 2회 재시도 → report_json 저장 → 반환. 폴백 없음.
  *
  * Body: { purchaseId: string }
  * Resp: { report } | { error }
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient();
 
-    // [1] 결제 게이트 — confirmed 구매만 리포트를 받을 수 있다.
+    // [1] 결제 레코드 조회.
     const { data: purchase, error: purchaseError } = await admin
       .from("minds_relationship_purchases")
       .select("id, lead_id, status, report_json, user_id, order_id")
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (purchaseError) {
-      console.error("[minds/relationship] 결제 조회 실패:", purchaseError);
+      console.error("[inner-child/report] 결제 조회 실패:", purchaseError);
       return NextResponse.json(
         { error: "결제 정보를 조회하지 못했습니다." },
         { status: 500 }
@@ -62,14 +62,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 교차오염 가드 — 내면 아이 구매(IC-)가 다섯 배역 엔진으로 흘러들어 RelationshipReport 가
-    // 잘못 캐시되는 사고를 차단한다. 내면 아이는 /api/inner-child/report(Step 4)에서 처리.
-    if (typeof purchase.order_id === "string" && purchase.order_id.startsWith("IC-")) {
+    // [2] IC- 가드 — 다섯 배역(MR-) 구매가 이 라우트로 잘못 들어와 내면 아이 리포트가
+    // 캐시되는 사고를 차단한다(MR- 는 /api/minds/relationship 에서 처리).
+    if (
+      typeof purchase.order_id !== "string" ||
+      !purchase.order_id.startsWith("IC-")
+    ) {
       return NextResponse.json(
-        { error: "이 결제는 다섯 배역 리포트 대상이 아니에요." },
+        { error: "이 결제는 내면 아이 리포트 대상이 아니에요." },
         { status: 400 }
       );
     }
+
+    // [3] 결제 게이트 — confirmed 구매만 리포트를 받을 수 있다.
     if (purchase.status !== "confirmed") {
       return NextResponse.json(
         { error: "결제가 완료되지 않았어요." },
@@ -92,20 +97,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // [2] 이미 생성된 리포트가 있으면 그대로 반환(캐시).
+    // [4] 이미 생성된 리포트가 있으면 그대로 반환(캐시).
     if (purchase.report_json) {
       return NextResponse.json({ report: purchase.report_json, cached: true });
     }
 
-    // [3] 리드 답변 로드.
+    // [5] 리드의 채점본 로드 — 원응답 재분석이 아니라 무료에서 만든 권위 채점본 재사용.
     const { data: lead, error: leadError } = await admin
       .from("minds_leads")
-      .select("answers, parts_map")
+      .select("parts_map")
       .eq("id", purchase.lead_id)
       .maybeSingle();
 
     if (leadError || !lead) {
-      console.error("[minds/relationship] 리드 조회 실패:", {
+      console.error("[inner-child/report] 리드 조회 실패:", {
         leadId: purchase.lead_id,
         leadError,
       });
@@ -115,41 +120,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const answers: RelationshipAnswer[] = (
-      Array.isArray(lead.answers) ? lead.answers : []
-    )
-      .map((a: unknown) => {
-        const o = (a ?? {}) as Record<string, unknown>;
-        return {
-          id: typeof o.id === "string" ? o.id : "",
-          question: typeof o.question === "string" ? o.question : "",
-          answer: typeof o.answer === "string" ? o.answer : "",
-        };
-      })
-      .filter((a: RelationshipAnswer) => a.answer.trim().length > 0);
-
-    if (answers.length === 0) {
+    const blob = readFreeReportBlob(lead.parts_map);
+    if (!blob) {
+      // 무료 리포트 블롭이 없거나 v2.0 이 아님 — 데이터 정합 오류(운영 알림 대상).
+      console.error(
+        "[inner-child/report] 유효한 무료 리포트 블롭 없음(운영 확인 필요):",
+        { leadId: purchase.lead_id, purchaseId: purchase.id }
+      );
       return NextResponse.json(
-        { error: "분석할 답변이 없어요." },
-        { status: 400 }
+        { error: "테스트 기록을 불러오지 못했어요. 문제가 계속되면 문의해주세요." },
+        { status: 500 }
       );
     }
 
-    // parts_map 은 무료 분석 결과(있으면 힌트로). 형태가 깨졌으면 무시.
-    const partsMap =
-      lead.parts_map &&
-      Array.isArray((lead.parts_map as Record<string, unknown>).parts)
-        ? (lead.parts_map as unknown as PartsMap)
-        : null;
-
-    // [3] 생성 — 유료 산출물이라 폴백 없음. 일시적 실패 대비 최대 2회 재시도.
+    // [6] 생성 — 유료 산출물이라 폴백 없음. 일시적 실패 대비 최대 2회 재시도.
     let report = null;
     for (let attempt = 0; attempt < 2 && !report; attempt++) {
       try {
-        report = await generateRelationshipReport(answers, partsMap);
+        report = await generateInnerChildPaidReport(blob.score_result);
       } catch (err) {
         console.error(
-          `[minds/relationship] 생성 시도 ${attempt + 1} 실패:`,
+          `[inner-child/report] 생성 시도 ${attempt + 1} 실패:`,
           err
         );
       }
@@ -159,11 +150,11 @@ export async function POST(req: NextRequest) {
       // 돈은 받았는데 생성 실패 — 페이지에서 재시도 안내. (환불은 cancel 라우트로 별도)
       return NextResponse.json(
         { error: "리포트 생성에 실패했어요. 잠시 후 다시 시도해주세요." },
-        { status: 503 }
+        { status: 500 }
       );
     }
 
-    // [4] 캐시 저장.
+    // 캐시 저장.
     const { error: saveError } = await admin
       .from("minds_relationship_purchases")
       .update({ report_json: report })
@@ -171,12 +162,12 @@ export async function POST(req: NextRequest) {
 
     if (saveError) {
       // 저장 실패해도 생성된 리포트는 돌려준다(다음 호출에서 재생성될 뿐).
-      console.error("[minds/relationship] report_json 저장 실패:", saveError);
+      console.error("[inner-child/report] report_json 저장 실패:", saveError);
     }
 
     return NextResponse.json({ report });
   } catch (err) {
-    console.error("[minds/relationship] 오류:", err);
+    console.error("[inner-child/report] 오류:", err);
     return NextResponse.json(
       { error: "서버 오류가 발생했습니다." },
       { status: 500 }
