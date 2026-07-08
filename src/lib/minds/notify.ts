@@ -25,14 +25,25 @@ import { sendSlackMessage, SLACK_OPEN_NOTIFY_CHANNEL } from "@/lib/slack";
 
 const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
 
-/** KST 타임스탬프 컨텍스트 블록(모든 알림 하단 공통). */
-function timeContext() {
+/**
+ * 퍼널 변형. /minds(다섯 배역)와 /inner-child(내면 아이)는 같은 봇·같은 채널·같은
+ * 알림 함수를 공유하되, 어느 깔때기에서 온 신호인지 라벨로만 구분한다.
+ */
+export type FunnelVariant = "minds" | "inner_child";
+
+/** 변형 → 사람이 읽는 퍼널 경로 라벨. 미지정/기본은 현행 /minds 그대로. */
+function funnelLabel(variant?: FunnelVariant): string {
+  return variant === "inner_child" ? "/inner-child" : "/minds";
+}
+
+/** KST 타임스탬프 컨텍스트 블록(모든 알림 하단 공통). funnel 로 어느 깔때기인지 태깅. */
+function timeContext(funnel: string = "/minds") {
   return {
     type: "context",
     elements: [
       {
         type: "mrkdwn",
-        text: `📅 ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST) · /minds 깔때기`,
+        text: `📅 ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST) · ${funnel} 깔때기`,
       },
     ],
   };
@@ -85,12 +96,14 @@ function leadLabel(
 /* ── ⓪ 테스트 시작("3분 무료 테스트" 버튼 클릭) ── */
 export async function notifyMindsTestStart(p: {
   leadId: string | null;
+  variant?: FunnelVariant;
 }): Promise<void> {
+  const fn = funnelLabel(p.variant);
   // 이 시점엔 아직 연락처 캡처 전이라 leadId 가 대개 없다 → 익명으로 뜬다.
   const lead = await lookupLead(p.leadId);
   await sendSlackMessage({
     channel: SLACK_OPEN_NOTIFY_CHANNEL,
-    text: `🚀 /minds 테스트 시작: ${leadLabel(lead)}`,
+    text: `🚀 ${fn} 테스트 시작: ${leadLabel(lead)}`,
     blocks: [
       {
         type: "section",
@@ -99,7 +112,7 @@ export async function notifyMindsTestStart(p: {
           text: `🚀 *테스트 시작* — "3분 무료 테스트" 버튼 클릭\n*${leadLabel(lead)}*`,
         },
       },
-      timeContext(),
+      timeContext(fn),
     ],
   });
 }
@@ -125,44 +138,52 @@ export async function notifyMindsLogin(p: {
   });
 }
 
-/* ── ② 배역표(Final/페이월) 카드 도달 ── */
+/* ── ② 페이월 카드 도달(/minds 배역표 Final · /inner-child 잠금 목차) ── */
 export async function notifyMindsReachedPaywall(p: {
   leadId: string | null;
+  variant?: FunnelVariant;
 }): Promise<void> {
+  const fn = funnelLabel(p.variant);
+  const isIC = p.variant === "inner_child";
+  const stage = isIC ? "잠금 목차(페이월) 카드 도달" : "배역표(Final) 카드 도달";
   const lead = await lookupLead(p.leadId);
   await sendSlackMessage({
     channel: SLACK_OPEN_NOTIFY_CHANNEL,
-    text: `🎬 /minds 배역표(Final) 도달: ${leadLabel(lead)}`,
+    text: `🎬 ${fn} ${stage}: ${leadLabel(lead)}`,
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `🎬 *배역표(Final) 카드 도달* — 페이월까지 봤어요\n*${leadLabel(lead)}*`,
+          text: `🎬 *${stage}* — 페이월까지 봤어요\n*${leadLabel(lead)}*`,
         },
       },
-      timeContext(),
+      timeContext(fn),
     ],
   });
 }
 
-/* ── ③ "관계 해설 리포트 받기" CTA 클릭(결제 모달 열림) ── */
+/* ── ③ 결제 CTA 클릭(결제 모달 열림) ── */
 export async function notifyMindsCheckoutClick(p: {
   leadId: string | null;
+  variant?: FunnelVariant;
 }): Promise<void> {
+  const fn = funnelLabel(p.variant);
+  const isIC = p.variant === "inner_child";
+  const cta = isIC ? "전체 리포트 받기" : "관계 해설 리포트 받기";
   const lead = await lookupLead(p.leadId);
   await sendSlackMessage({
     channel: SLACK_OPEN_NOTIFY_CHANNEL,
-    text: `🛒 /minds 관계 해설 리포트 CTA 클릭: ${leadLabel(lead)}`,
+    text: `🛒 ${fn} "${cta}" CTA 클릭: ${leadLabel(lead)}`,
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `🛒 *"관계 해설 리포트 받기" 클릭* — 결제 모달 오픈\n*${leadLabel(lead)}*`,
+          text: `🛒 *"${cta}" 클릭* — 결제 모달 오픈\n*${leadLabel(lead)}*`,
         },
       },
-      timeContext(),
+      timeContext(fn),
     ],
   });
 }
@@ -279,20 +300,25 @@ export async function notifyMindsRelationshipPurchase(p: {
   orderId: string;
   mindsLeadId: string | null;
   reportUrl: string;
+  variant?: FunnelVariant;
 }): Promise<void> {
+  const fn = funnelLabel(p.variant);
+  const isIC = p.variant === "inner_child";
+  const product = isIC ? "내면 아이 심층 리포트" : "관계 해설 리포트";
+  const emoji = isIC ? "🧒" : "🎭";
   const lead = await lookupLead(p.mindsLeadId);
   await sendSlackMessage({
     channel: SLACK_OPEN_NOTIFY_CHANNEL,
-    text: `✅ 관계 해설 리포트 결제 완료 ${won(p.amount)}${lead ? ` · ${leadLabel(lead)}` : ""}`,
+    text: `✅ ${product} 결제 완료 ${won(p.amount)}${lead ? ` · ${leadLabel(lead)}` : ""}`,
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `✅ *관계 해설 리포트 결제 완료!* 🎭\n*${won(p.amount)}* · 주문 \`${p.orderId}\`${lead ? `\n🎬 ${leadLabel(lead)}` : ""}\n🔗 리포트 링크: ${p.reportUrl}\n_(유저 문의 시 위 링크 전달 — 따로 발송하지 않음)_`,
+          text: `✅ *${product} 결제 완료!* ${emoji}\n*${won(p.amount)}* · 주문 \`${p.orderId}\`${lead ? `\n🎬 ${leadLabel(lead)}` : ""}\n🔗 리포트 링크: ${p.reportUrl}\n_(유저 문의 시 위 링크 전달 — 따로 발송하지 않음)_`,
         },
       },
-      timeContext(),
+      timeContext(fn),
     ],
   });
 }

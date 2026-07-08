@@ -27,6 +27,7 @@ import { InnerChildFreeReport } from "./report/InnerChildFreeReport";
 import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
 import { M, dispStyle, leadStyle, LabelS } from "../quiet-editorial";
+import { KAKAO_CHANNEL_URL } from "@/app/programs/counseling/content";
 
 type Phase = "landing" | "test" | "analyzing" | "report";
 
@@ -37,13 +38,22 @@ export function InnerChildFlow() {
   const [leadId, setLeadId] = useState<string | null>(null);
   // API 실패·leadId 미확보 시 클라 채점으로 인라인 렌더할 원응답(희귀 폴백).
   const [fallbackInput, setFallbackInput] = useState<ScoreInput | null>(null);
+  // 결제 승인 실패로 returnUrl 이 /inner-child?error=… 로 되돌려보냈을 때의 안내.
+  const [payError, setPayError] = useState<boolean>(false);
   const router = useRouter();
 
   // 재방문 자동 복원 — 이전에 분석을 마친 브라우저면 저장된 결과 페이지로 보낸다.
   // (무효 id 면 결과 페이지가 안내를 띄우고 저장값을 정리하므로 무한 복원되지 않는다.)
-  // 카카오 신규 진입(?auth=kakao)은 양보한다(결제 배선은 Step 3).
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    // 결제 실패 복귀(?error) — 조용히 무료 리포트로 복원하지 말고 실패를 명확히 알린다.
+    // (승인 실패 시 returnUrl 이 여기로 되돌려보낸다. 표식은 즉시 지워 재트리거를 막는다.)
+    if (params.get("error")) {
+      window.history.replaceState(null, "", window.location.pathname);
+      setPayError(true);
+      return;
+    }
     const saved = localStorage.getItem(KEY);
     if (saved) {
       router.replace(`${INNER_CHILD_FUNNEL.freeReportBase}/${saved}`);
@@ -99,6 +109,19 @@ export function InnerChildFlow() {
     setPhase("report");
   };
 
+  // 결제 승인 실패 복귀 — 조용히 무료 리포트로 되돌아가지 않고 실패를 명확히 안내한다.
+  if (payError) {
+    return (
+      <PaymentFailedScreen
+        onRetry={() => {
+          const saved = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
+          if (saved) router.replace(`${INNER_CHILD_FUNNEL.freeReportBase}/${saved}`);
+          else setPayError(false);
+        }}
+      />
+    );
+  }
+
   // 테스트·폴백 리포트는 자체 풀스크린(다크). 랜딩·분석은 라이트 컨테이너 유지.
   if (phase === "test") {
     return <InnerChildTest skipIntro onComplete={(input) => void runAnalysis(input)} />;
@@ -123,6 +146,36 @@ export function InnerChildFlow() {
       )}
 
       {phase === "analyzing" && <MindsAnalyzing />}
+    </div>
+  );
+}
+
+/* ─────────────── 결제 실패 안내(다크) ───────────────
+ *
+ * 승인 실패 시 returnUrl 이 /inner-child?error=… 로 되돌려보낸다. 예전엔 자동복원이
+ * 조용히 무료 리포트로 보내 실패가 묻혔다(페이월만 다시 노출). 이제 명확히 안내한다.
+ */
+function PaymentFailedScreen({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div style={{ minHeight: "100dvh", background: "#050506", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Pretendard',-apple-system,sans-serif" }}>
+      <div style={{ maxWidth: 400, width: "100%", background: "#0A0A0B", border: "1px solid #26272c", borderRadius: 20, padding: "34px 24px", textAlign: "center" }}>
+        <div style={{ fontSize: 34 }}>⚠️</div>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: "14px 0 0", letterSpacing: "-0.02em" }}>결제가 완료되지 않았어요</h1>
+        <p style={{ fontSize: 14.5, lineHeight: 1.75, color: "rgba(255,255,255,.62)", margin: "14px 0 0" }}>
+          결제 승인 단계에서 중단되어 리포트 발급이 마무리되지 않았어요. 다시 시도해 주세요. 혹시 결제가
+          된 것 같은데 리포트가 열리지 않으면, 아래로 문의해 주시면 바로 확인해 드릴게요.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          style={{ width: "100%", marginTop: 24, padding: 16, borderRadius: 12, background: "linear-gradient(135deg,#FF5A1F,#FF8A4C,#FFB68A)", color: "#0A0A0B", border: "none", fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}
+        >
+          리포트로 돌아가 다시 시도하기
+        </button>
+        <a href={KAKAO_CHANNEL_URL} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 16, fontSize: 12.5, color: "rgba(255,255,255,.42)", textDecoration: "underline" }}>
+          카카오톡으로 문의하기
+        </a>
+      </div>
     </div>
   );
 }
