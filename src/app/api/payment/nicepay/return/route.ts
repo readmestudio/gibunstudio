@@ -303,7 +303,7 @@ async function handleMindsRelationshipPayment(params: {
       name = prof?.name ?? null;
     }
     if (!phone) return; // 번호가 없으면 발송 불가(조용히 스킵).
-    const res = await sendPaidReportAlimtalk({ phone, reportUrl, name });
+    const res = await sendPaidReportAlimtalk({ phone, reportCode: purchase.id, reportUrl, name });
     if (!res.success) {
       console.error("[minds-relationship] 결제완료 알림톡 실패:", res.reason);
     }

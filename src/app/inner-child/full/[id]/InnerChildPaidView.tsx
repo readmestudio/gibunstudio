@@ -18,6 +18,7 @@ import { KAKAO_CHANNEL_URL } from "@/app/programs/counseling/content";
 import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
 import { READ_BEFORE, guardianDefinitionBlock, reparentingSteps } from "@/lib/minds/inner-child/fixed-texts";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
+import { MindsResultLinkBar } from "@/components/minds/MindsResultLinkBar";
 import type { FreeReportGenerated, PaidReportGenerated, ReparentingPlan, TypeCard } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
@@ -104,7 +105,7 @@ export function InnerChildPaidView({
     setAttempt((a) => a + 1);
   };
 
-  if (report) return <ReportBody report={report} score={score} free={free} />;
+  if (report) return <ReportBody report={report} score={score} free={free} purchaseId={purchaseId} />;
   if (status === null) {
     return (
       <Centered
@@ -463,10 +464,12 @@ function ReportBody({
   report,
   score,
   free,
+  purchaseId,
 }: {
   report: PaidReportGenerated;
   score: ScoreResult | null;
   free: FreeReportGenerated | null;
+  purchaseId: string;
 }) {
   const primaryCard: TypeCard | null = score ? getTypeCard(score.primary_child.schema_id) : null;
   const secondSchemaId = score?.secondary_children[0]?.schema_id;
@@ -566,6 +569,11 @@ function ReportBody({
     >
       <div style={{ width: "100%", maxWidth: 440, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         <CardDeck cards={cards} />
+        {/* 재열람 링크 복사 바 — 이 유료 리포트(구매 UUID) 링크를 스스로 저장하게 한다.
+            비로그인 구매자가 알림톡/브라우저 기록에만 의존하지 않도록 하는 안전망. */}
+        <div style={{ flex: "0 0 auto" }}>
+          <MindsResultLinkBar leadId={purchaseId} base="/inner-child/full" />
+        </div>
         <p style={{ flex: "0 0 auto", fontFamily: INK.mono, fontSize: 10, color: INK.t38, lineHeight: 1.7, textAlign: "center", marginTop: 12 }}>
           기분 리포트 · INNER CHILD REPORT · {DISCLAIMER}
         </p>

@@ -8,6 +8,7 @@
 
 import type { Metadata } from "next";
 import { getSavedFreeReport } from "@/lib/minds/inner-child/free-report-store";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { InnerChildResultView } from "./InnerChildResultView";
 
 export const metadata: Metadata = {
@@ -22,5 +23,25 @@ export default async function InnerChildResultPage({
 }) {
   const { id } = await params;
   const blob = await getSavedFreeReport(id);
-  return <InnerChildResultView leadId={id} blob={blob} />;
+
+  // 복구 브릿지 — 이 리드로 이미 유료 리포트를 결제(confirmed)했다면, 그 구매 UUID 를 찾아
+  // 무료 리포트 화면에 "유료 리포트 다시 보기" 버튼으로 노출한다. 비로그인 구매자도 무료
+  // 링크(leadId)만 있으면 유료 리포트를 되찾을 수 있게 하는 경로(로그인 강제 없음).
+  let paidPurchaseId: string | null = null;
+  try {
+    const admin = createAdminClient();
+    const { data: purchase } = await admin
+      .from("minds_relationship_purchases")
+      .select("id, created_at")
+      .eq("lead_id", id)
+      .eq("status", "confirmed")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    paidPurchaseId = (purchase?.id as string | null) ?? null;
+  } catch {
+    // 조회 실패는 무시 — 복구 버튼만 안 뜰 뿐, 무료 리포트는 정상 렌더.
+  }
+
+  return <InnerChildResultView leadId={id} blob={blob} paidPurchaseId={paidPurchaseId} />;
 }

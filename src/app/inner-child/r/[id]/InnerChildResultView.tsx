@@ -22,9 +22,12 @@ const KEY = INNER_CHILD_FUNNEL.leadStorageKey;
 export function InnerChildResultView({
   leadId,
   blob,
+  paidPurchaseId = null,
 }: {
   leadId: string;
   blob: StoredFreeReport | null;
+  /** 이 리드로 결제한 유료 리포트가 있으면 그 구매 UUID. 있으면 "유료 리포트 다시 보기" 노출. */
+  paidPurchaseId?: string | null;
 }) {
   useEffect(() => {
     if (!blob && typeof window !== "undefined") {
@@ -68,6 +71,29 @@ export function InnerChildResultView({
         score={blob.score_result}
         footerExtra={
           <div style={{ maxWidth: 440, margin: "0 auto" }}>
+            {/* 이미 결제했다면, 무료 화면에서 바로 유료 리포트로 되돌아가는 복구 버튼(로그인 불필요). */}
+            {paidPurchaseId && (
+              <a
+                href={`/inner-child/full/${paidPurchaseId}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "13px 16px",
+                  marginBottom: 10,
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 100%)",
+                  color: "#0A0A0B",
+                  fontFamily: "'Pretendard',sans-serif",
+                  fontWeight: 800,
+                  fontSize: 14.5,
+                  textDecoration: "none",
+                }}
+              >
+                🔓 이미 결제한 전체 리포트 다시 보기 →
+              </a>
+            )}
             <MindsResultLinkBar leadId={leadId} base={INNER_CHILD_FUNNEL.freeReportBase} />
           </div>
         }
