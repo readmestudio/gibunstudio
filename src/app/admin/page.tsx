@@ -47,11 +47,14 @@ export default async function AdminHomePage() {
   }
 
   // 대기신청: 전체 건수 / 알림신청 버튼 누적 건수 / 워크북 제작 설문 건수
+  // 내면 아이: 시작 리드 전체 / 완주(parts_map 있음) 건수
   const [
     { count: waitlistCount },
     { count: notifyCount },
     { count: surveyCount },
     { count: reviewCount },
+    { count: innerChildTotal },
+    { count: innerChildDone },
   ] = await Promise.all([
     admin
       .from("workbook_waitlist")
@@ -65,6 +68,15 @@ export default async function AdminHomePage() {
     admin
       .from("test_reviews")
       .select("*", { count: "exact", head: true }),
+    admin
+      .from("minds_leads")
+      .select("*", { count: "exact", head: true })
+      .eq("channel", "inner_child"),
+    admin
+      .from("minds_leads")
+      .select("*", { count: "exact", head: true })
+      .eq("channel", "inner_child")
+      .not("parts_map", "is", null),
   ]);
 
   // 결제완료(confirmed) 금액 합계 — 4개 결제 테이블을 합산해 환불 카드에 보여준다.
@@ -131,6 +143,17 @@ export default async function AdminHomePage() {
       description:
         "성취중독·minds 테스트 후 페이월에서 이탈하려던 방문자가 남긴 후기를 테스트별로 보고, 추첨 연락처를 확인해요.",
       stats: [{ label: "후기", value: reviewCount ?? 0, unit: "건" }],
+    },
+    {
+      href: "/admin/inner-child",
+      eyebrow: "LEAD · 내면 아이",
+      title: "내면 아이 리드",
+      description:
+        "내면 아이 찾기 테스트를 완료한 방문자의 유형 분포·완주율과, 각자가 고른 답변·채점 결과를 확인해요.",
+      stats: [
+        { label: "완주", value: innerChildDone ?? 0, unit: "명" },
+        { label: "전체 시작", value: innerChildTotal ?? 0, unit: "명" },
+      ],
     },
     {
       href: "/admin/payments",
