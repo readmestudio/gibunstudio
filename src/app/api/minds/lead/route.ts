@@ -116,10 +116,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, id: null });
   }
 
-  // 카카오는 실제 로그인 → 운영자 채널에 "테스트 시작" 알림(fire-and-forget).
+  // 카카오는 실제 로그인 → 운영자 채널에 "로그인" 알림(fire-and-forget).
   // email 채널은 비로그인 리드라 로그인 알림 대상이 아니다.
-  if (channel === "kakao" && userId) {
-    after(() => notifyMindsLogin({ email, userId }));
+  //
+  // ⚠️ 지금은 inner-child 만 광고 집행 중 → /api/minds/track 과 동일 정책으로
+  //    variant === "inner_child" 일 때만 슬랙을 쏜다(그 외 minds 노이즈 차단).
+  //    variant 라벨도 하드코딩 /minds 대신 body.variant 를 따른다.
+  //    (참고: 현행 카카오 로그인은 /lead/claim + /auth/callback 경로를 타므로 이 분기는
+  //     사실상 미발화 상태다. 되살릴 때를 대비한 무회귀·정합성 가드.)
+  const loginVariant = b.variant === "inner_child" ? "inner_child" : "minds";
+  if (channel === "kakao" && userId && loginVariant === "inner_child") {
+    after(() => notifyMindsLogin({ email, userId, variant: loginVariant }));
   }
 
   return NextResponse.json({ ok: true, id: data.id });

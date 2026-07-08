@@ -13,10 +13,13 @@ import {
  * 슬랙 봇 토큰은 서버 전용이라, 클라이언트가 직접 슬랙에 못 쏜다 — 이 라우트가 다리.
  * /minds 와 /inner-child 가 같은 라우트·같은 봇·같은 채널을 공유하고, variant 로만 구분된다.
  *
+ * ⚠️ 현재 inner-child 만 광고 집행 중 → variant !== "inner_child" 인 퍼널 신호는
+ *    슬랙으로 쏘지 않는다(minds 깔때기 노이즈 차단). /minds 광고 재개 시 가드 해제.
+ *
  * Body: {
  *   event: "test_start" | "reached_paywall" | "checkout_click",
  *   leadId?: string(UUID),
- *   variant?: "minds" | "inner_child"   // 기본 minds(현행 무회귀)
+ *   variant?: "minds" | "inner_child"   // inner_child 만 슬랙 발화, 그 외는 무시
  * }
  *
  * 보안: 토큰 없이 누구나 호출 가능한 엔드포인트라 슬랙 스팸에 노출된다. 그래서
@@ -43,8 +46,25 @@ export async function POST(req: NextRequest) {
   const leadId =
     typeof b.leadId === "string" && UUID_RE.test(b.leadId) ? b.leadId : null;
 
-  // 화이트리스트 밖 값은 기본 minds 로 안전 폴백(현행 무회귀).
   const variant = b.variant === "inner_child" ? "inner_child" : "minds";
+
+  // 이벤트 화이트리스트 밖은 400.
+  if (
+    b.event !== "test_start" &&
+    b.event !== "reached_paywall" &&
+    b.event !== "checkout_click"
+  ) {
+    return NextResponse.json({ error: "알 수 없는 이벤트입니다." }, { status: 400 });
+  }
+
+  // 지금은 inner-child 랜딩만 광고 집행 중 — /minds 깔때기 슬랙은 노이즈다.
+  // 그래서 top-of-funnel 슬랙은 inner_child 일 때만 쏜다. minds(및 variant 유실로
+  // minds 로 폴백된 값)는 조용히 무시하고 200 만 돌려준다(클라이언트 dedupe 유지).
+  // ⚠️ 여기는 퍼널 단계 신호만 담당한다. 결제 완료 등 '돈' 알림은 별도 라우트라 영향 없음.
+  // 다시 /minds 광고를 켜면 아래 가드만 풀면 된다.
+  if (variant !== "inner_child") {
+    return NextResponse.json({ ok: true, skipped: "minds_muted" });
+  }
 
   // 알림은 부가 기능 — fire-and-forget 으로 보내고 즉시 200.
   if (b.event === "test_start") {
@@ -53,8 +73,6 @@ export async function POST(req: NextRequest) {
     after(() => notifyMindsReachedPaywall({ leadId, variant }));
   } else if (b.event === "checkout_click") {
     after(() => notifyMindsCheckoutClick({ leadId, variant }));
-  } else {
-    return NextResponse.json({ error: "알 수 없는 이벤트입니다." }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

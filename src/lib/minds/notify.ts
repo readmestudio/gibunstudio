@@ -121,19 +121,21 @@ export async function notifyMindsTestStart(p: {
 export async function notifyMindsLogin(p: {
   email: string;
   userId: string;
+  variant?: FunnelVariant;
 }): Promise<void> {
+  const fn = funnelLabel(p.variant);
   await sendSlackMessage({
     channel: SLACK_OPEN_NOTIFY_CHANNEL,
-    text: `🔐 /minds 카카오 로그인: ${p.email || "(이메일 없음)"}`,
+    text: `🔐 ${fn} 카카오 로그인: ${p.email || "(이메일 없음)"}`,
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `🔐 *새 카카오 로그인* — /minds 테스트 시작\n*${p.email || "(이메일 없음)"}*`,
+          text: `🔐 *새 카카오 로그인* — ${fn} 깔때기\n*${p.email || "(이메일 없음)"}*`,
         },
       },
-      timeContext(),
+      timeContext(`${fn} 깔때기`),
     ],
   });
 }
