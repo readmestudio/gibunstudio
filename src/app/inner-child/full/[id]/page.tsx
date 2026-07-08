@@ -1,5 +1,5 @@
 /**
- * /inner-child/full/[id] — 유료 "내면 아이 심층 리포트" (₩9,900).
+ * /inner-child/full/[id] — 유료 "내면 아이 심층 리포트" (₩19,900).
  *
  * [id] 는 minds_relationship_purchases 의 결제 레코드 UUID(order_id prefix IC-). 결제 승인 후
  * NicePay return 라우트가 이 페이지로 리다이렉트한다. 운영자가 문의 유저에게 전달하는 영구

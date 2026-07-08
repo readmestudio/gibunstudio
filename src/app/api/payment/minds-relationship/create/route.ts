@@ -7,6 +7,7 @@ import {
   MINDS_RELATIONSHIP_PRICE,
   MINDS_RELATIONSHIP_ORDER_PREFIX,
   INNER_CHILD_ORDER_PREFIX,
+  INNER_CHILD_PRICE,
 } from "@/lib/minds/relationship-constants";
 
 /**
@@ -126,13 +127,17 @@ export async function POST(request: NextRequest) {
       product === "inner_child"
         ? INNER_CHILD_ORDER_PREFIX
         : MINDS_RELATIONSHIP_ORDER_PREFIX;
+    // 금액도 상품별로 갈라진다(minds ₩9,900 / inner-child ₩19,900). 서버 상수로 고정해
+    // 위변조를 막고, return 검증도 같은 상품 기준으로 재확인한다.
+    const amount =
+      product === "inner_child" ? INNER_CHILD_PRICE : MINDS_RELATIONSHIP_PRICE;
     const orderId = `${orderPrefix}${Date.now()}-${nanoid(8)}`;
     const { data: purchase, error: purchaseError } = await admin
       .from("minds_relationship_purchases")
       .insert({
         lead_id: leadId,
         user_id: user.id,
-        amount: MINDS_RELATIONSHIP_PRICE,
+        amount,
         order_id: orderId,
         status: "pending",
         phone: phone || null,

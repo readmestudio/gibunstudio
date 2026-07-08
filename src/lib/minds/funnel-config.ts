@@ -10,7 +10,13 @@
  */
 
 import { MINDS_LEAD_STORAGE_KEY } from "@/lib/minds/storage";
-import { MINDS_RELATIONSHIP_GOODS_NAME } from "@/lib/minds/relationship-constants";
+import {
+  MINDS_RELATIONSHIP_GOODS_NAME,
+  MINDS_RELATIONSHIP_PRICE,
+  MINDS_RELATIONSHIP_ORIGINAL_PRICE,
+  INNER_CHILD_PRICE,
+  INNER_CHILD_ORIGINAL_PRICE,
+} from "@/lib/minds/relationship-constants";
 
 export interface MindsFunnelConfig {
   variant: "minds" | "inner_child";
@@ -22,6 +28,10 @@ export interface MindsFunnelConfig {
   paidReportBase: string;
   /** 결제 create 라우트 payload → orderId prefix 결정. */
   product: "relationship" | "inner_child";
+  /** 실제 판매가(원) — 결제창 금액·표시가. 서버 검증은 product 로 재확인한다. */
+  price: number;
+  /** 표시용 정가(원) — 할인 앵커링(취소선)에만 쓴다. */
+  originalPrice: number;
   /** NicePay 결제창·영수증 상품명. */
   goodsName: string;
   /** 결제 모달의 상품 설명 블록(제목·리드문·포함 목록)만 갈라진다. */
@@ -35,6 +45,8 @@ export const MINDS_FUNNEL: MindsFunnelConfig = {
   freeReportBase: "/minds/r",
   paidReportBase: "/minds/relationship",
   product: "relationship",
+  price: MINDS_RELATIONSHIP_PRICE,
+  originalPrice: MINDS_RELATIONSHIP_ORIGINAL_PRICE,
   goodsName: MINDS_RELATIONSHIP_GOODS_NAME,
   checkoutCopy: {
     title: "다섯 배역과 그 관계 해설 받기",
@@ -54,6 +66,8 @@ export const INNER_CHILD_FUNNEL: MindsFunnelConfig = {
   freeReportBase: "/inner-child/r",
   paidReportBase: "/inner-child/full",
   product: "inner_child",
+  price: INNER_CHILD_PRICE,
+  originalPrice: INNER_CHILD_ORIGINAL_PRICE,
   goodsName: "내면 아이 심층 리포트",
   // 잠금 목차 4약속(lockSection)과 톤 일치 — 파는 물건이 달라 반드시 갈라진다.
   checkoutCopy: {

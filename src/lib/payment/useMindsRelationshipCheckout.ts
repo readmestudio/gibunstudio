@@ -10,7 +10,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
 import { MINDS_FUNNEL, type MindsFunnelConfig } from "@/lib/minds/funnel-config";
 
 const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
@@ -70,7 +69,9 @@ export function useMindsRelationshipCheckout(
         clientId: NICEPAY_CLIENT_ID,
         ...(method ? { method } : {}),
         orderId: data.order_id,
-        amount: MINDS_RELATIONSHIP_PRICE,
+        // 결제창 금액은 퍼널 가격을 따른다(minds ₩9,900 / inner-child ₩19,900).
+        // 서버가 create 시 저장한 pending 금액·return 검증 금액과 반드시 일치해야 한다.
+        amount: funnel.price,
         goodsName: funnel.goodsName,
         returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
         fnError: (result: { errorMsg: string }) => {

@@ -125,7 +125,7 @@ export function InnerChildFreeReport({
         {footerExtra ? <div style={{ flex: "0 0 auto", marginTop: 8 }}>{footerExtra}</div> : null}
       </div>
 
-      {/* 페이월 CTA → 그 자리에서 공용 결제 모달(내면 아이 카피·₩9,900). */}
+      {/* 페이월 CTA → 그 자리에서 공용 결제 모달(내면 아이 카피·₩19,900). */}
       <MindsCheckoutModal
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}

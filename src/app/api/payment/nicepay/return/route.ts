@@ -10,7 +10,10 @@ import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { approveNicepayPayment } from "@/lib/nicepay/approve";
 import { MIND_SPILL_DAILY_SUB_DAYS } from "@/lib/mind-spill/constants";
 import { COUNSELING_TYPES, getCounselingType } from "@/lib/counseling/types";
-import { MINDS_RELATIONSHIP_PRICE } from "@/lib/minds/relationship-constants";
+import {
+  MINDS_RELATIONSHIP_PRICE,
+  INNER_CHILD_PRICE,
+} from "@/lib/minds/relationship-constants";
 import { sendPaidReportAlimtalk } from "@/lib/solapi/messages";
 
 /**
@@ -231,15 +234,19 @@ async function handleMindsRelationshipPayment(params: {
     return fail("status", String(purchase.status));
   }
 
+  // 기대 금액은 상품별로 갈라진다(minds ₩9,900 / inner-child ₩19,900).
+  const expectedPrice =
+    variant === "inner_child" ? INNER_CHILD_PRICE : MINDS_RELATIONSHIP_PRICE;
+
   // 금액 검증 — DB 금액·NicePay 금액·서버 상수가 모두 일치해야 한다(위변조 방지).
-  if (purchase.amount !== amount || amount !== MINDS_RELATIONSHIP_PRICE) {
+  if (purchase.amount !== amount || amount !== expectedPrice) {
     console.error("[minds-relationship] 결제 금액 불일치:", {
       dbAmount: purchase.amount,
       nicepayAmount: amount,
-      expected: MINDS_RELATIONSHIP_PRICE,
+      expected: expectedPrice,
       orderId,
     });
-    return fail("amount", `db=${purchase.amount} np=${amount} expect=${MINDS_RELATIONSHIP_PRICE}`);
+    return fail("amount", `db=${purchase.amount} np=${amount} expect=${expectedPrice}`);
   }
 
   // NicePay 최종 승인(캡처).

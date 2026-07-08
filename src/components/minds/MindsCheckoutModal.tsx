@@ -16,7 +16,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useMindsRelationshipCheckout } from "@/lib/payment/useMindsRelationshipCheckout";
 import { M, dispStyle, leadStyle, Hr } from "./quiet-editorial";
 import { MindsAuthGate } from "./MindsAuthGate";
-import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
 import { MINDS_FUNNEL, type MindsFunnelConfig } from "@/lib/minds/funnel-config";
 import { isValidKrMobile } from "@/lib/solapi/client";
 
@@ -95,7 +94,7 @@ export function MindsCheckoutModal({
         funnel.variant === "minds"
           ? "minds_to_relationship"
           : "inner_child_to_report",
-      value: MINDS_RELATIONSHIP_PRICE,
+      value: funnel.price,
       currency: "KRW",
     });
     run(phone);
@@ -200,9 +199,9 @@ export function MindsCheckoutModal({
           </span>
           <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 10 }}>
             <span style={{ fontFamily: M.font, fontSize: 17, color: M.mute2, textDecoration: "line-through" }}>
-              {won(MINDS_RELATIONSHIP_ORIGINAL_PRICE)}
+              {won(funnel.originalPrice)}
             </span>
-            <span style={{ ...dispStyle, fontSize: 28 }}>{won(MINDS_RELATIONSHIP_PRICE)}</span>
+            <span style={{ ...dispStyle, fontSize: 28 }}>{won(funnel.price)}</span>
           </div>
         </div>
 

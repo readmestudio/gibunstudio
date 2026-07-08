@@ -1,5 +1,5 @@
 /**
- * 내면 아이 유료 리포트 엔진 (₩9,900) — 생성 5필드 + 정규화 리더.
+ * 내면 아이 유료 리포트 엔진 (₩19,900) — 생성 5필드 + 정규화 리더.
  *
  * 무료 리포트는 flash + 2필드(gap·relation_pattern)로 가볍게 만든다. 유료는 pro + 5필드
  * (loop_narrative·second_child_relation·guardian_anatomy·core_need_bridge·closing)로 깊게
