@@ -234,7 +234,7 @@ async function handleMindsRelationshipPayment(params: {
     return fail("status", String(purchase.status));
   }
 
-  // 기대 금액은 상품별로 갈라진다(minds ₩9,900 / inner-child ₩19,900).
+  // 기대 금액은 상품별 상수로 검증한다(현재 minds·inner-child 모두 ₩19,900).
   const expectedPrice =
     variant === "inner_child" ? INNER_CHILD_PRICE : MINDS_RELATIONSHIP_PRICE;
 

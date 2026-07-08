@@ -13,7 +13,7 @@ import {
 /**
  * POST /api/payment/minds-relationship/create  (로그인 선택)
  *
- * 무료 테스트를 거친 leadId 로, 유료 리포트(minds ₩9,900 / inner-child ₩19,900)의
+ * 무료 테스트를 거친 leadId 로, 유료 리포트(minds·inner-child 모두 ₩19,900)의
  * 결제 레코드(pending)를 만들고 NicePay 에 넘길 order_id 를 반환한다.
  *
  * 로그인은 강제하지 않는다(마찰 최소화 — 익명으로 무료 테스트를 한 사용자가 바로 결제):
@@ -126,8 +126,8 @@ export async function POST(request: NextRequest) {
       product === "inner_child"
         ? INNER_CHILD_ORDER_PREFIX
         : MINDS_RELATIONSHIP_ORDER_PREFIX;
-    // 금액도 상품별로 갈라진다(minds ₩9,900 / inner-child ₩19,900). 서버 상수로 고정해
-    // 위변조를 막고, return 검증도 같은 상품 기준으로 재확인한다.
+    // 금액은 상품별 상수로 고정한다(현재 minds·inner-child 모두 ₩19,900). 서버 상수로
+    // 고정해 위변조를 막고, return 검증도 같은 상품 기준으로 재확인한다.
     const amount =
       product === "inner_child" ? INNER_CHILD_PRICE : MINDS_RELATIONSHIP_PRICE;
     const orderId = `${orderPrefix}${Date.now()}-${nanoid(8)}`;
