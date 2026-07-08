@@ -1,9 +1,10 @@
 /**
- * 내면 아이 유료 리포트 엔진 (₩19,900) — 생성 5필드 + 정규화 리더.
+ * 내면 아이 유료 리포트 엔진 (₩19,900) — 생성 6필드 + 정규화 리더.
  *
- * 무료 리포트는 flash + 2필드(gap·relation_pattern)로 가볍게 만든다. 유료는 pro + 5필드
- * (loop_narrative·second_child_relation·guardian_anatomy·core_need_bridge·closing)로 깊게
- * 파고들어, 결제 레코드(minds_relationship_purchases.report_json)에 1회 캐시된다.
+ * 무료 리포트는 flash + 2필드(gap·relation_pattern)로 가볍게 만든다. 유료는 pro + 6필드
+ * (loop_narrative·second_child_relation·guardian_anatomy·core_need_bridge·reparenting·closing)로
+ * 깊게 파고들어, 결제 레코드(minds_relationship_purchases.report_json)에 1회 캐시된다.
+ * reparenting 은 그 사람의 SCT 트리거·도피행동을 인용한 개인화 실행계획(고정 3단계 대체).
  *
  * 설계 원칙(relationship-report.ts 미러):
  *  - 유료 산출물이라 **폴백 없음**. 5필드 중 하나라도 비거나 지나치게 짧으면 readPaidReport 가
@@ -14,11 +15,14 @@
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
 import { PAID_SYSTEM_PROMPT, buildPaidUserMessage } from "./paid-report-prompt";
 import { getTypeCard } from "./type-cards";
-import type { PaidReportGenerated } from "./report-types";
+import type { PaidReportGenerated, ReparentingPlan } from "./report-types";
 import type { ScoreResult } from "./types";
 
-/** 5필드 각각의 최소 유효 길이(자). 이보다 짧으면 생성이 잘렸거나 빈 것으로 보고 재시도. */
-const MIN_LEN: Record<keyof PaidReportGenerated, number> = {
+/** 서술형 5필드 각각의 최소 유효 길이(자). 이보다 짧으면 생성이 잘렸거나 빈 것으로 보고 재시도. */
+const MIN_LEN: Record<
+  "loop_narrative" | "second_child_relation" | "guardian_anatomy" | "core_need_bridge" | "closing",
+  number
+> = {
   loop_narrative: 120,
   second_child_relation: 60,
   guardian_anatomy: 100,
@@ -31,6 +35,29 @@ function str(v: unknown): string {
 }
 
 /**
+ * reparenting 객체 정규화·검증. scene + steps(2~3, 각 body 충분)를 요구한다.
+ * 미달이면 throw(유료라 폴백 없음 — 라우트가 재시도). 구버전 캐시(필드 부재)도 여기서 걸려 재생성된다.
+ */
+function readReparenting(v: unknown): ReparentingPlan {
+  const o = v && typeof v === "object" ? (v as Record<string, unknown>) : null;
+  const scene = str(o?.scene);
+  const rawSteps = Array.isArray(o?.steps) ? (o!.steps as unknown[]) : [];
+  const steps = rawSteps
+    .map((s) => {
+      const so = s && typeof s === "object" ? (s as Record<string, unknown>) : {};
+      return { title: str(so.title), body: str(so.body) };
+    })
+    .filter((s) => s.title.length > 0 && s.body.length >= 24);
+  if (scene.length < 24) {
+    throw new Error(`유료 리포트 'reparenting.scene' 이 비었거나 너무 짧습니다(${scene.length}자).`);
+  }
+  if (steps.length < 2) {
+    throw new Error(`유료 리포트 'reparenting.steps' 가 부족합니다(${steps.length}개).`);
+  }
+  return { scene, steps: steps.slice(0, 3) };
+}
+
+/**
  * LLM 응답(unknown)을 PaidReportGenerated 로 정규화한다. 5필드가 모두 존재하고 최소 길이를
  * 넘어야 통과한다 — 하나라도 미달이면 throw(유료라 폴백 없음, 라우트가 재시도).
  * 캐시된 report_json 을 렌더 전에 다시 통과시켜 스키마 안정성을 보장하는 데도 쓴다.
@@ -40,7 +67,7 @@ export function readPaidReport(parsed: unknown): PaidReportGenerated {
     throw new Error("유료 리포트 응답이 객체가 아닙니다.");
   }
   const o = parsed as Record<string, unknown>;
-  const report: PaidReportGenerated = {
+  const strFields = {
     loop_narrative: str(o.loop_narrative),
     second_child_relation: str(o.second_child_relation),
     guardian_anatomy: str(o.guardian_anatomy),
@@ -48,14 +75,14 @@ export function readPaidReport(parsed: unknown): PaidReportGenerated {
     closing: str(o.closing),
   };
 
-  for (const key of Object.keys(MIN_LEN) as (keyof PaidReportGenerated)[]) {
-    if (report[key].length < MIN_LEN[key]) {
+  for (const key of Object.keys(MIN_LEN) as (keyof typeof MIN_LEN)[]) {
+    if (strFields[key].length < MIN_LEN[key]) {
       throw new Error(
-        `유료 리포트 필드 '${key}' 가 비었거나 너무 짧습니다(${report[key].length}자).`
+        `유료 리포트 필드 '${key}' 가 비었거나 너무 짧습니다(${strFields[key].length}자).`
       );
     }
   }
-  return report;
+  return { ...strFields, reparenting: readReparenting(o.reparenting) };
 }
 
 /**

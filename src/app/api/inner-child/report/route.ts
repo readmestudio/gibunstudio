@@ -3,15 +3,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { readFreeReportBlob } from "@/lib/minds/inner-child/free-report-store";
-import { generateInnerChildPaidReport } from "@/lib/minds/inner-child/paid-report";
+import { generateInnerChildPaidReport, readPaidReport } from "@/lib/minds/inner-child/paid-report";
 
 /**
  * POST /api/inner-child/report  (결제 게이트 — confirmed IC- 구매만)
  *
- * "내면 아이 심층 리포트" 유료 산출물(5생성필드)을 만들거나 캐시를 돌려준다. 결제 직후
+ * "내면 아이 심층 리포트" 유료 산출물(6생성필드)을 만들거나 캐시를 돌려준다. 결제 직후
  * 리포트 페이지(/inner-child/full/[id])가 호출한다. /api/minds/relationship 과 동형 골격이되,
  * 데이터 소스가 다르다 — 원응답 재분석이 아니라 무료에서 이미 만든 권위 채점본(score_result)을
- * 재사용해 gemini-2.5-pro 로 5필드만 생성한다.
+ * 재사용해 gemini-2.5-pro 로 6필드(개인화 reparenting 포함)만 생성한다.
  *
  * 흐름:
  *   1) purchaseId 로 결제 레코드 조회 → 없으면 404.
@@ -97,9 +97,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // [4] 이미 생성된 리포트가 있으면 그대로 반환(캐시).
+    // [4] 이미 생성된 리포트가 있고 '현재 스키마'를 만족하면 그대로 반환(캐시).
+    // 구버전 캐시(예: reparenting 개인화 필드 이전)는 readPaidReport 가 throw → 캐시미스로
+    // 흘려보내 아래에서 새 프롬프트로 재생성·덮어쓴다(스키마 자동 업그레이드).
     if (purchase.report_json) {
-      return NextResponse.json({ report: purchase.report_json, cached: true });
+      try {
+        readPaidReport(purchase.report_json);
+        return NextResponse.json({ report: purchase.report_json, cached: true });
+      } catch {
+        // 스키마 미달 — 재생성 경로로.
+      }
     }
 
     // [5] 리드의 채점본 로드 — 원응답 재분석이 아니라 무료에서 만든 권위 채점본 재사용.
