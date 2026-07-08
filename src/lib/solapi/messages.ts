@@ -16,13 +16,15 @@ export async function sendPaidReportAlimtalk(p: {
   reportUrl: string;
   name?: string | null;
 }): Promise<AlimtalkResult> {
+  // 이 템플릿(KA01TP…QnYYJliPQTv)은 치환 변수가 없는 고정 문구 + 고정 웹링크 버튼
+  // (https://gibunstudio.com/minds/my)으로 등록돼 있다. 템플릿에 없는 변수를 보내면
+  // 불일치로 발송이 거부될 수 있어 아무 변수도 보내지 않는다. 유저별 리포트는 버튼이
+  // 가리키는 /minds/my 가 계정 귀속으로 찾아준다(다섯 배역·내면 아이 퍼널 분기 포함).
+  // reportUrl·name 은 시그니처만 유지(호출부 호환·슬랙 알림용) — 메시지 본문엔 쓰지 않는다.
   return sendAlimtalk({
     to: p.phone,
     templateId: ALIMTALK_TEMPLATES.MINDS_RELATIONSHIP_PAID,
-    variables: {
-      "#{고객명}": p.name?.trim() || "고객",
-      "#{리포트링크}": p.reportUrl,
-    },
+    variables: {},
   });
 }
 

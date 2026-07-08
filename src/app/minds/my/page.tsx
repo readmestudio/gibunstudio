@@ -43,28 +43,49 @@ export default async function MindsMyReportsPage() {
 
   const { data: leads } = await admin
     .from("minds_leads")
-    .select("id, created_at, parts_map")
+    .select("id, created_at, parts_map, channel")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   const freeReports = (leads ?? [])
     .filter((l) => !!l.parts_map)
-    .map((l) => ({ leadId: l.id as string, createdAt: l.created_at as string }));
+    .map((l) => {
+      // /minds 와 /inner-child 가 같은 테이블을 공유한다 — channel 로 퍼널을 가른다.
+      // 내면 아이 리드는 전용 무료 리포트 경로(/inner-child/r)로 보낸다.
+      const isInnerChild = (l.channel as string | null) === "inner_child";
+      return {
+        leadId: l.id as string,
+        createdAt: l.created_at as string,
+        title: isInnerChild ? "내면 아이 결과" : "내 마음 배역 결과",
+        href: isInnerChild
+          ? `/inner-child/r/${l.id as string}`
+          : `/minds/r/${l.id as string}`,
+      };
+    });
 
   const { data: purchases } = await admin
     .from("minds_relationship_purchases")
-    .select("id, created_at, paid_at, report_json")
+    .select("id, created_at, paid_at, report_json, order_id")
     .eq("user_id", user.id)
     .eq("status", "confirmed")
     .order("created_at", { ascending: false });
 
-  const paidReports = (purchases ?? []).map((p) => ({
-    purchaseId: p.id as string,
-    paidAt: (p.paid_at ?? p.created_at) as string,
-    // 결제 승인(confirmed)과 리포트 생성(~50초 LLM)이 분리돼 있어, 결제 직후
-    // 이탈하면 report_json 이 아직 비어 있다 → "제작 중"으로 안내.
-    ready: !!p.report_json,
-  }));
+  const paidReports = (purchases ?? []).map((p) => {
+    // 같은 결제 테이블을 두 퍼널이 공유한다 — order_id prefix 로 상품을 가른다.
+    // IC- 는 내면 아이(리포트 /inner-child/full), 그 외(MR-)는 다섯 배역(/minds/relationship).
+    const isInnerChild = ((p.order_id as string | null) ?? "").startsWith("IC-");
+    return {
+      purchaseId: p.id as string,
+      paidAt: (p.paid_at ?? p.created_at) as string,
+      // 결제 승인(confirmed)과 리포트 생성(~50초 LLM)이 분리돼 있어, 결제 직후
+      // 이탈하면 report_json 이 아직 비어 있다 → "제작 중"으로 안내.
+      ready: !!p.report_json,
+      title: isInnerChild ? "내면 아이 심층 리포트" : "다섯 배역 + 관계 해설 리포트",
+      href: isInnerChild
+        ? `/inner-child/full/${p.id as string}`
+        : `/minds/relationship/${p.id as string}`,
+    };
+  });
 
   const empty = freeReports.length === 0 && paidReports.length === 0;
 
@@ -92,17 +113,17 @@ export default async function MindsMyReportsPage() {
       {paidReports.length > 0 && (
         <section className="mt-10">
           <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-400">
-            유료 · 다섯 배역과 그 관계 해설
+            유료 리포트
           </h2>
           <ul className="mt-4 space-y-3">
             {paidReports.map((r) => (
               <li key={r.purchaseId}>
                 <Link
-                  href={`/minds/relationship/${r.purchaseId}`}
+                  href={r.href}
                   className="flex items-center justify-between rounded-lg border-2 border-[var(--foreground)] px-5 py-4 transition-transform active:scale-[0.99]"
                 >
                   <span className="text-sm font-semibold text-[var(--foreground)]">
-                    다섯 배역 + 관계 해설 리포트
+                    {r.title}
                   </span>
                   {r.ready ? (
                     <span className="text-xs text-neutral-400">{fmtDate(r.paidAt)}</span>
@@ -129,17 +150,17 @@ export default async function MindsMyReportsPage() {
       {freeReports.length > 0 && (
         <section className="mt-10">
           <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-400">
-            무료 · 내 마음 배역
+            무료 리포트
           </h2>
           <ul className="mt-4 space-y-3">
             {freeReports.map((r) => (
               <li key={r.leadId}>
                 <Link
-                  href={`/minds/r/${r.leadId}`}
+                  href={r.href}
                   className="flex items-center justify-between rounded-lg border border-[var(--border)] px-5 py-4 transition-transform active:scale-[0.99]"
                 >
                   <span className="text-sm font-medium text-[var(--foreground)]">
-                    내 마음 배역 결과
+                    {r.title}
                   </span>
                   <span className="text-xs text-neutral-400">{fmtDate(r.createdAt)}</span>
                 </Link>
