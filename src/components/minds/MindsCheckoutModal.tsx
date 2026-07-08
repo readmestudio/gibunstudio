@@ -9,13 +9,12 @@
  * 결제 완료 시 /minds/relationship/[id] 리포트 페이지로 이동한다(return 라우트가 처리).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Script from "next/script";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { createClient } from "@/lib/supabase/client";
 import { useMindsRelationshipCheckout } from "@/lib/payment/useMindsRelationshipCheckout";
 import { M, dispStyle, leadStyle, Hr } from "./quiet-editorial";
-import { MindsAuthGate } from "./MindsAuthGate";
 import { MINDS_FUNNEL, type MindsFunnelConfig } from "@/lib/minds/funnel-config";
 import { isValidKrMobile } from "@/lib/solapi/client";
 
@@ -23,8 +22,6 @@ const NICEPAY_CLIENT_ID = process.env.NEXT_PUBLIC_NICEPAY_MERCHANT_ID || "";
 const NICEPAY_SDK_URL = process.env.NEXT_PUBLIC_NICEPAY_SDK_URL || "";
 
 const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
-
-type AuthState = "checking" | "anon" | "authed";
 
 export function MindsCheckoutModal({
   open,
@@ -36,34 +33,25 @@ export function MindsCheckoutModal({
   funnel?: MindsFunnelConfig;
 }) {
   const [sdkLoaded, setSdkLoaded] = useState(false);
-  const [authState, setAuthState] = useState<AuthState>("checking");
   // 결제완료 알림톡 수신번호 — profiles.phone 이 있으면 프리필하고, 사용자가 수정 가능.
   const [phone, setPhone] = useState("");
-  // 로그인 관문을 "결제 버튼을 누른 순간"에만 연다(상품·가격은 비로그인도 먼저 본다).
-  // gateOpen=true 면 관문을 띄우고, 로그인 성공 즉시 기억해 둔 결제를 이어간다.
-  const [gateOpen, setGateOpen] = useState(false);
-  const pendingRunRef = useRef<((phone: string) => void) | null>(null);
 
   // 상품 설명(제목·리드·포함목록)만 퍼널별로 갈라진다. 기본값 = 현행 /minds 카피.
   const copy = funnel.checkoutCopy;
 
   const { handleKakao, handleNpay, isSubmitting } = useMindsRelationshipCheckout(funnel);
 
-  // 모달이 열릴 때 로그인 상태를 확인한다. 비로그인이면 결제 대신 로그인 관문을 먼저 보여준다.
-  // ("무료 리포트 후 결제 직전 로그인" 정책 — 로그인 한 번이면 결제까지 추가 로그인 없음.)
+  // 결제는 비로그인으로 진행한다(로그인 강제 없음). 다만 로그인 상태라면 저장된 전화번호를
+  // 미리 채워 재입력 부담을 줄인다. 로그인 여부로 결제 흐름을 막지는 않는다.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     void (async () => {
-      // "checking" 리셋도 async 콜백 안에서 — effect 동기 본문에서 setState 하지 않는다.
-      setAuthState("checking");
       try {
         const supabase = createClient();
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (!cancelled) setAuthState(user ? "authed" : "anon");
-        // 로그인 상태면 저장된 전화번호를 미리 채워 재입력 부담을 줄인다.
         if (user) {
           const { data: prof } = await supabase
             .from("profiles")
@@ -73,7 +61,7 @@ export function MindsCheckoutModal({
           if (!cancelled && prof?.phone) setPhone(prof.phone);
         }
       } catch {
-        if (!cancelled) setAuthState("anon");
+        /* 로그인 확인 실패는 무시 — 비로그인 결제로 진행한다. */
       }
     })();
     return () => {
@@ -85,10 +73,9 @@ export function MindsCheckoutModal({
 
   const sdkPending = !!NICEPAY_CLIENT_ID && !sdkLoaded;
 
-  // 결제 수단별 버튼이 공유하는 진입 — 번호 검증 후 추적 이벤트를 쏘고 결제를 시작한다.
-  // phone 은 결제완료 알림톡 수신번호로 결제 훅에 함께 넘긴다(필수).
-  // 로그인 전이면 결제를 바로 시작하지 않고, '결제 의사'를 기억한 뒤 로그인 관문을 연다.
-  // (상품·가격·결제버튼을 먼저 보여주고, 결제를 누르는 순간에만 로그인 — 이탈 방지.)
+  // 결제 수단별 버튼이 공유하는 진입 — 번호 검증 후 추적 이벤트를 쏘고 바로 결제를 시작한다.
+  // phone 은 결제완료 알림톡 수신번호로 결제 훅에 함께 넘긴다(필수 — 비로그인 결제의
+  // 유일한 완료 안내 수단이라 반드시 받는다). 로그인은 강제하지 않는다.
   const payWith = (run: (phone: string) => void) => {
     if (!isValidKrMobile(phone)) {
       alert("알림톡을 받을 휴대폰 번호를 정확히 입력해주세요. (예: 010-1234-5678)");
@@ -103,22 +90,7 @@ export function MindsCheckoutModal({
       value: funnel.price,
       currency: "KRW",
     });
-    if (authState !== "authed") {
-      pendingRunRef.current = run;
-      setGateOpen(true);
-      return;
-    }
     run(phone);
-  };
-
-  // 로그인/가입 성공 직후 호출 — 관문을 닫고, 눌러 뒀던 결제를 그대로 이어간다.
-  // (이메일 로그인은 그 자리에서 이어지고, 카카오는 리다이렉트 복귀 후 결제버튼을 다시 누른다.)
-  const resumeAfterAuth = () => {
-    setAuthState("authed");
-    setGateOpen(false);
-    const run = pendingRunRef.current;
-    pendingRunRef.current = null;
-    if (run) run(phone);
   };
   const payDisabled = isSubmitting || sdkPending;
   // 진행/로딩 중이면 모든 버튼이 같은 상태 문구를 보인다.
@@ -175,20 +147,7 @@ export function MindsCheckoutModal({
           </button>
         </div>
 
-        {authState === "checking" && (
-          <div style={{ padding: "44px 0", textAlign: "center", fontFamily: M.font, fontSize: 14, color: M.mute }}>
-            불러오는 중…
-          </div>
-        )}
-
-        {/* 결제 버튼을 누른 뒤에만 뜨는 로그인 관문. 성공하면 눌러 뒀던 결제로 곧장 이어진다. */}
-        {authState !== "checking" && gateOpen && authState !== "authed" && (
-          <MindsAuthGate onAuthed={resumeAfterAuth} funnel={funnel} />
-        )}
-
-        {/* 상품·가격·결제버튼 — 비로그인도 먼저 본다(로그인은 결제 클릭 시점으로 미룸). */}
-        {authState !== "checking" && !(gateOpen && authState !== "authed") && (
-        <>
+        {/* 상품·가격·결제버튼 — 로그인 없이 바로 결제한다(로그인 관문 제거). */}
         <h2 style={{ ...dispStyle, fontSize: 23 }}>{copy.title}</h2>
         <p style={{ ...leadStyle, fontSize: 14, marginTop: 12 }}>{copy.lead}</p>
 
@@ -323,8 +282,6 @@ export function MindsCheckoutModal({
             <strong style={{ fontWeight: 800 }}>결제 후에는 환불이 어려운</strong> 점 꼭 확인 후 진행해 주세요.
           </p>
         </div>
-        </>
-        )}
       </div>
     </div>
   );

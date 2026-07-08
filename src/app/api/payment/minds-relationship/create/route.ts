@@ -11,24 +11,24 @@ import {
 } from "@/lib/minds/relationship-constants";
 
 /**
- * POST /api/payment/minds-relationship/create  (로그인 필요)
+ * POST /api/payment/minds-relationship/create  (로그인 선택)
  *
- * 무료 /minds 테스트를 거친 leadId 로, "다섯 배역 + 관계 해설" 유료 리포트(₩9,900)의
+ * 무료 테스트를 거친 leadId 로, 유료 리포트(minds ₩9,900 / inner-child ₩19,900)의
  * 결제 레코드(pending)를 만들고 NicePay 에 넘길 order_id 를 반환한다.
  *
- * 결제는 반드시 로그인된 계정에 묶는다("무료 리포트 후 결제 직전 로그인" 정책):
- *   · 비로그인이면 401(needs_login) → 클라이언트가 로그인 관문을 띄운다.
- *   · 리드가 아직 주인이 없으면 이 계정에 바인딩하고, 다른 계정 소유면 거부(탈취 방지).
- *   · 결제 레코드(purchase)에도 user_id 를 박아 둔다 → 기기 무관 "내 유료 리포트" 조회.
+ * 로그인은 강제하지 않는다(마찰 최소화 — 익명으로 무료 테스트를 한 사용자가 바로 결제):
+ *   · 비로그인이면 user_id=NULL 로 익명 결제. 리포트는 링크(+알림톡)로 조회한다.
+ *   · 로그인 상태면 리드/결제를 계정에 묶는다(다른 계정 소유 리드면 거부 — 탈취 방지).
+ *   · 익명 결제 건은 나중에 로그인 시 /api/minds/lead/claim 이 계정으로 흡수한다.
  *
  * minds_leads(RLS admin-only)에는 admin 클라이언트로 접근한다. 금액은 서버 상수로
  * 고정해 위변조를 막는다(클라이언트가 보낸 금액은 신뢰하지 않음).
  *
- * Body: { leadId: string }
+ * Body: { leadId: string, phone?: string, product?: "relationship" | "inner_child" }
  * Resp:
  *   { success: true, order_id, amount, purchase_id }   — pending 생성됨, 결제창 진행
  *   { already_purchased: true, purchase_id }            — 이미 결제 완료된 리드(리포트로)
- *   { error, needs_login? }                             — 실패(로그인 필요 시 needs_login)
+ *   { error }                                            — 실패
  */
 export async function POST(request: NextRequest) {
   const limited = checkRateLimit(request, RATE_LIMITS.general);
@@ -50,17 +50,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 로그인 필수 — 신원은 서버 세션에서 확정(클라이언트 값 불신).
+    // 로그인은 선택 — 있으면 신원을 서버 세션에서 확정해 계정에 연결하고, 없으면
+    // 비로그인(익명) 결제로 진행한다. 익명 결제는 리포트를 링크(+알림톡)로 조회한다.
+    // (마찰 최소화: 무료 테스트를 익명으로 한 사용자가 로그인 없이 바로 결제 가능.)
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "로그인이 필요해요.", needs_login: true },
-        { status: 401 }
-      );
-    }
 
     const admin = createAdminClient();
 
@@ -92,19 +88,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 소유권 — 리드가 다른 계정 소유면 거부, 비어 있으면 이 계정에 바인딩(claim).
-    if (lead.user_id && lead.user_id !== user.id) {
-      return NextResponse.json(
-        { error: "이미 다른 계정에 연결된 테스트 기록이에요." },
-        { status: 403 }
-      );
-    }
-    if (!lead.user_id) {
-      await admin
-        .from("minds_leads")
-        .update({ user_id: user.id })
-        .eq("id", leadId)
-        .is("user_id", null); // 경합 방지 — 아직 비어 있을 때만.
+    // 소유권 — 로그인 상태일 때만 검사/바인딩한다(비로그인이면 익명 결제라 skip).
+    // 리드가 다른 계정 소유면 거부(탈취 방지), 비어 있으면 이 계정에 바인딩(claim).
+    if (user) {
+      if (lead.user_id && lead.user_id !== user.id) {
+        return NextResponse.json(
+          { error: "이미 다른 계정에 연결된 테스트 기록이에요." },
+          { status: 403 }
+        );
+      }
+      if (!lead.user_id) {
+        await admin
+          .from("minds_leads")
+          .update({ user_id: user.id })
+          .eq("id", leadId)
+          .is("user_id", null); // 경합 방지 — 아직 비어 있을 때만.
+      }
     }
 
     // 멱등성 — 이미 결제 완료된 리드면 새 결제를 막고 리포트로 보낸다(1인 1회 정책).
@@ -136,7 +135,7 @@ export async function POST(request: NextRequest) {
       .from("minds_relationship_purchases")
       .insert({
         lead_id: leadId,
-        user_id: user.id,
+        user_id: user?.id ?? null,
         amount,
         order_id: orderId,
         status: "pending",
