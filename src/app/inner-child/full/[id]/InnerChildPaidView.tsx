@@ -18,7 +18,7 @@ import { KAKAO_CHANNEL_URL } from "@/app/programs/counseling/content";
 import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
 import { READ_BEFORE, guardianDefinitionBlock, reparentingSteps } from "@/lib/minds/inner-child/fixed-texts";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
-import type { PaidReportGenerated, TypeCard } from "@/lib/minds/inner-child/report-types";
+import type { PaidReportGenerated, ReparentingPlan, TypeCard } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
 /* ─── 잉크 오렌지 토큰 (InnerChildFreeReport 와 동일) ─── */
@@ -508,11 +508,11 @@ function ReportBody({ report, score }: { report: PaidReportGenerated; score: Sco
     node: <CoreNeedCard bridge={report.core_need_bridge} coreNeed={primaryCard?.core_need ?? null} />,
   });
 
-  // 6. 지금의 당신이 줄 수 있는 것 (고정 3단계 + 생성 closing + 상담 CTA)
+  // 6. 지금의 당신이 줄 수 있는 것 (SCT 기반 생성 실행계획 + 생성 closing + 상담 CTA)
   cards.push({
     key: "reparenting",
     kicker: "지금의 당신이 줄 수 있는 것",
-    node: <ReparentingCard card={primaryCard} closing={report.closing} />,
+    node: <ReparentingCard reparenting={report.reparenting} card={primaryCard} closing={report.closing} />,
   });
 
   return (
@@ -677,12 +677,31 @@ function CoreNeedCard({ bridge, coreNeed }: { bridge: string; coreNeed: string |
 }
 
 /* ─── 섹션 6 ─── */
-function ReparentingCard({ card, closing }: { card: TypeCard | null; closing: string }) {
-  const steps = card ? reparentingSteps(card) : [];
+function ReparentingCard({
+  reparenting,
+  card,
+  closing,
+}: {
+  reparenting: ReparentingPlan | null;
+  card: TypeCard | null;
+  closing: string;
+}) {
+  // 본체는 SCT 기반 생성 실행계획. 혹시 비면(검증을 통과 못 한 구버전 등) 고정 3단계로 방어.
+  const steps =
+    reparenting?.steps?.length
+      ? reparenting.steps.map((s, i) => ({ step: String(i + 1), title: s.title, body: s.body }))
+      : card
+        ? reparentingSteps(card)
+        : [];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <Panel style={{ padding: "24px 22px" }}>
         <SecTitle n="06">지금의 당신이 줄 수 있는 것</SecTitle>
+        {reparenting?.scene ? (
+          <div style={{ marginTop: 14 }}>
+            <Prose text={reparenting.scene} style={{ color: INK.t82 }} />
+          </div>
+        ) : null}
         {steps.length ? (
           <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 16 }}>
             {steps.map((s) => (

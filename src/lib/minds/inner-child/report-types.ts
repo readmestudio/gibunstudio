@@ -43,12 +43,28 @@ export interface FreeReportGenerated {
   relation_pattern: string; // 관계에서의 패턴(250~300자)
 }
 
-/** 유료 리포트 LLM 생성 구간(5필드). HANDOFF 6-4. */
+/** 유료 6번 '지금의 당신이 줄 수 있는 것' — 한 단계(제목 + 본문). */
+export interface ReparentingStep {
+  title: string; // 예: "그 순간을 알아차리는 신호"
+  body: string; // SCT 기반 구체 지시(추상 기법 설명 아님)
+}
+
+/**
+ * 유료 6번 재양육 실행계획 — 고정 3단계를 대체하는 LLM 생성 구간.
+ * 그 사람의 SCT 트리거·도피행동을 인용해 '다음 한 주에 실행할 한 장면'으로 좁힌다.
+ */
+export interface ReparentingPlan {
+  scene: string; // 도입: sct.regression_trigger 원문 인용 — "당신은 「…」고 썼습니다. 다음에 그 순간이 오면—"
+  steps: ReparentingStep[]; // 2~3개: 알아차림 신호 / if-then 실행 / 물리적 앵커
+}
+
+/** 유료 리포트 LLM 생성 구간(6필드). HANDOFF 6-4 + 재양육 개인화. */
 export interface PaidReportGenerated {
   loop_narrative: string; // 같은 상처가 반복되는 구조(500~700자)
   second_child_relation: string; // 두 번째 아이의 신호(300~400자)
   guardian_anatomy: string; // 방어 시스템: 지킴이(400~500자)
   core_need_bridge: string; // 정말 원했던 것 도입부(150~200자)
+  reparenting: ReparentingPlan; // 지금의 당신이 줄 수 있는 것(SCT 기반 실행계획)
   closing: string; // 마무리(200~250자)
 }
 

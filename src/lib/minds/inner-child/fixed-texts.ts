@@ -47,7 +47,10 @@ export function lockSection(card: TypeCard): string {
 
 /**
  * 유료 섹션 6 — 셀프 재양육 3단계(고정). 방향: 알아차리기 → 멈추기 → 한 문장 건네기.
- * (HANDOFF 10-5 미결정 항목 초안. 카드의 reparenting_line 을 3단계 끝에 붙인다.)
+ *
+ * ⚠️ 폴백 전용. 본래 이게 본체였으나 "16유형 전원 동일 골격 → 형식적"이라는 피드백에 따라,
+ * 이제 유료 리포트는 SCT 트리거·도피행동을 인용한 개인화 실행계획(PaidReportGenerated.reparenting)을
+ * 생성해 렌더한다. 이 고정 3단계는 생성 실패 등으로 reparenting 이 비었을 때만 방어적으로 쓰인다.
  */
 export function reparentingSteps(card: TypeCard): { step: string; title: string; body: string }[] {
   return [
