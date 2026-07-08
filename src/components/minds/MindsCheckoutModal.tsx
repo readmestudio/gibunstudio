@@ -9,7 +9,7 @@
  * 결제 완료 시 /minds/relationship/[id] 리포트 페이지로 이동한다(return 라우트가 처리).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { createClient } from "@/lib/supabase/client";
@@ -39,6 +39,10 @@ export function MindsCheckoutModal({
   const [authState, setAuthState] = useState<AuthState>("checking");
   // 결제완료 알림톡 수신번호 — profiles.phone 이 있으면 프리필하고, 사용자가 수정 가능.
   const [phone, setPhone] = useState("");
+  // 로그인 관문을 "결제 버튼을 누른 순간"에만 연다(상품·가격은 비로그인도 먼저 본다).
+  // gateOpen=true 면 관문을 띄우고, 로그인 성공 즉시 기억해 둔 결제를 이어간다.
+  const [gateOpen, setGateOpen] = useState(false);
+  const pendingRunRef = useRef<((phone: string) => void) | null>(null);
 
   // 상품 설명(제목·리드·포함목록)만 퍼널별로 갈라진다. 기본값 = 현행 /minds 카피.
   const copy = funnel.checkoutCopy;
@@ -83,6 +87,8 @@ export function MindsCheckoutModal({
 
   // 결제 수단별 버튼이 공유하는 진입 — 번호 검증 후 추적 이벤트를 쏘고 결제를 시작한다.
   // phone 은 결제완료 알림톡 수신번호로 결제 훅에 함께 넘긴다(필수).
+  // 로그인 전이면 결제를 바로 시작하지 않고, '결제 의사'를 기억한 뒤 로그인 관문을 연다.
+  // (상품·가격·결제버튼을 먼저 보여주고, 결제를 누르는 순간에만 로그인 — 이탈 방지.)
   const payWith = (run: (phone: string) => void) => {
     if (!isValidKrMobile(phone)) {
       alert("알림톡을 받을 휴대폰 번호를 정확히 입력해주세요. (예: 010-1234-5678)");
@@ -97,7 +103,22 @@ export function MindsCheckoutModal({
       value: funnel.price,
       currency: "KRW",
     });
+    if (authState !== "authed") {
+      pendingRunRef.current = run;
+      setGateOpen(true);
+      return;
+    }
     run(phone);
+  };
+
+  // 로그인/가입 성공 직후 호출 — 관문을 닫고, 눌러 뒀던 결제를 그대로 이어간다.
+  // (이메일 로그인은 그 자리에서 이어지고, 카카오는 리다이렉트 복귀 후 결제버튼을 다시 누른다.)
+  const resumeAfterAuth = () => {
+    setAuthState("authed");
+    setGateOpen(false);
+    const run = pendingRunRef.current;
+    pendingRunRef.current = null;
+    if (run) run(phone);
   };
   const payDisabled = isSubmitting || sdkPending;
   // 진행/로딩 중이면 모든 버튼이 같은 상태 문구를 보인다.
@@ -160,11 +181,13 @@ export function MindsCheckoutModal({
           </div>
         )}
 
-        {authState === "anon" && (
-          <MindsAuthGate onAuthed={() => setAuthState("authed")} funnel={funnel} />
+        {/* 결제 버튼을 누른 뒤에만 뜨는 로그인 관문. 성공하면 눌러 뒀던 결제로 곧장 이어진다. */}
+        {authState !== "checking" && gateOpen && authState !== "authed" && (
+          <MindsAuthGate onAuthed={resumeAfterAuth} funnel={funnel} />
         )}
 
-        {authState === "authed" && (
+        {/* 상품·가격·결제버튼 — 비로그인도 먼저 본다(로그인은 결제 클릭 시점으로 미룸). */}
+        {authState !== "checking" && !(gateOpen && authState !== "authed") && (
         <>
         <h2 style={{ ...dispStyle, fontSize: 23 }}>{copy.title}</h2>
         <p style={{ ...leadStyle, fontSize: 14, marginTop: 12 }}>{copy.lead}</p>

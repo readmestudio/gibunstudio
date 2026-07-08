@@ -14,7 +14,7 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
-import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
+import { INNER_CHILD_PRICE, INNER_CHILD_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
 import { MindsCheckoutModal } from "@/components/minds/MindsCheckoutModal";
 import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
 import { trackMetaEvent } from "@/lib/meta-pixel";
@@ -65,7 +65,7 @@ export function InnerChildFreeReport({
   const openCheckout = () => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "inner_child_full",
-      value: MINDS_RELATIONSHIP_PRICE,
+      value: INNER_CHILD_PRICE,
       currency: "KRW",
     });
     trackMindsFunnel("checkout_click", INNER_CHILD_FUNNEL);
@@ -697,9 +697,9 @@ function PaywallCard({ card, score }: { card: TypeCard; score: ScoreResult }) {
 
         {/* 가격 */}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 11, marginBottom: 16 }}>
-          <span style={{ fontFamily: INK.display, fontSize: 15, color: INK.t4, textDecoration: "line-through" }}>{won(MINDS_RELATIONSHIP_ORIGINAL_PRICE)}</span>
+          <span style={{ fontFamily: INK.display, fontSize: 15, color: INK.t4, textDecoration: "line-through" }}>{won(INNER_CHILD_ORIGINAL_PRICE)}</span>
           <span style={{ fontFamily: INK.display, fontSize: 36, fontWeight: 800, letterSpacing: "-0.035em", fontVariantNumeric: "tabular-nums", background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
-            {won(MINDS_RELATIONSHIP_PRICE)}
+            {won(INNER_CHILD_PRICE)}
           </span>
         </div>
 
