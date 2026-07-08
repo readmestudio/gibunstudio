@@ -85,6 +85,8 @@ interface PaymentRow {
   paymentKey: string | null;
   paidAt: string | null;
   desc: string;
+  // 전체 목록에서 결제자를 식별하기 위한 이메일 (검색 결과에서는 검색한 이메일).
+  email: string | null;
 }
 
 function fmtDate(iso: string | null): string {
@@ -174,6 +176,7 @@ async function lookupPayments(
           paymentKey: (r.payment_key as string) ?? null,
           paidAt: (r.paid_at as string) ?? null,
           desc: src.describe(r),
+          email: target,
         });
       }
     };
@@ -195,15 +198,190 @@ async function lookupPayments(
   }
 
   // 결제완료 → 나머지, 그 안에서 최신 결제일 순으로.
-  all.sort((a, b) => {
-    if (a.status !== b.status) {
-      if (a.status === "confirmed") return -1;
-      if (b.status === "confirmed") return 1;
-    }
-    return (b.paidAt ?? "").localeCompare(a.paidAt ?? "");
-  });
+  all.sort(sortRows);
 
   return { rows: all, userId, leadCount: leadIds.length };
+}
+
+/**
+ * 검색 없이 4개 테이블의 모든 결제 건을 모아온다 (전체 결제자 표).
+ * - 각 행의 user_id / lead_id 를 모아 auth.users · minds_leads 에서
+ *   이메일을 한 번에 해석해 붙인다.
+ */
+async function loadAllPayments(): Promise<PaymentRow[]> {
+  const admin = createAdminClient();
+
+  const rows: PaymentRow[] = [];
+  const userIds = new Set<string>();
+  const leadIds = new Set<string>();
+  // 이메일 해석 전, 각 행이 참조하는 user/lead id 를 잠시 기억해 둔다.
+  const refs: { row: PaymentRow; userId: string | null; leadId: string | null }[] =
+    [];
+
+  for (const src of SOURCES) {
+    const cols = [
+      ...COMMON_COLS,
+      ...src.extraCols,
+      ...(src.userCol ? [src.userCol] : []),
+      ...(src.leadCol ? [src.leadCol] : []),
+    ].join(", ");
+
+    const { data } = await admin.from(src.table).select(cols);
+    for (const r of (data ?? []) as unknown as Record<string, unknown>[]) {
+      const userId = src.userCol ? ((r[src.userCol] as string) ?? null) : null;
+      const leadId = src.leadCol ? ((r[src.leadCol] as string) ?? null) : null;
+      if (userId) userIds.add(userId);
+      if (leadId) leadIds.add(leadId);
+
+      const row: PaymentRow = {
+        source: src,
+        id: r.id as string,
+        orderId: (r.order_id as string) ?? null,
+        amount: (r.amount as number) ?? 0,
+        status: (r.status as string) ?? "unknown",
+        paymentKey: (r.payment_key as string) ?? null,
+        paidAt: (r.paid_at as string) ?? null,
+        desc: src.describe(r),
+        email: null,
+      };
+      refs.push({ row, userId, leadId });
+    }
+  }
+
+  // user_id → 이메일 (개별 조회, 결제 건 수만큼이라 소량)
+  const userEmail = new Map<string, string>();
+  await Promise.all(
+    [...userIds].map(async (id) => {
+      const { data } = await admin.auth.admin.getUserById(id);
+      if (data?.user?.email) userEmail.set(id, data.user.email);
+    })
+  );
+
+  // lead_id → 이메일 (한 번에 IN 조회)
+  const leadEmail = new Map<string, string>();
+  if (leadIds.size) {
+    const { data } = await admin
+      .from("minds_leads")
+      .select("id, email")
+      .in("id", [...leadIds]);
+    for (const l of (data ?? []) as { id: string; email: string | null }[]) {
+      if (l.email) leadEmail.set(l.id, l.email);
+    }
+  }
+
+  for (const { row, userId, leadId } of refs) {
+    row.email =
+      (userId && userEmail.get(userId)) ||
+      (leadId && leadEmail.get(leadId)) ||
+      null;
+    rows.push(row);
+  }
+
+  rows.sort(sortRows);
+  return rows;
+}
+
+// 결제완료 먼저 → 그 안에서 최신 결제일 순.
+function sortRows(a: PaymentRow, b: PaymentRow): number {
+  if (a.status !== b.status) {
+    if (a.status === "confirmed") return -1;
+    if (b.status === "confirmed") return 1;
+  }
+  return (b.paidAt ?? "").localeCompare(a.paidAt ?? "");
+}
+
+// 결제 내역 표 — 검색 결과와 전체 목록이 같은 렌더를 공유한다.
+// showEmail=true 일 때만 결제자(이메일) 컬럼을 노출한다.
+function PaymentsTable({
+  rows,
+  showEmail,
+}: {
+  rows: PaymentRow[];
+  showEmail: boolean;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-2xl border-2 border-[var(--foreground)]/10 bg-white">
+      <table className={`w-full ${showEmail ? "min-w-[860px]" : "min-w-[720px]"} text-sm`}>
+        <thead>
+          <tr className="border-b border-[var(--foreground)]/10 text-left text-[11px] uppercase tracking-wider text-[var(--foreground)]/40">
+            <th className="px-4 py-3 font-semibold">결제일</th>
+            {showEmail && <th className="px-4 py-3 font-semibold">결제자</th>}
+            <th className="px-4 py-3 font-semibold">상품</th>
+            <th className="px-4 py-3 font-semibold">금액</th>
+            <th className="px-4 py-3 font-semibold">상태</th>
+            <th className="px-4 py-3 font-semibold">주문번호</th>
+            <th className="px-4 py-3 text-right font-semibold">환불</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr
+              key={`${r.source.table}-${r.id}`}
+              className="border-b border-[var(--foreground)]/5 align-middle last:border-0"
+            >
+              <td className="whitespace-nowrap px-4 py-3 tabular-nums text-[var(--foreground)]/60">
+                {fmtDate(r.paidAt)}
+              </td>
+              {showEmail && (
+                <td className="whitespace-nowrap px-4 py-3">
+                  {r.email ? (
+                    <Link
+                      href={`/admin/payments?email=${encodeURIComponent(r.email)}`}
+                      className="text-[var(--foreground)] underline decoration-[var(--foreground)]/20 underline-offset-2 hover:decoration-[var(--foreground)]"
+                    >
+                      {r.email}
+                    </Link>
+                  ) : (
+                    <span className="text-[var(--foreground)]/30">
+                      비로그인/미상
+                    </span>
+                  )}
+                </td>
+              )}
+              <td className="px-4 py-3">
+                <span className="font-semibold text-[var(--foreground)]">
+                  {r.source.label}
+                </span>
+                <span className="block text-xs text-[var(--foreground)]/50">
+                  {r.desc}
+                </span>
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums text-[var(--foreground)]">
+                ₩{r.amount.toLocaleString()}
+              </td>
+              <td className="whitespace-nowrap px-4 py-3">
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                    STATUS_STYLE[r.status] ??
+                    "border-[var(--foreground)]/20 text-[var(--foreground)]/50"
+                  }`}
+                >
+                  {STATUS_LABEL[r.status] ?? r.status}
+                </span>
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-[var(--foreground)]/50">
+                {r.orderId ?? "–"}
+              </td>
+              <td className="px-4 py-3 text-right">
+                {r.status === "confirmed" && r.paymentKey ? (
+                  <RefundButton
+                    type={r.source.type}
+                    paymentId={r.id}
+                    label={r.source.label}
+                    amount={r.amount}
+                  />
+                ) : (
+                  <span className="text-xs text-[var(--foreground)]/30">
+                    {r.status === "refunded" ? "환불 완료" : "환불 불가"}
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export default async function AdminPaymentsPage({
@@ -216,11 +394,19 @@ export default async function AdminPaymentsPage({
   const sp = await searchParams;
   const email = (sp.email ?? "").trim();
 
-  const result = email ? await lookupPayments(email) : null;
+  // 검색 결과(있을 때)와 전체 결제자 목록을 함께 준비한다.
+  const [result, allRows] = await Promise.all([
+    email ? lookupPayments(email) : Promise.resolve(null),
+    loadAllPayments(),
+  ]);
   const rows = result?.rows ?? [];
   const confirmedTotal = rows
     .filter((r) => r.status === "confirmed")
     .reduce((s, r) => s + r.amount, 0);
+
+  // 전체 목록 요약 — 대시보드 카드의 "결제완료 합계" 와 같은 값.
+  const allConfirmed = allRows.filter((r) => r.status === "confirmed");
+  const allConfirmedTotal = allConfirmed.reduce((s, r) => s + r.amount, 0);
 
   return (
     <main className="bg-[var(--surface)] min-h-screen">
@@ -266,16 +452,18 @@ export default async function AdminPaymentsPage({
           </button>
         </form>
 
-        {/* 결과 */}
+        {/* 검색 결과 */}
         {result && (
-          <>
+          <div className="mb-12">
             {/* 요약 */}
             <div className="mb-5 flex flex-wrap gap-8 rounded-2xl border-2 border-[var(--foreground)]/10 bg-white px-6 py-4 text-sm">
               <div>
                 <p className="text-[11px] text-[var(--foreground)]/50">계정</p>
                 <p className="font-semibold text-[var(--foreground)]">
                   {result.userId ? (
-                    <span className="tabular-nums">{result.userId.slice(0, 8)}…</span>
+                    <span className="tabular-nums">
+                      {result.userId.slice(0, 8)}…
+                    </span>
                   ) : (
                     <span className="text-[var(--foreground)]/40">
                       가입 계정 없음(비로그인)
@@ -284,7 +472,9 @@ export default async function AdminPaymentsPage({
                 </p>
               </div>
               <div>
-                <p className="text-[11px] text-[var(--foreground)]/50">전체 건수</p>
+                <p className="text-[11px] text-[var(--foreground)]/50">
+                  전체 건수
+                </p>
                 <p className="text-xl font-bold tabular-nums text-[var(--foreground)]">
                   {rows.length}
                 </p>
@@ -307,80 +497,64 @@ export default async function AdminPaymentsPage({
                 {" 로 조회된 결제 내역이 없어요."}
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border-2 border-[var(--foreground)]/10 bg-white">
-                <table className="w-full min-w-[720px] text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--foreground)]/10 text-left text-[11px] uppercase tracking-wider text-[var(--foreground)]/40">
-                      <th className="px-4 py-3 font-semibold">결제일</th>
-                      <th className="px-4 py-3 font-semibold">상품</th>
-                      <th className="px-4 py-3 font-semibold">금액</th>
-                      <th className="px-4 py-3 font-semibold">상태</th>
-                      <th className="px-4 py-3 font-semibold">주문번호</th>
-                      <th className="px-4 py-3 text-right font-semibold">환불</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r) => (
-                      <tr
-                        key={`${r.source.table}-${r.id}`}
-                        className="border-b border-[var(--foreground)]/5 align-middle last:border-0"
-                      >
-                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-[var(--foreground)]/60">
-                          {fmtDate(r.paidAt)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-semibold text-[var(--foreground)]">
-                            {r.source.label}
-                          </span>
-                          <span className="block text-xs text-[var(--foreground)]/50">
-                            {r.desc}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums text-[var(--foreground)]">
-                          ₩{r.amount.toLocaleString()}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3">
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
-                              STATUS_STYLE[r.status] ??
-                              "border-[var(--foreground)]/20 text-[var(--foreground)]/50"
-                            }`}
-                          >
-                            {STATUS_LABEL[r.status] ?? r.status}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-[var(--foreground)]/50">
-                          {r.orderId ?? "–"}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {r.status === "confirmed" && r.paymentKey ? (
-                            <RefundButton
-                              type={r.source.type}
-                              paymentId={r.id}
-                              label={r.source.label}
-                              amount={r.amount}
-                            />
-                          ) : (
-                            <span className="text-xs text-[var(--foreground)]/30">
-                              {r.status === "refunded"
-                                ? "환불 완료"
-                                : "환불 불가"}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <PaymentsTable rows={rows} showEmail={false} />
             )}
 
             <p className="mt-4 text-xs text-[var(--foreground)]/40">
               ※ 미승인(pending)·무통장입금 건은 카드 취소 대상이 아니에요.
               무통장입금 환불은 수동 처리해 주세요.
             </p>
-          </>
+          </div>
         )}
+
+        {/* 전체 결제자 목록 — 검색과 무관하게 항상 노출 */}
+        <div>
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-[var(--foreground)]">
+                전체 결제자
+              </h2>
+              <p className="mt-1 text-sm text-[var(--foreground)]/60">
+                4개 결제 테이블(남편상·상담·워크북·관계 리포트)의 모든 결제
+                건이에요. 결제완료가 먼저, 그 안에서 최신순으로 보여요.
+              </p>
+            </div>
+            <div className="flex gap-8 text-sm">
+              <div>
+                <p className="text-[11px] text-[var(--foreground)]/50">
+                  전체 건수
+                </p>
+                <p className="text-xl font-bold tabular-nums text-[var(--foreground)]">
+                  {allRows.length}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] text-[var(--foreground)]/50">
+                  결제완료 합계
+                </p>
+                <p className="text-xl font-bold tabular-nums text-[var(--foreground)]">
+                  ₩{allConfirmedTotal.toLocaleString()}
+                  <span className="ml-2 text-xs font-medium text-[var(--foreground)]/40">
+                    ({allConfirmed.length}건)
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {allRows.length === 0 ? (
+            <p className="rounded-xl border-2 border-[var(--foreground)]/10 bg-white px-4 py-10 text-center text-sm text-[var(--foreground)]/50">
+              아직 결제 내역이 없어요.
+            </p>
+          ) : (
+            <PaymentsTable rows={allRows} showEmail={true} />
+          )}
+
+          <p className="mt-4 text-xs text-[var(--foreground)]/40">
+            ※ 결제자 이메일을 클릭하면 해당 유저만 조회할 수 있어요. 비로그인
+            결제(익명 리드)는 리드에 이메일이 없으면 “비로그인/미상”으로 표시돼요.
+          </p>
+        </div>
       </div>
     </main>
   );
