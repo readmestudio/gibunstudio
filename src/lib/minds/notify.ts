@@ -36,14 +36,14 @@ function funnelLabel(variant?: FunnelVariant): string {
   return variant === "inner_child" ? "/inner-child" : "/minds";
 }
 
-/** KST 타임스탬프 컨텍스트 블록(모든 알림 하단 공통). funnel 로 어느 깔때기인지 태깅. */
-function timeContext(funnel: string = "/minds") {
+/** KST 타임스탬프 컨텍스트 블록(모든 알림 하단 공통). tag 로 어느 맥락인지 꼬리표. */
+function timeContext(tag: string = "/minds 깔때기") {
   return {
     type: "context",
     elements: [
       {
         type: "mrkdwn",
-        text: `📅 ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST) · ${funnel} 깔때기`,
+        text: `📅 ${new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (KST) · ${tag}`,
       },
     ],
   };
@@ -112,7 +112,7 @@ export async function notifyMindsTestStart(p: {
           text: `🚀 *테스트 시작* — "3분 무료 테스트" 버튼 클릭\n*${leadLabel(lead)}*`,
         },
       },
-      timeContext(fn),
+      timeContext(`${fn} 깔때기`),
     ],
   });
 }
@@ -158,7 +158,7 @@ export async function notifyMindsReachedPaywall(p: {
           text: `🎬 *${stage}* — 페이월까지 봤어요\n*${leadLabel(lead)}*`,
         },
       },
-      timeContext(fn),
+      timeContext(`${fn} 깔때기`),
     ],
   });
 }
@@ -183,7 +183,7 @@ export async function notifyMindsCheckoutClick(p: {
           text: `🛒 *"${cta}" 클릭* — 결제 모달 오픈\n*${leadLabel(lead)}*`,
         },
       },
-      timeContext(fn),
+      timeContext(`${fn} 깔때기`),
     ],
   });
 }
@@ -318,7 +318,56 @@ export async function notifyMindsRelationshipPurchase(p: {
           text: `✅ *${product} 결제 완료!* ${emoji}\n*${won(p.amount)}* · 주문 \`${p.orderId}\`${lead ? `\n🎬 ${leadLabel(lead)}` : ""}\n🔗 리포트 링크: ${p.reportUrl}\n_(유저 문의 시 위 링크 전달 — 따로 발송하지 않음)_`,
         },
       },
-      timeContext(fn),
+      timeContext(`${fn} 깔때기`),
+    ],
+  });
+}
+
+/** 로그인 사용자 id → 이메일(auth). 실패/비로그인이면 null. 알림에 "누구인지" 채우는 용도. */
+async function lookupUserEmail(
+  userId: string | null | undefined
+): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.auth.admin.getUserById(userId);
+    return data.user?.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 범용 결제 완료 알림 — "홈 어디서든 결제가 일어나면 슬랙" 을 위한 catch-all.
+ *
+ * 전용 알림이 이미 있는 결제(워크북 notifyMindsPurchaseComplete · 리포트
+ * notifyMindsRelationshipPurchase)는 그쪽을 그대로 쓰고, 그 외 모든 결제 유형
+ * (상담·마음정리 리포트·마음정리 이용권·남편상 분석·통합결제 등)에 이 함수를 붙여
+ * 어떤 결제든 최소 한 번은 운영자 채널에 뜨도록 한다. 같은 봇·같은 채널.
+ *
+ * userId 를 주면 auth 에서 이메일을 조회해 "누구인지"를 채운다(비로그인이면 생략).
+ * detail 은 상품 상세(예: 상담 유형·장바구니 품목)를 한 줄로 덧붙이는 선택 항목.
+ */
+export async function notifyPaymentComplete(p: {
+  product: string;
+  amount: number;
+  orderId: string;
+  userId?: string | null;
+  detail?: string;
+}): Promise<void> {
+  const email = await lookupUserEmail(p.userId);
+  await sendSlackMessage({
+    channel: SLACK_OPEN_NOTIFY_CHANNEL,
+    text: `✅ 결제 완료 — ${p.product} ${won(p.amount)}${email ? ` · ${email}` : ""}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `✅ *결제 완료 — ${p.product}*\n*${won(p.amount)}* · 주문 \`${p.orderId}\`${email ? `\n👤 ${email}` : ""}${p.detail ? `\n${p.detail}` : ""}`,
+        },
+      },
+      timeContext("결제 알림"),
     ],
   });
 }

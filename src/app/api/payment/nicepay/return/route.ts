@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   notifyMindsPurchaseComplete,
   notifyMindsRelationshipPurchase,
+  notifyPaymentComplete,
 } from "@/lib/minds/notify";
 import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { approveNicepayPayment } from "@/lib/nicepay/approve";
@@ -141,6 +142,7 @@ export async function POST(request: NextRequest) {
       baseUrl,
       reportBase: "/inner-child/full",
       failBase: "/inner-child",
+      variant: "inner_child",
     });
   }
 
@@ -188,6 +190,8 @@ async function handleMindsRelationshipPayment(params: {
   reportBase?: string;
   // 실패 리다이렉트 베이스 — MR- 는 /minds, IC- 는 /inner-child.
   failBase?: string;
+  // 슬랙 결제완료 알림 라벨용 퍼널 변형 — MR- 는 기본 minds, IC- 는 inner_child.
+  variant?: "minds" | "inner_child";
 }) {
   const {
     tid,
@@ -196,6 +200,7 @@ async function handleMindsRelationshipPayment(params: {
     baseUrl,
     reportBase = "/minds/relationship",
     failBase = "/minds",
+    variant = "minds",
   } = params;
   const admin = createAdminClient();
   // [임시 진단] 운영 로그 접근이 어려워, 어느 단계에서 왜 실패했는지 URL error 파라미터로
@@ -272,6 +277,7 @@ async function handleMindsRelationshipPayment(params: {
       orderId,
       mindsLeadId: purchase.lead_id ?? null,
       reportUrl,
+      variant,
     })
   );
 
@@ -370,6 +376,16 @@ async function handleMindSpillReportPayment(
     return seeOther(failUrl);
   }
 
+  // 운영자 슬랙 알림 — 결제 완료(fire-and-forget).
+  after(() =>
+    notifyPaymentComplete({
+      product: "마음 정리 리포트",
+      amount,
+      orderId,
+      userId: purchase.user_id,
+    })
+  );
+
   return seeOther(reportUrl);
 }
 
@@ -443,6 +459,16 @@ async function handleMindSpillDailySubscription(
     console.error("Mind Spill 데일리 구독 활성화 실패:", { updateError, orderId });
     return seeOther(failUrl);
   }
+
+  // 운영자 슬랙 알림 — 이용권 결제 완료(fire-and-forget).
+  after(() =>
+    notifyPaymentComplete({
+      product: `마음 정리 데일리 이용권 (${MIND_SPILL_DAILY_SUB_DAYS}일)`,
+      amount,
+      orderId,
+      userId: sub.user_id,
+    })
+  );
 
   return seeOther(successUrl);
 }
@@ -628,8 +654,9 @@ async function handleCounselingPayment(
 
   // 결제 성공 → 원장 기록. 로그인 사용자면 user_id 도 남긴다(비로그인은 NULL).
   // 기록 실패가 캡처된 결제의 완료 화면을 막지 않도록 try/catch 로 감싼다.
+  // userId 는 슬랙 알림에서도 쓰므로 try 밖에 선언한다.
+  let userId: string | null = null;
   try {
-    let userId: string | null = null;
     try {
       const {
         data: { user },
@@ -662,6 +689,16 @@ async function handleCounselingPayment(
   } catch (e) {
     console.error("상담 결제 기록 저장 예외:", { orderId, error: e });
   }
+
+  // 운영자 슬랙 알림 — 상담 결제 완료(fire-and-forget). 상담 유형명을 상품명으로.
+  after(() =>
+    notifyPaymentComplete({
+      product: `상담 예약 · ${ct.title}`,
+      amount,
+      orderId,
+      userId,
+    })
+  );
 
   // order 를 실어 보내 완료 페이지에서 사전 설문 제출 여부를 분기한다.
   return seeOther(
@@ -743,6 +780,15 @@ async function handleHusbandMatchPayment(
       `${baseUrl}/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent("결제 처리 중 오류가 발생했습니다")}`
     );
   }
+
+  // 운영자 슬랙 알림 — 남편상 분석 결제 완료(fire-and-forget).
+  after(() =>
+    notifyPaymentComplete({
+      product: "남편상 분석",
+      amount,
+      orderId,
+    })
+  );
 
   return seeOther(
     `${baseUrl}/husband-match/payment/complete/${payment.id}`
@@ -835,6 +881,18 @@ async function handleCartOrder(
   // 각 상품 카테고리별 소유권 부여 (admin client 사용)
   const admin = createAdminClient();
   const items = (cartOrder.items as CartItemSnapshot[]) ?? [];
+
+  // 운영자 슬랙 알림 — 통합결제 완료(fire-and-forget). 담긴 품목명을 상세로.
+  const itemNames = items.map((it) => it.name).filter(Boolean).join(", ");
+  after(() =>
+    notifyPaymentComplete({
+      product: "통합결제(장바구니)",
+      amount,
+      orderId,
+      userId: cartOrder.user_id,
+      detail: itemNames ? `🛒 ${itemNames}` : undefined,
+    })
+  );
 
   for (const item of items) {
     if (item.category === "workbook" && item.workshop_type) {

@@ -18,6 +18,7 @@ import { MINDS_RELATIONSHIP_PRICE, MINDS_RELATIONSHIP_ORIGINAL_PRICE } from "@/l
 import { MindsCheckoutModal } from "@/components/minds/MindsCheckoutModal";
 import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
 import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackMindsFunnel } from "@/lib/minds/track";
 import type { TypeCard, FreeReportGenerated } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
@@ -60,13 +61,14 @@ export function InnerChildFreeReport({
 }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  // 결제 모달 오픈 — InitiateCheckout 추적(퍼널 분리 content_name)을 함께 쏜다(/minds 미러).
+  // 결제 모달 오픈 — InitiateCheckout(퍼널 분리 content_name) + 운영자 슬랙 checkout_click 을 함께 쏜다(/minds 미러).
   const openCheckout = () => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "inner_child_full",
       value: MINDS_RELATIONSHIP_PRICE,
       currency: "KRW",
     });
+    trackMindsFunnel("checkout_click", INNER_CHILD_FUNNEL);
     setCheckoutOpen(true);
   };
 
@@ -614,6 +616,12 @@ function PaywallCta({ onCheckout }: { onCheckout: () => void }) {
 
 /** 마지막 장 — IFS 분석 리빌 + 유료 리포트 안내(프리미엄). */
 function PaywallCard({ card, score }: { card: TypeCard; score: ScoreResult }) {
+  // 덱은 현재 카드만 렌더하므로, 이 카드가 마운트되는 순간 = 유저가 페이월까지 도달한 순간.
+  // 세션당 1회만 발화(trackMindsFunnel 내부 dedupe) → 앞뒤로 넘겨도 슬랙엔 한 번만 뜬다.
+  useEffect(() => {
+    trackMindsFunnel("reached_paywall", INNER_CHILD_FUNNEL);
+  }, []);
+
   return (
     <div
       style={{

@@ -137,7 +137,7 @@ export function InnerChildFlow() {
           onStart={() => {
             // 광고 최적화용 — content_name 을 "inner_child" 로 분리해 /minds 신호와 섞이지 않게.
             trackMetaCustom("StartTest", { content_name: "inner_child" });
-            trackMindsFunnel("test_start");
+            trackMindsFunnel("test_start", INNER_CHILD_FUNNEL);
             void createAnonLead();
             trackMetaEvent("Lead", { content_name: "inner_child" });
             setPhase("test");
