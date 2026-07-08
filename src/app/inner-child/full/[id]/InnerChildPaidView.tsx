@@ -18,7 +18,7 @@ import { KAKAO_CHANNEL_URL } from "@/app/programs/counseling/content";
 import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
 import { READ_BEFORE, guardianDefinitionBlock, reparentingSteps } from "@/lib/minds/inner-child/fixed-texts";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
-import type { PaidReportGenerated, ReparentingPlan, TypeCard } from "@/lib/minds/inner-child/report-types";
+import type { FreeReportGenerated, PaidReportGenerated, ReparentingPlan, TypeCard } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
 /* ─── 잉크 오렌지 토큰 (InnerChildFreeReport 와 동일) ─── */
@@ -59,11 +59,15 @@ export function InnerChildPaidView({
   status,
   initialReport,
   score,
+  free,
 }: {
   purchaseId: string;
   status: string | null;
   initialReport: PaidReportGenerated | null;
   score: ScoreResult | null;
+  // 무료 리포트에서 옮겨온 "겉과 속·관계 패턴" 카드의 LLM 생성 문장(무료 때 만들어 블롭에
+  // 저장해 둔 값). 페이지가 minds_leads.parts_map 에서 읽어 넘긴다. 없으면 고정 필드만 렌더.
+  free: FreeReportGenerated | null;
 }) {
   const [report, setReport] = useState<PaidReportGenerated | null>(initialReport);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +104,7 @@ export function InnerChildPaidView({
     setAttempt((a) => a + 1);
   };
 
-  if (report) return <ReportBody report={report} score={score} />;
+  if (report) return <ReportBody report={report} score={score} free={free} />;
   if (status === null) {
     return (
       <Centered
@@ -455,14 +459,25 @@ function LogoMark() {
 
 /* ───────────────── 6섹션 본문 ───────────────── */
 
-function ReportBody({ report, score }: { report: PaidReportGenerated; score: ScoreResult | null }) {
+function ReportBody({
+  report,
+  score,
+  free,
+}: {
+  report: PaidReportGenerated;
+  score: ScoreResult | null;
+  free: FreeReportGenerated | null;
+}) {
   const primaryCard: TypeCard | null = score ? getTypeCard(score.primary_child.schema_id) : null;
   const secondSchemaId = score?.secondary_children[0]?.schema_id;
   const secondCard: TypeCard | null = secondSchemaId ? getTypeCard(secondSchemaId) : null;
 
   const cards: { key: string; kicker: string; node: ReactNode }[] = [];
+  // 섹션 번호를 데이터 순서대로 자동 부여한다(무료→유료로 카드가 이동해도 번호가 안 꼬이게).
+  let sec = 0;
+  const nextN = () => pad(++sec);
 
-  // 0. 읽기 전에
+  // 0. 읽기 전에 (번호 없음)
   cards.push({
     key: "read-before",
     kicker: "읽기 전에",
@@ -474,7 +489,28 @@ function ReportBody({ report, score }: { report: PaidReportGenerated; score: Sco
     cards.push({
       key: "structure",
       kicker: "이 아이의 전체 구조",
-      node: <StructureCard card={primaryCard} childName={score?.primary_child.child_name ?? primaryCard.child_name} />,
+      node: <StructureCard n={nextN()} card={primaryCard} childName={score?.primary_child.child_name ?? primaryCard.child_name} />,
+    });
+  }
+
+  // ── 무료 리포트에서 옮겨온 해설 카드 3종 (자주 하는 생각 · 스트레스 신호 · 겉과 속/관계 패턴) ──
+  // 전부 primaryCard(TypeCard) 고정 필드에서 렌더된다. 관계 패턴 카드만 무료 때 생성해 둔
+  // LLM 문장(free.gap/relation_pattern)을 함께 쓰되, 없어도 고정 필드로 성립한다.
+  if (primaryCard) {
+    cards.push({
+      key: "thoughts",
+      kicker: "자주 하는 생각",
+      node: <ThoughtsCard n={nextN()} card={primaryCard} />,
+    });
+    cards.push({
+      key: "stress",
+      kicker: "스트레스 신호",
+      node: <StressCard n={nextN()} card={primaryCard} />,
+    });
+    cards.push({
+      key: "gap-relation",
+      kicker: "겉과 속 · 관계 패턴",
+      node: <GapRelationCard n={nextN()} card={primaryCard} gap={free?.gap ?? null} relation={free?.relation_pattern ?? null} />,
     });
   }
 
@@ -482,14 +518,14 @@ function ReportBody({ report, score }: { report: PaidReportGenerated; score: Sco
   cards.push({
     key: "loop",
     kicker: "같은 상처가 반복되는 구조",
-    node: <LoopCard loop={report.loop_narrative} />,
+    node: <LoopCard n={nextN()} loop={report.loop_narrative} />,
   });
 
   // 3. 두 번째 아이의 신호 (고정 요약 + 생성)
   cards.push({
     key: "second-child",
     kicker: "두 번째 아이의 신호",
-    node: <SecondChildCard card={secondCard} relation={report.second_child_relation} />,
+    node: <SecondChildCard n={nextN()} card={secondCard} relation={report.second_child_relation} />,
   });
 
   // 4. 방어 시스템: 지킴이 (고정 정의 블록 + 생성)
@@ -497,7 +533,7 @@ function ReportBody({ report, score }: { report: PaidReportGenerated; score: Sco
     cards.push({
       key: "guardian",
       kicker: "방어 시스템: 지킴이",
-      node: <GuardianCard definition={guardianDefinitionBlock(score.guardian.type)} anatomy={report.guardian_anatomy} />,
+      node: <GuardianCard n={nextN()} definition={guardianDefinitionBlock(score.guardian.type)} anatomy={report.guardian_anatomy} />,
     });
   }
 
@@ -505,14 +541,14 @@ function ReportBody({ report, score }: { report: PaidReportGenerated; score: Sco
   cards.push({
     key: "core-need",
     kicker: "정말 원했던 것",
-    node: <CoreNeedCard bridge={report.core_need_bridge} coreNeed={primaryCard?.core_need ?? null} />,
+    node: <CoreNeedCard n={nextN()} bridge={report.core_need_bridge} coreNeed={primaryCard?.core_need ?? null} />,
   });
 
   // 6. 지금의 당신이 줄 수 있는 것 (SCT 기반 생성 실행계획 + 생성 closing + 상담 CTA)
   cards.push({
     key: "reparenting",
     kicker: "지금의 당신이 줄 수 있는 것",
-    node: <ReparentingCard reparenting={report.reparenting} card={primaryCard} closing={report.closing} />,
+    node: <ReparentingCard n={nextN()} reparenting={report.reparenting} card={primaryCard} closing={report.closing} />,
   });
 
   return (
@@ -559,7 +595,7 @@ function ReadBeforeCard() {
 }
 
 /* ─── 섹션 1 ─── */
-function StructureCard({ card, childName }: { card: TypeCard; childName: string }) {
+function StructureCard({ n, card, childName }: { n: string; card: TypeCard; childName: string }) {
   const domains: [string, string][] = [
     ["관계", card.domains["관계"]],
     ["일", card.domains["일"]],
@@ -567,7 +603,7 @@ function StructureCard({ card, childName }: { card: TypeCard; childName: string 
   ];
   return (
     <Panel style={{ padding: "24px 22px" }}>
-      <SecTitle n="01">이 아이의 전체 구조</SecTitle>
+      <SecTitle n={n}>이 아이의 전체 구조</SecTitle>
       <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.white, margin: "16px 0 6px" }}>{childName}</p>
       <div style={{ padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12, marginBottom: 20 }}>
         <div style={clbStyle}>이 아이가 만들어진 배경</div>
@@ -588,10 +624,10 @@ function StructureCard({ card, childName }: { card: TypeCard; childName: string 
 
 /* ─── 섹션 2 ─── */
 const LOOP_STEPS = ["촉발", "해석", "행동", "결과", "강화"];
-function LoopCard({ loop }: { loop: string }) {
+function LoopCard({ n, loop }: { n: string; loop: string }) {
   return (
     <Panel style={{ padding: "24px 22px" }}>
-      <SecTitle n="02">같은 상처가 반복되는 구조</SecTitle>
+      <SecTitle n={n}>같은 상처가 반복되는 구조</SecTitle>
       {/* 반복 루프 요약 다이어그램 — 촉발 → 해석 → 행동 → 결과 → 강화 */}
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, margin: "18px 0 20px" }}>
         {LOOP_STEPS.map((s, i) => (
@@ -623,10 +659,10 @@ function LoopCard({ loop }: { loop: string }) {
 }
 
 /* ─── 섹션 3 ─── */
-function SecondChildCard({ card, relation }: { card: TypeCard | null; relation: string }) {
+function SecondChildCard({ n, card, relation }: { n: string; card: TypeCard | null; relation: string }) {
   return (
     <Panel style={{ padding: "24px 22px" }}>
-      <SecTitle n="03">두 번째 아이의 신호</SecTitle>
+      <SecTitle n={n}>두 번째 아이의 신호</SecTitle>
       {card ? (
         <div style={{ marginTop: 16, padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
           <p style={{ fontFamily: INK.font, fontSize: 16, fontWeight: 800, color: INK.white, margin: 0 }}>{card.child_name}</p>
@@ -639,10 +675,10 @@ function SecondChildCard({ card, relation }: { card: TypeCard | null; relation: 
 }
 
 /* ─── 섹션 4 ─── */
-function GuardianCard({ definition, anatomy }: { definition: string; anatomy: string }) {
+function GuardianCard({ n, definition, anatomy }: { n: string; definition: string; anatomy: string }) {
   return (
     <Panel style={{ padding: "24px 22px" }}>
-      <SecTitle n="04">방어 시스템: 지킴이</SecTitle>
+      <SecTitle n={n}>방어 시스템: 지킴이</SecTitle>
       <div style={{ marginTop: 16, padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
         <Prose text={definition} style={{ fontSize: 14.5, color: INK.t68 }} />
       </div>
@@ -653,10 +689,10 @@ function GuardianCard({ definition, anatomy }: { definition: string; anatomy: st
 }
 
 /* ─── 섹션 5 ─── */
-function CoreNeedCard({ bridge, coreNeed }: { bridge: string; coreNeed: string | null }) {
+function CoreNeedCard({ n, bridge, coreNeed }: { n: string; bridge: string; coreNeed: string | null }) {
   return (
     <Panel style={{ padding: "24px 22px" }}>
-      <SecTitle n="05">이 아이가 정말 원했던 것</SecTitle>
+      <SecTitle n={n}>이 아이가 정말 원했던 것</SecTitle>
       <Prose text={bridge} style={{ marginTop: 16 }} />
       {coreNeed ? (
         <div
@@ -676,12 +712,133 @@ function CoreNeedCard({ bridge, coreNeed }: { bridge: string; coreNeed: string |
   );
 }
 
+/* ─── 무료에서 옮겨온 해설 카드 (자주 하는 생각 · 스트레스 신호 · 겉과 속/관계 패턴) ───
+ *
+ * 셋 다 primaryCard(TypeCard) 고정 필드로 렌더된다. 원래 무료 리포트(InnerChildFreeReport)
+ * 에 있던 카드를 결제 뒤로 옮긴 것 — 콘텐츠는 그대로, 공개 위치만 유료로. 관계 패턴 카드만
+ * 무료 때 생성해 둔 LLM 문장(free.gap/relation_pattern)을 함께 쓰되, 없어도 성립한다.
+ */
+
+/** 자주 하는 생각 — 대사 + 해석 + 믿음의 기원. */
+function ThoughtsCard({ n, card }: { n: string; card: TypeCard }) {
+  const notes = card.auto_thought_notes ?? [];
+  return (
+    <Panel style={{ padding: "24px 22px" }}>
+      <SecTitle n={n}>자주 하는 생각</SecTitle>
+      <div style={{ marginTop: 6 }}>
+        {card.auto_thoughts.map((t, i) => (
+          <div key={i} style={{ padding: "15px 0", borderTop: i === 0 ? "none" : `1px solid ${INK.line}` }}>
+            <p style={{ fontFamily: INK.font, fontStyle: "italic", fontWeight: 600, fontSize: 15, letterSpacing: "-0.01em", color: INK.white, margin: "0 0 6px" }}>
+              “{t}”
+            </p>
+            {notes[i] && <p style={{ fontFamily: INK.font, fontSize: 14.5, lineHeight: 1.65, color: INK.t62, margin: 0 }}>{notes[i]}</p>}
+          </div>
+        ))}
+      </div>
+
+      {/* 이런 생각을 자주 하게 되는 이유 + 믿음의 기원 유추 */}
+      <div style={{ marginTop: 18, padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
+        <div style={clbStyle}>이런 생각을 자주 하게 되는 이유</div>
+        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t72, margin: 0 }}>
+          이 생각들은 서로 다른 말 같지만 뿌리는 하나예요 — ‘{card.core_belief}’. 이 믿음이 마음
+          깊이 깔려 있으면, 작은 신호도 그 믿음을 확인하는 쪽으로 해석하게 됩니다. 그래서 상황만
+          바뀔 뿐, 같은 결의 생각이 계속 떠오르는 거예요.
+        </p>
+        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t68, margin: "12px 0 0" }}>
+          <span style={{ color: INK.accent2, fontWeight: 700 }}>그 믿음은 어디서 왔을까요.</span> {card.origin_hypothesis}
+        </p>
+      </div>
+    </Panel>
+  );
+}
+
+/** 스트레스 신호 — 상황 + 왜 힘든지. */
+function StressCard({ n, card }: { n: string; card: TypeCard }) {
+  const notes = card.trigger_notes ?? [];
+  return (
+    <Panel style={{ padding: "24px 22px" }}>
+      <SecTitle n={n}>스트레스 신호</SecTitle>
+      <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, marginTop: 14 }}>
+        이 아이가 특히 크게 반응하는 순간들, 그리고 왜 그 순간이 유독 힘든지예요.
+      </p>
+      <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 20 }}>
+        {card.triggers.map((t, i) => (
+          <div key={i}>
+            <div style={{ display: "flex", gap: 9, alignItems: "baseline" }}>
+              <span style={{ fontFamily: INK.mono, fontSize: 11, fontWeight: 600, color: INK.accent2 }}>{pad(i + 1)}</span>
+              <span style={{ fontFamily: INK.font, fontWeight: 700, fontSize: 15.5, color: INK.white }}>{t}</span>
+            </div>
+            {notes[i] && <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t68, margin: "7px 0 0", paddingLeft: 20 }}>{notes[i]}</p>}
+          </div>
+        ))}
+      </div>
+      <p style={{ fontFamily: INK.font, fontSize: 14.5, lineHeight: 1.7, color: INK.t62, marginTop: 20, padding: "13px 15px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 10 }}>
+        이런 순간, 이 아이는 ‘{card.surface_reaction}’ 반응으로 먼저 나섭니다. 왜 그런지는 뒤의
+        ‘지킴이’ 장에서 이어집니다.
+      </p>
+    </Panel>
+  );
+}
+
+/** gap_hint "외부: X / 내부: Y" → [겉, 속] 파싱. */
+function parseGapHint(h: string): [string, string] {
+  const parts = h.split("/").map((s) => s.trim());
+  const strip = (s: string) => s.replace(/^외부\s*[:：]\s*/, "").replace(/^내부\s*[:：]\s*/, "").trim();
+  return [strip(parts[0] ?? ""), strip(parts[1] ?? "")];
+}
+
+/** 겉과 속 + 관계에서의 패턴 — 한 섹션에. 고정 필드가 뼈대, LLM 문장은 있으면 덧붙인다. */
+function GapRelationCard({ n, card, gap, relation }: { n: string; card: TypeCard; gap: string | null; relation: string | null }) {
+  const [outer, inner] = parseGapHint(card.gap_hint);
+  const scenes = card.typical_scenes ?? [];
+  const notes = card.typical_scene_notes ?? [];
+  return (
+    <Panel style={{ padding: "24px 22px" }}>
+      {/* 겉과 속 */}
+      <SecTitle n={n}>겉과 속</SecTitle>
+      <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, marginTop: 14 }}>
+        겉으로 보이는 모습과, 속에서 실제로 일어나는 일 사이엔 생각보다 큰 간극이 있어요.
+      </p>
+      <div style={{ marginTop: 16, padding: "15px 16px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
+        <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.accent2, margin: 0 }}>겉 — 남들이 보는 나</p>
+        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.72, color: INK.t72, margin: "5px 0 0" }}>{outer}</p>
+      </div>
+      <div style={{ marginTop: 12, padding: "15px 16px", background: "rgba(255,90,31,.06)", border: `1px solid rgba(255,138,76,.25)`, borderRadius: 12 }}>
+        <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.accent2, margin: 0 }}>속 — 실제로 일어나는 일</p>
+        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.72, color: INK.t72, margin: "5px 0 0" }}>{inner}</p>
+      </div>
+      {gap && <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.8, color: INK.t72, marginTop: 18 }}>{gap}</p>}
+
+      {/* 관계에서의 패턴 */}
+      {(relation || scenes.length > 0) && (
+        <div style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${INK.line}` }}>
+          <div style={{ fontFamily: INK.display, fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em", color: INK.white }}>관계에서의 패턴</div>
+          {relation && <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.78, color: INK.t72, marginTop: 14 }}>{relation}</p>}
+          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+            {scenes.map((s, i) => (
+              <div key={i}>
+                <div style={{ display: "flex", gap: 9, alignItems: "baseline" }}>
+                  <span style={{ fontFamily: INK.mono, fontSize: 11, fontWeight: 600, color: INK.accent2 }}>{pad(i + 1)}</span>
+                  <span style={{ fontFamily: INK.font, fontWeight: 700, fontSize: 15.5, color: INK.white }}>{s}</span>
+                </div>
+                {notes[i] && <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t68, margin: "7px 0 0", paddingLeft: 20 }}>{notes[i]}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 /* ─── 섹션 6 ─── */
 function ReparentingCard({
+  n,
   reparenting,
   card,
   closing,
 }: {
+  n: string;
   reparenting: ReparentingPlan | null;
   card: TypeCard | null;
   closing: string;
@@ -696,7 +853,7 @@ function ReparentingCard({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <Panel style={{ padding: "24px 22px" }}>
-        <SecTitle n="06">지금의 당신이 줄 수 있는 것</SecTitle>
+        <SecTitle n={n}>지금의 당신이 줄 수 있는 것</SecTitle>
         {reparenting?.scene ? (
           <div style={{ marginTop: 14 }}>
             <Prose text={reparenting.scene} style={{ color: INK.t82 }} />

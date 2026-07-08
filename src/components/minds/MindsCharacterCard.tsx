@@ -10,13 +10,19 @@
 
 import type { ReactNode } from "react";
 import { CharacterPortrait } from "./CharacterPortrait";
-import { M, LabelS } from "./quiet-editorial";
+import { M, LabelS, IcLock } from "./quiet-editorial";
 import type { CharacterView } from "@/lib/minds/characters";
 
 interface Props {
   view: CharacterView;
   index: number; // 0-based
   total: number;
+  /**
+   * "full" — 원하는 것·자주 하는 말·두려움·발동 순간까지 전부 노출(유료/구버전).
+   * "teaser" — 무료 기본값. 정체(이름·초상·정체 소개·"내 답에서" 인용)까지만 보여주고,
+   *   각 마음의 속마음(원하는 것·자주 하는 말·두려움·발동 순간)은 잠가 전체 리포트로 미룬다.
+   */
+  variant?: "full" | "teaser";
 }
 
 /** 라벨이 달린 데이터 행. 모노 라벨 + 본문 + 헤어라인 구분선. */
@@ -37,7 +43,7 @@ const bodyText = {
   margin: 0,
 } as const;
 
-export function MindsCharacterCard({ view, index, total }: Props) {
+export function MindsCharacterCard({ view, index, total, variant = "full" }: Props) {
   const {
     archetype,
     derived,
@@ -51,6 +57,7 @@ export function MindsCharacterCard({ view, index, total }: Props) {
     triggers,
     evidenceQuote,
   } = view;
+  const teaser = variant === "teaser";
 
   return (
     <div
@@ -112,38 +119,82 @@ export function MindsCharacterCard({ view, index, total }: Props) {
         <p style={{ ...bodyText, marginTop: 18 }}>{description}</p>
       </div>
 
-      {/* 데이터 그리드 */}
-      <div style={{ marginTop: 14 }}>
-        <ARow label="이 마음이 원하는 것">
-          <p style={bodyText}>{wants}</p>
-        </ARow>
+      {/* 데이터 그리드 (full) — 이 마음의 속마음을 전부 노출 */}
+      {!teaser && (
+        <div style={{ marginTop: 14 }}>
+          <ARow label="이 마음이 원하는 것">
+            <p style={bodyText}>{wants}</p>
+          </ARow>
 
-        <ARow label="자주 하는 말">
-          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-            {sayings.map((s, i) => (
-              <div key={i} style={{ paddingLeft: 14, borderLeft: `2px solid ${M.line}`, fontSize: 15, lineHeight: 1.6, color: M.ink2, fontFamily: M.font }}>
-                “{s}”
-              </div>
-            ))}
-          </div>
-        </ARow>
-
-        <ARow label="두려워하는 것">
-          <p style={bodyText}>{fears}</p>
-        </ARow>
-
-        <ARow label="이 마음이 발동되는 순간" last={!evidenceQuote}>
-          <p style={bodyText}>{triggers}</p>
-        </ARow>
-
-        {evidenceQuote && (
-          <ARow label="내 답에서" last>
-            <div style={{ paddingLeft: 14, borderLeft: `3px solid ${M.accent}`, fontSize: 16, fontWeight: 500, lineHeight: 1.6, color: M.ink, fontFamily: M.font }}>
-              “{evidenceQuote}”
+          <ARow label="자주 하는 말">
+            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+              {sayings.map((s, i) => (
+                <div key={i} style={{ paddingLeft: 14, borderLeft: `2px solid ${M.line}`, fontSize: 15, lineHeight: 1.6, color: M.ink2, fontFamily: M.font }}>
+                  “{s}”
+                </div>
+              ))}
             </div>
           </ARow>
-        )}
-      </div>
+
+          <ARow label="두려워하는 것">
+            <p style={bodyText}>{fears}</p>
+          </ARow>
+
+          <ARow label="이 마음이 발동되는 순간" last={!evidenceQuote}>
+            <p style={bodyText}>{triggers}</p>
+          </ARow>
+
+          {evidenceQuote && (
+            <ARow label="내 답에서" last>
+              <div style={{ paddingLeft: 14, borderLeft: `3px solid ${M.accent}`, fontSize: 16, fontWeight: 500, lineHeight: 1.6, color: M.ink, fontFamily: M.font }}>
+                “{evidenceQuote}”
+              </div>
+            </ARow>
+          )}
+        </div>
+      )}
+
+      {/* 맛보기(teaser) — 정체까지만. "내 답에서" 인용은 개인화 훅으로 남기고,
+          속마음(원하는 것·자주 하는 말·두려움·발동 순간)은 잠가 전체 리포트로 미룬다. */}
+      {teaser && (
+        <div style={{ marginTop: 14 }}>
+          {evidenceQuote && (
+            <ARow label="내 답에서">
+              <div style={{ paddingLeft: 14, borderLeft: `3px solid ${M.accent}`, fontSize: 16, fontWeight: 500, lineHeight: 1.6, color: M.ink, fontFamily: M.font }}>
+                “{evidenceQuote}”
+              </div>
+            </ARow>
+          )}
+
+          <div style={{ paddingTop: 18 }}>
+            <LabelS style={{ marginBottom: 12 }}>이 마음의 속마음 — 전체 리포트에서</LabelS>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {["이 마음이 진짜 원하는 것", "자주 하는 말", "두려워하는 것", "이 마음이 발동되는 순간"].map((label, i, arr) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "13px 0",
+                    borderBottom: i === arr.length - 1 ? "none" : `1px solid ${M.line2}`,
+                  }}
+                >
+                  <span style={{ fontSize: 14.5, color: M.ink2, fontFamily: M.font }}>{label}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: M.mute2, fontFamily: M.mono, flex: "0 0 auto" }}>
+                    <IcLock s={13} /> 잠김
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p style={{ marginTop: 14, fontSize: 13, lineHeight: 1.7, color: M.mute, fontFamily: M.font }}>
+              이 마음이 진짜 원하는 것, 자주 삼키는 말, 가장 두려워하는 것과 발동되는 순간까지 —{" "}
+              <strong style={{ color: M.ink2, fontWeight: 600 }}>전체 리포트</strong>에서 배역과 관계로 깊이 풀어드려요.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,13 +17,6 @@ import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
-/** dev 프리뷰용 mock 생성필드 — 실제로는 gemini-2.5-flash 가 채운다. */
-const DEV_MOCK_FREE = {
-  gap: "외부에서는 관계에 크게 흔들리지 않는 사람으로 보이지만, 내부적으로는 상대의 신호를 끊임없이 살피는 상태입니다. (미리보기 — 실제로는 응답 기반으로 생성됩니다.)",
-  relation_pattern:
-    "가까워질수록 확인이 늘고, 그 확인이 상대에게 부담으로 닿을 때 이 아이는 다시 거리를 확인합니다. (미리보기 — 실제로는 SCT 인용과 함께 생성됩니다.)",
-};
-
 export default function InnerChildDevPage() {
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [started, setStarted] = useState(false);
@@ -42,7 +35,7 @@ export default function InnerChildDevPage() {
     return (
       <>
         {card ? (
-          <InnerChildFreeReport card={card} score={result} free={DEV_MOCK_FREE} />
+          <InnerChildFreeReport card={card} score={result} />
         ) : (
           <div style={{ height: "100dvh", background: "#050506", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
             <p style={{ color: "#fff", fontFamily: "'Pretendard',sans-serif", textAlign: "center" }}>

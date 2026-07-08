@@ -19,7 +19,7 @@ import { MindsCheckoutModal } from "@/components/minds/MindsCheckoutModal";
 import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
-import type { TypeCard, FreeReportGenerated } from "@/lib/minds/inner-child/report-types";
+import type { TypeCard } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
 /* ─── 잉크 오렌지 토큰 ─── */
@@ -51,12 +51,10 @@ const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
 export function InnerChildFreeReport({
   card,
   score,
-  free,
   footerExtra,
 }: {
   card: TypeCard;
   score: ScoreResult;
-  free: FreeReportGenerated | null;
   footerExtra?: ReactNode;
 }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -85,23 +83,16 @@ export function InnerChildFreeReport({
     return () => window.clearTimeout(id);
   }, []);
 
+  // 무료 덱은 "판정 + 맛보기 1장"으로 좁혔다 — 유형 판정(정체)과 기본 성향(맛보기)만
+  // 무료로 두고, 자주 하는 생각·겉과 속/관계 패턴·스트레스 신호 등 해설 카드는 전체
+  // 리포트(유료)로 옮겼다(InnerChildPaidView). 페이월(PaywallCard)이 그 목록을 예고한다.
   const cards: { key: string; node: ReactNode }[] = [
     // 1장: 유형 판정 + 내면의 목소리 + 측정 지표 (설명과 함께 한 장에)
     { key: "identity", node: <IdentityCard card={card} /> },
+    // 2장: 기본 성향 — 무료로 남기는 유일한 해설 "맛보기"
     { key: "traits", node: <TraitsCard card={card} n="01" /> },
-    { key: "thoughts", node: <ThoughtsCard card={card} n="02" /> },
+    { key: "lock", node: <PaywallCard card={card} score={score} /> },
   ];
-  let n = 3;
-  const gapN = free?.gap ? pad(n++) : "";
-  const relN = free?.relation_pattern ? pad(n++) : "";
-  if (free?.gap || free?.relation_pattern) {
-    cards.push({
-      key: "gap-relation",
-      node: <GapRelationCard gapN={gapN} relN={relN} gap={free?.gap ?? null} relation={free?.relation_pattern ?? null} card={card} />,
-    });
-  }
-  cards.push({ key: "stress", node: <StressCard card={card} n={pad(n++)} /> });
-  cards.push({ key: "lock", node: <PaywallCard card={card} score={score} /> });
 
   // 카드 한 장이 모바일 화면을 꽉 채운다(고정 높이). 내용이 길면 카드 안에서 스크롤.
   return (
@@ -166,6 +157,7 @@ function CardDeck({ cards, lastCta }: { cards: { key: string; node: ReactNode }[
         .ic-scroll::-webkit-scrollbar{width:0;height:0}
         .ic-cta{transition:background .2s ease,color .2s ease,border-color .2s ease}
         .ic-cta:hover{background:#FF5A1F!important;color:#fff!important;border-color:#FF5A1F!important}
+        .ic-cta:hover .ic-cta-accent{color:#fff!important}
       `}</style>
 
       {/* 상단바 — 브랜드 + 진행 (고정) */}
@@ -215,26 +207,29 @@ function CardDeck({ cards, lastCta }: { cards: { key: string; node: ReactNode }[
         </div>
       </div>
 
-      {/* 네비게이션 — 카드 맨 아래 고정 */}
-      <div style={{ flex: "0 0 auto", display: "flex", gap: 10, padding: "14px 16px 16px", borderTop: `1px solid ${INK.line}` }}>
+      {/* 네비게이션 — 카드 맨 아래 고정. 결제 전환이 핵심이라 '이전'은 아이콘만 남겨
+          최소 폭으로 좁히고, 다음/CTA 버튼이 남은 폭(flex:1)을 지배하게 한다. */}
+      <div style={{ flex: "0 0 auto", display: "flex", gap: 8, padding: "14px 16px 16px", borderTop: `1px solid ${INK.line}` }}>
         <button
           type="button"
           onClick={() => go(-1)}
           disabled={i === 0}
+          aria-label="이전"
           style={{
             flex: "0 0 auto",
-            padding: "14px 18px",
+            padding: "14px 12px",
             borderRadius: 12,
             border: `1px solid ${INK.line14}`,
             background: "transparent",
             color: i === 0 ? "rgba(255,255,255,.25)" : INK.t6,
             fontFamily: INK.font,
             fontWeight: 700,
-            fontSize: 15,
+            fontSize: 17,
+            lineHeight: 1,
             cursor: i === 0 ? "default" : "pointer",
           }}
         >
-          ‹ 이전
+          ‹
         </button>
         {i < total - 1 ? (
           <button
@@ -434,133 +429,11 @@ function TraitsCard({ card, n }: { card: TypeCard; n: string }) {
   );
 }
 
-/** 자주 하는 생각 — 대사 + 해석. */
-function ThoughtsCard({ card, n }: { card: TypeCard; n: string }) {
-  const notes = card.auto_thought_notes ?? [];
-  return (
-    <Panel style={{ padding: "24px 22px" }}>
-      <SecTitle n={n}>자주 하는 생각</SecTitle>
-      <div style={{ marginTop: 6 }}>
-        {card.auto_thoughts.map((t, i) => (
-          <div key={i} style={{ padding: "15px 0", borderTop: i === 0 ? "none" : `1px solid ${INK.line}` }}>
-            <p style={{ fontFamily: INK.font, fontStyle: "italic", fontWeight: 600, fontSize: 15, letterSpacing: "-0.01em", color: INK.white, margin: "0 0 6px" }}>
-              “{t}”
-            </p>
-            {notes[i] && <p style={{ fontFamily: INK.font, fontSize: 14.5, lineHeight: 1.65, color: INK.t62, margin: 0 }}>{notes[i]}</p>}
-          </div>
-        ))}
-      </div>
-
-      {/* 이런 생각을 자주 하게 되는 이유 + 믿음의 기원 유추 */}
-      <div style={{ marginTop: 18, padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
-        <div style={clbStyle}>이런 생각을 자주 하게 되는 이유</div>
-        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t72, margin: 0 }}>
-          이 생각들은 서로 다른 말 같지만 뿌리는 하나예요 — ‘{card.core_belief}’. 이 믿음이 마음
-          깊이 깔려 있으면, 작은 신호도 그 믿음을 확인하는 쪽으로 해석하게 됩니다. 그래서 상황만
-          바뀔 뿐, 같은 결의 생각이 계속 떠오르는 거예요.
-        </p>
-        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t68, margin: "12px 0 0" }}>
-          <span style={{ color: INK.accent2, fontWeight: 700 }}>그 믿음은 어디서 왔을까요.</span> {card.origin_hypothesis}
-        </p>
-      </div>
-    </Panel>
-  );
-}
-
-/** gap_hint "외부: X / 내부: Y" → [겉, 속] 파싱. */
-function parseGapHint(h: string): [string, string] {
-  const parts = h.split("/").map((s) => s.trim());
-  const strip = (s: string) => s.replace(/^외부\s*[:：]\s*/, "").replace(/^내부\s*[:：]\s*/, "").trim();
-  return [strip(parts[0] ?? ""), strip(parts[1] ?? "")];
-}
-
-/** 겉과 속 + 관계에서의 패턴 — 한 장에. */
-function GapRelationCard({
-  gapN,
-  relN,
-  gap,
-  relation,
-  card,
-}: {
-  gapN: string;
-  relN: string;
-  gap: string | null;
-  relation: string | null;
-  card: TypeCard;
-}) {
-  const [outer, inner] = parseGapHint(card.gap_hint);
-  const scenes = card.typical_scenes ?? [];
-  const notes = card.typical_scene_notes ?? [];
-  return (
-    <Panel style={{ padding: "24px 22px" }}>
-      {/* 겉과 속 */}
-      {gap && (
-        <div>
-          <SecTitle n={gapN}>겉과 속</SecTitle>
-          <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, marginTop: 14 }}>
-            겉으로 보이는 모습과, 속에서 실제로 일어나는 일 사이엔 생각보다 큰 간극이 있어요.
-          </p>
-          <div style={{ marginTop: 16, padding: "15px 16px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
-            <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.accent2, margin: 0 }}>겉 — 남들이 보는 나</p>
-            <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.72, color: INK.t72, margin: "5px 0 0" }}>{outer}</p>
-          </div>
-          <div style={{ marginTop: 12, padding: "15px 16px", background: "rgba(255,90,31,.06)", border: `1px solid rgba(255,138,76,.25)`, borderRadius: 12 }}>
-            <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.accent2, margin: 0 }}>속 — 실제로 일어나는 일</p>
-            <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.72, color: INK.t72, margin: "5px 0 0" }}>{inner}</p>
-          </div>
-          <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.8, color: INK.t72, marginTop: 18 }}>{gap}</p>
-        </div>
-      )}
-
-      {/* 관계에서의 패턴 */}
-      {relation && (
-        <div style={{ marginTop: gap ? 28 : 0, paddingTop: gap ? 24 : 0, borderTop: gap ? `1px solid ${INK.line}` : "none" }}>
-          <SecTitle n={relN}>관계에서의 패턴</SecTitle>
-          <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.78, color: INK.t72, marginTop: 14 }}>{relation}</p>
-          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
-            {scenes.map((s, i) => (
-              <div key={i}>
-                <div style={{ display: "flex", gap: 9, alignItems: "baseline" }}>
-                  <span style={{ fontFamily: INK.mono, fontSize: 11, fontWeight: 600, color: INK.accent2 }}>{pad(i + 1)}</span>
-                  <span style={{ fontFamily: INK.font, fontWeight: 700, fontSize: 15.5, color: INK.white }}>{s}</span>
-                </div>
-                {notes[i] && <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t68, margin: "7px 0 0", paddingLeft: 20 }}>{notes[i]}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </Panel>
-  );
-}
-
-/** 스트레스 신호 — 상황 + 왜 힘든지. */
-function StressCard({ card, n }: { card: TypeCard; n: string }) {
-  const notes = card.trigger_notes ?? [];
-  return (
-    <Panel style={{ padding: "24px 22px" }}>
-      <SecTitle n={n}>스트레스 신호</SecTitle>
-      <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, marginTop: 14 }}>
-        이 아이가 특히 크게 반응하는 순간들, 그리고 왜 그 순간이 유독 힘든지예요.
-      </p>
-      <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 20 }}>
-        {card.triggers.map((t, i) => (
-          <div key={i}>
-            <div style={{ display: "flex", gap: 9, alignItems: "baseline" }}>
-              <span style={{ fontFamily: INK.mono, fontSize: 11, fontWeight: 600, color: INK.accent2 }}>{pad(i + 1)}</span>
-              <span style={{ fontFamily: INK.font, fontWeight: 700, fontSize: 15.5, color: INK.white }}>{t}</span>
-            </div>
-            {notes[i] && <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t68, margin: "7px 0 0", paddingLeft: 20 }}>{notes[i]}</p>}
-          </div>
-        ))}
-      </div>
-      <p style={{ fontFamily: INK.font, fontSize: 14.5, lineHeight: 1.7, color: INK.t62, marginTop: 20, padding: "13px 15px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 10 }}>
-        이런 순간, 이 아이는 ‘{card.surface_reaction}’ 반응으로 먼저 나섭니다. 왜 그런지는 전체
-        리포트의 ‘지킴이’ 장에서 이어집니다.
-      </p>
-    </Panel>
-  );
-}
+/**
+ * 자주 하는 생각 / 겉과 속·관계 패턴 / 스트레스 신호 카드는 전체(유료) 리포트로
+ * 옮겨졌다 — InnerChildPaidView 의 ThoughtsCard·GapRelationCard·StressCard 참조.
+ * (무료에서 삭제한 게 아니라, 공개 위치를 결제 뒤로 이동시킨 것.)
+ */
 
 /** 지킴이 유형별 짧은 뜻(요약 박스에서 이름 옆에 붙임). */
 const GUARDIAN_DESC: Record<string, string> = {
@@ -569,8 +442,22 @@ const GUARDIAN_DESC: Record<string, string> = {
   overcompensation: "아이의 믿음과 정반대로 행동해, 약점을 덮어버리는 방식이에요.",
 };
 
-/** 유료 CTA 항목 — 무엇을 분석했고 / 리포트에서 뭘 보고 / 왜 알아야 하는지. */
+/** 유료 CTA 항목 — 무엇을 분석했고 / 리포트에서 뭘 보고 / 왜 알아야 하는지.
+ *  앞 3개는 무료에서 '맛보기'로 소개한 결을 전체 리포트에서 훨씬 깊게 이어받는 항목,
+ *  뒤 4개는 유료에서만 열리는 심층 분석이다. */
 const PAY_TEASERS: { title: string; body: string }[] = [
+  {
+    title: "이 아이가 반복하는 생각과 그 뿌리",
+    body: "당신 안의 내면 아이가 자꾸 되뇌는 생각들을 뽑아, 그 밑에 깔린 하나의 믿음 — 이 아이가 아주 어릴 때 갖게 된 믿음 — 과 그 믿음이 어디서 생겨났는지까지 이어드려요. 생각은 매번 달라 보여도, 실은 이 아이가 오래전부터 품어 온 하나의 믿음이 지금도 당신에게 말을 거는 거예요. 그 뿌리를 봐야, 왜 같은 생각이 어른이 된 지금까지 반복되는지 비로소 이해됩니다.",
+  },
+  {
+    title: "겉의 어른, 속의 아이 — 그 간극",
+    body: "남들에게 보이는 어른스러운 겉모습과, 그 안에서 여전히 웅크리고 있는 내면 아이 사이엔 생각보다 큰 간극이 있어요. 이 간극이 가까운 관계에서 어떤 장면으로 되풀이되는지 — 언제 이 아이가 튀어나와 관계를 흔드는지 — 구체적으로 그려드려요. 겉만 봐서는 ‘왜 늘 이런 관계가 반복되지’의 답이 안 보여요. 속에 있는 이 아이를 봐야 비로소 보입니다.",
+  },
+  {
+    title: "이 아이가 깨어나는 순간",
+    body: "평소엔 조용히 숨어 있던 내면 아이가 유독 크게 깨어나는 순간(트리거)과, 왜 하필 그 순간이 이 아이에게 견디기 힘든지를 분석했어요. 그 신호를 미리 알아두면, 감정에 휩쓸리기 전에 ‘아, 지금 그 아이가 깨어났구나’ 하고 한 발 먼저 알아차려 스스로를 다독일 수 있게 됩니다.",
+  },
   {
     title: "방어기제(지킴이)의 정체",
     body: "당신이 힘든 순간에 스스로를 어떻게 지켜왔는지, 그 반응 패턴을 세 가지 지킴이 유형으로 분석했어요. 전체 리포트에서는 이 지킴이가 언제·어떻게 작동하는지, 무엇을 지켜주는 대신 무엇을 대가로 가져가는지 낱낱이 풀어드려요. 지킴이의 정체를 알아보기 전까지는 그 반응이 '원래 내 성격'처럼 느껴져 바꿀 수 없다고 여기게 됩니다 — 정체를 알아야 비로소 그 반응과 나 사이에 거리가 생깁니다.",
@@ -598,18 +485,27 @@ function PaywallCta({ onCheckout }: { onCheckout: () => void }) {
       onClick={onCheckout}
       style={{
         width: "100%",
-        padding: "14px 18px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 3,
+        padding: "11px 18px",
         borderRadius: 12,
         background: INK.white,
         color: INK.shell,
         border: `1px solid ${INK.white}`,
         fontFamily: INK.font,
-        fontWeight: 800,
-        fontSize: 15,
         cursor: "pointer",
       }}
     >
-      전체 리포트 받기 →
+      <span style={{ fontWeight: 800, fontSize: 15 }}>
+        지금 바로 <span className="ic-cta-accent" style={{ color: INK.accent }}>내면 아이</span> 분석 보기 →
+      </span>
+      {/* CTA 바로 아래 가격 노출 — 정가(취소선) → 판매가. 색은 버튼색을 상속해 호버 반전에도 보인다. */}
+      <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <span style={{ fontSize: 12, opacity: 0.5, textDecoration: "line-through" }}>{won(INNER_CHILD_ORIGINAL_PRICE)}</span>
+        <span style={{ fontSize: 13.5, fontWeight: 800 }}>{won(INNER_CHILD_PRICE)}</span>
+      </span>
     </button>
   );
 }
@@ -645,9 +541,9 @@ function PaywallCard({ card, score }: { card: TypeCard; score: ScoreResult }) {
         </div>
 
         <h3 style={{ fontFamily: INK.display, fontSize: 23, fontWeight: 800, lineHeight: 1.3, letterSpacing: "-0.03em", color: INK.white, margin: "13px 0 12px" }}>
-          당신의 대답을 모두
+          당신의 추방당한 내면 아이를
           <br />
-          IFS로 분석했어요
+          7가지 축으로 분석했어요
         </h3>
 
         {/* 무료 리포트 2줄 요약 — 이름만으론 기억 안 나니 뜻까지 */}
@@ -675,9 +571,9 @@ function PaywallCard({ card, score }: { card: TypeCard; score: ScoreResult }) {
 
         {/* 소제목 — 포인트 컬러 강조 (두 줄) */}
         <h4 style={{ fontFamily: INK.font, fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em", color: INK.accent2, margin: "22px 0 0", lineHeight: 1.5, wordBreak: "keep-all" }}>
-          지금부터, 이 아이가 생겨난 이유와
+          내면 아이를 만나고 이해해야만
           <br />
-          이 아이와 잘 살아가는 법을 알려드릴게요.
+          반복되는 패턴에서 벗어날 수 있습니다
         </h4>
 
         {/* 항목별 긴 설명 */}

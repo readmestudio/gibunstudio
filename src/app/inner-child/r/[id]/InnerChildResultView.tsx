@@ -66,7 +66,6 @@ export function InnerChildResultView({
       <InnerChildFreeReport
         card={card}
         score={blob.score_result}
-        free={blob.free_report}
         footerExtra={
           <div style={{ maxWidth: 440, margin: "0 auto" }}>
             <MindsResultLinkBar leadId={leadId} base={INNER_CHILD_FUNNEL.freeReportBase} />

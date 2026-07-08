@@ -12,7 +12,7 @@
  * 잔상 — 그래서 이 장들에는 항상 결제 CTA가 따라붙는다.
  *
  * 결제: 페이월/이후 카드의 CTA는 페이지 이동 없이 그 자리에서 MindsCheckoutModal 을
- * 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩9,900) — 비로그인 leadId 결제 →
+ * 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩19,900) — 비로그인 leadId 결제 →
  * 승인 후 /minds/relationship/[id] 리포트 페이지로 이동.
  *
  * 카드 넘김은 검증된 husband-match CardCarousel을 재사용한다(스와이프+화살표+도트).
@@ -73,18 +73,20 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
     });
     // ③ 운영자 슬랙 알림 — 결제 의향 신호(sendBeacon).
     trackMindsFunnel("checkout_click");
-    // 워크북 페이지로 이동하지 않고, 그 자리에서 결제 모달을 연다(₩9,900 리포트).
+    // 워크북 페이지로 이동하지 않고, 그 자리에서 결제 모달을 연다(₩19,900 리포트).
     setCheckoutOpen(true);
   };
 
   const cards = [
     <MindsCoverCard key="cover" views={views} />,
+    // 무료는 맛보기(teaser) — 정체까지만 보여주고 각 마음의 속마음은 잠가 전체 리포트로 미룬다.
     ...views.map((v, i) => (
       <MindsCharacterCard
         key={v.archetype.id}
         view={v}
         index={i}
         total={views.length}
+        variant="teaser"
       />
     )),
     // 3 배역 다음 — 답변+배역을 합친 개인화 요약 한 장
@@ -102,7 +104,7 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
   return (
     <div className="w-full">
       <CardCarousel cards={cards} />
-      {/* 페이월 CTA → 그 자리에서 결제 모달(₩9,900 관계 해설 리포트). */}
+      {/* 페이월 CTA → 그 자리에서 결제 모달(₩19,900 관계 해설 리포트). */}
       <MindsCheckoutModal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} />
       {/* 페이월을 본 뒤, 결제 없이 이탈하려는 순간 후기 팝업. minds 는 leadId 로 누가 썼는지 잇는다. */}
       <ReviewPopup

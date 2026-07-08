@@ -21,7 +21,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { readPaidReport } from "@/lib/minds/inner-child/paid-report";
 import { getSavedFreeReport } from "@/lib/minds/inner-child/free-report-store";
-import type { PaidReportGenerated } from "@/lib/minds/inner-child/report-types";
+import type { FreeReportGenerated, PaidReportGenerated } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 import { InnerChildPaidView } from "./InnerChildPaidView";
 
@@ -89,9 +89,12 @@ export default async function InnerChildFullPage({
   // 고정 섹션(카드/지킴이 블록)에 필요한 채점 결과를 함께 넘긴다. 유료 리포트가 뜨는 건
   // 무료 리포트가 저장된 뒤이므로 거의 항상 존재한다.
   let score: ScoreResult | null = null;
+  // 무료→유료로 옮긴 "겉과 속·관계 패턴" 카드가 쓸, 무료 때 생성해 둔 LLM 문장.
+  let free: FreeReportGenerated | null = null;
   if (leadId) {
     const blob = await getSavedFreeReport(leadId);
     score = blob?.score_result ?? null;
+    free = blob?.free_report ?? null;
   }
 
   return (
@@ -100,6 +103,7 @@ export default async function InnerChildFullPage({
       status={status}
       initialReport={initialReport}
       score={score}
+      free={free}
     />
   );
 }
