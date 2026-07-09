@@ -63,7 +63,7 @@ export default async function AdminInnerChildDetailPage({
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("minds_leads")
-    .select("id, created_at, user_id, channel, answers, parts_map")
+    .select("id, created_at, user_id, channel, phone, email, answers, parts_map")
     .eq("id", id)
     .maybeSingle();
 
@@ -95,8 +95,13 @@ export default async function AdminInnerChildDetailPage({
           <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--foreground)]/50">
             <span>완료일 {fmtDate(data.created_at)}</span>
             <span>
-              회원 {data.user_id ? "가입" : "익명"}
+              연락처{" "}
+              <span className="font-semibold text-[var(--foreground)]/70 tabular-nums">
+                {data.phone || "없음"}
+              </span>
             </span>
+            {data.email && <span>이메일 {data.email}</span>}
+            <span>회원 {data.user_id ? "가입" : "익명"}</span>
             <span className="font-mono">leadId {data.id}</span>
           </p>
           <div className="mt-3">

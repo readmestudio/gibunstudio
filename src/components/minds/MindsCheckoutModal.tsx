@@ -193,7 +193,8 @@ export function MindsCheckoutModal({
             htmlFor="minds-alimtalk-phone"
             style={{ fontFamily: M.mono, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: M.mute }}
           >
-            알림톡 받을 휴대폰
+            알림톡 받을 휴대폰{" "}
+            <span style={{ color: M.accent, fontWeight: 700 }}>· 필수</span>
           </label>
           <input
             id="minds-alimtalk-phone"

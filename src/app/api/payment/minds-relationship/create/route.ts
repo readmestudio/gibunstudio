@@ -106,6 +106,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 결제 모달에서 받은 연락처를 리드에도 남긴다 — 나중에 어드민이 연락처로 리포트를
+    // 찾을 수 있게(비로그인/익명 리드를 분별할 유일한 단서). 결제 레코드에도 함께 저장된다.
+    if (phone) {
+      await admin.from("minds_leads").update({ phone }).eq("id", leadId);
+    }
+
     // 멱등성 — 이미 결제 완료된 리드면 새 결제를 막고 리포트로 보낸다(1인 1회 정책).
     const { data: confirmed } = await admin
       .from("minds_relationship_purchases")

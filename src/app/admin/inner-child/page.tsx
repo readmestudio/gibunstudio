@@ -32,8 +32,15 @@ interface LeadRow {
   id: string;
   created_at: string;
   user_id: string | null;
+  phone: string | null;
+  email: string | null;
   answers: AnswerItem[] | null;
   parts_map: unknown;
+}
+
+// 전화번호 비교용 — 하이픈/공백 등 제거하고 숫자만 남긴다("010-1234" ↔ "01012345678" 매칭).
+function digits(s: string | null | undefined): string {
+  return (s ?? "").replace(/\D/g, "");
 }
 
 function fmtDate(iso: string): string {
@@ -53,8 +60,17 @@ function fmtDate(iso: string): string {
   }
 }
 
-export default async function AdminInnerChildPage() {
+export default async function AdminInnerChildPage({
+  searchParams,
+}: {
+  // Next.js 16: searchParams 는 Promise → await 해서 푼다.
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireAdmin("/admin/inner-child");
+
+  const sp = await searchParams;
+  const q = (sp.q ?? "").trim();
+  const qDigits = digits(q);
 
   const admin = createAdminClient();
 
@@ -63,7 +79,7 @@ export default async function AdminInnerChildPage() {
   // 리드 규모가 작아 부담 없다.
   const { data, error } = await admin
     .from("minds_leads")
-    .select("id, created_at, user_id, answers, parts_map")
+    .select("id, created_at, user_id, phone, email, answers, parts_map")
     .eq("channel", "inner_child")
     .order("created_at", { ascending: false })
     .limit(500);
@@ -89,6 +105,19 @@ export default async function AdminInnerChildPage() {
     typeDist.set(name, (typeDist.get(name) ?? 0) + 1);
   }
   const typeRanking = [...typeDist.entries()].sort((a, b) => b[1] - a[1]);
+
+  // 검색 — 연락처(숫자 부분일치)·이메일·leadId·내면아이 이름으로 완주 리드를 좁힌다.
+  // 통계는 전체 기준을 유지하고, 아래 목록만 필터링한다.
+  const qLower = q.toLowerCase();
+  const visible = q
+    ? completed.filter(({ row, blob }) => {
+        const phoneHit = qDigits.length >= 2 && digits(row.phone).includes(qDigits);
+        const emailHit = !!row.email && row.email.toLowerCase().includes(qLower);
+        const idHit = row.id.toLowerCase().includes(qLower);
+        const nameHit = blob.score_result.primary_child.child_name.includes(q);
+        return phoneHit || emailHit || idHit || nameHit;
+      })
+    : completed;
 
   return (
     <main className="bg-[var(--surface)] min-h-screen">
@@ -182,10 +211,47 @@ export default async function AdminInnerChildPage() {
               </div>
             )}
 
+            {/* 검색 — 연락처로 리포트를 찾는 게 주 용도. GET 폼(?q=) */}
+            <form method="get" className="mb-4 flex gap-2">
+              <input
+                type="search"
+                name="q"
+                defaultValue={q}
+                placeholder="연락처·이메일·leadId·유형으로 검색"
+                className="flex-1 rounded-xl border-2 border-[var(--foreground)]/15 bg-white px-4 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--foreground)]"
+              />
+              <button
+                type="submit"
+                className="rounded-xl border-2 border-[var(--foreground)] bg-[var(--foreground)] px-5 py-2.5 text-sm font-semibold text-white"
+              >
+                검색
+              </button>
+              {q && (
+                <Link
+                  href="/admin/inner-child"
+                  className="flex items-center rounded-xl border-2 border-[var(--foreground)]/15 px-4 py-2.5 text-sm font-semibold text-[var(--foreground)]/60 hover:border-[var(--foreground)]"
+                >
+                  초기화
+                </Link>
+              )}
+            </form>
+
+            {/* 검색 중 안내 */}
+            {q && (
+              <p className="mb-3 text-sm text-[var(--foreground)]/60">
+                &lsquo;<span className="font-semibold text-[var(--foreground)]">{q}</span>&rsquo;
+                검색 결과 {visible.length}건
+              </p>
+            )}
+
             {/* 완주 리드 목록 */}
             {completed.length === 0 ? (
               <p className="rounded-xl border-2 border-[var(--foreground)]/10 bg-white px-4 py-10 text-center text-sm text-[var(--foreground)]/50">
                 아직 완료한 리드가 없어요.
+              </p>
+            ) : visible.length === 0 ? (
+              <p className="rounded-xl border-2 border-[var(--foreground)]/10 bg-white px-4 py-10 text-center text-sm text-[var(--foreground)]/50">
+                검색 결과가 없어요. 연락처는 결제한 리드만 저장돼요(무료 리드는 익명).
               </p>
             ) : (
               <div className="overflow-x-auto rounded-2xl border-2 border-[var(--foreground)]/10 bg-white">
@@ -194,6 +260,7 @@ export default async function AdminInnerChildPage() {
                     <tr className="border-b border-[var(--foreground)]/10 text-left text-[11px] uppercase tracking-wider text-[var(--foreground)]/40">
                       <th className="px-4 py-3 font-semibold">완료일</th>
                       <th className="px-4 py-3 font-semibold">내면 아이</th>
+                      <th className="px-4 py-3 font-semibold">연락처</th>
                       <th className="px-4 py-3 font-semibold">지킴이</th>
                       <th className="px-4 py-3 font-semibold">1순위 영역</th>
                       <th className="px-4 py-3 font-semibold">회원</th>
@@ -201,7 +268,7 @@ export default async function AdminInnerChildPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {completed.map(({ row, blob }) => {
+                    {visible.map(({ row, blob }) => {
                       const sr = blob.score_result;
                       const topArea = (
                         Object.entries(sr.areas) as [AreaId, { rank: number }][]
@@ -221,6 +288,13 @@ export default async function AdminInnerChildPage() {
                             {sr.crisis_flag && (
                               <span className="ml-2 rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
                                 위기
+                              </span>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 tabular-nums text-[var(--foreground)]/80">
+                            {row.phone || (
+                              <span className="text-[var(--foreground)]/25">
+                                –
                               </span>
                             )}
                           </td>
