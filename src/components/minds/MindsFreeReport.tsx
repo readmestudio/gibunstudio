@@ -26,6 +26,7 @@ import type { PartsMap } from "@/lib/self-workshop/core-belief-excavation";
 import { buildCharacterViews } from "@/lib/minds/characters";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
+import { reportPricing } from "@/lib/minds/price-experiment";
 import { MindsCheckoutModal } from "./MindsCheckoutModal";
 import { MindsCoverCard } from "./MindsCoverCard";
 import { MindsCharacterCard } from "./MindsCharacterCard";
@@ -39,9 +40,12 @@ import {
   MindsWhyBenefitCard,
 } from "./MindsOutroCards";
 
-export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
+export function MindsFreeReport({ partsMap, leadId }: { partsMap: PartsMap; leadId?: string }) {
   const views = buildCharacterViews(partsMap);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  // 가격 A/B — leadId 로 variant(₩9,900/₩19,900)를 뽑는다. 표시·픽셀 전용이며 실제 결제
+  // 금액은 서버가 같은 leadId 로 재확정한다(단일 출처). leadId 없으면 안전하게 B로 폴백.
+  const pricing = reportPricing(leadId);
 
   // 카카오 로그인 복귀 자동 결제 재개 — 인증 관문에서 카카오로 로그인하면 /auth/callback 이
   // /minds/r/[leadId]?checkout=1 로 되돌려보낸다. 그 표식을 보면 결제 모달을 자동으로 다시
@@ -69,6 +73,7 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
   const openCheckout = () => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "minds_to_relationship",
+      value: pricing.price,
       currency: "KRW",
     });
     // ③ 운영자 슬랙 알림 — 결제 의향 신호(sendBeacon).
@@ -96,16 +101,20 @@ export function MindsFreeReport({ partsMap }: { partsMap: PartsMap }) {
     <MindsRolesCard key="roles" />,
     <MindsActiveStageCard key="stage" views={views} />,
     // 판매 3장(모든 CTA → 결제 모달): 분석완료+배역표 → 카테고리+후기 → Why+Benefit
-    <MindsPricingCard key="analysis" onCheckout={openCheckout} />,
-    <MindsCategoryReviewCard key="categories" onCheckout={openCheckout} />,
-    <MindsWhyBenefitCard key="whybenefit" onCheckout={openCheckout} />,
+    <MindsPricingCard key="analysis" onCheckout={openCheckout} price={pricing.price} originalPrice={pricing.originalPrice} />,
+    <MindsCategoryReviewCard key="categories" onCheckout={openCheckout} price={pricing.price} originalPrice={pricing.originalPrice} />,
+    <MindsWhyBenefitCard key="whybenefit" onCheckout={openCheckout} price={pricing.price} originalPrice={pricing.originalPrice} />,
   ];
 
   return (
     <div className="w-full">
       <CardCarousel cards={cards} />
-      {/* 페이월 CTA → 그 자리에서 결제 모달(₩19,900 관계 해설 리포트). */}
-      <MindsCheckoutModal open={checkoutOpen} onClose={() => setCheckoutOpen(false)} />
+      {/* 페이월 CTA → 그 자리에서 결제 모달(관계 해설 리포트). 표시가는 leadId variant. */}
+      <MindsCheckoutModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        priceOverride={{ price: pricing.price, originalPrice: pricing.originalPrice }}
+      />
       {/* 페이월을 본 뒤, 결제 없이 이탈하려는 순간 후기 팝업. minds 는 leadId 로 누가 썼는지 잇는다. */}
       <ReviewPopup
         testType="minds"

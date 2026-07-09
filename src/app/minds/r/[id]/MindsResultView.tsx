@@ -50,7 +50,7 @@ export function MindsResultView({
 
   return (
     <div className="mx-auto w-full max-w-[448px] px-6 py-8 sm:py-10">
-      <MindsFreeReport partsMap={partsMap} />
+      <MindsFreeReport partsMap={partsMap} leadId={leadId} />
       <MindsResultLinkBar leadId={leadId} />
     </div>
   );

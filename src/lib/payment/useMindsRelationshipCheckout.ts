@@ -69,9 +69,10 @@ export function useMindsRelationshipCheckout(
         clientId: NICEPAY_CLIENT_ID,
         ...(method ? { method } : {}),
         orderId: data.order_id,
-        // 결제창 금액은 퍼널 가격을 따른다(현재 minds·inner-child 모두 ₩19,900).
-        // 서버가 create 시 저장한 pending 금액·return 검증 금액과 반드시 일치해야 한다.
-        amount: funnel.price,
+        // 결제창 금액은 서버가 create 때 확정해 돌려준 amount 를 그대로 쓴다 — inner-child
+        // 가격 A/B(variant) 금액이 여기에 반영돼, pending·return 검증 금액과 자동 일치한다.
+        // (구 응답 호환: amount 누락 시에만 퍼널 표시가로 폴백.)
+        amount: typeof data.amount === "number" ? data.amount : funnel.price,
         goodsName: funnel.goodsName,
         returnUrl: `${window.location.origin}/api/payment/nicepay/return`,
         fnError: (result: { errorMsg: string }) => {

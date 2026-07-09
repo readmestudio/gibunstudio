@@ -27,10 +27,17 @@ export function MindsCheckoutModal({
   open,
   onClose,
   funnel = MINDS_FUNNEL,
+  priceOverride,
 }: {
   open: boolean;
   onClose: () => void;
   funnel?: MindsFunnelConfig;
+  /**
+   * 표시가 override — inner-child 가격 A/B 실험에서 leadId variant 가격을 넘긴다.
+   * 미전달(minds)이면 funnel 표시가를 그대로 쓴다(무회귀). 실제 결제 금액은 서버가
+   * leadId 로 재확정하므로, 이 값은 순전히 표시(취소선 정가·판매가)·픽셀용이다.
+   */
+  priceOverride?: { price: number; originalPrice: number };
 }) {
   const [sdkLoaded, setSdkLoaded] = useState(false);
   // 결제완료 알림톡 수신번호 — profiles.phone 이 있으면 프리필하고, 사용자가 수정 가능.
@@ -38,6 +45,9 @@ export function MindsCheckoutModal({
 
   // 상품 설명(제목·리드·포함목록)만 퍼널별로 갈라진다. 기본값 = 현행 /minds 카피.
   const copy = funnel.checkoutCopy;
+  // 표시가 — override(inner-child variant) 우선, 없으면 퍼널 표시가.
+  const shownPrice = priceOverride?.price ?? funnel.price;
+  const shownOriginalPrice = priceOverride?.originalPrice ?? funnel.originalPrice;
 
   const { handleKakao, handleNpay, isSubmitting } = useMindsRelationshipCheckout(funnel);
 
@@ -87,7 +97,7 @@ export function MindsCheckoutModal({
         funnel.variant === "minds"
           ? "minds_to_relationship"
           : "inner_child_to_report",
-      value: funnel.price,
+      value: shownPrice,
       currency: "KRW",
     });
     run(phone);
@@ -181,9 +191,9 @@ export function MindsCheckoutModal({
           </span>
           <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 10 }}>
             <span style={{ fontFamily: M.font, fontSize: 17, color: M.mute2, textDecoration: "line-through" }}>
-              {won(funnel.originalPrice)}
+              {won(shownOriginalPrice)}
             </span>
-            <span style={{ ...dispStyle, fontSize: 28 }}>{won(funnel.price)}</span>
+            <span style={{ ...dispStyle, fontSize: 28 }}>{won(shownPrice)}</span>
           </div>
         </div>
 

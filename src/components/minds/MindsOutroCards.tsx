@@ -48,11 +48,18 @@ function StickyCheckoutBar({
   onCheckout,
   label = "지금 바로 분석 열어보기",
   caption,
+  price,
+  originalPrice,
 }: {
   onCheckout: () => void;
   label?: string;
   caption?: ReactNode;
+  /** 가격 A/B — leadId variant 표시가. 미전달이면 현행 상수(B)로 폴백. */
+  price?: number;
+  originalPrice?: number;
 }) {
+  const shownPrice = price ?? MINDS_RELATIONSHIP_PRICE;
+  const shownOriginalPrice = originalPrice ?? MINDS_RELATIONSHIP_ORIGINAL_PRICE;
   return (
     <div className="fixed inset-x-0 bottom-0 z-40" style={{ pointerEvents: "none" }}>
       <div
@@ -80,8 +87,8 @@ function StickyCheckoutBar({
           <span style={{ fontSize: 16, fontWeight: 700 }}>{label}</span>
           {/* 런칭 할인 앵커링 — 정가(취소선) → 판매가. 다크 버튼 위라 가독성 확보. */}
           <span style={{ display: "flex", alignItems: "baseline", gap: 7, fontFamily: M.font }}>
-            <span style={{ fontSize: 13, opacity: 0.55, textDecoration: "line-through" }}>{won(MINDS_RELATIONSHIP_ORIGINAL_PRICE)}</span>
-            <span style={{ fontSize: 15, fontWeight: 700 }}>{won(MINDS_RELATIONSHIP_PRICE)}</span>
+            <span style={{ fontSize: 13, opacity: 0.55, textDecoration: "line-through" }}>{won(shownOriginalPrice)}</span>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>{won(shownPrice)}</span>
             <span style={{ fontSize: 11, fontWeight: 600, color: M.accent }}>런칭 할인</span>
           </span>
         </button>
@@ -301,7 +308,7 @@ export function MindsActiveStageCard({ views }: { views: CharacterView[] }) {
 }
 
 /* ═════════════════ 판매 장1 — 분석 완료 + 잠긴 배역표 ═════════════════ */
-export function MindsPricingCard({ onCheckout }: { onCheckout: () => void }) {
+export function MindsPricingCard({ onCheckout, price, originalPrice }: { onCheckout: () => void; price?: number; originalPrice?: number }) {
   // ② 운영자 슬랙 알림 — 캐러셀은 보이는 카드만 마운트하므로, 이 판매 첫 장이
   // 처음 마운트되는 순간이 곧 "Final 배역표(페이월) 도달". 세션당 1회만 전송된다(track.ts).
   useEffect(() => {
@@ -383,7 +390,7 @@ export function MindsPricingCard({ onCheckout }: { onCheckout: () => void }) {
       </div>
 
       <CtaSpacer />
-      <StickyCheckoutBar onCheckout={onCheckout} caption="지금 만난 마음들을 그대로 이어받아요." />
+      <StickyCheckoutBar onCheckout={onCheckout} caption="지금 만난 마음들을 그대로 이어받아요." price={price} originalPrice={originalPrice} />
     </CardShell>
   );
 }
@@ -400,7 +407,7 @@ const REPORT_CATEGORIES = [
   { ic: "🌱", name: "나를 위한 맞춤 처방 3", desc: "이런 생각이 들 때, 이렇게 해보세요" },
 ];
 
-export function MindsCategoryReviewCard({ onCheckout }: { onCheckout: () => void }) {
+export function MindsCategoryReviewCard({ onCheckout, price, originalPrice }: { onCheckout: () => void; price?: number; originalPrice?: number }) {
   return (
     <CardShell>
       <CardKicker>And More · 그 외에도</CardKicker>
@@ -451,13 +458,13 @@ export function MindsCategoryReviewCard({ onCheckout }: { onCheckout: () => void
       <ReviewCard />
 
       <CtaSpacer />
-      <StickyCheckoutBar onCheckout={onCheckout} caption="결제 후 바로 리포트를 만들어 드려요 · NicePay 안전결제" />
+      <StickyCheckoutBar onCheckout={onCheckout} caption="결제 후 바로 리포트를 만들어 드려요 · NicePay 안전결제" price={price} originalPrice={originalPrice} />
     </CardShell>
   );
 }
 
 /* ═════════════════ 판매 장3 — 왜 알아야 하나 + 달라지는 것 (합본) ═════════════════ */
-export function MindsWhyBenefitCard({ onCheckout }: { onCheckout: () => void }) {
+export function MindsWhyBenefitCard({ onCheckout, price, originalPrice }: { onCheckout: () => void; price?: number; originalPrice?: number }) {
   return (
     <CardShell>
       <CardKicker>Why · 왜 알아야 할까요</CardKicker>
@@ -495,7 +502,7 @@ export function MindsWhyBenefitCard({ onCheckout }: { onCheckout: () => void }) 
       </div>
 
       <CtaSpacer />
-      <StickyCheckoutBar onCheckout={onCheckout} caption="지금 만난 마음들을 그대로 이어받아요." />
+      <StickyCheckoutBar onCheckout={onCheckout} caption="지금 만난 마음들을 그대로 이어받아요." price={price} originalPrice={originalPrice} />
     </CardShell>
   );
 }

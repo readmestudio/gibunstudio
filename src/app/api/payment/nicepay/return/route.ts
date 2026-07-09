@@ -10,10 +10,7 @@ import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { approveNicepayPayment } from "@/lib/nicepay/approve";
 import { MIND_SPILL_DAILY_SUB_DAYS } from "@/lib/mind-spill/constants";
 import { COUNSELING_TYPES, getCounselingType } from "@/lib/counseling/types";
-import {
-  MINDS_RELATIONSHIP_PRICE,
-  INNER_CHILD_PRICE,
-} from "@/lib/minds/relationship-constants";
+import { isReportPrice } from "@/lib/minds/price-experiment";
 import { sendPaidReportAlimtalk } from "@/lib/solapi/messages";
 
 /**
@@ -234,19 +231,17 @@ async function handleMindsRelationshipPayment(params: {
     return fail("status", String(purchase.status));
   }
 
-  // 기대 금액은 상품별 상수로 검증한다(현재 minds·inner-child 모두 ₩19,900).
-  const expectedPrice =
-    variant === "inner_child" ? INNER_CHILD_PRICE : MINDS_RELATIONSHIP_PRICE;
-
-  // 금액 검증 — DB 금액·NicePay 금액·서버 상수가 모두 일치해야 한다(위변조 방지).
-  if (purchase.amount !== amount || amount !== expectedPrice) {
+  // 금액 검증 — minds(MR-)·inner-child(IC-) 모두 가격 A/B 실험 중(₩9,900/₩19,900).
+  // create 가 leadId 로 확정해 저장한 purchase.amount 와 NicePay 금액이 일치하고(위변조
+  // 방지), 그 금액이 유효한 리포트 판매가여야 한다. amount 자체가 variant 를 인코딩하므로
+  // 별도 컬럼 없이 검증한다(무마이그레이션). 실험이전 minds 금액(₩19,900)도 그대로 통과.
+  if (purchase.amount !== amount || !isReportPrice(amount)) {
     console.error("[minds-relationship] 결제 금액 불일치:", {
       dbAmount: purchase.amount,
       nicepayAmount: amount,
-      expected: expectedPrice,
       orderId,
     });
-    return fail("amount", `db=${purchase.amount} np=${amount} expect=${expectedPrice}`);
+    return fail("amount", `db=${purchase.amount} np=${amount}`);
   }
 
   // NicePay 최종 승인(캡처).

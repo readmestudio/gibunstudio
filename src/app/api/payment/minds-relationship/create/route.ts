@@ -4,11 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import {
-  MINDS_RELATIONSHIP_PRICE,
   MINDS_RELATIONSHIP_ORDER_PREFIX,
   INNER_CHILD_ORDER_PREFIX,
-  INNER_CHILD_PRICE,
 } from "@/lib/minds/relationship-constants";
+import { reportPricing } from "@/lib/minds/price-experiment";
 
 /**
  * POST /api/payment/minds-relationship/create  (로그인 선택)
@@ -132,10 +131,12 @@ export async function POST(request: NextRequest) {
       product === "inner_child"
         ? INNER_CHILD_ORDER_PREFIX
         : MINDS_RELATIONSHIP_ORDER_PREFIX;
-    // 금액은 상품별 상수로 고정한다(현재 minds·inner-child 모두 ₩19,900). 서버 상수로
-    // 고정해 위변조를 막고, return 검증도 같은 상품 기준으로 재확인한다.
-    const amount =
-      product === "inner_child" ? INNER_CHILD_PRICE : MINDS_RELATIONSHIP_PRICE;
+    // 금액은 서버에서 고정해 위변조를 막고, return 검증도 같은 기준으로 재확인한다.
+    // 가격 A/B 실험 — minds(MR-)·inner-child(IC-) 두 유료 리포트 모두 leadId 결정적
+    // 해시로 variant(₩9,900/₩19,900)를 뽑는다(클라 표시·NicePay 금액도 같은 leadId 로
+    // 같은 값). amount 자체가 variant 를 인코딩(9,900=A/19,900=B)하므로 별도 컬럼 없이
+    // return 검증·전환율 분석(amount 그룹핑)이 가능하다(무마이그레이션).
+    const amount = reportPricing(leadId).price;
     const orderId = `${orderPrefix}${Date.now()}-${nanoid(8)}`;
     const { data: purchase, error: purchaseError } = await admin
       .from("minds_relationship_purchases")

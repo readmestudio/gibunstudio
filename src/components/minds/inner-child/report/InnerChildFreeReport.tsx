@@ -14,7 +14,7 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
-import { INNER_CHILD_PRICE, INNER_CHILD_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
+import { reportPricing } from "@/lib/minds/price-experiment";
 import { MindsCheckoutModal } from "@/components/minds/MindsCheckoutModal";
 import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
 import { TypeAvatar } from "@/components/minds/inner-child/report/TypeAvatar";
@@ -53,18 +53,24 @@ export function InnerChildFreeReport({
   card,
   score,
   footerExtra,
+  leadId,
 }: {
   card: TypeCard;
   score: ScoreResult;
   footerExtra?: ReactNode;
+  /** 가격 A/B 실험용 — leadId variant 로 페이월·모달 표시가를 정한다. 없으면 현행 B(₩19,900). */
+  leadId?: string;
 }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  // 가격 A/B — leadId 로 variant(₩9,900/₩19,900)를 뽑는다. 표시·픽셀 전용이며 실제 결제
+  // 금액은 서버가 같은 leadId 로 재확정한다(단일 출처). leadId 없으면 안전하게 B로 폴백.
+  const pricing = reportPricing(leadId);
 
   // 결제 모달 오픈 — InitiateCheckout(퍼널 분리 content_name) + 운영자 슬랙 checkout_click 을 함께 쏜다(/minds 미러).
   const openCheckout = () => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "inner_child_full",
-      value: INNER_CHILD_PRICE,
+      value: pricing.price,
       currency: "KRW",
     });
     trackMindsFunnel("checkout_click", INNER_CHILD_FUNNEL);
@@ -92,7 +98,7 @@ export function InnerChildFreeReport({
     { key: "identity", node: <IdentityCard card={card} /> },
     // 2장: 기본 성향 — 무료로 남기는 유일한 해설 "맛보기"
     { key: "traits", node: <TraitsCard card={card} n="01" /> },
-    { key: "lock", node: <PaywallCard card={card} score={score} /> },
+    { key: "lock", node: <PaywallCard card={card} score={score} price={pricing.price} originalPrice={pricing.originalPrice} /> },
   ];
 
   // 카드 한 장이 모바일 화면을 꽉 채운다(고정 높이). 내용이 길면 카드 안에서 스크롤.
@@ -110,18 +116,19 @@ export function InnerChildFreeReport({
       }}
     >
       <div style={{ width: "100%", maxWidth: 440, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        <CardDeck cards={cards} lastCta={<PaywallCta onCheckout={openCheckout} />} />
+        <CardDeck cards={cards} lastCta={<PaywallCta onCheckout={openCheckout} price={pricing.price} originalPrice={pricing.originalPrice} />} />
         <p style={{ flex: "0 0 auto", fontFamily: INK.mono, fontSize: 10, color: INK.t38, lineHeight: 1.7, textAlign: "center", marginTop: 12 }}>
           기분 리포트 · INNER CHILD REPORT · {DISCLAIMER}
         </p>
         {footerExtra ? <div style={{ flex: "0 0 auto", marginTop: 8 }}>{footerExtra}</div> : null}
       </div>
 
-      {/* 페이월 CTA → 그 자리에서 공용 결제 모달(내면 아이 카피·₩19,900). */}
+      {/* 페이월 CTA → 그 자리에서 공용 결제 모달(내면 아이 카피). 표시가는 leadId variant. */}
       <MindsCheckoutModal
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
         funnel={INNER_CHILD_FUNNEL}
+        priceOverride={{ price: pricing.price, originalPrice: pricing.originalPrice }}
       />
     </div>
   );
@@ -435,7 +442,7 @@ const PAY_TEASERS: { title: string; body: string }[] = [
 ];
 
 /** 페이월 CTA — 덱 하단 네비에 스티키로 고정(스크롤 무관 항상 노출). 결제 모달을 연다. */
-function PaywallCta({ onCheckout }: { onCheckout: () => void }) {
+function PaywallCta({ onCheckout, price, originalPrice }: { onCheckout: () => void; price: number; originalPrice: number }) {
   return (
     <button
       type="button"
@@ -461,15 +468,15 @@ function PaywallCta({ onCheckout }: { onCheckout: () => void }) {
       </span>
       {/* CTA 바로 아래 가격 노출 — 정가(취소선) → 판매가. 색은 버튼색을 상속해 호버 반전에도 보인다. */}
       <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <span style={{ fontSize: 12, opacity: 0.5, textDecoration: "line-through" }}>{won(INNER_CHILD_ORIGINAL_PRICE)}</span>
-        <span style={{ fontSize: 13.5, fontWeight: 800 }}>{won(INNER_CHILD_PRICE)}</span>
+        <span style={{ fontSize: 12, opacity: 0.5, textDecoration: "line-through" }}>{won(originalPrice)}</span>
+        <span style={{ fontSize: 13.5, fontWeight: 800 }}>{won(price)}</span>
       </span>
     </button>
   );
 }
 
 /** 마지막 장 — IFS 분석 리빌 + 유료 리포트 안내(프리미엄). */
-function PaywallCard({ card, score }: { card: TypeCard; score: ScoreResult }) {
+function PaywallCard({ card, score, price, originalPrice }: { card: TypeCard; score: ScoreResult; price: number; originalPrice: number }) {
   // 덱은 현재 카드만 렌더하므로, 이 카드가 마운트되는 순간 = 유저가 페이월까지 도달한 순간.
   // 세션당 1회만 발화(trackMindsFunnel 내부 dedupe) → 앞뒤로 넘겨도 슬랙엔 한 번만 뜬다.
   useEffect(() => {
@@ -551,9 +558,9 @@ function PaywallCard({ card, score }: { card: TypeCard; score: ScoreResult }) {
 
         {/* 가격 */}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 11, marginBottom: 16 }}>
-          <span style={{ fontFamily: INK.display, fontSize: 15, color: INK.t4, textDecoration: "line-through" }}>{won(INNER_CHILD_ORIGINAL_PRICE)}</span>
+          <span style={{ fontFamily: INK.display, fontSize: 15, color: INK.t4, textDecoration: "line-through" }}>{won(originalPrice)}</span>
           <span style={{ fontFamily: INK.display, fontSize: 36, fontWeight: 800, letterSpacing: "-0.035em", fontVariantNumeric: "tabular-nums", background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
-            {won(INNER_CHILD_PRICE)}
+            {won(price)}
           </span>
         </div>
 

@@ -69,6 +69,7 @@ export function InnerChildResultView({
       <InnerChildFreeReport
         card={card}
         score={blob.score_result}
+        leadId={leadId}
         footerExtra={
           <div style={{ maxWidth: 440, margin: "0 auto" }}>
             {/* 이미 결제했다면, 무료 화면에서 바로 유료 리포트로 되돌아가는 복구 버튼(로그인 불필요). */}
