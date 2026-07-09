@@ -17,6 +17,7 @@ import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
 import { INNER_CHILD_PRICE, INNER_CHILD_ORIGINAL_PRICE } from "@/lib/minds/relationship-constants";
 import { MindsCheckoutModal } from "@/components/minds/MindsCheckoutModal";
 import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
+import { TypeAvatar } from "@/components/minds/inner-child/report/TypeAvatar";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
 import type { TypeCard } from "@/lib/minds/inner-child/report-types";
@@ -126,10 +127,6 @@ export function InnerChildFreeReport({
   );
 }
 
-function pad(x: number) {
-  return String(x).padStart(2, "0");
-}
-
 /* ─────────────── 덱 ─────────────── */
 
 function CardDeck({ cards, lastCta }: { cards: { key: string; node: ReactNode }[]; lastCta?: ReactNode }) {
@@ -160,36 +157,8 @@ function CardDeck({ cards, lastCta }: { cards: { key: string; node: ReactNode }[
         .ic-cta:hover .ic-cta-accent{color:#fff!important}
       `}</style>
 
-      {/* 상단바 — 브랜드 + 진행 (고정) */}
-      <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 18px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <LogoMark />
-          <span style={{ fontFamily: INK.display, fontWeight: 800, fontSize: 15, letterSpacing: "-0.02em", color: INK.white }}>
-            기분 리포트
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ display: "flex", gap: 4 }}>
-            {cards.map((c, idx) => (
-              <span
-                key={c.key}
-                style={{
-                  width: idx === i ? 16 : 5,
-                  height: 5,
-                  borderRadius: 999,
-                  background: idx === i ? INK.accent : "rgba(255,255,255,.18)",
-                  transition: "width .25s ease, background .25s ease",
-                }}
-              />
-            ))}
-          </div>
-          <span style={{ fontFamily: INK.mono, fontSize: 10, letterSpacing: "0.1em", color: INK.t4 }}>
-            {pad(i + 1)} / {pad(total)}
-          </span>
-        </div>
-      </div>
-
-      {/* 카드 본체 — 고정 높이 안에서 스크롤 + 좌우 스와이프 */}
+      {/* 카드 본체 — 고정 높이 안에서 스크롤 + 좌우 스와이프
+          (상단 브랜드/진행 바는 요청에 따라 제거 — 히어로의 프로필·타이틀이 그 역할을 대신한다) */}
       <div
         className="ic-scroll"
         onTouchStart={(e) => setStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
@@ -260,23 +229,6 @@ function CardDeck({ cards, lastCta }: { cards: { key: string; node: ReactNode }[
   );
 }
 
-function LogoMark() {
-  return (
-    <span
-      style={{
-        position: "relative",
-        display: "inline-block",
-        width: 16,
-        height: 16,
-        borderRadius: 999,
-        background: "linear-gradient(135deg,#FF5A1F,#FF8A4C,#FFB68A)",
-      }}
-    >
-      <span style={{ position: "absolute", inset: 4, borderRadius: 999, background: INK.shell }} />
-    </span>
-  );
-}
-
 /* ─────────────── 공통 조각 ─────────────── */
 
 const clbStyle: CSSProperties = {
@@ -334,17 +286,23 @@ function IdentityCard({ card }: { card: TypeCard }) {
         />
         <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(60% 44% at 50% 0%, rgba(255,90,31,.28), transparent 70%)" }} />
         <div style={{ position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ width: 5, height: 5, borderRadius: 999, background: INK.accent, display: "inline-block" }} />
-            <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: INK.accent2 }}>
-              Your Inner Child
-            </span>
+          {/* 킥커 + 제목(좌) · 캐릭터 프로필(우) — 가로 배치로 히어로 높이를 줄인다. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ width: 5, height: 5, borderRadius: 999, background: INK.accent, display: "inline-block" }} />
+                <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: INK.accent2 }}>
+                  Your Inner Child
+                </span>
+              </div>
+              <h1 style={{ fontFamily: INK.display, fontSize: 30, fontWeight: 800, lineHeight: 1.16, letterSpacing: "-0.04em", color: INK.white, margin: "12px 0 0" }}>
+                {head}{head ? " " : ""}
+                <span style={{ background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{last}</span>
+              </h1>
+            </div>
+            <TypeAvatar schemaId={card.schema_id} alt={card.child_name} size={84} />
           </div>
-          <h1 style={{ fontFamily: INK.display, fontSize: 32, fontWeight: 800, lineHeight: 1.16, letterSpacing: "-0.04em", color: INK.white, margin: "14px 0" }}>
-            {head}{head ? " " : ""}
-            <span style={{ background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{last}</span>
-          </h1>
-          <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.6, letterSpacing: "-0.01em", color: INK.t6, margin: 0 }}>{card.one_liner}</p>
+          <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.6, letterSpacing: "-0.01em", color: INK.t6, margin: "14px 0 0" }}>{card.one_liner}</p>
           <span style={{ display: "inline-flex", marginTop: 20, padding: "9px 16px", borderRadius: 999, background: "rgba(255,255,255,.06)", border: `1px solid ${INK.line14}`, fontFamily: INK.font, fontSize: 14, fontWeight: 600, color: INK.white }}>
             {card.core_belief}
           </span>

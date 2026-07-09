@@ -19,6 +19,7 @@ import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
 import { READ_BEFORE, guardianDefinitionBlock, reparentingSteps } from "@/lib/minds/inner-child/fixed-texts";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
 import { MindsResultLinkBar } from "@/components/minds/MindsResultLinkBar";
+import { TypeAvatar } from "@/components/minds/inner-child/report/TypeAvatar";
 import type { FreeReportGenerated, PaidReportGenerated, ReparentingPlan, TypeCard } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
@@ -612,7 +613,11 @@ function StructureCard({ n, card, childName }: { n: string; card: TypeCard; chil
   return (
     <Panel style={{ padding: "24px 22px" }}>
       <SecTitle n={n}>이 아이의 전체 구조</SecTitle>
-      <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.white, margin: "16px 0 6px" }}>{childName}</p>
+      {/* 캐릭터 프로필 + 유형명 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 6px" }}>
+        <TypeAvatar schemaId={card.schema_id} alt={childName} size={64} />
+        <p style={{ fontFamily: INK.font, fontSize: 16, fontWeight: 700, color: INK.white, margin: 0 }}>{childName}</p>
+      </div>
       <div style={{ padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12, marginBottom: 20 }}>
         <div style={clbStyle}>이 아이가 만들어진 배경</div>
         <Prose text={card.origin_hypothesis} style={{ fontSize: 15 }} />

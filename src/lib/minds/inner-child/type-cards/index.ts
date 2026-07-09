@@ -1185,3 +1185,12 @@ export const TYPE_CARDS: Record<string, TypeCard> = {
 export function getTypeCard(schemaId: string): TypeCard | null {
   return TYPE_CARDS[schemaId] ?? null;
 }
+
+/**
+ * 유형별 캐릭터 일러스트(동그라미 프로필용) 경로.
+ * 에셋은 `public/inner-child/types/{schema_id}.png` (Higgsfield 손그림 blob 16종).
+ * 미집필/미지원 유형이면 null → 호출부는 프로필 원을 생략한다.
+ */
+export function innerChildIllustration(schemaId: string): string | null {
+  return TYPE_CARDS[schemaId] ? `/inner-child/types/${schemaId}.png` : null;
+}
