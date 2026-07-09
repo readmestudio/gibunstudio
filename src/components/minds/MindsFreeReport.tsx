@@ -3,13 +3,13 @@
 /**
  * /minds 4단계 — 무료 리포트 "내 마음 속에 사는 마음들" (카드 캐러셀).
  *
- *   [커버] → [캐릭터 1..N] → [개념] → [배역 설명] → [당신의 무대 · 잠긴 배역표]
- *          → [프라이싱] → [이유] → [좋은 점]
+ *   [커버] → [캐릭터 1(리더·전체 공개)] → [캐릭터 2..N(블러+잠금 해제 CTA)]
+ *          → [개념] → [프라이싱] → [이유] → [좋은 점]
  *
- * 한 장씩 넘겨보는 드라마 인물 소개 형식. 캐릭터 카드(이름·초상·줄글 리포트·인용)는
- * 무료. 이후 아웃트로가 "왜 배역을 알아야 하는가 → 당신의 무대 → 결제"로 서서히
- * 몰입시킨다. 프라이싱(페이월) *이후* 장(이유·좋은 점)은 전환을 한 번 더 끌어올리는
- * 잔상 — 그래서 이 장들에는 항상 결제 CTA가 따라붙는다.
+ * 한 장씩 넘겨보는 드라마 인물 소개 형식. 첫 캐릭터(리더)는 속마음까지 전부 공개해
+ * "제대로 된 분석"을 체감시키고, 나머지 마음들은 메인 카피 아래를 블러로 가려
+ * "지금 바로 잠금 해제하기" CTA 로 결제를 유도한다. 이후 아웃트로(개념 → 결제 3장)가
+ * 몰입을 한 번 더 끌어올린다 — 그래서 이 장들에는 항상 결제 CTA가 따라붙는다.
  *
  * 결제: 페이월/이후 카드의 CTA는 페이지 이동 없이 그 자리에서 MindsCheckoutModal 을
  * 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩19,900) — 비로그인 leadId 결제 →
@@ -31,10 +31,7 @@ import { MindsCheckoutModal } from "./MindsCheckoutModal";
 import { MindsCoverCard } from "./MindsCoverCard";
 import { MindsCharacterCard } from "./MindsCharacterCard";
 import {
-  MindsSummaryCard,
   MindsConceptCard,
-  MindsRolesCard,
-  MindsActiveStageCard,
   MindsPricingCard,
   MindsCategoryReviewCard,
   MindsWhyBenefitCard,
@@ -84,22 +81,21 @@ export function MindsFreeReport({ partsMap, leadId }: { partsMap: PartsMap; lead
 
   const cards = [
     <MindsCoverCard key="cover" views={views} />,
-    // 무료는 맛보기(teaser) — 정체까지만 보여주고 각 마음의 속마음은 잠가 전체 리포트로 미룬다.
+    // 첫 캐릭터(리더, index 0)는 속마음까지 전부 공개(full), 나머지 마음은 메인 카피
+    // 아래를 블러로 가리고 "지금 바로 잠금 해제하기" CTA 로 결제를 유도(teaser).
     ...views.map((v, i) => (
       <MindsCharacterCard
         key={v.archetype.id}
         view={v}
         index={i}
         total={views.length}
-        variant="teaser"
+        variant={i === 0 ? "full" : "teaser"}
+        onUnlock={openCheckout}
       />
     )),
-    // 3 배역 다음 — 답변+배역을 합친 개인화 요약 한 장
-    <MindsSummaryCard key="summary" summary={partsMap.summary} views={views} />,
-    // 아웃트로 — 개념·배역 → 당신의 무대 → 판매 3장
+    // 아웃트로 — 개념 → 판매 3장 (배역 설명·당신의 무대 카드는 제거)
+    // (개인화 요약 카드는 유료 리포트로 이관 — 무료는 리더 1장 전체 공개까지만)
     <MindsConceptCard key="concept" />,
-    <MindsRolesCard key="roles" />,
-    <MindsActiveStageCard key="stage" views={views} />,
     // 판매 3장(모든 CTA → 결제 모달): 분석완료+배역표 → 카테고리+후기 → Why+Benefit
     <MindsPricingCard key="analysis" onCheckout={openCheckout} price={pricing.price} originalPrice={pricing.originalPrice} />,
     <MindsCategoryReviewCard key="categories" onCheckout={openCheckout} price={pricing.price} originalPrice={pricing.originalPrice} />,

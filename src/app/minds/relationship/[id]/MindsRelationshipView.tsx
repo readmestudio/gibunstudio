@@ -272,10 +272,23 @@ function SecIntro({ children }: { children: React.ReactNode }) {
 
 /* ───────────────── 개별 페이지 조각 ───────────────── */
 
+/** 배역 카드 안 "이 마음의 속마음" 데이터 행 — 모노 라벨 + 본문 + 헤어라인.
+ *  무료에서 자물쇠로 잠갔던 항목이 유료에서 풀리는 자리다. */
+function SoulRow({ label, children, last }: { label: string; children: React.ReactNode; last?: boolean }) {
+  return (
+    <div style={{ padding: "16px 0", borderBottom: last ? "none" : `1px solid ${M.line2}` }}>
+      <div style={{ ...monoLabel, fontSize: 10, marginBottom: 9 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
 /** 한 배역을 한 장 가득 채우는 카드(스크롤 → 페이지 전환의 핵심 단위).
  *  텍스트는 위쪽 불투명 배경에, 캐릭터 이미지는 카드 하단에 고정한다. */
 function RolePageCard({ r, index }: { r: RoleSlotAnalysis; index: number }) {
   const dim = r.presence === "dormant";
+  const soulBody: CSSProperties = { fontFamily: M.font, fontSize: 15, color: M.ink2, lineHeight: 1.75, margin: 0 };
+  const hasSoul = Boolean(r.wants || r.fears || r.triggers || r.sayings.length);
   return (
     <div
       style={{
@@ -338,6 +351,39 @@ function RolePageCard({ r, index }: { r: RoleSlotAnalysis; index: number }) {
           >
             “{r.evidenceQuote}”
           </blockquote>
+        ) : null}
+
+        {/* 이 마음의 속마음 — 무료에서 잠갔던 4가지(원하는 것·자주 하는 말·두려움·발동 순간)를 펼친다 */}
+        {hasSoul ? (
+          <div style={{ marginTop: 24, border: `1px solid ${M.line}`, borderRadius: 3, padding: "6px 18px 14px", background: M.paper2 }}>
+            <div style={{ ...monoLabel, fontSize: 10, margin: "16px 0 2px", color: M.ink }}>이 마음의 속마음</div>
+            {r.wants ? (
+              <SoulRow label="이 마음이 진짜 원하는 것">
+                <p style={soulBody}>{r.wants}</p>
+              </SoulRow>
+            ) : null}
+            {r.sayings.length ? (
+              <SoulRow label="자주 하는 말">
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {r.sayings.map((s, i) => (
+                    <div key={i} style={{ paddingLeft: 13, borderLeft: `2px solid ${M.line}`, fontFamily: M.font, fontSize: 14.5, color: M.ink2, lineHeight: 1.6 }}>
+                      “{s}”
+                    </div>
+                  ))}
+                </div>
+              </SoulRow>
+            ) : null}
+            {r.fears ? (
+              <SoulRow label="가장 두려워하는 것">
+                <p style={soulBody}>{r.fears}</p>
+              </SoulRow>
+            ) : null}
+            {r.triggers ? (
+              <SoulRow label="이 마음이 발동되는 순간" last>
+                <p style={soulBody}>{r.triggers}</p>
+              </SoulRow>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -602,35 +648,41 @@ function ReportBody({ report }: { report: RelationshipReport }) {
       kicker: "관계도",
       render: () => (
         <div>
-          <PageHead title="나머지 관계도" />
-          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+          <PageHead
+            title="나머지 관계도"
+            intro="가장 센 갈등 말고도, 당신의 마음들은 이렇게 서로 물고 물리며 얽혀 있어요."
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {report.relationships.map((e, i) => (
-              <li
+              <article
                 key={i}
                 style={{
-                  padding: "16px 0",
-                  borderBottom:
-                    i === report.relationships.length - 1 ? "none" : `1px solid ${M.line}`,
+                  border: `1px solid ${M.ink}`,
+                  padding: "20px 22px",
+                  background: M.paper,
                 }}
               >
-                <span style={{ display: "block", fontFamily: M.font, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+                <div style={{ fontFamily: M.font, fontWeight: 800, fontSize: 18, letterSpacing: "-0.01em", marginBottom: 8 }}>
                   {labelOf(e.a)} <span style={{ color: M.accent }}>×</span> {labelOf(e.b)}
-                </span>
+                </div>
                 {/* 각 배역이 어떤 마음인지 — 배역명만으로 헷갈리지 않게 짚어준다 */}
                 {voiceOf(e.a) || voiceOf(e.b) ? (
-                  <span style={{ display: "block", fontFamily: M.font, fontSize: 12.5, color: M.mute, lineHeight: 1.55, marginBottom: 6 }}>
-                    {[e.a, e.b]
-                      .map((slot) => (voiceOf(slot) ? `${labelOf(slot)} — ${voiceOf(slot)}` : ""))
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${M.line2}` }}>
+                    {[e.a, e.b].map((slot) =>
+                      voiceOf(slot) ? (
+                        <span key={slot} style={{ fontFamily: M.font, fontSize: 12.5, color: M.mute, lineHeight: 1.5 }}>
+                          <b style={{ color: M.ink2, fontWeight: 700 }}>{labelOf(slot)}</b> — {voiceOf(slot)}
+                        </span>
+                      ) : null
+                    )}
+                  </div>
                 ) : null}
-                <span style={{ fontFamily: M.font, fontSize: 13.5, color: M.ink2, lineHeight: 1.65 }}>
+                <p style={{ fontFamily: M.font, fontSize: 15, color: M.ink2, lineHeight: 1.8, margin: 0 }}>
                   {e.dynamic}
-                </span>
-              </li>
+                </p>
+              </article>
             ))}
-          </ul>
+          </div>
         </div>
       ),
     });

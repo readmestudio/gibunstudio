@@ -398,7 +398,12 @@ export function buildCharacterViews(partsMap: PartsMap): CharacterView[] {
   };
 
   // 1) 유저 답변에서 나온 마음 — 확신 캐릭터. 최대 FREE_CHARACTER_COUNT 까지만.
-  for (const part of partsMap.parts) {
+  //    리더(leader_id)를 맨 앞에 둔다 — 무료 맛보기 해설은 첫 카드(리더)에만 노출하므로,
+  //    가장 앞에 나서는 마음이 그 자리를 차지하게 한다. 나머지는 원래 순서 유지(안정 정렬).
+  const leaderFirst = [...partsMap.parts].sort(
+    (a, b) => Number(b.id === partsMap.leader_id) - Number(a.id === partsMap.leader_id)
+  );
+  for (const part of leaderFirst) {
     if (views.length >= FREE_CHARACTER_COUNT) break;
     const match =
       CHARACTER_CAST.find((c) => !used.has(c.id) && c.role === part.role) ??

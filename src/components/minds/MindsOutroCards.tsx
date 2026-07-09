@@ -4,8 +4,6 @@
  * /minds 리포트 아웃트로 — "서서히 전환되는" 시퀀스 (콰이엇 에디토리얼).
  *
  *   ① 개념: 한 사람 안엔 여러 마음이 산다           (MindsConceptCard)
- *   ② 배역: 리더~추방자 다섯 배역 설명               (MindsRolesCard)
- *   ③ 당신의 무대: 지금 활동 중인 마음들 (배역표 티저) (MindsActiveStageCard)
  *   ──────── 판매 3장 (모든 CTA → 결제 모달, ₩19,900) ────────
  *   장1 분석 완료 + 잠긴 배역표                       (MindsPricingCard)
  *   장2 그 외 카테고리 미리보기 + 후기                (MindsCategoryReviewCard)
@@ -228,81 +226,6 @@ export function MindsConceptCard() {
         </p>
       </div>
       <CardArt src="/minds/guardian-cave.png" alt="한 사람 안에 여러 마음이 함께 사는 모습을 그린 그림" maxW={320} />
-    </CardShell>
-  );
-}
-
-/* ───────────────── ② 다섯 배역 설명 ───────────────── */
-export function MindsRolesCard() {
-  return (
-    <CardShell>
-      <CardKicker>The Cast · 다섯 배역</CardKicker>
-      <h2 style={{ ...headline, marginTop: 22, textAlign: "center" }}>
-        마음들이 맡는
-        <br />
-        다섯 가지 배역
-      </h2>
-      <div style={{ marginTop: 24 }}>
-        <Hr />
-        {ROLE_SLOTS.map((r) => (
-          <div
-            key={r.key}
-            style={{ display: "flex", gap: 16, alignItems: "flex-start", padding: "15px 0", borderBottom: `1px solid ${M.line2}` }}
-          >
-            <span style={{ fontFamily: M.font, fontWeight: 600, fontSize: 16, color: M.ink, flex: "0 0 52px" }}>{r.label}</span>
-            <span style={{ fontSize: 13.5, color: M.ink2, lineHeight: 1.55, flex: 1, fontFamily: M.font }}>{r.blurb}</span>
-          </div>
-        ))}
-      </div>
-      <p style={{ marginTop: 22, fontSize: 13.5, lineHeight: 1.6, color: M.mute, fontFamily: M.font, textAlign: "center" }}>
-        당신의 마음들도, 지금 이 중 어떤 배역을 맡고 있을 거예요.
-      </p>
-    </CardShell>
-  );
-}
-
-/* ───────────────── ③ 당신의 무대 (배역표 티저) ───────────────── */
-export function MindsActiveStageCard({ views }: { views: CharacterView[] }) {
-  const names = views.map((v) => v.name);
-
-  return (
-    <CardShell>
-      <CardKicker>Your Stage · 지금 당신의 무대</CardKicker>
-      <h2 style={{ ...headline, marginTop: 22, textAlign: "center" }}>
-        지금, 당신의 무대에
-        <br />
-        오른 마음들
-      </h2>
-      <p style={{ ...para, marginTop: 18, textAlign: "center", color: M.ink2 }}>
-        오늘 당신이 들려준 이야기 속에서는, 이 마음들이 주로 무대에 오르고 있었어요.
-      </p>
-
-      {/* 활동 중인 캐릭터 — 필 */}
-      <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
-        {names.map((n, i) => (
-          <span
-            key={i}
-            style={{ padding: "8px 14px", border: `1px solid ${M.ink}`, borderRadius: 999, fontSize: 13.5, fontWeight: 600, color: M.ink, fontFamily: M.font }}
-          >
-            {n}
-          </span>
-        ))}
-      </div>
-
-      {/* 배역표 티저 */}
-      <p style={{ ...para, marginTop: 28 }}>
-        그런데 — 이 중 누가 당신의 정서를 끌고 가는 <strong style={{ color: M.ink, fontWeight: 600 }}>리더</strong>이고,
-        누가 <strong style={{ color: M.ink, fontWeight: 600 }}>빌런</strong>이며, 어떤 상처가{" "}
-        <strong style={{ color: M.ink, fontWeight: 600 }}>추방자</strong>로 밀려나 있을까요? 그리고 어떤 두 마음이
-        자꾸 부딪치고 있을까요?
-      </p>
-
-      <div style={{ marginTop: 24 }}>
-        <Hr />
-        <p style={{ padding: "20px 0 0", fontSize: 13.5, color: M.mute, fontFamily: M.font, textAlign: "center" }}>
-          그 배역표는, 바로 다음 장에서 열어볼 수 있어요.
-        </p>
-      </div>
     </CardShell>
   );
 }

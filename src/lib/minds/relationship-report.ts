@@ -45,12 +45,21 @@ export interface RoleSlotAnalysis {
   presence: RolePresence;
   /** 이 사람 안에서 이 배역을 맡는 마음 한 줄(이름/묘사). */
   innerVoice: string;
-  /** 이 배역이 어떻게 작동하는지(2~3문장, 무료보다 깊게). */
+  /** 이 배역이 어떻게 작동하는지(4~6문장, 정성껏 풀어서). */
   howItWorks: string;
-  /** 무엇을 지키려는 보호 논리인지(1~2문장). */
+  /** 무엇을 지키려는 보호 논리인지(2~3문장). */
   protects: string;
   /** 답변 원문 인용. dormant 면 빈 문자열 가능. */
   evidenceQuote: string;
+  /* ── 무료 teaser 가 잠갔던 "이 마음의 속마음" — 유료에서 전부 펼쳐 약속을 이행한다. ── */
+  /** 이 마음이 진짜 원하는 것(2~3문장). dormant 면 빈 문자열 가능. */
+  wants: string;
+  /** 이 마음이 자주 하는 말(대사) 2~3개. */
+  sayings: string[];
+  /** 이 마음이 가장 두려워하는 것(2~3문장). dormant 면 빈 문자열 가능. */
+  fears: string;
+  /** 이 마음이 발동되는 순간(2~3문장). dormant 면 빈 문자열 가능. */
+  triggers: string;
 }
 
 /** 가장 센 갈등쌍(메인 각본). */
@@ -155,8 +164,12 @@ ${buildPartTypeReference()}
       "slot": "leader",            // leader|villain|rake|manager|exile 중 1개
       "presence": "dominant",      // dominant(지금 무대 중심) | active(작동 중) | dormant(이번 답변엔 거의 안 나타남)
       "innerVoice": "...",         // 이 사람 안에서 이 배역을 맡는 마음 한 줄(이름/묘사). 예: "더 해야 한다고 다그치는 마음"
-      "howItWorks": "...",         // 이 배역이 어떻게 작동하는지 2~3문장(무료보다 깊게)
-      "protects": "...",           // 사실은 무엇을 지키려는 마음인지(보호 논리) 1~2문장
+      "howItWorks": "...",         // 이 배역이 어떻게 작동하는지 **4~6문장**, 정성껏 풀어서(단답 금지)
+      "protects": "...",           // 사실은 무엇을 지키려는 마음인지(보호 논리) 2~3문장
+      "wants": "...",              // 이 마음이 진짜 원하는 것 2~3문장 (무료 teaser 가 잠갔던 약속)
+      "sayings": ["...", "...", "..."], // 이 마음이 자주 하는 말(대사) 2~3개
+      "fears": "...",              // 이 마음이 가장 두려워하는 것 2~3문장
+      "triggers": "...",           // 이 마음이 발동되는 순간(언제 깨어나는지) 2~3문장
       "evidenceQuote": "..."       // 답변 원문에서 그대로/가깝게 인용. 근거 약하면 빈 문자열("")
     }
     // ↑ 위 형식으로 **정확히 5개** — leader·villain·rake·manager·exile 각각 1개씩
@@ -182,7 +195,7 @@ ${buildPartTypeReference()}
     "mediation": "..."             // 그 고리를 느슨하게 푸는 화해 시나리오 2~3문장
   },
   "relationships": [
-    { "a": "leader", "b": "exile", "dynamic": "..." }  // 헤드라인 외 눈에 띄는 관계 0~4개
+    { "a": "leader", "b": "exile", "dynamic": "..." }  // 헤드라인 외 눈에 띄는 관계 0~4개. dynamic 은 2~3문장으로, 두 마음이 서로에게 어떤 영향을 주고받는지(한쪽이 …하면 다른 쪽이 …해진다) 구체적으로 풀어 쓴다. 한 줄 요약 금지.
   ],
   "actions": [
     {
@@ -197,12 +210,15 @@ ${buildPartTypeReference()}
 
 ## 규칙
 1. **roles 는 정확히 5개.** leader·villain·rake·manager·exile 슬롯을 빠짐없이 하나씩. 순서도 이대로.
-2. **약한 배역을 지어내지 마라.** 답변에 근거가 또렷하면 dominant/active, 거의 안 보이면 presence="dormant" 로 정직하게. dormant 배역도 howItWorks·protects 는 "이번엔 이 마음이 잠잠한 편이에요. 보통 이 배역은 …" 식으로 짧고 따뜻하게 채우고, evidenceQuote 는 "".
+2. **약한 배역을 지어내지 마라.** 답변에 근거가 또렷하면 dominant/active, 거의 안 보이면 presence="dormant" 로 정직하게. dormant 배역은 howItWorks·protects 를 "이번엔 이 마음이 잠잠한 편이에요. 보통 이 배역은 …" 식으로 짧고 따뜻하게 채우고, wants·fears·triggers 는 짧게(또는 "")·sayings 는 []·evidenceQuote 는 "". (dominant/active 배역만 아래 6-2 처럼 깊고 길게 쓴다.)
 3. **presence 가 dominant 인 배역은 1~2개만.** 무대 중심을 흐리지 않는다.
 4. innerVoice·evidenceQuote 는 **답변에 근거**하거나 가까운 paraphrase. 없는 내용 지어내기 금지.
 5. headlineConflict 는 답변에서 *실제로 가장 세게 충돌하는* 두 배역. 억지 연결 금지. (예: 다그치는 리더 ↔ 위기에 튀어나오는 난봉꾼)
+5-1. **relationships(나머지 관계도)도 정성껏 쓴다.** 헤드라인 갈등 외에 눈에 띄는 관계 0~4개를 고르되, 각 dynamic 을 2~3문장으로 — 두 마음이 서로에게 어떻게 반응을 주고받아 하나의 패턴을 만드는지(한쪽이 …하면 다른 쪽이 …해지고, 그래서 …) 구체적 장면과 함께 풀어 쓴다. 한 줄 요약이나 라벨 나열 금지.
 6. 본문(howItWorks·protects·loop·mediation·closing)은 단답이 아니라 *풀어쓴 문장*으로, 어떤 배역도 나쁜 마음으로 단정하지 말고 "겉으론 이렇게 행동하지만 더 깊은 곳을 지키려는 마음"이라는 비판단적 시선을 유지한다. "~인 것 같아요/~로 보여요"의 가설 톤.
 6-1. **protects 문장의 시작을 매번 다르게 쓴다.** "사실은~"으로 5장을 똑같이 시작하지 말 것. 예: "정말로 지키고 싶은 건…", "그 행동 밑에는…", "이 마음이 두려워하는 건…", "겉모습과 달리…", "여기엔 …하려는 바람이 숨어 있어요" 등으로 매번 표현을 바꾼다.
+6-2. **이건 값을 치른 유료 리포트다 — 배역 서술을 아주 정성껏, 길게 쓴다(특히 dominant/active).** howItWorks 는 4~6문장으로 이 배역이 언제·어떻게 무대에 오르고 그 사람의 반응을 어떻게 끌고 가는지 구체적 장면과 함께 풀고, protects 는 2~3문장으로 그 밑의 보호 논리를 짚는다. 한 문장짜리 단답·앙상한 요약은 유료답지 않으니 금지. 이 사람 답변의 실제 디테일(단어·상황)을 녹여 "돈이 아깝지 않다" 싶은 밀도를 준다.
+6-3. **wants·sayings·fears·triggers 는 무료 화면에서 자물쇠로 잠가 두고 "전체 리포트에서 풀린다"고 약속한 바로 그 속마음이다 — 유료에서 반드시 충실히 채운다.** 각 배역(마음)에 대해 wants(진짜 원하는 것)·fears(가장 두려워하는 것)·triggers(발동되는 순간)를 각 2~3문장의 서술형으로, sayings(자주 하는 말)는 이 마음다운 대사 2~3개로. 이 사람 답변에 근거해 개인화하고, 배역마다 결이 다르게 쓴다(리더의 갈망 ≠ 추방자의 갈망).
 7. 답변 주제에 맞춰 쓴다(관계 고민이면 관계 언어로, 일·성취면 그 언어로). 특정 주제로 미리 몰아가지 말 것.
 8. 배역명(리더/빌런/난봉꾼/관리자/추방자)은 그대로 써도 된다(제품 어휘). 그 외 임상 용어는 아래 규칙을 따른다.
 9. **defenseMechanisms**: 위 배역들이 *함께 만들어낸* 실제 행동 패턴(방어 전략)을 2~4개. "당신이 자주 쓰는 방어기제는 이거예요"처럼, 임상용어가 아니라 그 사람이 실제로 하는 행동의 언어로 이름 짓고("완벽함으로 무장하기", "괜찮은 척 삼키기", "충동적으로 도망치기" 등), howYouUseIt 은 답변에 근거해 "당신은 ~할 때 …하곤 해요" 톤으로 쓴다. roles 와 그대로 겹치지 말고, 배역들이 *합쳐져* 빚어내는 패턴에 초점.
@@ -258,6 +274,9 @@ export function readRelationshipReport(
     )
       ? o.presence
       : "active") as RolePresence;
+    const sayings = Array.isArray(o.sayings)
+      ? o.sayings.map(str).filter(Boolean).slice(0, 3)
+      : [];
     bySlot.set(slot, {
       slot,
       label: labelOf(slot),
@@ -266,6 +285,10 @@ export function readRelationshipReport(
       howItWorks: str(o.howItWorks),
       protects: str(o.protects),
       evidenceQuote: str(o.evidenceQuote),
+      wants: str(o.wants),
+      sayings,
+      fears: str(o.fears),
+      triggers: str(o.triggers),
     });
   }
 
@@ -280,6 +303,10 @@ export function readRelationshipReport(
         howItWorks: "이번 답변에선 이 배역이 잘 드러나지 않았어요.",
         protects: "",
         evidenceQuote: "",
+        wants: "",
+        sayings: [],
+        fears: "",
+        triggers: "",
       }
   );
 
@@ -399,19 +426,25 @@ export async function generateRelationshipReport(
     .join("\n\n");
   if (!userContent.trim()) return null;
 
-  // 무료 분석이 이미 있으면, 무대 중심(leader)·갈등 단서를 참고로 함께 넘긴다.
+  // 무료 분석이 이미 있으면, 그때 유저가 만난 마음들을 이름·정체와 함께 넘긴다.
+  // 유저는 무료 화면에서 이 마음들 중 일부를 '잠긴 채'로만 보고 결제했다 — 유료는 그
+  // 마음들을 배역으로 이어받아 '드디어 풀리는' 연속성을 반드시 지켜야 한다.
   let priorHint = "";
   if (partsMap && partsMap.parts.length > 0) {
-    const names = partsMap.parts.map((p) => p.name).filter(Boolean);
-    priorHint = `\n\n## 참고: 무료 진단에서 이미 드러난 마음들\n${names
-      .map((n) => `- ${n}`)
-      .join("\n")}\n(위는 참고일 뿐, 5배역은 답변 전체를 다시 읽고 배정하세요.)`;
+    const lines = partsMap.parts
+      .map((p) => {
+        const id = (p.tagline || "").trim();
+        const lead = p.id === partsMap.leader_id ? " (무료에서 전체 공개된 대표 마음)" : " (무료에서 잠겨 있던 마음)";
+        return `- "${p.name}"${id ? ` — ${id}` : ""}${lead}`;
+      })
+      .join("\n");
+    priorHint = `\n\n## 유저가 무료 진단에서 이미 만난 마음들 (이 리포트로 '풀어줘야' 하는 대상)\n${lines}\n\n**중요 — 이름 연속성:** 위 마음들은 유저가 무료 화면에서 만났고, 대부분 자물쇠로 '잠긴 채'만 봤다. 이 유료 리포트는 그 마음들이 드디어 열리는 곳이다. 규칙:\n1. 위 마음들을 5배역 어딘가에 **반드시 등장**시킨다(잠겨 있던 마음을 dormant 로 묻지 말 것).\n2. 해당 배역의 innerVoice 는 반드시 **위에 적힌 마음 이름을 큰따옴표 없이 토씨 하나 안 바꾸고 그대로 맨 앞에 두고**, 이어서 " — 한 줄 묘사" 를 붙이는 형식으로 쓴다. 예: 무료 이름이 "미루는 나" 라면 innerVoice = \`미루는 나 — 완벽이 아니면 시작이 겁나 도망치는 마음\`. **이름을 새로 짓거나("성과로 숨 쉬어야만 하는 마음"처럼) 묘사로만 바꾸지 마라. 유저가 무료에서 본 그 이름 글자 그대로가 보여야 한다.**\n3. 무료에 없던 배역(위 목록에 없는 슬롯)은 이름 없이 평소대로 묘사만 쓰면 된다.\n답변 전체를 다시 읽어 5배역을 배정하되, 위 마음들의 이름은 글자 그대로 살린다.`;
   }
 
   const userMessage = `## 유저가 보고한 답변 (상담 대화)
 ${userContent}${priorHint}
 
-위 답변을 바탕으로 roles(5개) · headlineConflict · relationships · oneAction · closing 을 JSON으로 응답하세요.`;
+위 답변을 바탕으로 roles(5개) · headlineConflict · relationships · actions · closing 을 JSON으로 응답하세요.`;
 
   const response = await chatCompletion(
     [
@@ -419,11 +452,11 @@ ${userContent}${priorHint}
       { role: "user", content: userMessage },
     ],
     {
-      // 유료 상품 — 품질 우선. 무료(flash)와 달리 pro 사용. 5배역 본문을 모두 풀어
-      // 생성하므로 토큰을 넉넉히(한국어 토큰 비효율 대응).
+      // 유료 상품 — 품질 우선. 무료(flash)와 달리 pro 사용. 5배역 본문(howItWorks·protects
+      // + 속마음 4필드까지)을 모두 길게 풀어 생성하므로 토큰을 넉넉히(한국어 토큰 비효율 대응).
       model: "gemini-2.5-pro",
       temperature: 0.6,
-      max_tokens: 16384,
+      max_tokens: 24576,
       response_format: { type: "json_object" },
     }
   );
