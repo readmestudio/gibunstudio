@@ -57,6 +57,7 @@ export function MindsCharacterCard({ view, index, total, variant = "full", onUnl
     tagline,
     catchphrase,
     description,
+    insight,
     wants,
     sayings,
     fears,
@@ -120,6 +121,27 @@ export function MindsCharacterCard({ view, index, total, variant = "full", onUnl
         <p style={{ marginTop: 24, fontFamily: M.font, fontWeight: 800, fontSize: 26, letterSpacing: "-0.02em", lineHeight: 1.3, color: M.ink }}>
           “{catchphrase}”
         </p>
+
+        {/* "아하 모먼트" — 왜 이 마음을 반복하는지의 인과 + 반전 재해석. 카드에서 가장
+            먼저 눈에 띄어야 할 깨달음이라, 본문 위에 주황 콜아웃으로 강조한다(full 만). */}
+        {!teaser && insight && (
+          <div
+            style={{
+              marginTop: 22,
+              padding: "16px 18px",
+              borderLeft: `3px solid ${M.accent}`,
+              background: M.accentSoft,
+              borderRadius: "0 4px 4px 0",
+            }}
+          >
+            <div style={{ fontFamily: M.mono, fontSize: 10.5, fontWeight: 600, letterSpacing: "0.18em", color: M.accent, marginBottom: 9 }}>
+              왜 자꾸 이럴까
+            </div>
+            <p style={{ fontFamily: M.font, fontSize: 15.5, fontWeight: 500, lineHeight: 1.8, color: M.ink, margin: 0 }}>
+              {insight}
+            </p>
+          </div>
+        )}
 
         {/* 본문 해설 — full(리더)만 선명하게. 긴 서술형이므로 문단으로 나눠 읽히게 한다.
             teaser 는 아래 블러 벽에서 흐리게 보여준다. */}
@@ -191,6 +213,12 @@ export function MindsCharacterCard({ view, index, total, variant = "full", onUnl
             }}
           >
             <p style={bodyText}>{description}</p>
+            {insight && (
+              <div style={{ marginTop: 14, padding: "14px 16px", borderLeft: `3px solid ${M.accent}`, background: M.accentSoft, borderRadius: "0 4px 4px 0" }}>
+                <div style={{ fontFamily: M.mono, fontSize: 10.5, fontWeight: 600, letterSpacing: "0.18em", color: M.accent, marginBottom: 8 }}>왜 자꾸 이럴까</div>
+                <p style={{ ...bodyText, color: M.ink, fontWeight: 500 }}>{insight}</p>
+              </div>
+            )}
             <div style={{ marginTop: 14 }}>
               <ARow label="이 마음이 원하는 것">
                 <p style={bodyText}>{wants}</p>
@@ -242,7 +270,7 @@ export function MindsCharacterCard({ view, index, total, variant = "full", onUnl
                 이 마음의 속마음은 아직 잠겨 있어요
               </p>
               <p style={{ margin: "8px auto 0", maxWidth: 300, fontSize: 13.5, lineHeight: 1.7, color: M.mute, fontFamily: M.font }}>
-                이 마음이 진짜 원하는 것, 자주 삼키는 말, 가장 두려워하는 것까지 —{" "}
+                이 마음이 왜 자꾸 이러는지, 진짜 원하는 게 뭔지, 가장 두려워하는 것까지 —{" "}
                 <strong style={{ color: M.ink2, fontWeight: 600 }}>전체 리포트</strong>에서 풀려요.
               </p>
             </div>

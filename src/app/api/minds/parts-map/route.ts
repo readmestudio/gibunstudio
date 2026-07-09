@@ -9,6 +9,7 @@ import {
 import {
   readPartsMap,
   type PartsMap,
+  type PartCharacter,
 } from "@/lib/self-workshop/core-belief-excavation";
 import { getSavedPartsMap } from "@/lib/minds/result-store";
 
@@ -27,7 +28,8 @@ import { getSavedPartsMap } from "@/lib/minds/result-store";
  *     LLM 을 재호출하지 않는다. "테스트 1인 1회(재분석 불가)" 정책과도 일치.
  *  1) IP 레이트리밋(ai: 5회/분)
  *  2) 전역 일일 상한(MINDS_LLM_DAILY_LIMIT, 기본 500) — 초과 시 LLM 미호출, 폴백
- *  3) 저가 모델(gemini-2.5-flash) + thinking 끔
+ *  3) 저가 모델(gemini-2.5-flash) + thinking 끔 — 단, 전부 공개되는 '리더' 한 명만
+ *     2-pass 로 pro 심화(deepenLeaderWithPro). teaser 들은 flash 그대로라 비용은 리더에만.
  *
  * Body: { answers: {id,question,answer}[], leadId?: string }
  * Resp: { parts_map: PartsMap }  — 어떤 실패든 폴백으로 항상 유효한 지도를 돌려준다.
@@ -138,6 +140,9 @@ export async function POST(req: NextRequest) {
         console.error(`[minds/parts-map] LLM 시도 ${attempt + 1} 실패:`, err);
       }
     }
+    // 2-pass: 리더(전부 공개되는 대표 마음) 한 명만 pro 로 심화한다. teaser 는 flash 그대로.
+    // 실패해도 flash 리더를 유지하는 순수 상향 패스라 무회귀.
+    if (partsMap) partsMap = await deepenLeaderWithPro(userContent, partsMap);
   }
 
   // LLM 실패/빈 입력 → 사용자 답변 기반 결정론적 폴백(항상 유효한 지도).
@@ -184,6 +189,7 @@ ${buildPartTypeReference()}
       "traits": ["완벽주의", "통제"],  // 특성 키워드 2~3개
       "catchphrase": "더 해야 해, 이대론 부족해", // 이 마음이 자주 하는 말 한 줄 (20자 내외)
       "description": "...",            // 이 마음이 어떤 마음인지 (상담가가 써 준 분석 톤). leader 는 4~6문장, 나머지는 2~3문장
+      "insight": "...",                // ★"아하 모먼트" — 왜 이 마음을 *반복하는지*의 인과(원인/기원) + 반전 재해석. leader 는 2~3문장, 나머지는 1~2문장. (아래 규칙 5-2 참조)
       "wants": "...",                  // 이 마음이 진짜 바라는 것. leader 는 3~5문장, 나머지는 1~2문장
       "sayings": ["...", "...", "..."], // 이 마음이 자주 내뱉는 대사 (leader 는 3개)
       "fears": "...",                  // 이 마음이 가장 두려워하는 것. leader 는 3~5문장, 나머지는 1~2문장
@@ -210,11 +216,15 @@ ${buildPartTypeReference()}
    (b) 그런데 그 마음이 *사실은* 안쪽의 더 여리고 상처받기 쉬운 마음(서운함·외로움·상처받은 어린 마음 등 exile 성격)을 지키려고 그렇게 행동한다는 **보호의 논리**. 즉 "겉의 마음 = 안의 마음을 지키려는 방패"라는 연결을 드러낸다.
    (c) 그래서 이 사람이 왜 이런 방식(단호함·다그침·거리두기·무시 등)을 *무기처럼* 꺼내 들게 됐는지 그 **인과**를 한 문장으로 짚는다.
    형식 예: "당신은 서운한 마음을 잠깐 내비쳤다가도, 더는 상처받고 싶지 않아서 〈단호하게 끊어내는 마음〉을 방패처럼 앞세우고 있는 듯해요. 겉으론 쿨하게 정리하는 것 같지만, 그 단호함은 사실 안쪽의 〈상처받은 어린 마음〉이 또 다치지 않게 지키려는 안간힘으로 보여요. 그래서 마음이 약해지려는 순간마다 더 세게 단호함을 꺼내 들게 되는 것 같아요." 단정·진단·평가 금지, "~인 듯해요/~로 보여요/~인 것 같아요"의 가설 톤 유지.
+5-2. **insight 는 이 리포트의 핵심 — "아하 모먼트"다.** 유저가 자기 답변을 다시 읽는 수준을 넘어 "아, 내가 *이래서* 그랬구나!" 하고 무릎을 치게 만드는 한 조각이다. description(이 마음이 뭔지 묘사)·wants·fears 를 다른 말로 되풀이하면 실패다. insight 는 반드시 **두 박자**를 담는다:
+   (박자1 — 원인/기원) 유저가 *의식하지 못한 인과*를 짚는다. "당신이 이걸 자꾸 반복하는 건, 언젠가 〈…하면 …해진다〉고 익힌 마음이 아직 당신을 지키려 들어서인 것 같아요"처럼, 지금의 반응을 *한때 그를 버티게 해준 학습된 논리/보호 장치*로 연결한다. — 단, 없는 유년 기억·사건을 지어내지 마라("어릴 때 부모님이…" 식 창작 금지). 답변에서 읽히는 *마음의 논리*를 가설로 짚는 데 그친다.
+   (박자2 — 반전) 그래서 이 마음이 유저가 여겨온 것과 *다르게* 보인다는 재해석을 준다. "그러니 이건 〈게으름/예민함/못남〉이 아니라, 사실은 〈…를 지키려는 안간힘〉이었던 거예요"처럼, 유저가 자책하던 특성을 *보호 적응*으로 뒤집어 준다.
+   형식 예: "당신이 성과 앞에서 한순간도 못 쉬는 건 게을러질까 봐가 아니라, '멈추면 나를 증명할 게 사라진다'고 배운 마음이 여태 당신을 지키고 있어서인 것 같아요. 그래서 그 다그침은 결함이 아니라, 무너지지 않으려고 당신이 오래 붙들어 온 생존 방식이었던 셈이에요." 가설 톤(~같아요/~인 셈이에요) 유지, 단정·진단 금지. leader 는 2~3문장으로 밀도 있게, 나머지 마음은 1~2문장으로 간결히.
 6. role은 내부 분류용이며 화면에 노출되지 않으니 위 단서로 가장 가까운 1개를 고른다.
 7. **description·wants·fears·triggers·sayings 는 이 사람의 *실제 답변 내용*에 맞춰 쓴다.** 답변이 관계 고민이면 관계 언어로, 일/성취 고민이면 성취 언어로, 자기 자신에 대한 고민이면 그 언어로 — 특정 주제(예: 성취·번아웃)로 미리 몰아가지 말 것. 사람마다 다른 결과가 나와야 한다.
 8. 본문(description·wants·fears·triggers)은 단답이 아니라 *풀어쓴 문장*으로, "사람이 나를 읽고 있구나" 싶은 따뜻한 상담가 톤(~에요/~습니다). 어떤 마음도 나쁜 마음으로 단정하지 말고, "겉으론 이렇지만 사실은 나를 지키려는 마음"이라는 비판단적 시선을 유지한다.
 9. **leader_id 로 지정한 마음은 무료 리포트에서 유일하게 전부 공개되는 '대표 마음'이다.** 이 마음만은 아주 정성껏, 길게 쓴다:
-   - description 4~6문장, wants·fears·triggers 각 3~5문장, sayings 3개.
+   - description 4~6문장, insight 2~3문장(위 5-2 의 '아하 모먼트' 밀도로), wants·fears·triggers 각 3~5문장, sayings 3개.
    - 이 사람 답변의 **구체적 장면·단어·표현을 짚어** 녹여 넣어(그대로 인용하거나 가까이 paraphrase), "여러 번 읽고 나만을 위해 눌러 쓴 글" 같은 밀도를 준다. 일반론·뜬구름 금지, 이 사람에게만 맞는 디테일로 채운다.
    - 한 문장짜리 단답은 절대 금지. 한 호흡으로 읽히되 문장을 이어 붙여 서사처럼 흐르게 한다.
    - **나머지 parts 는 반대로 간결하게**(위 문장 수 하한) 써서 토큰을 leader 에 몰아준다.
@@ -258,6 +268,107 @@ ${userContent}
   return readPartsMap(raw);
 }
 
+/* ─────────────── 리더만 pro 로 심화 (2-pass) ─────────────── */
+
+/**
+ * flash 가 만든 지도에서 **리더(대표 마음) 한 명만** pro 모델로 다시 써서 깊이를
+ * 끌어올린다. 무료 리포트에서 유일하게 *전부 공개되는* 카드가 리더이므로, 비용은
+ * 여기에만 집중 투입한다(teaser 들은 flash 그대로 둔다 → "리더만 pro").
+ *
+ * 실패(타임아웃·JSON 깨짐)하면 flash 가 쓴 리더를 그대로 반환한다(무회귀). 즉 이
+ * 단계는 "되면 더 좋고, 안 되면 원래 품질"인 순수 상향 패스다.
+ */
+async function deepenLeaderWithPro(
+  userContent: string,
+  partsMap: PartsMap
+): Promise<PartsMap> {
+  const leader = partsMap.parts.find((p) => p.id === partsMap.leader_id);
+  if (!leader) return partsMap;
+
+  const systemPrompt = `당신은 따뜻한 IFS(내면가족체계) 진행자입니다. 아래는 한 사람의 답변에서 이미 뽑아낸 '지금 가장 앞에 나선 대표 마음' 하나입니다. 이 마음 **하나만**을, 무료 리포트에서 유일하게 전부 공개되는 카드에 걸맞게 아주 정성껏·깊게 다시 써 주세요. (나머지 마음들은 다루지 않습니다.)
+
+## 대표 마음 (이미 식별됨 — 이름은 바꾸지 말 것)
+- 이름(name): "${leader.name}"
+- 역할(내부 분류, 화면 비노출): ${leader.role ?? "unclear"}
+- 답변 근거로 잡힌 인용: "${leader.evidence_quote || "(없음)"}"
+
+## 출력 스키마 (JSON 단일 객체로만, 다른 텍스트 금지)
+{
+  "tagline": "...",       // 표면 이름 아래 '진짜 마음'을 해석해 짚은 헤드라인 (18자 내외, 되도록 '~하는 마음'). name 을 동어반복하지 말고 한 겹 더 깊은 통찰.
+  "catchphrase": "...",   // 이 마음이 자주 하는 말 한 줄 (20자 내외, 답변에 근거)
+  "description": "...",   // 이 마음이 어떤 마음인지 4~6문장. 이 사람 답변의 구체적 장면·단어를 그대로 인용하거나 가까이 녹여, "나만을 위해 눌러 쓴 글" 같은 밀도.
+  "insight": "...",       // ★"아하 모먼트" — 두 박자(아래 규칙). 이 리포트의 핵심.
+  "wants": "...",         // 이 마음이 진짜 바라는 것 3~5문장
+  "sayings": ["...", "...", "..."], // 이 마음이 자주 내뱉는 대사 3개
+  "fears": "...",         // 가장 두려워하는 것 3~5문장
+  "triggers": "..."       // 언제 깨어나는지 3~5문장
+}
+
+## 규칙
+1. **name 은 바꾸지 마라** — 위 이름 그대로가 카드 꼬리표로 쓰인다. tagline 은 그 아래 한 겹 더 깊은 해석이다.
+2. 모든 본문은 이 사람 답변의 *실제 디테일*에 근거해 개인화한다. 일반론·뜬구름·특정 주제(성취·번아웃 등)로의 몰아가기 금지 — 답변이 관계면 관계 언어로, 일이면 그 언어로.
+3. **insight 는 이 카드의 핵심 "아하 모먼트"다.** description·wants·fears 를 다른 말로 되풀이하면 실패. 반드시 두 박자를 담는다:
+   (박자1 — 원인/기원) 유저가 *의식하지 못한 인과*를 짚는다. 지금의 반응을 *한때 그를 버티게 해준 학습된 논리/보호 장치*로 연결한다("언젠가 〈…하면 …해진다〉고 익힌 마음이 아직 당신을 지키려 들어서인 것 같아요"). 단, 없는 유년 기억·사건을 지어내지 마라 — 답변에서 읽히는 *마음의 논리*를 가설로만 짚는다.
+   (박자2 — 반전) 그래서 이 마음이 유저가 자책하던 것과 *다르게* 보인다는 재해석을 준다("그러니 이건 〈게으름/예민함/못남〉이 아니라, 사실 〈…를 지키려는 안간힘〉이었던 셈이에요"). 2~3문장.
+4. 단정·진단·평가 금지, "~같아요/~로 보여요/~인 셈이에요"의 가설 톤. 어떤 마음도 나쁜 마음으로 몰지 말고 "겉으론 이렇지만 사실은 나를 지키려는 마음"이라는 비판단적 시선.
+
+${IFS_TERM_BAN_RULES}`;
+
+  const userMessage = `## 유저가 보고한 답변 (진단)
+${userContent}
+
+위 답변을 바탕으로, 대표 마음 "${leader.name}" 하나의 tagline·catchphrase·description·insight·wants·sayings·fears·triggers 를 JSON으로 응답하세요.`;
+
+  // 일시적 실패(타임아웃·JSON 깨짐)에 대비해 최대 2회 재시도. 끝까지 실패하면 flash 리더 유지.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await chatCompletion(
+        [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        {
+          // 리더 카드만 pro. 한 캐릭터에 집중하므로 토큰은 flash 전체 패스보다 작다.
+          model: "gemini-2.5-pro",
+          temperature: 0.7,
+          max_tokens: 8192,
+          response_format: { type: "json_object" },
+        }
+      );
+      const parsed = safeJsonParse<Record<string, unknown>>(response);
+      if (!parsed || typeof parsed !== "object") continue;
+
+      // 있는 필드만 덮어쓴다(빈 값이면 flash 리더 값 유지). name·id·role·evidence 는 flash 유지.
+      const s = (v: unknown, fb: string): string =>
+        typeof v === "string" && v.trim() ? v.trim() : fb;
+      const proSayings = Array.isArray(parsed.sayings)
+        ? parsed.sayings
+            .map((x) => (typeof x === "string" ? x.trim() : ""))
+            .filter(Boolean)
+            .slice(0, 3)
+        : [];
+      const deepened: PartCharacter = {
+        ...leader,
+        tagline: s(parsed.tagline, leader.tagline ?? ""),
+        catchphrase: s(parsed.catchphrase, leader.catchphrase),
+        description: s(parsed.description, leader.description ?? ""),
+        insight: s(parsed.insight, leader.insight ?? ""),
+        wants: s(parsed.wants, leader.wants ?? ""),
+        sayings: proSayings.length ? proSayings : leader.sayings ?? [],
+        fears: s(parsed.fears, leader.fears ?? ""),
+        triggers: s(parsed.triggers, leader.triggers ?? ""),
+      };
+      return {
+        ...partsMap,
+        parts: partsMap.parts.map((p) => (p.id === leader.id ? deepened : p)),
+      };
+    } catch (err) {
+      console.error(`[minds/parts-map] 리더 pro 심화 시도 ${attempt + 1} 실패:`, err);
+    }
+  }
+  return partsMap; // pro 실패 → flash 리더 그대로(무회귀)
+}
+
 /* ─────────────── 폴백: 사용자 답변 기반 마음 캐릭터 ─────────────── */
 
 /**
@@ -287,6 +398,8 @@ function buildFallbackPartsMap(userQuotes: string[]): PartsMap {
           name: "더 해야 한다고 다그치는 마음",
           traits: ["성취 압박", "통제"],
           catchphrase: "더 해야 해, 멈추면 안 돼",
+          insight:
+            "당신이 좀처럼 멈추지 못하는 건 게을러질까 봐가 아니라, '멈추는 순간 나를 증명할 게 사라진다'고 배운 마음이 아직 당신을 지키고 있어서인 것 같아요. 그래서 그 다그침은 결함이 아니라, 무너지지 않으려고 오래 붙들어 온 생존 방식이었던 셈이에요.",
           evidence_quote: driveQuote,
           role: "manager",
         },

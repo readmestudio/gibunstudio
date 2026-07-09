@@ -336,6 +336,15 @@ function RolePageCard({ r, index }: { r: RoleSlotAnalysis; index: number }) {
             {r.protects}
           </p>
         ) : null}
+        {/* "아하 모먼트" — 이 배역을 왜 반복하는지의 인과 + 반전. 주황 콜아웃으로 강조. */}
+        {r.insight ? (
+          <div style={{ margin: "0 0 16px", padding: "15px 17px", borderLeft: `3px solid ${M.accent}`, background: M.accentSoft, borderRadius: "0 4px 4px 0" }}>
+            <div style={{ fontFamily: M.mono, fontSize: 10, fontWeight: 600, letterSpacing: "0.16em", color: M.accent, marginBottom: 8 }}>왜 자꾸 이럴까</div>
+            <p style={{ fontFamily: M.font, fontSize: 15, fontWeight: 500, color: M.ink, lineHeight: 1.8, margin: 0 }}>
+              {r.insight}
+            </p>
+          </div>
+        ) : null}
         {r.evidenceQuote ? (
           <blockquote
             style={{

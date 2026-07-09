@@ -353,6 +353,10 @@ export interface CharacterView {
   tagline: string;
   catchphrase: string;
   description: string;
+  /**
+   * "아하 모먼트" — 왜 이 마음을 반복하는지의 인과 + 반전 재해석. LLM 생성 시에만
+   * 채워지고(가정 캐릭터엔 없음), 있으면 카드에서 강조 콜아웃으로 노출한다. 빈 문자열이면 미노출. */
+  insight: string;
   wants: string;
   sayings: string[];
   fears: string;
@@ -389,6 +393,8 @@ export function buildCharacterViews(partsMap: PartsMap): CharacterView[] {
       tagline: pickText(part?.tagline, archetype.tagline),
       catchphrase: pickText(part?.catchphrase, archetype.catchphrase),
       description: pickText(part?.description, archetype.description),
+      // insight 는 LLM 이 준 값만 노출한다(가정 캐릭터엔 fallback 없이 빈 문자열 → 카드에서 미노출).
+      insight: (part?.insight ?? "").trim(),
       wants: pickText(part?.wants, archetype.wants),
       sayings: part?.sayings && part.sayings.length ? part.sayings : archetype.sayings,
       fears: pickText(part?.fears, archetype.fears),

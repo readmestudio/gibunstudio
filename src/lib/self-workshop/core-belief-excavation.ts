@@ -81,6 +81,11 @@ export interface PartCharacter {
   tagline?: string;
   /** 이 마음이 어떤 마음인지(2~3문장). */
   description?: string;
+  /**
+   * "아하 모먼트" — 이 마음을 *왜 반복하는지*의 인과(원인/기원)와 *반전 재해석*을
+   * 담은 통찰 한 조각. 묘사(description)와 달리, 답변을 다르게 옮겨 적는 게 아니라
+   * "아, 내가 이래서 그랬구나!" 싶은 깨달음을 준다. leader 카드에서 강조 노출. */
+  insight?: string;
   /** 이 마음이 진짜 바라는 것(1~2문장). */
   wants?: string;
   /** 자주 하는 말(대사) 2~3개. */
@@ -337,6 +342,7 @@ export function readPartsMap(container: unknown): PartsMap | null {
     const tagline = typeof pp.tagline === "string" ? pp.tagline.trim() : "";
     const description =
       typeof pp.description === "string" ? pp.description.trim() : "";
+    const insight = typeof pp.insight === "string" ? pp.insight.trim() : "";
     const wants = typeof pp.wants === "string" ? pp.wants.trim() : "";
     const sayings = toStringArray(pp.sayings) ?? [];
     const fears = typeof pp.fears === "string" ? pp.fears.trim() : "";
@@ -351,6 +357,7 @@ export function readPartsMap(container: unknown): PartsMap | null {
       ...(role ? { role } : {}),
       ...(tagline ? { tagline } : {}),
       ...(description ? { description } : {}),
+      ...(insight ? { insight } : {}),
       ...(wants ? { wants } : {}),
       ...(sayings.length ? { sayings } : {}),
       ...(fears ? { fears } : {}),
