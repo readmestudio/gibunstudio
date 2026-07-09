@@ -55,6 +55,8 @@ export default async function AdminHomePage() {
     { count: reviewCount },
     { count: innerChildTotal },
     { count: innerChildDone },
+    { count: leadsTotal },
+    { count: leadsDone },
   ] = await Promise.all([
     admin
       .from("workbook_waitlist")
@@ -76,6 +78,12 @@ export default async function AdminHomePage() {
       .from("minds_leads")
       .select("*", { count: "exact", head: true })
       .eq("channel", "inner_child")
+      .not("parts_map", "is", null),
+    // 통합 리드(전 테스트) — 전체 시작 / 완주(parts_map 있음)
+    admin.from("minds_leads").select("*", { count: "exact", head: true }),
+    admin
+      .from("minds_leads")
+      .select("*", { count: "exact", head: true })
       .not("parts_map", "is", null),
   ]);
 
@@ -143,6 +151,21 @@ export default async function AdminHomePage() {
       description:
         "성취중독·minds 테스트 후 페이월에서 이탈하려던 방문자가 남긴 후기를 테스트별로 보고, 추첨 연락처를 확인해요.",
       stats: [{ label: "후기", value: reviewCount ?? 0, unit: "건" }],
+    },
+    {
+      href: "/admin/leads",
+      eyebrow: "LEAD · 통합",
+      title: "전체 리드",
+      description:
+        "무료 테스트(내면 아이·마음 배역 등)를 시작·완료한 방문자를 한 곳에서 보고, 어느 테스트에서 온 리드인지 테스트별로 구분해요.",
+      stats: [
+        { label: "완주", value: leadsDone ?? 0, unit: "명" },
+        { label: "전체 시작", value: leadsTotal ?? 0, unit: "명" },
+      ],
+      subLinks: [
+        { href: "/admin/leads?test=inner_child", label: "내면 아이만 보기" },
+        { href: "/admin/leads?test=minds", label: "마음 배역만 보기" },
+      ],
     },
     {
       href: "/admin/inner-child",

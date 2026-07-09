@@ -52,6 +52,14 @@ export async function POST(req: NextRequest) {
         : b.channel === "anon"
           ? "anon"
           : "email";
+
+  // 어느 테스트/퍼널에서 온 리드인가 — channel(전달수단)과 분리된 전용 태그.
+  // 인서트 시점에 확정해 두면 이후 channel 이 바뀌어도(로그인 등) 출처는 고정된다.
+  // inner_child 퍼널은 channel 또는 variant 로 신호하고, 그 외는 모두 minds 퍼널.
+  const testType =
+    channel === "inner_child" || b.variant === "inner_child"
+      ? "inner_child"
+      : "minds";
   let email =
     typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
   let userId: string | null = null;
@@ -94,6 +102,7 @@ export async function POST(req: NextRequest) {
     .from("minds_leads")
     .insert({
       channel,
+      test_type: testType,
       email: email || null,
       ...(userId ? { user_id: userId } : {}),
       source: "minds",
