@@ -11,21 +11,17 @@ import { ALIMTALK_TEMPLATES } from "./templates";
  */
 
 /**
- * 🚧 유료 결제완료 알림톡 — 일시 중단(검수 대기).
+ * ✅ 유료 결제완료 알림톡 — 발송 중(신규 템플릿 검수 통과, 2026-07-09 재개).
  *
- * 기존 템플릿(KA01TP…QnYYJliPQTv)은 고정 웹링크 버튼 `https://gibunstudio.com/minds/my`
- * (로그인 필요)라, 비로그인으로 결제한 구매자는 그 링크로 리포트를 못 연다. 이를 고치려
- * "구매별 링크"(`/r/#{리포트코드}` → 로그인 없이 해당 리포트로 리다이렉트) 버튼을 쓰는
- * 신규 템플릿을 카카오에 재검수 요청 중이다. 검수 통과 전까지는 잘못된 링크가 나가지
- * 않도록 발송을 멈춘다(회원가입 환영 알림톡 sendSignupWelcomeAlimtalk 은 영향 없음).
+ * 신규 템플릿 `KA01TP260708141612490nILeKmIgJ4U` 은 버튼 웹링크가
+ * `https://gibunstudio.com/r/#{리포트코드}` — 로그인 없이 구매별 리포트로 리다이렉트한다
+ * (`/r/[id]` 라우트가 order_id prefix 로 IC-→내면 아이 / 그 외→다섯 배역 분기).
+ * `#{리포트코드}` 하나만 치환하며, 값은 결제 UUID(purchase.id)다. 솔라피가 이 변수를
+ * 본문·버튼 URL 양쪽에 함께 치환하므로 아래 variables 만 넘기면 된다.
  *
- * ✅ 신규 템플릿 검수 통과 후 재개 절차:
- *   1) templates.ts 의 MINDS_RELATIONSHIP_PAID 를 새 템플릿 ID(KA01TP…)로 교체.
- *   2) 새 템플릿 버튼 링크를 `https://gibunstudio.com/r/#{리포트코드}` 로 등록했는지 확인
- *      (본문/버튼 변수명이 아래 variables 키와 정확히 일치해야 함 — 다르면 발송 거부).
- *   3) PAID_ALIMTALK_ENABLED 를 true 로.
+ * (구 템플릿 …QnYYJliPQTv 은 버튼이 `/minds/my` 고정이라 비로그인 구매자가 못 열어 폐기.)
  */
-const PAID_ALIMTALK_ENABLED = false;
+const PAID_ALIMTALK_ENABLED = true;
 
 /** ① "다섯 배역 + 관계 해설" / 내면 아이 유료 리포트 결제(제작) 완료 안내 */
 export async function sendPaidReportAlimtalk(p: {
