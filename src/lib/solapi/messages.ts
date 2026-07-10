@@ -46,7 +46,39 @@ export async function sendPaidReportAlimtalk(p: {
   });
 }
 
-/** ② 신규 회원가입 환영 */
+/**
+ * ✅ 워크샵 결제완료 알림톡 — 발송 중(카카오 검수 통과, 2026-07-10).
+ *
+ * "내면 아이 찾기 워크샵"(₩99,000) 결제 승인 시 발급된 intake 사전진단 링크를 안내한다.
+ * 솔라피 등록 템플릿(KA01TP260709132645540dGXyz3WKmgd)은 **도메인 고정 + 토큰만 변수** 방식이다:
+ * 버튼(모바일/PC 웹링크) URL 이 `https://gibunstudio.com/intake/#{진단토큰}` 이라
+ * 본문·버튼에 세션 토큰(session.token)만 치환한다. 변수는 #{고객명}, #{진단토큰} 2종.
+ */
+const WORKSHOP_ALIMTALK_ENABLED = true;
+
+/** ② 워크샵 결제완료 → intake 사전진단 링크 안내 */
+export async function sendWorkshopIntakeAlimtalk(p: {
+  phone: string;
+  name?: string | null;
+  /** 사전진단 세션 토큰 — 템플릿 버튼 웹링크 `.../intake/#{진단토큰}` 에 치환된다(도메인은 템플릿에 고정). */
+  intakeToken: string;
+}): Promise<AlimtalkResult> {
+  // 템플릿 검수 대기 — 승인 전까지 발송하지 않는다(미등록 templateId 발송 거부 방지).
+  if (!WORKSHOP_ALIMTALK_ENABLED) {
+    return { success: false, reason: "workshop_alimtalk_disabled_pending_template" };
+  }
+  return sendAlimtalk({
+    to: p.phone,
+    templateId: ALIMTALK_TEMPLATES.WORKSHOP_INTAKE_ISSUED,
+    variables: {
+      // ⚠️ 키는 솔라피 등록 변수명과 정확히 일치: #{고객명}(본문), #{진단토큰}(버튼 웹링크에 토큰만).
+      "#{고객명}": p.name?.trim() || "고객",
+      "#{진단토큰}": p.intakeToken,
+    },
+  });
+}
+
+/** ③ 신규 회원가입 환영 */
 export async function sendSignupWelcomeAlimtalk(p: {
   phone: string;
   name?: string | null;

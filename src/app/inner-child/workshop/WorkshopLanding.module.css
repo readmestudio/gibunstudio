@@ -1,0 +1,751 @@
+/*
+ * 워크샵 랜딩 스타일 — 디자인 핸드오프(innerchild-A-final.html) 기반 + 수정 요청 반영.
+ *
+ * 다크 "타이포 브루탈리즘" 페이지라 앱 전역(라이트 테마)과 톤이 정반대 —
+ * 모든 토큰·셀렉터를 .root 하위로 스코프해 밖으로 새지 않게 한다.
+ * Space Mono 는 page.tsx 에서 next/font 로 주입한 var(--font-space-mono) 를 참조.
+ *
+ * 2026-07-09 수정: 상단 바 제거 · 마퀴를 최상단 흰 배너로 · STATEMENT 는 일러스트
+ * 배경 + 불투명 패널 · 16유형은 4장 슬라이드(캐러셀)로 실제 일러스트 노출.
+ */
+
+.root {
+  --bg: #0a0a0b;
+  --panel: #141416;
+  --line: #242427;
+  --white: #fafaf7;
+  --sub: #8a8a86;
+  --or: #ff5a1e;
+  --or-d: #e0450e;
+  --mono: var(--font-space-mono), monospace;
+
+  background: var(--bg);
+  color: var(--white);
+  min-height: 100vh;
+  font-family: "Pretendard", -apple-system, system-ui, sans-serif;
+  line-height: 1.7;
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.root,
+.root * {
+  box-sizing: border-box;
+}
+.root h1,
+.root h2,
+.root h3,
+.root p {
+  margin: 0;
+}
+.root a {
+  color: inherit;
+  text-decoration: none;
+}
+.root img {
+  display: block;
+  width: 100%;
+}
+.root ::selection {
+  background: var(--or);
+  color: #000;
+}
+/* 핸드오프는 <a>, 여기선 동작 배선 때문에 <button> — 세 버튼만 기본 룩을 지운다
+   (넓은 .root button 리셋은 결제 모달 버튼까지 물들여서 금지). */
+.cta,
+.btnBuy,
+.btnGhost,
+.stickyCta {
+  border: none;
+  background: none;
+  font-family: inherit;
+  line-height: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* 데스크톱: 좁은 상세페이지 컬럼 유지(README 권장 480~560px) */
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+  /* 하단 고정 스티키 CTA(약 60px) 뒤로 footer 가 가리지 않게 여백 확보 */
+  padding-bottom: 92px;
+}
+
+.mono {
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+}
+.or {
+  color: var(--or);
+}
+.pad {
+  padding: 0 26px;
+}
+.root section {
+  padding: 76px 0;
+  border-top: 1px solid var(--line);
+}
+.kick {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  color: var(--or);
+  text-transform: uppercase;
+}
+.disp {
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  font-size: clamp(3rem, 15vw, 4.4rem);
+}
+.h2 {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.24;
+  font-size: clamp(2.1rem, 9.5vw, 3rem);
+}
+.body {
+  color: var(--sub);
+  font-size: 1.02rem;
+  line-height: 1.85;
+  font-weight: 500;
+}
+/* 섹션 도입 리드 문장 — 본문보다 조금 크고 흰색에 가깝게(친절한 안내 톤). */
+.lead {
+  color: #cfcfca;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  font-weight: 600;
+  margin-top: 14px;
+}
+
+/* marquee — 최상단 풀블리드 흰 배너(검정 텍스트) */
+.marq {
+  background: var(--white);
+  color: #000;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  padding: 13px 0;
+}
+.marq .track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: scroll 22s linear infinite;
+  font-weight: 800;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+.marq .track span {
+  padding: 0 22px;
+}
+@keyframes scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* hero — 모바일 세로 한 화면 꽉 차게(카피 위 · 가치 스택 아래로 분산) */
+.hero {
+  border-top: none;
+  padding-top: 40px;
+  /* 하단 고정 스티키 CTA(약 62px) 위로 가치 스택이 겹치지 않게 여백 */
+  padding-bottom: 96px;
+  /* 마퀴 배너(약 46px) 아래에서 시작하므로 그만큼 빼서 첫 화면에 꼭 맞춘다 */
+  min-height: calc(100dvh - 46px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+}
+.hero .disp {
+  margin: 14px 0 0;
+  font-size: clamp(2.7rem, 12.5vw, 3.9rem);
+  line-height: 1.04;
+}
+/* 히어로 대제목 위 작은 리드 문장 */
+.heroLead {
+  color: #cfcfca;
+  font-weight: 700;
+  font-size: clamp(1.02rem, 4.4vw, 1.2rem);
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+/* 대제목 아래 서브 카피 */
+.heroSub {
+  color: var(--sub);
+  font-size: 1.02rem;
+  line-height: 1.75;
+  font-weight: 600;
+  margin-top: 20px;
+}
+/* 내면 아이 이름이 롤링되는 검색창(모션) — 히어로 중앙 여백에 배치 */
+.heroSearchWrap {
+  flex: 1; /* heroTop/heroBottom 사이 남는 공간을 차지, 안에서 세로 중앙 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+.heroSearch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 17px 22px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+.searchIcon {
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: var(--sub);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+/* 이름이 아래에서 올라오는 롤 영역(한 줄 높이, 넘침 숨김) */
+.searchRoll {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 1.5em;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.searchName {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+  color: var(--white);
+  white-space: nowrap;
+  animation: rollUp 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes rollUp {
+  from {
+    transform: translateY(115%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.searchCaret {
+  flex-shrink: 0;
+  width: 2px;
+  height: 1.2em;
+  background: var(--or);
+  animation: caretBlink 1s steps(1) infinite;
+}
+@keyframes caretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+.heroSearchHint {
+  text-align: center;
+  color: var(--sub);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+/* 가치 스택(체크 4개) + 가격 — 히어로 하단 */
+.heroBottom {
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+}
+.heroChecks {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+.heroChecks li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0;
+  color: #e8e8e3;
+  font-weight: 600;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+.heroChecks li::before {
+  content: "→";
+  font-family: var(--mono);
+  color: var(--or);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.heroPrice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.heroPriceLabel {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--sub);
+}
+.heroPriceAmt {
+  font-weight: 900;
+  font-size: clamp(2.6rem, 12vw, 3.4rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--white);
+}
+.won {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-left: 2px;
+}
+
+/* problems */
+.prob {
+  display: flex;
+  gap: 18px;
+  padding: 24px 0;
+  border-top: 1px solid var(--line);
+}
+.prob:first-of-type {
+  border-top: none;
+}
+.prob .n {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 2.2rem;
+  color: var(--or);
+  line-height: 1;
+}
+.prob h3 {
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.prob p {
+  color: var(--sub);
+  font-size: 0.98rem;
+  line-height: 1.8;
+}
+
+/* statement — 일러스트(가로 크롭) + 불투명 다크 패널(컬럼 내부, 스택) */
+.stmt {
+  position: relative;
+}
+.stmtImg {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: center 50%;
+  background: #f2ede3;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  margin-top: 6px;
+}
+.stmtPanel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: none;
+  padding: 34px 24px 38px;
+}
+.stmtPanel .k {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  color: var(--or);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 22px;
+}
+.stmtBody {
+  color: #b9b9b4;
+  font-size: 1rem;
+  line-height: 1.9;
+  font-weight: 500;
+  margin-top: 30px;
+}
+.stmtBody b {
+  color: var(--white);
+  font-weight: 800;
+}
+
+/* 16 types — 4장 슬라이드 캐러셀 */
+.tgHead {
+  margin-top: 22px;
+}
+.carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  margin-top: 26px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.carousel::-webkit-scrollbar {
+  display: none;
+}
+.slide {
+  flex: 0 0 100%;
+  min-width: 100%;
+  scroll-snap-align: start;
+}
+.slideGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.tc {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 12px 12px 14px;
+}
+.tn {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--or);
+}
+.tcImg {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: #f2ede3;
+  border: 1px solid var(--line);
+  margin: 8px 0 10px;
+}
+.nm {
+  font-weight: 800;
+  font-size: 0.86rem;
+  line-height: 1.3;
+}
+.td {
+  color: var(--sub);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  font-weight: 500;
+  margin-top: 6px;
+  word-break: keep-all;
+}
+.dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 22px;
+}
+.dot {
+  width: 22px;
+  height: 3px;
+  background: var(--line);
+  transition: background 0.2s;
+}
+.dotActive {
+  background: var(--or);
+}
+.swipeHint {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--sub);
+  text-align: center;
+  margin-top: 12px;
+  letter-spacing: 0.08em;
+}
+
+/* define — 서비스 정의 밴드(메인 2줄 + 서브 2줄) */
+.defTitle {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.32;
+  font-size: clamp(1.5rem, 6.4vw, 2.05rem);
+  margin: 16px 0 0;
+}
+.defSub {
+  color: var(--sub);
+  font-size: 1.02rem;
+  line-height: 1.8;
+  font-weight: 500;
+  margin-top: 18px;
+}
+
+/* flow — 결제 후 진행 6단계 세로 타임라인 */
+.flow {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+}
+.flowStep {
+  display: flex;
+  gap: 16px;
+  position: relative;
+  padding-bottom: 26px;
+}
+.flowStep:last-child {
+  padding-bottom: 0;
+}
+/* 번호 원 아래로 이어지는 연결선(마지막 단계 제외) */
+.flowStep:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 38px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.flowNum {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--or);
+  color: var(--or);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  position: relative;
+  z-index: 1;
+}
+.flowBody {
+  padding-top: 4px;
+}
+.flowBody h3 {
+  font-size: 1.12rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.flowBody p {
+  color: var(--sub);
+  font-size: 0.96rem;
+  line-height: 1.75;
+}
+
+/* steps — 고스트 넘버 카드(시안 C 이식) */
+.step {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 26px 22px;
+  margin-top: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.step::before {
+  content: attr(data-n);
+  position: absolute;
+  right: -8px;
+  top: -24px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 6rem;
+  line-height: 1;
+  color: rgba(255, 90, 30, 0.1);
+  pointer-events: none;
+}
+.step .sn {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--or);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+}
+.step h3 {
+  font-size: 1.32rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 8px 0 8px;
+  position: relative;
+}
+.step p {
+  color: var(--sub);
+  font-size: 0.96rem;
+  line-height: 1.8;
+  position: relative;
+  max-width: 92%;
+}
+
+/* counselor */
+.csImg {
+  border: 1px solid var(--line);
+  position: relative;
+  margin-top: 18px;
+}
+.csname {
+  font-weight: 900;
+  font-size: 2.6rem;
+  letter-spacing: -0.03em;
+  margin: 20px 0 10px;
+}
+.certs {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+.certs li {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--sub);
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.certs li b {
+  color: var(--white);
+  font-family: "Pretendard", -apple-system, system-ui, sans-serif;
+  font-weight: 700;
+}
+
+/* price — 다크 카드(가독성) · 중앙 정렬 · 오렌지 액센트 */
+.priceCard {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--or);
+  padding: 40px 26px 34px;
+  text-align: center;
+}
+.priceKick {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  color: var(--or);
+  display: block;
+  margin-bottom: 16px;
+}
+.priceTitle {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  font-size: clamp(1.7rem, 7.5vw, 2.2rem);
+  color: var(--white);
+}
+/* 리스트 블록만 중앙에 두고, 항목 텍스트는 좌측 정렬(가독성) */
+.priceChecks {
+  list-style: none;
+  padding: 0;
+  margin: 26px auto;
+  display: inline-block;
+  text-align: left;
+}
+.priceChecks li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 2px;
+  border-top: 1px solid var(--line);
+  color: #e8e8e3;
+  font-weight: 600;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+.priceChecks li:first-child {
+  border-top: none;
+}
+.priceChecks li::before {
+  content: "→";
+  font-family: var(--mono);
+  color: var(--or);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.priceAmtLabel {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--sub);
+  margin-top: 8px;
+}
+.priceAmt {
+  font-weight: 900;
+  font-size: clamp(3rem, 13vw, 4rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--or);
+  margin-top: 8px;
+}
+.priceNote {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--sub);
+  line-height: 1.7;
+  margin-top: 22px;
+}
+
+/* close */
+.close .disp {
+  font-size: clamp(2.6rem, 12vw, 3.6rem);
+}
+
+/* sticky CTA — 하단 고정, 컬럼 폭(520px)에 맞춰 중앙 정렬(모바일에선 풀폭) */
+.stickyCta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--or);
+  color: #000;
+  padding: 17px 22px calc(17px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.45);
+  transition: background 0.2s, transform 0.15s;
+}
+.stickyCta:hover {
+  background: var(--white);
+}
+.stickyCta:active {
+  transform: translateY(1px);
+}
+.stickyLabel {
+  font-weight: 900;
+  font-size: clamp(0.9rem, 3.6vw, 1.06rem);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.stickyRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.stickyPrice {
+  font-weight: 900;
+  font-size: clamp(0.9rem, 3.6vw, 1.06rem);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+/* 법적 고지(브랜드 푸터 삭제 — 전역 사이트 정보로 대체). 자체 여백. */
+.disc {
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: #55554f;
+  line-height: 1.9;
+  padding: 40px 26px;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marq .track,
+  .searchName,
+  .searchCaret {
+    animation: none;
+  }
+}

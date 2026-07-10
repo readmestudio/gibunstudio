@@ -10,8 +10,13 @@ import { isNicepayEnabled } from "@/lib/nicepay/config";
 import { approveNicepayPayment } from "@/lib/nicepay/approve";
 import { MIND_SPILL_DAILY_SUB_DAYS } from "@/lib/mind-spill/constants";
 import { COUNSELING_TYPES, getCounselingType } from "@/lib/counseling/types";
+import { WORKSHOP_PRICE } from "@/lib/minds/relationship-constants";
 import { isReportPrice } from "@/lib/minds/price-experiment";
-import { sendPaidReportAlimtalk } from "@/lib/solapi/messages";
+import {
+  sendPaidReportAlimtalk,
+  sendWorkshopIntakeAlimtalk,
+} from "@/lib/solapi/messages";
+import { createSession } from "@/lib/intake/store";
 
 /**
  * 결제 후 페이지로 보내는 리다이렉트는 반드시 303(See Other)을 쓴다.
@@ -36,6 +41,7 @@ function seeOther(url: string | URL) {
  *   MS- → mind_spill_report_purchases (Mind Spill 리포트 1건)
  *   CN- → 상담 결제 (CN-{typeId}-... ; DB 기록 없이 금액 검증 후 승인/캡처)
  *   MR- → minds_relationship_purchases (/minds 다섯 배역+관계 해설 리포트, 비로그인 리드 기반)
+ *   IW- → workshop_intake_purchases (내면 아이 찾기 워크샵 ₩99,000, 로그인 필수 → intake 토큰 발급)
  */
 export async function POST(request: NextRequest) {
   if (!isNicepayEnabled()) {
@@ -87,6 +93,8 @@ export async function POST(request: NextRequest) {
   const isMindsRelationship = orderId.startsWith("MR-");
   // 내면 아이 리포트 결제 — MR- 와 같은 테이블·핸들러를 쓰되 리다이렉트 경로만 갈라진다.
   const isInnerChild = orderId.startsWith("IC-");
+  // 내면 아이 찾기 워크샵 결제 — 로그인 필수 직접 구매, 승인 후 intake 진단 토큰 발급.
+  const isWorkshopIntake = orderId.startsWith("IW-");
 
   // 1. 인증 실패 시 실패 페이지로 리다이렉트
   if (resultCode !== "0000") {
@@ -104,6 +112,8 @@ export async function POST(request: NextRequest) {
       failUrl = `/minds?error=${encodeURIComponent(resultMsg)}`;
     } else if (isInnerChild) {
       failUrl = `/inner-child?error=${encodeURIComponent(resultMsg)}`;
+    } else if (isWorkshopIntake) {
+      failUrl = `/inner-child/workshop?error=${encodeURIComponent(resultMsg)}`;
     } else {
       failUrl = `/husband-match/payment/failed?orderId=${orderId}&message=${encodeURIComponent(resultMsg)}`;
     }
@@ -144,6 +154,11 @@ export async function POST(request: NextRequest) {
       failBase: "/inner-child",
       variant: "inner_child",
     });
+  }
+
+  // ── 내면 아이 찾기 워크샵 결제 처리 (IW-) ──
+  if (isWorkshopIntake) {
+    return handleWorkshopIntakePayment({ tid, orderId, amount, baseUrl });
   }
 
   // ── Mind Spill 리포트 결제 처리 ──
@@ -309,6 +324,136 @@ async function handleMindsRelationshipPayment(params: {
   // 딱 1회 발화한다(위 멱등 재방문 경로엔 없어 중복 집계 안 됨). 슬랙·알림톡용 reportUrl
   // 은 파라미터 없는 영구 링크 그대로 둔다.
   return seeOther(`${reportUrl}?purchased=1`);
+}
+
+/* ── 내면 아이 찾기 워크샵 결제 처리 (IW-) ── */
+//
+// 로그인 필수 직접 구매(₩99,000, workshop_intake_purchases). 승인이 확정되면 상담사용
+// 사전진단(intake) 세션을 발급하고, 진단 링크를 알림톡 + 완료 페이지 두 경로로 전달한다.
+// 테이블이 RLS admin-only 라 admin 클라이언트로 조회/갱신하고, 금액은 서버 상수
+// (WORKSHOP_PRICE)로 검증한다.
+async function handleWorkshopIntakePayment(params: {
+  tid: string;
+  orderId: string;
+  amount: number;
+  baseUrl: string;
+}) {
+  const { tid, orderId, amount, baseUrl } = params;
+  const admin = createAdminClient();
+  // [임시 진단] handleMindsRelationshipPayment 와 동일 — 어느 단계에서 왜 실패했는지
+  // URL error 파라미터로 노출한다. 원인 확인 후 다시 일반 메시지로 되돌릴 것.
+  const fail = (step: string, detail = "") =>
+    seeOther(
+      `${baseUrl}/inner-child/workshop?error=${encodeURIComponent(`[${step}] ${detail}`.trim())}`
+    );
+
+  const { data: purchase, error: queryError } = await admin
+    .from("workshop_intake_purchases")
+    .select("id, user_id, name, phone, email, amount, status, intake_token")
+    .eq("order_id", orderId)
+    .single();
+
+  if (queryError || !purchase) {
+    console.error("[workshop-intake] 결제 레코드 조회 실패:", { orderId, queryError });
+    return fail("record", queryError?.message ?? "no purchase");
+  }
+
+  const doneUrl = `${baseUrl}/inner-child/workshop/done?p=${purchase.id}`;
+
+  // 이미 승인됨 → 완료 페이지로 직행(멱등성 — intake_token 이 이미 있으면 거기서 보여준다).
+  if (purchase.status === "confirmed") {
+    return seeOther(doneUrl);
+  }
+  if (purchase.status !== "pending") {
+    return fail("status", String(purchase.status));
+  }
+
+  // 금액 검증 — DB 금액·NicePay 금액·서버 상수가 모두 일치해야 한다(위변조 방지).
+  if (purchase.amount !== amount || amount !== WORKSHOP_PRICE) {
+    console.error("[workshop-intake] 결제 금액 불일치:", {
+      dbAmount: purchase.amount,
+      nicepayAmount: amount,
+      expected: WORKSHOP_PRICE,
+      orderId,
+    });
+    return fail("amount", `db=${purchase.amount} np=${amount} expect=${WORKSHOP_PRICE}`);
+  }
+
+  // NicePay 최종 승인(캡처).
+  const approval = await approveNicepayPayment(tid, amount);
+  if (!approval.success) {
+    console.error("[workshop-intake] NicePay 승인 실패:", {
+      resultCode: approval.resultCode,
+      resultMsg: approval.resultMsg,
+      orderId,
+    });
+    return fail("approve", `${approval.resultCode} ${approval.resultMsg}`);
+  }
+
+  // 사전진단(intake) 세션 발급 — 토큰이 곧 진단 링크의 인증이다.
+  let session: Awaited<ReturnType<typeof createSession>>;
+  try {
+    session = await createSession({
+      display_name: purchase.name?.trim() || "워크샵 참가자",
+      memo: `워크샵 결제 ${orderId}`,
+    });
+  } catch (e) {
+    console.error("[workshop-intake] intake 세션 발급 실패:", { orderId, error: e });
+    return fail("intake", e instanceof Error ? e.message : "session");
+  }
+
+  // pending → confirmed + 발급된 세션 연결 (멱등성: pending 일 때만 전환).
+  const { error: updateError } = await admin
+    .from("workshop_intake_purchases")
+    .update({
+      status: "confirmed",
+      tid,
+      confirmed_at: new Date().toISOString(),
+      intake_session_id: session.id,
+      intake_token: session.token,
+    })
+    .eq("id", purchase.id)
+    .eq("status", "pending");
+
+  if (updateError) {
+    // 세션은 이미 발급됐지만 결제 레코드 연결에 실패 — 로그를 남기고 실패 처리한다
+    // (세션 자체는 어드민에서 확인 가능하므로 수동 복구 가능).
+    console.error("[workshop-intake] 결제 상태 업데이트 실패:", {
+      updateError,
+      orderId,
+      intakeSessionId: session.id,
+    });
+    return fail("update", updateError.message);
+  }
+
+  // 운영자 슬랙 알림 — 실제 구매 완료 시점(fire-and-forget).
+  after(() =>
+    notifyPaymentComplete({
+      product: "내면 아이 찾기 워크샵",
+      amount,
+      orderId,
+      userId: purchase.user_id,
+    })
+  );
+
+  // 구매자에게 사전진단 링크 카카오 알림톡 발송(fire-and-forget).
+  // 번호는 결제 생성 시 검증해 저장한 purchase.phone 을 쓴다(없으면 조용히 스킵).
+  after(async () => {
+    const phone = (purchase.phone ?? "").trim();
+    if (!phone) return;
+    const res = await sendWorkshopIntakeAlimtalk({
+      phone,
+      name: purchase.name,
+      // 솔라피 템플릿 버튼 URL 이 `.../intake/#{진단토큰}` 이라 토큰만 넘긴다(도메인은 템플릿 고정).
+      intakeToken: session.token,
+    });
+    if (!res.success) {
+      console.error("[workshop-intake] 알림톡 실패:", res.reason);
+    }
+  });
+
+  // 완료 페이지로 — 거기서 사전진단 시작 버튼(/intake/{token})을 보여준다.
+  return seeOther(doneUrl);
 }
 
 /* ── Mind Spill Period(3일치 종합) 결제 처리 ── */
