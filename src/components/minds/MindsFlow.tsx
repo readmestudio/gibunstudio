@@ -40,20 +40,26 @@ export function MindsFlow() {
   const [partsMap, setPartsMap] = useState<PartsMap | null>(null);
   const router = useRouter();
 
-  // 재방문 자동 복원 — 이전에 분석을 마친 브라우저면 저장된 결과 페이지로 보낸다.
-  // (무효 id 면 결과 페이지가 안내를 띄우고 저장값을 정리하므로 무한 복원되지 않는다.)
-  //
-  // 저장값이 없어도 로그인 상태라면, 계정에 귀속된 내 최근 리포트로 복원한다(기기/브라우저
-  // 무관). 카카오 신규 진입(?auth=kakao)은 아래 전용 effect 가 새 테스트를 시작하므로 양보한다.
+  // 재방문·로그인 복귀 처리.
+  //  · ?started=1 (카카오 로그인 후 복귀) → 랜딩을 건너뛰고 새 테스트를 대화부터 시작한다.
+  //  · 저장값 있으면 → 이전 결과 페이지로 복원.
+  //  · 저장값 없어도 로그인 상태면 → 계정 귀속 최근 리포트로 복원(기기/브라우저 무관).
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+
+    // 카카오 로그인 후 복귀 — 세션이 잡힌 상태로 돌아온다. 새 테스트를 시작.
+    if (params.get("started") === "1") {
+      window.history.replaceState(null, "", window.location.pathname);
+      beginTest();
+      return;
+    }
+
     const saved = localStorage.getItem(MINDS_LEAD_STORAGE_KEY);
     if (saved) {
       router.replace(`/minds/r/${saved}`);
       return;
     }
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("auth") === "kakao") return;
 
     let cancelled = false;
     void (async () => {
@@ -98,6 +104,33 @@ export function MindsFlow() {
     }
   };
 
+  // 카카오 로그인 리드 — 서버가 세션에서 user_id·email 을 확정해 계정에 귀속한다.
+  // 세션이 없으면(401) 익명 리드로 폴백해 흐름은 막지 않는다.
+  const createKakaoLead = async () => {
+    try {
+      const res = await fetch("/api/minds/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channel: "kakao", attribution: getAttribution() }),
+      });
+      if (res.status === 401) return void createAnonLead();
+      const json = await res.json().catch(() => null);
+      if (json?.id) setLeadId(json.id);
+    } catch {
+      void createAnonLead();
+    }
+  };
+
+  // 테스트 시작 공통 동작 — 전환 픽셀 발화 + 리드 확보 + 대화 진입.
+  // (로그인 직후 onStart, 그리고 카카오 복귀(?started=1) 두 경로에서 함께 쓴다.)
+  const beginTest = () => {
+    trackMetaCustom("StartTest", { content_name: "minds" });
+    trackMindsFunnel("test_start");
+    trackMetaEvent("Lead", { content_name: "minds" });
+    void createKakaoLead();
+    setPhase("conversation");
+  };
+
   // 대화 완료 → 실제 LLM 분석 호출 → 리포트.
   const runAnalysis = async (answers: MindAnswer[]) => {
     setPhase("analyzing");
@@ -129,17 +162,32 @@ export function MindsFlow() {
     <div className="mx-auto w-full max-w-[448px] px-6 py-8 sm:py-10">
       {phase === "landing" && (
         <MindsLanding
-          onStart={() => {
-            // 광고 최적화용 — "테스트 시작" 클릭을 맞춤 이벤트로 잡는다.
-            // 이 단계는 URL 이동이 없어 PageView 가 울리지 않으므로 코드로 직접 발화.
-            trackMetaCustom("StartTest", { content_name: "minds" });
-            // 운영자 슬랙에도 "테스트 시작" 신호를 보낸다(세션당 1회 dedupe).
-            trackMindsFunnel("test_start");
-            // 연락처 없이 익명 리드 1행 확보 → 이후 답변·결과가 이 id 에 붙는다.
-            void createAnonLead();
-            // 유입 신호(Lead) — 연락처는 없지만 '진짜 시작' 볼륨을 광고 최적화에 넘긴다.
-            trackMetaEvent("Lead", { content_name: "minds" });
-            setPhase("conversation");
+          onStart={async () => {
+            const supabase = createClient();
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            // 이미 로그인 → 바로 테스트 시작.
+            if (user) {
+              beginTest();
+              return;
+            }
+            // 미로그인 → 카카오 로그인으로. 돌아오면 ?started=1 로 테스트를 이어간다.
+            // (복귀 경로는 쿠키에 심는다 — /auth/callback 이 읽어 되돌린다.)
+            document.cookie = `auth_redirect=${encodeURIComponent(
+              "/minds?started=1"
+            )}; path=/; max-age=600; SameSite=Lax`;
+            try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                provider: "kakao",
+                options: { redirectTo: `${window.location.origin}/auth/callback` },
+              });
+              if (error) throw error;
+              // 성공 시 카카오로 리다이렉트되어 아래는 실행되지 않는다.
+            } catch {
+              // 로그인 시작 실패 — 최소한 테스트는 진행시킨다(익명 폴백).
+              beginTest();
+            }
           }}
         />
       )}
@@ -151,7 +199,7 @@ export function MindsFlow() {
       {phase === "analyzing" && <MindsAnalyzing />}
 
       {phase === "report" && partsMap && (
-        <MindsFreeReport partsMap={partsMap} />
+        <MindsFreeReport partsMap={partsMap} leadId={leadId ?? undefined} />
       )}
     </div>
   );

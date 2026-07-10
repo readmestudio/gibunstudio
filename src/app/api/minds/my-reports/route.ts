@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient();
 
   // 퍼널 분리 — /minds(무파라미터)는 내면 아이 리드를 제외하고, ?product=inner_child 는
-  // 반대로 내면 아이 리드만 조회한다. 두 퍼널이 서로의 리드를 자동복원하지 않게 한다.
+  // 반대로 내면 아이 리드만 조회한다. 카카오 로그인 도입 후 channel 이 "kakao" 로 바뀌므로,
+  // 퍼널 출처는 채널이 아니라 인서트 시점에 고정된 test_type 으로 가른다(회귀 방지).
   const isInnerChild =
     request.nextUrl.searchParams.get("product") === "inner_child";
 
@@ -35,8 +36,8 @@ export async function GET(request: NextRequest) {
     .select("id, created_at, parts_map")
     .eq("user_id", user.id);
   leadQuery = isInnerChild
-    ? leadQuery.eq("channel", "inner_child")
-    : leadQuery.neq("channel", "inner_child");
+    ? leadQuery.eq("test_type", "inner_child")
+    : leadQuery.eq("test_type", "minds");
 
   const { data: leads } = await leadQuery.order("created_at", {
     ascending: false,

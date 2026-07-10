@@ -16,6 +16,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { getAttribution } from "@/lib/attribution";
 import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
@@ -54,11 +55,38 @@ export function InnerChildFlow() {
       setPayError(true);
       return;
     }
+    // 카카오 로그인 후 복귀 — 세션이 잡힌 상태로 돌아온다. 새 테스트를 시작한다.
+    if (params.get("started") === "1") {
+      window.history.replaceState(null, "", window.location.pathname);
+      beginTest();
+      return;
+    }
     const saved = localStorage.getItem(KEY);
     if (saved) {
       router.replace(`${INNER_CHILD_FUNNEL.freeReportBase}/${saved}`);
       return;
     }
+    // 저장값 없어도 로그인 상태면 계정 귀속 최근 리포트로 복원(기기/브라우저 무관).
+    let cancelled = false;
+    void (async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (cancelled || !user) return;
+        const res = await fetch("/api/minds/my-reports?product=inner_child");
+        const json = await res.json().catch(() => null);
+        if (cancelled || !json?.latestLeadId) return;
+        localStorage.setItem(KEY, json.latestLeadId);
+        router.replace(`${INNER_CHILD_FUNNEL.freeReportBase}/${json.latestLeadId}`);
+      } catch {
+        // 복원 실패 — 그냥 랜딩을 보여준다.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // 마운트 시 1회만 — router 는 안정 참조.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -80,6 +108,38 @@ export function InnerChildFlow() {
     } catch {
       // 네트워크 실패 — 결과 보기는 계속 진행.
     }
+  };
+
+  // 카카오 로그인 리드 — 서버가 세션에서 user_id·email 을 확정해 계정에 귀속한다.
+  // variant:"inner_child" 로 test_type 을 고정한다(channel 이 kakao 여도 퍼널 출처 유지).
+  // 세션이 없으면(401) 익명 리드로 폴백해 흐름은 막지 않는다.
+  const createKakaoLead = async () => {
+    try {
+      const res = await fetch("/api/minds/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel: "kakao",
+          variant: "inner_child",
+          attribution: getAttribution(),
+        }),
+      });
+      if (res.status === 401) return void createAnonLead();
+      const json = await res.json().catch(() => null);
+      if (json?.id) setLeadId(json.id);
+    } catch {
+      void createAnonLead();
+    }
+  };
+
+  // 테스트 시작 공통 동작 — 전환 픽셀 발화 + 리드 확보 + 테스트 진입.
+  // (로그인 직후 onStart, 그리고 카카오 복귀(?started=1) 두 경로에서 함께 쓴다.)
+  const beginTest = () => {
+    trackMetaCustom("StartTest", { content_name: "inner_child" });
+    trackMindsFunnel("test_start", INNER_CHILD_FUNNEL);
+    trackMetaEvent("Lead", { content_name: "inner_child" });
+    void createKakaoLead();
+    setPhase("test");
   };
 
   // 테스트 완료 → 서버 무료 리포트 생성 → 저장본 페이지로 이동.
@@ -134,13 +194,30 @@ export function InnerChildFlow() {
     <div className="mx-auto w-full max-w-[448px] px-6 py-8 sm:py-10">
       {phase === "landing" && (
         <MindsLanding
-          onStart={() => {
-            // 광고 최적화용 — content_name 을 "inner_child" 로 분리해 /minds 신호와 섞이지 않게.
-            trackMetaCustom("StartTest", { content_name: "inner_child" });
-            trackMindsFunnel("test_start", INNER_CHILD_FUNNEL);
-            void createAnonLead();
-            trackMetaEvent("Lead", { content_name: "inner_child" });
-            setPhase("test");
+          onStart={async () => {
+            const supabase = createClient();
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            // 이미 로그인 → 바로 테스트 시작.
+            if (user) {
+              beginTest();
+              return;
+            }
+            // 미로그인 → 카카오 로그인으로. 돌아오면 ?started=1 로 테스트를 이어간다.
+            document.cookie = `auth_redirect=${encodeURIComponent(
+              "/inner-child?started=1"
+            )}; path=/; max-age=600; SameSite=Lax`;
+            try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                provider: "kakao",
+                options: { redirectTo: `${window.location.origin}/auth/callback` },
+              });
+              if (error) throw error;
+            } catch {
+              // 로그인 시작 실패 — 최소한 테스트는 진행시킨다(익명 폴백).
+              beginTest();
+            }
           }}
         />
       )}
