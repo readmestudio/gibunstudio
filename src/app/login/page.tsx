@@ -2,31 +2,22 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-type Tab = "login" | "signup";
 
 function LoginContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   // 로그인 후 돌아갈 경로. 앱 전반은 `redirect=`(결제·대시보드·cart 등),
   // husband-match는 `next=`를 쓰므로 둘 다 받아준다. (이름 불일치로 홈으로
   // 튕기던 버그 방지 — 특히 결제 흐름에서 로그인 후 결제 페이지로 복귀)
   const next = searchParams.get("next") ?? searchParams.get("redirect") ?? "";
-  const [tab, setTab] = useState<Tab>("login");
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  // OAuth/이메일 콜백 주소는 쿼리 없는 "깨끗한" /auth/callback 으로 고정한다.
+  // OAuth 콜백 주소는 쿼리 없는 "깨끗한" /auth/callback 으로 고정한다.
   // Supabase Redirect URLs 허용목록은 쿼리스트링이 붙으면 매칭에 실패해 Site URL(홈)로
   // 튕기는 경우가 많기 때문. 로그인 후 돌아갈 next 경로는 아래 쿠키로만 전달한다.
   const getRedirectTo = () => {
@@ -41,16 +32,9 @@ function LoginContent() {
     }
   };
 
-  const redirectAfterAuth = () => {
-    if (next && next.startsWith("/")) {
-      router.push(next);
-      router.refresh();
-    } else {
-      router.push("/");
-      router.refresh();
-    }
-  };
-
+  // 소비자 로그인은 카카오 전용이다. 이메일 가입은 연락처를 사용자 입력에 의존해
+  // 누락·오탈자가 잦지만, 카카오는 auth/callback 에서 provider_token 으로 검증된
+  // 실제 전화번호를 받아온다 — 알림톡(결제·진단 링크) 발송에 반드시 필요하다.
   const handleKakaoLogin = async () => {
     if (!hasSupabase) {
       setMessage({ type: "error", text: "Supabase가 설정되지 않았습니다. .env.local을 확인하세요." });
@@ -74,72 +58,6 @@ function LoginContent() {
     }
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hasSupabase) {
-      setMessage({ type: "error", text: "Supabase가 설정되지 않았습니다." });
-      return;
-    }
-    setLoading(true);
-    setMessage(null);
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      redirectAfterAuth();
-    } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "로그인에 실패했습니다." });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hasSupabase) {
-      setMessage({ type: "error", text: "Supabase가 설정되지 않았습니다." });
-      return;
-    }
-    setLoading(true);
-    setMessage(null);
-    try {
-      // 이메일 인증 링크로 돌아온 뒤에도 next로 복귀하도록 쿠키에 저장
-      persistNext();
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name, phone },
-          emailRedirectTo: getRedirectTo(),
-        },
-      });
-      if (error) throw error;
-      if (!data.user) throw new Error("가입 응답에 사용자 정보가 없습니다.");
-      await supabase.from("profiles").upsert(
-        {
-          id: data.user.id,
-          email,
-          name: name || null,
-          phone: phone || null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
-      );
-      // 가입 환영 알림톡 — 서버가 세션·profiles.phone 으로 1회 발송(멱등). 실패해도 가입은 진행.
-      try {
-        await fetch("/api/notify/signup-welcome", { method: "POST" });
-      } catch {
-        /* 알림톡 실패는 가입 흐름을 막지 않는다 */
-      }
-      redirectAfterAuth();
-    } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "가입에 실패했습니다." });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const needsLogin = !!next && next.startsWith("/");
 
   return (
@@ -148,27 +66,9 @@ function LoginContent() {
         {needsLogin ? "로그인이 필요해요" : "로그인"}
       </h1>
       <p className="mt-2 text-[var(--foreground)]/70">
-        {needsLogin
-          ? "카카오로 시작하기를 누르면 인증 후 바로 이용할 수 있어요."
-          : "가입 시 이메일과 전화번호를 필수로 받습니다. 검사 결과지 전송에 사용됩니다."}
+        카카오로 시작하기를 누르면 인증 후 바로 이용할 수 있어요. 검사 결과지와
+        안내는 카카오에 연결된 연락처로 보내드려요.
       </p>
-
-      <div className="mt-6 flex rounded-lg border-2 border-[var(--foreground)] p-1">
-        <button
-          type="button"
-          onClick={() => { setTab("login"); setMessage(null); }}
-          className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${tab === "login" ? "bg-[var(--foreground)] text-white" : "text-[var(--foreground)]/70 hover:text-[var(--foreground)]"}`}
-        >
-          로그인
-        </button>
-        <button
-          type="button"
-          onClick={() => { setTab("signup"); setMessage(null); }}
-          className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${tab === "signup" ? "bg-[var(--foreground)] text-white" : "text-[var(--foreground)]/70 hover:text-[var(--foreground)]"}`}
-        >
-          가입
-        </button>
-      </div>
 
       <div className="mt-8 space-y-6">
         <button
@@ -179,122 +79,6 @@ function LoginContent() {
         >
           카카오로 시작하기
         </button>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[var(--border)]" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-[var(--foreground)]/60">또는</span>
-          </div>
-        </div>
-
-        {tab === "login" ? (
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            <div>
-              <label htmlFor="login-email" className="block text-sm font-medium text-[var(--foreground)]">
-                이메일
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="example@email.com"
-                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label htmlFor="login-password" className="block text-sm font-medium text-[var(--foreground)]">
-                비밀번호
-              </label>
-              <input
-                id="login-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading || !hasSupabase}
-              className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-50"
-            >
-              이메일로 로그인
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleSignUp} className="space-y-4">
-            <div>
-              <label htmlFor="signup-email" className="block text-sm font-medium text-[var(--foreground)]">
-                이메일
-              </label>
-              <input
-                id="signup-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="example@email.com"
-                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label htmlFor="signup-password" className="block text-sm font-medium text-[var(--foreground)]">
-                비밀번호
-              </label>
-              <input
-                id="signup-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                placeholder="6자 이상"
-                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label htmlFor="signup-name" className="block text-sm font-medium text-[var(--foreground)]">
-                이름
-              </label>
-              <input
-                id="signup-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="홍길동"
-                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label htmlFor="signup-phone" className="block text-sm font-medium text-[var(--foreground)]">
-                연락처 (휴대폰)
-              </label>
-              <input
-                id="signup-phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                placeholder="010-0000-0000"
-                className="mt-1 w-full rounded-lg border-2 border-[var(--border)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--foreground)]/50 focus:border-[var(--foreground)] focus:outline-none"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading || !hasSupabase}
-              className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-[var(--foreground)] border-2 border-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-50"
-            >
-              가입하기
-            </button>
-          </form>
-        )}
 
         {message && (
           <p className={`text-sm ${message.type === "success" ? "text-green-600" : "text-red-600"}`}>
