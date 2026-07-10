@@ -19,6 +19,7 @@ import {
   type RelationshipReport,
 } from "@/lib/minds/relationship-report";
 import { MindsRelationshipView } from "./MindsRelationshipView";
+import { ReportPurchasePixel } from "@/components/analytics/ReportPurchasePixel";
 
 export const metadata: Metadata = {
   title: "내 마음 속 다섯 가지 배역과 그 관계 · 기분",
@@ -35,11 +36,12 @@ export default async function MindsRelationshipPage({
   let status: string | null = null;
   let initialReport: RelationshipReport | null = null;
   let ownerId: string | null = null;
+  let amount: number | null = null;
   try {
     const admin = createAdminClient();
     const { data } = await admin
       .from("minds_relationship_purchases")
-      .select("status, report_json, user_id")
+      .select("status, report_json, user_id, amount")
       .eq("id", id)
       .maybeSingle();
     if (data) {
@@ -50,6 +52,7 @@ export default async function MindsRelationshipPage({
         (data.report_json as Record<string, unknown> | null) ?? null
       );
       ownerId = (data.user_id as string | null) ?? null;
+      amount = (data.amount as number | null) ?? null;
     }
   } catch {
     // 조회 실패 — 클라이언트가 생성 호출로 재시도/안내.
@@ -69,10 +72,16 @@ export default async function MindsRelationshipPage({
   }
 
   return (
-    <MindsRelationshipView
-      purchaseId={id}
-      status={status}
-      initialReport={initialReport}
-    />
+    <>
+      {/* 유료광고 Purchase 전환 신호 — 결제 직후(?purchased=1) 최초 1회만 발화. */}
+      {status === "confirmed" && amount != null && (
+        <ReportPurchasePixel amount={amount} contentName="minds_relationship" />
+      )}
+      <MindsRelationshipView
+        purchaseId={id}
+        status={status}
+        initialReport={initialReport}
+      />
+    </>
   );
 }

@@ -305,7 +305,10 @@ async function handleMindsRelationshipPayment(params: {
   });
 
   // 리포트 페이지로 — 거기서 report_json 이 없으면 LLM 생성·캐시 후 렌더.
-  return seeOther(reportUrl);
+  // `?purchased=1` 은 **이 최초 확정 경로에서만** 붙인다 → 리포트 페이지가 Purchase 픽셀을
+  // 딱 1회 발화한다(위 멱등 재방문 경로엔 없어 중복 집계 안 됨). 슬랙·알림톡용 reportUrl
+  // 은 파라미터 없는 영구 링크 그대로 둔다.
+  return seeOther(`${reportUrl}?purchased=1`);
 }
 
 /* ── Mind Spill Period(3일치 종합) 결제 처리 ── */

@@ -24,6 +24,7 @@ import { getSavedFreeReport } from "@/lib/minds/inner-child/free-report-store";
 import type { FreeReportGenerated, PaidReportGenerated } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 import { InnerChildPaidView } from "./InnerChildPaidView";
+import { ReportPurchasePixel } from "@/components/analytics/ReportPurchasePixel";
 
 export const metadata: Metadata = {
   title: "내면 아이 심층 리포트 · 기분",
@@ -42,11 +43,12 @@ export default async function InnerChildFullPage({
   let ownerId: string | null = null;
   let leadId: string | null = null;
   let orderId: string | null = null;
+  let amount: number | null = null;
   try {
     const admin = createAdminClient();
     const { data } = await admin
       .from("minds_relationship_purchases")
-      .select("status, report_json, user_id, order_id, lead_id")
+      .select("status, report_json, user_id, order_id, lead_id, amount")
       .eq("id", id)
       .maybeSingle();
     if (data) {
@@ -54,6 +56,7 @@ export default async function InnerChildFullPage({
       ownerId = (data.user_id as string | null) ?? null;
       orderId = (data.order_id as string | null) ?? null;
       leadId = (data.lead_id as string | null) ?? null;
+      amount = (data.amount as number | null) ?? null;
       // 캐시된 report_json 은 렌더 전에 반드시 현재 스키마로 정규화한다(그냥 캐스팅 금지).
       // 깨진 캐시면 초기값 없이 넘겨 클라이언트가 재생성한다.
       if (data.report_json) {
@@ -98,12 +101,18 @@ export default async function InnerChildFullPage({
   }
 
   return (
-    <InnerChildPaidView
-      purchaseId={id}
-      status={status}
-      initialReport={initialReport}
-      score={score}
-      free={free}
-    />
+    <>
+      {/* 유료광고 Purchase 전환 신호 — 결제 직후(?purchased=1) 최초 1회만 발화. */}
+      {status === "confirmed" && amount != null && (
+        <ReportPurchasePixel amount={amount} contentName="inner_child_full" />
+      )}
+      <InnerChildPaidView
+        purchaseId={id}
+        status={status}
+        initialReport={initialReport}
+        score={score}
+        free={free}
+      />
+    </>
   );
 }
