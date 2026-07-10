@@ -15,6 +15,12 @@ export const ALIMTALK_TEMPLATES = {
   MINDS_RELATIONSHIP_PAID: "KA01TP260708141612490nILeKmIgJ4U",
   /** 신규 회원가입 환영 */
   SIGNUP_WELCOME: "KA01TP260627034750891KU8zZHUa89Z",
+  /**
+   * 워크샵 결제완료 → intake 사전진단 링크 안내.
+   * 2026-07-10 카카오 검수 통과. 본문 `#{고객명}`, 버튼(모바일/PC 웹링크) `#{진단토큰}` 2종 치환.
+   * 버튼 URL 은 템플릿에 `https://gibunstudio.com/intake/#{진단토큰}` 로 고정.
+   */
+  WORKSHOP_INTAKE_ISSUED: "KA01TP260709132645540dGXyz3WKmgd",
 } as const;
 
 export type AlimtalkTemplateId =

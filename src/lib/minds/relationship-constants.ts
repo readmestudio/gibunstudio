@@ -42,3 +42,25 @@ export const INNER_CHILD_ORDER_PREFIX = "IC-";
 
 /** NicePay 결제창·영수증에 표시되는 내면 아이 리포트 상품명. */
 export const INNER_CHILD_GOODS_NAME = "내면 아이 심층 리포트";
+
+/**
+ * /inner-child 워크샵 "내면 아이 찾기 워크샵" — 식별·가격 상수 (추가만, 기존 무변).
+ *
+ * 리포트(₩19,900)와 전혀 다른 상품 — 상담사 워크샵 + 사전진단(intake) 토큰 발급.
+ * 로그인 필수 직접 구매라 leadId 를 쓰지 않는다. 결제 생성·승인 검증·UI 표시가 모두 이 상수를 import 한다.
+ */
+
+/** 워크샵 실제 판매가(원) — NicePay 결제·서버 검증에 쓰이는 "진짜" 금액. */
+export const WORKSHOP_PRICE = 99000;
+
+/**
+ * 워크샵 표시용 정가(원) — 할인 앵커링(취소선)에만 쓴다. 결제·검증엔 절대 쓰지 말 것.
+ * UI: ~₩149,000~ → ₩99,000.
+ */
+export const WORKSHOP_ORIGINAL_PRICE = 149000;
+
+/** orderId prefix — return 라우트가 IW- 로 워크샵 결제를 분기한다(Inner-child Workshop). */
+export const WORKSHOP_ORDER_PREFIX = "IW-";
+
+/** NicePay 결제창·영수증에 표시되는 워크샵 상품명. */
+export const WORKSHOP_GOODS_NAME = "내면 아이 찾기 워크샵";
