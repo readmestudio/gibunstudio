@@ -9,11 +9,14 @@ import { cancelNicepayPayment } from "@/lib/nicepay/approve";
 /**
  * 환불(취소) 가능한 결제 유형 → 테이블 매핑.
  *
- * 모든 테이블이 id / payment_key(NicePay tid) / order_id / status 컬럼을 공유하므로
+ * 대부분의 테이블이 id / payment_key(NicePay tid) / order_id / status 컬럼을 공유하므로
  * 이 매핑 하나로 분기를 처리한다. (status 는 'refunded' 값을 허용해야 한다.)
  *  - payment_method 컬럼은 남편상(husband_match)에만 존재 → hasPaymentMethod 로 구분.
  *  - 코치가 "타인의" 결제를 환불하는 흐름이라 RLS(본인 것만 조회/수정)를 우회해야 한다.
  *    상단에서 코치 권한을 검증한 뒤 admin(service role) 클라이언트로 조회·수정한다.
+ *  - 워크샵(workshop_intake)만 컬럼명이 다르다: NicePay tid 를 payment_key 가 아닌
+ *    tid 컬럼에, 결제일시를 refunded_at 에 남긴다 → tidCol / refundedAtCol 로 흡수한다.
+ *    (셀렉트 별칭 `payment_key:tid` 로 읽는 코드는 payment_key 그대로 유지.)
  */
 const REFUNDABLE_TYPES = {
   husband_match: {
@@ -35,6 +38,15 @@ const REFUNDABLE_TYPES = {
     table: "minds_relationship_purchases",
     label: "관계 해설 리포트",
     hasPaymentMethod: false,
+  },
+  workshop_intake: {
+    table: "workshop_intake_purchases",
+    label: "내면 아이 찾기 워크샵",
+    hasPaymentMethod: false,
+    // 이 테이블만 tid 컬럼을 쓴다(다른 테이블은 payment_key).
+    tidCol: "tid",
+    // 환불 시각을 남길 컬럼(있는 테이블만). 다른 테이블엔 없으므로 생략.
+    refundedAtCol: "refunded_at",
   },
 } as const;
 
@@ -87,10 +99,16 @@ export async function POST(request: NextRequest) {
   // 코치가 타인의 결제를 다루므로 service role 로 조회·수정한다(권한은 위에서 검증됨).
   const admin = createAdminClient();
 
+  // tid 컬럼명은 테이블마다 다를 수 있다(워크샵만 `tid`). 셀렉트 별칭으로
+  // 항상 payment_key 키에 담아 읽는 코드를 통일한다(예: `payment_key:tid`).
+  const tidCol = "tidCol" in config ? config.tidCol : "payment_key";
+  const tidSelect =
+    tidCol === "payment_key" ? "payment_key" : `payment_key:${tidCol}`;
+
   // DB에서 결제 정보 조회 (payment_method 는 남편상에만 존재)
   const columns = config.hasPaymentMethod
-    ? "id, payment_key, order_id, payment_method, status"
-    : "id, payment_key, order_id, status";
+    ? `id, ${tidSelect}, order_id, payment_method, status`
+    : `id, ${tidSelect}, order_id, status`;
 
   const { data: payment, error: paymentError } = await admin
     .from(config.table)
@@ -160,10 +178,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // DB 상태 업데이트
+  // DB 상태 업데이트 — 환불 시각 컬럼이 있는 테이블(워크샵)은 함께 기록한다.
+  const updatePayload: Record<string, unknown> = { status: "refunded" };
+  if ("refundedAtCol" in config && config.refundedAtCol) {
+    updatePayload[config.refundedAtCol] = new Date().toISOString();
+  }
   const { error: updateError } = await admin
     .from(config.table)
-    .update({ status: "refunded" })
+    .update(updatePayload)
     .eq("id", paymentId);
 
   if (updateError) {

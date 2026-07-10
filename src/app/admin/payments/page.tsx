@@ -12,13 +12,14 @@ export const metadata: Metadata = {
 // 매 조회마다 최신 결제 상태를 보여준다.
 export const dynamic = "force-dynamic";
 
-// 환불 가능한 4개 결제 테이블 → 환불 API의 type 과 1:1 매핑.
+// 환불 가능한 5개 결제 테이블 → 환불 API의 type 과 1:1 매핑.
 // (route.ts 의 REFUNDABLE_TYPES 와 짝을 맞춰야 한다.)
 type SourceKey =
   | "husband_match"
   | "counseling"
   | "workshop"
-  | "minds_relationship";
+  | "minds_relationship"
+  | "workshop_intake";
 
 interface Source {
   type: SourceKey;
@@ -29,6 +30,9 @@ interface Source {
   leadCol: string | null;
   // 추가로 가져올 상품 설명용 컬럼 (공통 컬럼 외).
   extraCols: string[];
+  // 테이블마다 다른 tid/결제일시 컬럼명(기본 payment_key/paid_at). 워크샵만 tid/confirmed_at.
+  tidCol?: string;
+  paidAtCol?: string;
   describe: (r: Record<string, unknown>) => string;
 }
 
@@ -71,10 +75,34 @@ const SOURCES: Source[] = [
     extraCols: [],
     describe: () => "관계 해설 리포트",
   },
+  {
+    type: "workshop_intake",
+    table: "workshop_intake_purchases",
+    label: "내면 아이 찾기 워크샵",
+    userCol: "user_id",
+    leadCol: null,
+    extraCols: [],
+    // 이 테이블만 tid/결제일시 컬럼명이 다르다 → 별칭으로 흡수(아래 commonCols).
+    tidCol: "tid",
+    paidAtCol: "confirmed_at",
+    describe: () => "내면 아이 찾기 워크샵",
+  },
 ];
 
-// 모든 테이블이 공유하는 공통 컬럼 (route.ts 주석 기준).
-const COMMON_COLS = ["id", "order_id", "amount", "status", "payment_key", "paid_at"];
+// 각 소스가 공유하는 공통 컬럼. tid/결제일시 컬럼명이 다른 테이블(워크샵)은
+// 셀렉트 별칭(`payment_key:tid`)으로 항상 payment_key/paid_at 키에 담아 읽는 코드를 통일한다.
+function commonCols(src: Source): string[] {
+  const alias = (aliasKey: string, col: string) =>
+    col === aliasKey ? aliasKey : `${aliasKey}:${col}`;
+  return [
+    "id",
+    "order_id",
+    "amount",
+    "status",
+    alias("payment_key", src.tidCol ?? "payment_key"),
+    alias("paid_at", src.paidAtCol ?? "paid_at"),
+  ];
+}
 
 interface PaymentRow {
   source: Source;
@@ -159,7 +187,7 @@ async function lookupPayments(
   // 3) 각 소스별로 조회 → 병합
   const all: PaymentRow[] = [];
   for (const src of SOURCES) {
-    const cols = [...COMMON_COLS, ...src.extraCols].join(", ");
+    const cols = [...commonCols(src), ...src.extraCols].join(", ");
     const seen = new Set<string>();
 
     const pushRows = (data: Record<string, unknown>[] | null) => {
@@ -220,7 +248,7 @@ async function loadAllPayments(): Promise<PaymentRow[]> {
 
   for (const src of SOURCES) {
     const cols = [
-      ...COMMON_COLS,
+      ...commonCols(src),
       ...src.extraCols,
       ...(src.userCol ? [src.userCol] : []),
       ...(src.leadCol ? [src.leadCol] : []),
@@ -515,7 +543,7 @@ export default async function AdminPaymentsPage({
                 전체 결제자
               </h2>
               <p className="mt-1 text-sm text-[var(--foreground)]/60">
-                4개 결제 테이블(남편상·상담·워크북·관계 리포트)의 모든 결제
+                5개 결제 테이블(남편상·상담·워크북·관계 리포트·워크샵)의 모든 결제
                 건이에요. 결제완료가 먼저, 그 안에서 최신순으로 보여요.
               </p>
             </div>
