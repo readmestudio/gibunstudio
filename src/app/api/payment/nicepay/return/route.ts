@@ -17,6 +17,7 @@ import {
   sendWorkshopIntakeAlimtalk,
 } from "@/lib/solapi/messages";
 import { createSession } from "@/lib/intake/store";
+import { sendMetaPurchaseEvent } from "@/lib/meta-capi";
 
 /**
  * 결제 후 페이지로 보내는 리다이렉트는 반드시 303(See Other)을 쓴다.
@@ -319,6 +320,22 @@ async function handleMindsRelationshipPayment(params: {
     }
   });
 
+  // Meta CAPI 로 Purchase 전환 전송(fire-and-forget) — 브라우저 픽셀이 유실돼도 확실히 도달.
+  // event_id 를 결제 id 로 넘겨 브라우저 픽셀과 중복 제거(dedup)한다.
+  after(async () => {
+    const res = await sendMetaPurchaseEvent({
+      eventId: purchase.id,
+      value: amount,
+      contentName: variant === "inner_child" ? "inner_child_full" : "minds_relationship",
+      eventSourceUrl: reportUrl,
+      externalIdSource: purchase.user_id ?? purchase.id,
+      phone: purchase.phone,
+    });
+    if (!res.success && res.reason !== "no-token") {
+      console.error("[minds-relationship] CAPI Purchase 실패:", res.reason);
+    }
+  });
+
   // 리포트 페이지로 — 거기서 report_json 이 없으면 LLM 생성·캐시 후 렌더.
   // (Purchase 픽셀 발화는 페이지가 paid_at 기준으로 서버에서 판단한다 — 과거 `?purchased=1`
   //  쿼리 마커는 로그인/소유권 리다이렉트에서 유실돼 폐기했다.)
@@ -448,6 +465,22 @@ async function handleWorkshopIntakePayment(params: {
     });
     if (!res.success) {
       console.error("[workshop-intake] 알림톡 실패:", res.reason);
+    }
+  });
+
+  // Meta CAPI 로 Purchase 전환 전송(fire-and-forget) — 브라우저 픽셀과 event_id(결제 id)로 dedup.
+  after(async () => {
+    const res = await sendMetaPurchaseEvent({
+      eventId: purchase.id,
+      value: amount,
+      contentName: "inner_child_workshop",
+      eventSourceUrl: doneUrl,
+      externalIdSource: purchase.user_id ?? purchase.id,
+      phone: purchase.phone,
+      email: purchase.email,
+    });
+    if (!res.success && res.reason !== "no-token") {
+      console.error("[workshop-intake] CAPI Purchase 실패:", res.reason);
     }
   });
 
