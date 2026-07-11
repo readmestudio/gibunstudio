@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackMetaEventWhenReady } from "@/lib/meta-pixel";
 
 export function WorkshopPurchasePixel({ amount }: { amount: number }) {
   const fired = useRef(false);
@@ -16,7 +16,8 @@ export function WorkshopPurchasePixel({ amount }: { amount: number }) {
   useEffect(() => {
     if (fired.current) return;
     fired.current = true;
-    trackMetaEvent("Purchase", {
+    // fbq 가 아직 로드 전일 수 있으므로(afterInteractive 레이스) 준비될 때까지 기다렸다 발화.
+    return trackMetaEventWhenReady("Purchase", {
       content_name: "inner_child_workshop",
       value: amount,
       currency: "KRW",

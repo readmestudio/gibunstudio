@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackMetaEventWhenReady } from "@/lib/meta-pixel";
 
 export function ReportPurchasePixel({
   amount,
@@ -36,19 +36,24 @@ export function ReportPurchasePixel({
     if (params.get("purchased") !== "1") return;
 
     fired.current = true;
-    trackMetaEvent("Purchase", {
-      content_name: contentName,
-      value: amount,
-      currency: "KRW",
-    });
-
-    // 새로고침·공유 시 재발화 방지 — 쿼리에서 purchased 만 제거하고 나머지는 보존한다.
-    params.delete("purchased");
-    const qs = params.toString();
-    window.history.replaceState(
-      null,
-      "",
-      window.location.pathname + (qs ? `?${qs}` : "")
+    // fbq 가 아직 로드 전일 수 있으므로 준비될 때까지 기다렸다 발화한다.
+    // 마커 제거는 **실제 발화 성공 후에만**(onFired) — 실패 시 지우면 재시도조차 못 한다.
+    return trackMetaEventWhenReady(
+      "Purchase",
+      { content_name: contentName, value: amount, currency: "KRW" },
+      {
+        onFired: () => {
+          // 새로고침·공유 시 재발화 방지 — purchased 만 제거하고 나머지 쿼리는 보존.
+          const p = new URLSearchParams(window.location.search);
+          p.delete("purchased");
+          const qs = p.toString();
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + (qs ? `?${qs}` : "")
+          );
+        },
+      }
     );
   }, [amount, contentName]);
 
