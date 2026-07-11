@@ -64,3 +64,10 @@ export const WORKSHOP_ORDER_PREFIX = "IW-";
 
 /** NicePay 결제창·영수증에 표시되는 워크샵 상품명. */
 export const WORKSHOP_GOODS_NAME = "내면 아이 찾기 워크샵";
+
+/**
+ * 유료 리포트 결제완료 Purchase 픽셀을 켜두는 시간창(ms) — 결제 직후 조회에서만 발화하고
+ * 며칠 뒤 재방문엔 안 켜지게 한다. `paid_at` 기준. 창 안의 중복 발화는 eventID 로 메타가
+ * 1건 처리하므로(≤메타 dedup 48h), 창을 넉넉히 24h 둬도 "결제 1건 = 전환 1건"이 유지된다.
+ */
+export const PURCHASE_PIXEL_WINDOW_MS = 24 * 60 * 60 * 1000;

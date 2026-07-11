@@ -25,6 +25,7 @@ import type { FreeReportGenerated, PaidReportGenerated } from "@/lib/minds/inner
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 import { InnerChildPaidView } from "./InnerChildPaidView";
 import { ReportPurchasePixel } from "@/components/analytics/ReportPurchasePixel";
+import { PURCHASE_PIXEL_WINDOW_MS } from "@/lib/minds/relationship-constants";
 
 export const metadata: Metadata = {
   title: "내면 아이 심층 리포트 · 기분",
@@ -44,11 +45,12 @@ export default async function InnerChildFullPage({
   let leadId: string | null = null;
   let orderId: string | null = null;
   let amount: number | null = null;
+  let paidAt: string | null = null;
   try {
     const admin = createAdminClient();
     const { data } = await admin
       .from("minds_relationship_purchases")
-      .select("status, report_json, user_id, order_id, lead_id, amount")
+      .select("status, report_json, user_id, order_id, lead_id, amount, paid_at")
       .eq("id", id)
       .maybeSingle();
     if (data) {
@@ -57,6 +59,7 @@ export default async function InnerChildFullPage({
       orderId = (data.order_id as string | null) ?? null;
       leadId = (data.lead_id as string | null) ?? null;
       amount = (data.amount as number | null) ?? null;
+      paidAt = (data.paid_at as string | null) ?? null;
       // 캐시된 report_json 은 렌더 전에 반드시 현재 스키마로 정규화한다(그냥 캐스팅 금지).
       // 깨진 캐시면 초기값 없이 넘겨 클라이언트가 재생성한다.
       if (data.report_json) {
@@ -100,11 +103,22 @@ export default async function InnerChildFullPage({
     free = blob?.free_report ?? null;
   }
 
+  // 유료광고 Purchase 전환 신호 — 결제 직후(paid_at 최근 24h) 조회에서만 켠다.
+  // 며칠 뒤 재방문엔 렌더 안 됨. 창 안 중복 발화는 eventID(결제 id)로 메타가 1건 처리.
+  const firePurchasePixel =
+    status === "confirmed" &&
+    amount != null &&
+    paidAt != null &&
+    Date.now() - new Date(paidAt).getTime() < PURCHASE_PIXEL_WINDOW_MS;
+
   return (
     <>
-      {/* 유료광고 Purchase 전환 신호 — 결제 직후(?purchased=1) 최초 1회만 발화. */}
-      {status === "confirmed" && amount != null && (
-        <ReportPurchasePixel amount={amount} contentName="inner_child_full" />
+      {firePurchasePixel && (
+        <ReportPurchasePixel
+          amount={amount!}
+          contentName="inner_child_full"
+          eventId={id}
+        />
       )}
       <InnerChildPaidView
         purchaseId={id}
