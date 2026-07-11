@@ -3,18 +3,20 @@
 /**
  * 유료 리포트 결제완료 Meta 픽셀 Purchase 발화 — 유료광고 구매 최적화 신호.
  *
- * minds 관계 리포트·inner-child 심층 리포트가 공유한다. 두 리포트는 결제 직후
- * **리포트 페이지 자체로** 리다이렉트되며, 이 페이지는 유저가 1년간 몇 번이고 다시
- * 열어보는 곳이다. 따라서 마운트할 때마다 발화하면 재방문이 전부 구매로 중복 집계된다.
+ * minds 관계 리포트·inner-child 심층 리포트가 공유한다. 두 리포트는 결제 직후 리포트
+ * 페이지로 이동하지만, 그 페이지는 유저가 1년간 몇 번이고 다시 열어보는 곳이라 마운트마다
+ * 발화하면 재방문이 전부 구매로 중복 집계된다.
  *
- * 그래서 "결제 직후 최초 1회"만 발화한다:
- *  - NicePay return 라우트가 **결제 확정(pending→confirmed) 시점에만** `?purchased=1`을
- *    붙여 리다이렉트한다(멱등 재방문 경로엔 안 붙음).
- *  - 이 컴포넌트는 그 쿼리가 있을 때만 Purchase 를 쏘고, 곧바로 쿼리에서 제거한다
- *    (새로고침·링크 공유 시 재발화 방지). `fired` ref 로 StrictMode 이중 이펙트도 막는다.
+ * 그래서 **발화 여부는 서버가 결정**한다(이 컴포넌트는 렌더될 때만 발화):
+ *  - 페이지 서버 컴포넌트가 status=confirmed + paid_at 이 최근(24h 내)일 때만 렌더한다.
+ *    → 결제 직후 조회에서만 켜지고, 며칠 뒤 재방문엔 아예 렌더 안 됨.
+ *    → 과거 `?purchased=1` 쿼리 마커 방식은 로그인/소유권 리다이렉트에서 유실돼 폐기했다.
+ *  - `eventID`(결제 레코드 id)로 발화하므로, 최근 창 안에서 몇 번 새로고침해도 메타가
+ *    1건으로 합쳐 "결제 1건 = 전환 1건"을 보장한다.
  *
- * value 는 결제 레코드의 실제 금액을 넘겨받는다 — minds 는 가격 A/B(₩9,900/₩19,900)라
- * 상수로는 정확한 매출을 잡을 수 없기 때문이다.
+ * fbq 는 afterInteractive 로드라 마운트 즉시엔 아직 없을 수 있어, 준비될 때까지 기다렸다
+ * 발화한다(`trackMetaEventWhenReady`). value 는 결제 레코드의 실제 금액을 넘겨받는다
+ * — 두 상품 다 가격 A/B(₩9,900/₩19,900)라 상수로는 정확한 매출을 잡을 수 없다.
  */
 
 import { useEffect, useRef } from "react";
@@ -23,39 +25,24 @@ import { trackMetaEventWhenReady } from "@/lib/meta-pixel";
 export function ReportPurchasePixel({
   amount,
   contentName,
+  eventId,
 }: {
   amount: number;
   contentName: string;
+  eventId: string;
 }) {
   const fired = useRef(false);
 
   useEffect(() => {
     if (fired.current) return;
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("purchased") !== "1") return;
-
     fired.current = true;
-    // fbq 가 아직 로드 전일 수 있으므로 준비될 때까지 기다렸다 발화한다.
-    // 마커 제거는 **실제 발화 성공 후에만**(onFired) — 실패 시 지우면 재시도조차 못 한다.
+    // fbq 준비될 때까지 기다렸다 발화. eventID 로 재방문·새로고침 중복은 메타가 제거.
     return trackMetaEventWhenReady(
       "Purchase",
       { content_name: contentName, value: amount, currency: "KRW" },
-      {
-        onFired: () => {
-          // 새로고침·공유 시 재발화 방지 — purchased 만 제거하고 나머지 쿼리는 보존.
-          const p = new URLSearchParams(window.location.search);
-          p.delete("purchased");
-          const qs = p.toString();
-          window.history.replaceState(
-            null,
-            "",
-            window.location.pathname + (qs ? `?${qs}` : "")
-          );
-        },
-      }
+      { eventID: eventId }
     );
-  }, [amount, contentName]);
+  }, [amount, contentName, eventId]);
 
   return null;
 }

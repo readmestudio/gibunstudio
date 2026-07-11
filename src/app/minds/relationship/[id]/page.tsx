@@ -20,6 +20,7 @@ import {
 } from "@/lib/minds/relationship-report";
 import { MindsRelationshipView } from "./MindsRelationshipView";
 import { ReportPurchasePixel } from "@/components/analytics/ReportPurchasePixel";
+import { PURCHASE_PIXEL_WINDOW_MS } from "@/lib/minds/relationship-constants";
 
 export const metadata: Metadata = {
   title: "내 마음 속 다섯 가지 배역과 그 관계 · 기분",
@@ -37,11 +38,12 @@ export default async function MindsRelationshipPage({
   let initialReport: RelationshipReport | null = null;
   let ownerId: string | null = null;
   let amount: number | null = null;
+  let paidAt: string | null = null;
   try {
     const admin = createAdminClient();
     const { data } = await admin
       .from("minds_relationship_purchases")
-      .select("status, report_json, user_id, amount")
+      .select("status, report_json, user_id, amount, paid_at")
       .eq("id", id)
       .maybeSingle();
     if (data) {
@@ -53,6 +55,7 @@ export default async function MindsRelationshipPage({
       );
       ownerId = (data.user_id as string | null) ?? null;
       amount = (data.amount as number | null) ?? null;
+      paidAt = (data.paid_at as string | null) ?? null;
     }
   } catch {
     // 조회 실패 — 클라이언트가 생성 호출로 재시도/안내.
@@ -71,11 +74,22 @@ export default async function MindsRelationshipPage({
     }
   }
 
+  // 유료광고 Purchase 전환 신호 — 결제 직후(paid_at 최근 24h) 조회에서만 켠다.
+  // 며칠 뒤 재방문엔 렌더 안 됨. 창 안 중복 발화는 eventID(결제 id)로 메타가 1건 처리.
+  const firePurchasePixel =
+    status === "confirmed" &&
+    amount != null &&
+    paidAt != null &&
+    Date.now() - new Date(paidAt).getTime() < PURCHASE_PIXEL_WINDOW_MS;
+
   return (
     <>
-      {/* 유료광고 Purchase 전환 신호 — 결제 직후(?purchased=1) 최초 1회만 발화. */}
-      {status === "confirmed" && amount != null && (
-        <ReportPurchasePixel amount={amount} contentName="minds_relationship" />
+      {firePurchasePixel && (
+        <ReportPurchasePixel
+          amount={amount!}
+          contentName="minds_relationship"
+          eventId={id}
+        />
       )}
       <MindsRelationshipView
         purchaseId={id}

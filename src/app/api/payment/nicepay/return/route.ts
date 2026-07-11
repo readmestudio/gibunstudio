@@ -320,10 +320,9 @@ async function handleMindsRelationshipPayment(params: {
   });
 
   // 리포트 페이지로 — 거기서 report_json 이 없으면 LLM 생성·캐시 후 렌더.
-  // `?purchased=1` 은 **이 최초 확정 경로에서만** 붙인다 → 리포트 페이지가 Purchase 픽셀을
-  // 딱 1회 발화한다(위 멱등 재방문 경로엔 없어 중복 집계 안 됨). 슬랙·알림톡용 reportUrl
-  // 은 파라미터 없는 영구 링크 그대로 둔다.
-  return seeOther(`${reportUrl}?purchased=1`);
+  // (Purchase 픽셀 발화는 페이지가 paid_at 기준으로 서버에서 판단한다 — 과거 `?purchased=1`
+  //  쿼리 마커는 로그인/소유권 리다이렉트에서 유실돼 폐기했다.)
+  return seeOther(reportUrl);
 }
 
 /* ── 내면 아이 찾기 워크샵 결제 처리 (IW-) ── */

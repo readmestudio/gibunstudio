@@ -40,7 +40,14 @@ export function trackMetaEvent(
 export function trackMetaEventWhenReady(
   event: string,
   params: Record<string, unknown>,
-  opts?: { retries?: number; intervalMs?: number; onFired?: () => void }
+  opts?: {
+    retries?: number;
+    intervalMs?: number;
+    // 중복 제거 키. 같은 eventID 로 여러 번 발화돼도 메타가 1건으로 합친다(재방문·새로고침
+    // 대비). Purchase 는 결제 레코드 id 를 넘겨 "결제 1건 = 전환 1건"을 보장한다.
+    eventID?: string;
+    onFired?: () => void;
+  }
 ): () => void {
   const retries = opts?.retries ?? 50; // 100ms × 50 ≈ 5초까지 대기
   const intervalMs = opts?.intervalMs ?? 100;
@@ -52,7 +59,8 @@ export function trackMetaEventWhenReady(
     if (cancelled) return;
     const fbq = getFbq();
     if (fbq) {
-      fbq("track", event, params);
+      if (opts?.eventID) fbq("track", event, params, { eventID: opts.eventID });
+      else fbq("track", event, params);
       opts?.onFired?.();
       return;
     }
