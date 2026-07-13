@@ -37,10 +37,26 @@ export interface TypeCard {
   guardian_cost: Record<GuardianType, string>; // 지킴이 유형별 장기 상실
 }
 
-/** 무료 리포트 LLM 생성 구간(2필드). HANDOFF 5-2. */
+/** 무료 리포트 LLM 생성 구간. HANDOFF 5-2 + 개인화 도입부(portrait). */
 export interface FreeReportGenerated {
-  gap: string; // 겉과 속(200~250자)
-  relation_pattern: string; // 관계에서의 패턴(250~300자)
+  /**
+   * 무료 리포트 개인화 도입부(400~550자). SCT 응답의 의미를 해석해(원문 인용 없이) "이건
+   * 내 얘기"의 몰입을 만드는, 무료에서 가장 먼저 읽히는 문단. 옵션 — 구버전 블롭·폴백
+   * 미생성 시 렌더러가 유형카드 고정필드로 정적 도입부를 대신 만든다.
+   */
+  portrait?: string;
+  /**
+   * 무료 리포트 개인화 통찰(300~420자). 페이월 직전의 '아하 모먼트'(원인+반전). SCT 의
+   * 트리거·도피행동 의미를 해석해 녹인다. 옵션 — 없으면 렌더러가 정적 통찰로 대체.
+   */
+  insight?: string;
+  /**
+   * 무료 '일상에서의 발현' 섹션에 붙는 예측형 개인화(250~380자). "오 이거 내 얘기"가 되도록
+   * 일상의 구체 장면을 약간의 예측으로 짚는다. SCT 해석 반영·인용 금지. 옵션.
+   */
+  daily_prediction?: string;
+  gap: string; // 겉과 속(200~250자) — 유료 GapRelationCard 가 소비
+  relation_pattern: string; // 관계에서의 패턴(250~300자) — 유료 GapRelationCard 가 소비
 }
 
 /** 유료 6번 '지금의 당신이 줄 수 있는 것' — 한 단계(제목 + 본문). */
@@ -58,12 +74,31 @@ export interface ReparentingPlan {
   steps: ReparentingStep[]; // 2~3개: 알아차림 신호 / if-then 실행 / 물리적 앵커
 }
 
-/** 유료 리포트 LLM 생성 구간(6필드). HANDOFF 6-4 + 재양육 개인화. */
+/** 같은 상처가 반복되는 구조 — 단계별(소제목별) 서술. 각 120~200자. */
+export interface LoopStages {
+  trigger: string; // 촉발
+  interpretation: string; // 해석
+  action: string; // 행동
+  result: string; // 결과
+  reinforcement: string; // 강화
+}
+
+/** 일상에서의 발현 — 영역별 풍성 서술("내 이야기" 수준 공감). 각 150~260자. */
+export interface DailyDomains {
+  relationship: string; // 관계
+  work: string; // 일
+  self_care: string; // 자기관리
+}
+
+/** 유료 리포트 LLM 생성 구간(9필드). HANDOFF 6-4 + 재양육 개인화 + 갈등/해결 + 구조화. */
 export interface PaidReportGenerated {
-  loop_narrative: string; // 같은 상처가 반복되는 구조(500~700자)
+  daily_domains: DailyDomains; // 이 아이의 전체 구조 — 일상 발현(영역별 풍성)
+  loop_stages: LoopStages; // 같은 상처가 반복되는 구조(단계별 소제목)
+  guardian_anatomy: string; // 방어 시스템: 지킴이(450~600자)
+  conflict_problems: string; // 이 아이가 만들어내는 갈등과 문제(500~700자)
   second_child_relation: string; // 두 번째 아이의 신호(300~400자)
-  guardian_anatomy: string; // 방어 시스템: 지킴이(400~500자)
   core_need_bridge: string; // 정말 원했던 것 도입부(150~200자)
+  getting_along: string; // 이 아이와 잘 지내는 법(450~650자)
   reparenting: ReparentingPlan; // 지금의 당신이 줄 수 있는 것(SCT 기반 실행계획)
   closing: string; // 마무리(200~250자)
 }

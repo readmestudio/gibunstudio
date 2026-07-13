@@ -8,10 +8,10 @@ import { generateInnerChildPaidReport, readPaidReport } from "@/lib/minds/inner-
 /**
  * POST /api/inner-child/report  (결제 게이트 — confirmed IC- 구매만)
  *
- * "내면 아이 심층 리포트" 유료 산출물(6생성필드)을 만들거나 캐시를 돌려준다. 결제 직후
+ * "내면 아이 심층 리포트" 유료 산출물(9생성필드)을 만들거나 캐시를 돌려준다. 결제 직후
  * 리포트 페이지(/inner-child/full/[id])가 호출한다. /api/minds/relationship 과 동형 골격이되,
  * 데이터 소스가 다르다 — 원응답 재분석이 아니라 무료에서 이미 만든 권위 채점본(score_result)을
- * 재사용해 gemini-2.5-pro 로 6필드(개인화 reparenting 포함)만 생성한다.
+ * 재사용해 gemini-2.5-pro 로 9필드(개인화 reparenting 포함)만 생성한다.
  *
  * 흐름:
  *   1) purchaseId 로 결제 레코드 조회 → 없으면 404.

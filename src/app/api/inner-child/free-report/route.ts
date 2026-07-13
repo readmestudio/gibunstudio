@@ -211,21 +211,33 @@ async function generateFreeReport(
       { role: "user", content: buildFreeUserMessage(card, score) },
     ],
     {
-      // 무료 깔때기 — 비용 절감을 위해 flash + thinking 끔.
-      model: "gemini-2.5-flash",
-      temperature: 0.6,
-      max_tokens: 2048,
-      thinking_budget: 0,
+      // 무료라도 개인화 필력을 최우선 — pro + thinking 허용(파운더 지시). 비용은 상단
+      // 비용가드(IP 레이트리밋 + 일일 상한 withinDailyBudget)로 천장이 잡혀 있다.
+      // portrait+insight+gap+relation 4필드라 토큰 넉넉히.
+      model: "gemini-2.5-pro",
+      temperature: 0.7,
+      max_tokens: 8192,
       response_format: { type: "json_object" },
     },
   );
 
   const parsed = safeJsonParse<Record<string, unknown>>(response);
   if (!parsed || typeof parsed !== "object") return null;
+  const portrait = typeof parsed.portrait === "string" ? parsed.portrait.trim() : "";
+  const insight = typeof parsed.insight === "string" ? parsed.insight.trim() : "";
+  const daily = typeof parsed.daily_prediction === "string" ? parsed.daily_prediction.trim() : "";
   const gap = typeof parsed.gap === "string" ? parsed.gap.trim() : "";
   const relation = typeof parsed.relation_pattern === "string" ? parsed.relation_pattern.trim() : "";
+  // gap/relation 은 안정 검증용 필수 필드 — 없으면 실패로 보고 재시도/폴백.
+  // portrait·insight·daily_prediction 은 무료 개인화 옵션 — 있으면 싣고, 없으면 렌더러가 정적 대체.
   if (!gap || !relation) return null;
-  return { gap, relation_pattern: relation };
+  return {
+    gap,
+    relation_pattern: relation,
+    ...(portrait ? { portrait } : {}),
+    ...(insight ? { insight } : {}),
+    ...(daily ? { daily_prediction: daily } : {}),
+  };
 }
 
 /* ─────────────── 결정론적 폴백 (무료라 항상 결과 보장) ─────────────── */
@@ -234,6 +246,21 @@ function buildFallbackFreeReport(
   card: TypeCard | null,
   score: ScoreResult,
 ): FreeReportGenerated {
+  // 개인화 도입부·통찰(polyfill) — LLM 이 없을 때의 결정론적 대체. 유저 응답을 되풀이하지
+  // 않는 게 원칙이므로(고정 리포트 인상 방지) 여기서는 유형카드 필드만으로 조립한다.
+  const portrait = card
+    ? `${card.one_liner}. ${card.traits}\n\n마음 깊은 곳에는 '${card.core_belief}'는 믿음이 자리 잡고 있어요. 그래서 남들에겐 사소해 보이는 순간에도, 당신은 먼저 반응하게 됩니다. 이 아이가 어떤 아이인지, 지금부터 하나씩 만나볼게요.`
+    : `당신 안에는 오래 자리를 지켜온 내면 아이가 있어요. 이 아이가 어떤 아이인지, 지금부터 함께 만나볼게요.`;
+
+  const insight = card
+    ? `평소엔 조용하던 이 아이는 특정한 순간에 유독 크게 깨어나요. 그때 당신은 ‘${card.surface_reaction}’ 모습으로 먼저 나서곤 합니다. 겉으로는 ${card.key_emotion}처럼 보여도, 그 밑에는 스스로를 지키려는 오래된 마음이 있어요. 그건 나약함이 아니라, 예전엔 실제로 당신을 지켜주던 방식이었습니다. 그런데 ‘왜’ 하필 그 순간이고, 여기서 어떻게 벗어날 수 있는지는 아직 남아 있어요.`
+    : `당신의 반응에는 스스로를 지키려는 오래된 마음이 담겨 있어요. 그것이 왜 그런지, 어떻게 달라질 수 있는지는 지금부터 함께 살펴볼게요.`;
+
+  // 일상 예측(polyfill) — 유형카드 domains 를 예측형 어조로. 유저 응답은 되풀이하지 않는다.
+  const daily_prediction = card
+    ? `아마 이런 순간, 꽤 있지 않나요. 관계에서는 ${card.domains["관계"]} 일에서는 ${card.domains["일"]} 그리고 혼자 있을 때조차 ${card.domains["자기관리"]} 매번 상황은 달라 보여도, 그 밑에서 움직이는 건 같은 아이예요.`
+    : `상황은 매번 달라 보여도, 그 밑에서 움직이는 건 늘 같은 아이예요. 관계에서도, 일에서도, 혼자 있을 때조차 비슷한 결이 반복됩니다.`;
+
   const gap = card
     ? `${card.gap_hint}. 겉으로 보이는 모습과 속의 상태 사이에는 이런 간극이 있지만, 정작 그 간극을 알아채는 사람은 드뭅니다. 지금 이 리포트가 그 간극을 읽어냈습니다.`
     : "겉으로 보이는 모습과 속의 상태 사이에는 좀처럼 알아채기 어려운 간극이 있습니다. 지금 이 리포트가 그 간극을 읽어냈습니다.";
@@ -248,5 +275,5 @@ function buildFallbackFreeReport(
     sctQuote ? `"${sctQuote}"라는 응답은 이 패턴과 일치합니다. ` : ""
   }이 아이는 관계 안에서 같은 신호에 반복적으로 반응합니다.`;
 
-  return { gap, relation_pattern };
+  return { gap, relation_pattern, portrait, insight, daily_prediction };
 }

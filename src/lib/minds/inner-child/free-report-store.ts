@@ -40,8 +40,18 @@ export function readFreeReportBlob(raw: unknown): StoredFreeReport | null {
   if (fr && typeof fr === "object") {
     const g = (fr as Record<string, unknown>).gap;
     const r = (fr as Record<string, unknown>).relation_pattern;
+    const p = (fr as Record<string, unknown>).portrait;
+    const ins = (fr as Record<string, unknown>).insight;
+    const dp = (fr as Record<string, unknown>).daily_prediction;
     if (typeof g === "string" && typeof r === "string") {
-      free = { gap: g, relation_pattern: r };
+      // portrait·insight·daily_prediction 은 옵션 — 있으면 무료 개인화 필드로 함께 넘긴다.
+      free = {
+        gap: g,
+        relation_pattern: r,
+        ...(typeof p === "string" && p ? { portrait: p } : {}),
+        ...(typeof ins === "string" && ins ? { insight: ins } : {}),
+        ...(typeof dp === "string" && dp ? { daily_prediction: dp } : {}),
+      };
     }
   }
 
