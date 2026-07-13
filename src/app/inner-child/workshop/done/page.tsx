@@ -86,8 +86,8 @@ export default async function WorkshopDonePage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 text-center">
-      {/* 유료광고 Purchase 전환 신호(클라이언트에서 1회 발화) */}
-      <WorkshopPurchasePixel amount={WORKSHOP_PRICE} />
+      {/* 유료광고 Purchase 전환 신호 — eventId(결제 id)로 중복 발화 dedup. */}
+      <WorkshopPurchasePixel amount={WORKSHOP_PRICE} eventId={p} />
 
       <h1 className="text-2xl font-bold text-[var(--foreground)]">
         결제가 완료됐어요
