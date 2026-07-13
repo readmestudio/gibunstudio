@@ -766,17 +766,17 @@ function ReportBody({ report }: { report: RelationshipReport }) {
           {report.closing}
         </p>
 
-        {/* 상담 전환 CTA — 리포트를 다 읽어 마음이 가장 열린 지금이 전환의 순간.
-            국가공인 1급 심리상담사 1:1 상담을 카카오톡 문의로 연결한다. */}
+        {/* 1:1 세션 전환 CTA — 리포트를 다 읽어 마음이 가장 열린 지금이 전환의 순간.
+            1:1 세션을 카카오톡 문의로 연결한다. */}
         <div style={{ marginTop: 34, padding: "26px 22px", border: `2px solid ${M.ink}`, background: M.paper2 }}>
           <div style={{ ...monoLabel, marginBottom: 12 }}>다음 한 걸음</div>
           <h3 style={{ fontFamily: M.font, fontSize: 19, fontWeight: 800, letterSpacing: "-0.01em", lineHeight: 1.5, color: M.ink, margin: "0 0 10px" }}>
             이 배역들, 혼자 마주하기 벅차다면
             <br />
-            1급 심리상담사와 함께 이야기해봐요.
+            1:1 세션으로 더 깊이 들여다봐요.
           </h3>
           <p style={{ fontFamily: M.font, fontSize: 13.5, color: M.ink2, lineHeight: 1.7, margin: "0 0 20px" }}>
-            리포트에서 만난 내 마음의 패턴을, 상담심리사 1급(한국상담심리학회)과 1:1로 더 깊이 들여다볼 수 있어요. 카카오톡으로 편하게 문의해주세요.
+            리포트에서 만난 내 마음의 패턴을, 1:1 세션에서 더 깊이 들여다볼 수 있어요. 카카오톡으로 편하게 문의해주세요.
           </p>
           <a
             href={KAKAO_CHANNEL_URL}
@@ -795,7 +795,7 @@ function ReportBody({ report }: { report: RelationshipReport }) {
               textDecoration: "none",
             }}
           >
-            💬 카카오톡으로 상담 문의하기
+            💬 카카오톡으로 1:1 세션 문의하기
           </a>
 
           {/* 상담 후기 — 문의 직전 사회적 증거. counseling 랜딩과 같은 후기를 재사용. */}

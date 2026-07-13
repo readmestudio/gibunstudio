@@ -35,15 +35,6 @@ const PROGRAMS: ProgramCardData[] = [
     cta: "구매하기 →",
     illustration: "journal-book",
   },
-  {
-    id: "counseling",
-    title: "1:1 심리 상담",
-    description:
-      "1급 심리상담사와 만나 깊이 있는 대화로 내 마음을 이해해 보세요.",
-    href: "/programs/counseling",
-    cta: "자세히 보기 →",
-    illustration: "chat-bubble",
-  },
 ];
 
 /* ──────────────────────────────────────────────
@@ -116,7 +107,7 @@ export function ProgramCards() {
             나를 해킹하는 프로그램
           </h2>
           <p className="mx-auto text-base leading-relaxed text-[var(--foreground)]/70 lg:w-2/3">
-            혼자서, 또는 상담사와 함께. 진짜 나를 이해해 가는 과정이에요.
+            혼자서, 또는 함께. 진짜 나를 이해해 가는 과정이에요.
           </p>
         </div>
 
