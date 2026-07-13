@@ -924,10 +924,10 @@ function ReparentingCard({
           <h3 style={{ fontFamily: INK.display, fontSize: 19, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.5, color: INK.white, margin: "0 0 10px" }}>
             이 아이, 혼자 마주하기 벅차다면
             <br />
-            1급 심리상담사와 함께 이야기해봐요.
+            1:1 세션으로 더 깊이 들여다봐요.
           </h3>
           <p style={{ fontFamily: INK.font, fontSize: 13.5, color: INK.t62, lineHeight: 1.7, margin: "0 0 20px" }}>
-            리포트에서 만난 내면 아이의 패턴을, 상담심리사 1급(한국상담심리학회)과 1:1로 더 깊이 들여다볼 수 있어요. 카카오톡으로 편하게 문의해주세요.
+            리포트에서 만난 내면 아이의 패턴을, 1:1 세션에서 더 깊이 들여다볼 수 있어요. 카카오톡으로 편하게 문의해주세요.
           </p>
           <a
             href={KAKAO_CHANNEL_URL}
@@ -947,7 +947,7 @@ function ReparentingCard({
               textDecoration: "none",
             }}
           >
-            💬 카카오톡으로 상담 문의하기
+            💬 카카오톡으로 1:1 세션 문의하기
           </a>
         </div>
       </div>
