@@ -4,7 +4,7 @@
  * /minds 결제 모달 — 그 자리에서 카드 결제를 시작하는 오버레이.
  *
  * 페이월 CTA 가 워크북 랜딩으로 이동하는 대신, 리포트 위에 이 모달이 떠서 바로 NicePay
- * 결제창을 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩19,900)이며, 비로그인
+ * 결제창을 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩9,900)이며, 비로그인
  * leadId 기반 결제 훅(useMindsRelationshipCheckout)을 쓴다 — 로그인 없이 결제 가능.
  * 결제 완료 시 /minds/relationship/[id] 리포트 페이지로 이동한다(return 라우트가 처리).
  */
@@ -33,7 +33,7 @@ export function MindsCheckoutModal({
   onClose: () => void;
   funnel?: MindsFunnelConfig;
   /**
-   * 표시가 override — inner-child 가격 A/B 실험에서 leadId variant 가격을 넘긴다.
+   * 표시가 override — 리포트 단일가(₩9,900)를 표시·픽셀용으로 넘긴다.
    * 미전달(minds)이면 funnel 표시가를 그대로 쓴다(무회귀). 실제 결제 금액은 서버가
    * leadId 로 재확정하므로, 이 값은 순전히 표시(취소선 정가·판매가)·픽셀용이다.
    */

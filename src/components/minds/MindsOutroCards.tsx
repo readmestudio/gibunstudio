@@ -4,7 +4,7 @@
  * /minds 리포트 아웃트로 — "서서히 전환되는" 시퀀스 (콰이엇 에디토리얼).
  *
  *   ① 개념: 한 사람 안엔 여러 마음이 산다           (MindsConceptCard)
- *   ──────── 판매 3장 (모든 CTA → 결제 모달, ₩19,900) ────────
+ *   ──────── 판매 3장 (모든 CTA → 결제 모달, ₩9,900) ────────
  *   장1 분석 완료 + 잠긴 배역표                       (MindsPricingCard)
  *   장2 그 외 카테고리 미리보기 + 후기                (MindsCategoryReviewCard)
  *   장3 왜 알아야 하나 + 달라지는 것 (합본)           (MindsWhyBenefitCard)
@@ -40,7 +40,7 @@ const para = { ...leadStyle, fontSize: 15 } as const;
  * 지나가는 글자가 자연스럽게 사라진다.
  *
  * 카드 본문 끝에는 <CtaSpacer/> 를 둬, 마지막 줄이 이 바에 가리지 않게 여백을 비운다.
- * 가격은 여기서 노출하지 않는다 — 클릭 시 뜨는 결제 모달에서 ₩19,900 을 보여준다.
+ * 가격은 여기서 노출하지 않는다 — 클릭 시 뜨는 결제 모달에서 ₩9,900 을 보여준다.
  */
 function StickyCheckoutBar({
   onCheckout,
@@ -52,7 +52,7 @@ function StickyCheckoutBar({
   onCheckout: () => void;
   label?: string;
   caption?: ReactNode;
-  /** 가격 A/B — leadId variant 표시가. 미전달이면 현행 상수(B)로 폴백. */
+  /** 표시가(단일가 ₩9,900). 미전달이면 현행 상수로 폴백. */
   price?: number;
   originalPrice?: number;
 }) {

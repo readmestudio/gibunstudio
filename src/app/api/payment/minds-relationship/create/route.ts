@@ -12,7 +12,7 @@ import { reportPricing } from "@/lib/minds/price-experiment";
 /**
  * POST /api/payment/minds-relationship/create  (로그인 선택)
  *
- * 무료 테스트를 거친 leadId 로, 유료 리포트(minds·inner-child 모두 ₩19,900)의
+ * 무료 테스트를 거친 leadId 로, 유료 리포트(minds·inner-child 모두 ₩9,900)의
  * 결제 레코드(pending)를 만들고 NicePay 에 넘길 order_id 를 반환한다.
  *
  * 로그인은 강제하지 않는다(마찰 최소화 — 익명으로 무료 테스트를 한 사용자가 바로 결제):
@@ -132,10 +132,8 @@ export async function POST(request: NextRequest) {
         ? INNER_CHILD_ORDER_PREFIX
         : MINDS_RELATIONSHIP_ORDER_PREFIX;
     // 금액은 서버에서 고정해 위변조를 막고, return 검증도 같은 기준으로 재확인한다.
-    // 가격 A/B 실험 — minds(MR-)·inner-child(IC-) 두 유료 리포트 모두 leadId 결정적
-    // 해시로 variant(₩9,900/₩19,900)를 뽑는다(클라 표시·NicePay 금액도 같은 leadId 로
-    // 같은 값). amount 자체가 variant 를 인코딩(9,900=A/19,900=B)하므로 별도 컬럼 없이
-    // return 검증·전환율 분석(amount 그룹핑)이 가능하다(무마이그레이션).
+    // minds(MR-)·inner-child(IC-) 두 유료 리포트 모두 단일가(₩9,900) — 표시·NicePay 금액·
+    // return 검증이 같은 상수 하나에서 나온다(가격 A/B 종료). reportPricing 이 유일 출처.
     const amount = reportPricing(leadId).price;
     const orderId = `${orderPrefix}${Date.now()}-${nanoid(8)}`;
     const { data: purchase, error: purchaseError } = await admin

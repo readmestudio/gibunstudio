@@ -16,7 +16,8 @@
  *
  * fbq 는 afterInteractive 로드라 마운트 즉시엔 아직 없을 수 있어, 준비될 때까지 기다렸다
  * 발화한다(`trackMetaEventWhenReady`). value 는 결제 레코드의 실제 금액을 넘겨받는다
- * — 두 상품 다 가격 A/B(₩9,900/₩19,900)라 상수로는 정확한 매출을 잡을 수 없다.
+ * — 리포트는 단일가(₩9,900)지만 가격 A/B 실험 중 생성된 legacy(₩19,900) 결제도 있어,
+ *   상수 대신 레코드의 실제 금액으로 매출을 잡는다.
  */
 
 import { useEffect, useRef } from "react";

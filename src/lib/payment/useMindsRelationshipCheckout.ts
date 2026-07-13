@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * /minds 유료 "다섯 배역 + 관계 해설" 리포트(₩19,900) 결제 훅 — 비로그인.
+ * /minds 유료 "다섯 배역 + 관계 해설" 리포트(₩9,900) 결제 훅 — 비로그인.
  *
  * 워크북 결제(useWorkshopCheckout)와 달리 로그인이 필요 없다. localStorage 의 leadId 로
  * 결제 레코드를 만들고(/api/payment/minds-relationship/create), NicePay 결제창을 띄운다.
@@ -69,8 +69,8 @@ export function useMindsRelationshipCheckout(
         clientId: NICEPAY_CLIENT_ID,
         ...(method ? { method } : {}),
         orderId: data.order_id,
-        // 결제창 금액은 서버가 create 때 확정해 돌려준 amount 를 그대로 쓴다 — inner-child
-        // 가격 A/B(variant) 금액이 여기에 반영돼, pending·return 검증 금액과 자동 일치한다.
+        // 결제창 금액은 서버가 create 때 확정해 돌려준 amount 를 그대로 쓴다 — 이 금액이
+        // pending·return 검증 금액과 자동 일치한다(단일가 ₩9,900).
         // (구 응답 호환: amount 누락 시에만 퍼널 표시가로 폴백.)
         amount: typeof data.amount === "number" ? data.amount : funnel.price,
         goodsName: funnel.goodsName,
