@@ -35,7 +35,7 @@ export default function InnerChildDevPage() {
     return (
       <>
         {card ? (
-          <InnerChildFreeReport card={card} score={result} />
+          <InnerChildFreeReport card={card} />
         ) : (
           <div style={{ height: "100dvh", background: "#050506", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
             <p style={{ color: "#fff", fontFamily: "'Pretendard',sans-serif", textAlign: "center" }}>

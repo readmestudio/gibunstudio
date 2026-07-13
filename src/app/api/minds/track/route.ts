@@ -57,12 +57,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "알 수 없는 이벤트입니다." }, { status: 400 });
   }
 
-  // 지금은 inner-child 랜딩만 광고 집행 중 — /minds 깔때기 슬랙은 노이즈다.
-  // 그래서 top-of-funnel 슬랙은 inner_child 일 때만 쏜다. minds(및 variant 유실로
-  // minds 로 폴백된 값)는 조용히 무시하고 200 만 돌려준다(클라이언트 dedupe 유지).
+  // 지금은 inner-child 랜딩만 광고 집행 중 — /minds 깔때기 top-of-funnel(테스트 시작·
+  // 페이월 도달) 슬랙은 노이즈다. 그래서 그 둘은 inner_child 일 때만 쏘고, minds(및
+  // variant 유실로 minds 로 폴백된 값)는 조용히 무시하고 200 만 돌려준다(클라이언트 dedupe 유지).
+  //
+  // 단, "지금 바로 잠금 해제하기" 클릭(checkout_click)은 결제 의향이 담긴 '높은 신호'라
+  // 노이즈가 아니다 → minds 퍼널이어도 통과시켜 운영자 슬랙에 띄운다.
   // ⚠️ 여기는 퍼널 단계 신호만 담당한다. 결제 완료 등 '돈' 알림은 별도 라우트라 영향 없음.
-  // 다시 /minds 광고를 켜면 아래 가드만 풀면 된다.
-  if (variant !== "inner_child") {
+  // 다시 /minds 광고를 전면 켜면 아래 가드를 통째로 풀면 된다.
+  if (variant !== "inner_child" && b.event !== "checkout_click") {
     return NextResponse.json({ ok: true, skipped: "minds_muted" });
   }
 

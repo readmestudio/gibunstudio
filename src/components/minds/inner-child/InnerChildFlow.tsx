@@ -278,5 +278,5 @@ function InlineFallbackReport({ input }: { input: ScoreInput }) {
       </div>
     );
   }
-  return <InnerChildFreeReport card={card} score={score} />;
+  return <InnerChildFreeReport card={card} />;
 }

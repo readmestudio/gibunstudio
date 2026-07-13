@@ -6,11 +6,14 @@
  * 최초 진입(캐시 없음)이면 마운트 시 생성 라우트(/api/inner-child/report)를 호출하고(~30초)
  * 진행 화면을 보여준다. 캐시가 있으면(server 에서 initialReport 주입) 즉시 본문을 렌더한다.
  *
- * 디자인은 무료 리포트(InnerChildFreeReport)와 같은 잉크 오렌지(다크) 카드 덱 언어를 따른다.
- * 섹션(HANDOFF 6-2):
- *   0 읽기 전에 · 1 이 아이의 전체 구조 · 2 같은 상처가 반복되는 구조 ·
- *   3 두 번째 아이의 신호 · 4 방어 시스템: 지킴이 · 5 정말 원했던 것 ·
- *   6 지금의 당신이 줄 수 있는 것 (+ 상담 연계 CTA)
+ * 디자인은 무료 리포트(InnerChildFreeReport)와 같은 잉크 오렌지(다크) 스크롤 언어를 따른다.
+ * (장 넘김 카드 덱 → 한 페이지 스크롤로 전환 — 6섹션을 한 번에 읽는다.)
+ * 섹션(현재 순서):
+ *   읽기 전에 · 이 아이의 전체 구조(영역별 daily_domains) · 같은 상처가 반복되는 구조(단계별
+ *   loop_stages) · 방어 시스템: 지킴이 · 이 아이가 만들어내는 갈등과 문제 · 자주 하는 생각 ·
+ *   스트레스 신호 · 두 번째 아이의 신호 · 정말 원했던 것 · 이 아이와 잘 지내는 법 ·
+ *   지금의 당신이 줄 수 있는 것 (+ 상담 연계 CTA)
+ * 텍스트는 박스 없이 열린 스크롤(Panel = 헤어라인 구분선)로 쭉 읽힌다.
  */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -20,7 +23,7 @@ import { READ_BEFORE, guardianDefinitionBlock, reparentingSteps } from "@/lib/mi
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
 import { MindsResultLinkBar } from "@/components/minds/MindsResultLinkBar";
 import { TypeAvatar } from "@/components/minds/inner-child/report/TypeAvatar";
-import type { FreeReportGenerated, PaidReportGenerated, ReparentingPlan, TypeCard } from "@/lib/minds/inner-child/report-types";
+import type { DailyDomains, LoopStages, PaidReportGenerated, ReparentingPlan, TypeCard } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
 /* ─── 잉크 오렌지 토큰 (InnerChildFreeReport 와 동일) ─── */
@@ -61,15 +64,11 @@ export function InnerChildPaidView({
   status,
   initialReport,
   score,
-  free,
 }: {
   purchaseId: string;
   status: string | null;
   initialReport: PaidReportGenerated | null;
   score: ScoreResult | null;
-  // 무료 리포트에서 옮겨온 "겉과 속·관계 패턴" 카드의 LLM 생성 문장(무료 때 만들어 블롭에
-  // 저장해 둔 값). 페이지가 minds_leads.parts_map 에서 읽어 넘긴다. 없으면 고정 필드만 렌더.
-  free: FreeReportGenerated | null;
 }) {
   const [report, setReport] = useState<PaidReportGenerated | null>(initialReport);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +105,7 @@ export function InnerChildPaidView({
     setAttempt((a) => a + 1);
   };
 
-  if (report) return <ReportBody report={report} score={score} free={free} purchaseId={purchaseId} />;
+  if (report) return <ReportBody report={report} score={score} purchaseId={purchaseId} />;
   if (status === null) {
     return (
       <Centered
@@ -242,29 +241,24 @@ function pad(x: number) {
   return String(x).padStart(2, "0");
 }
 
+/* 본문 읽기용 공통 사이즈 — 쭉쭉 읽히도록 키운 값(무료 리포트와 동일). */
+const READ = { size: 17, line: 1.9, noteSize: 16, noteLine: 1.85 };
+
+/** 열린 섹션 — 박스(테두리/배경) 대신 헤어라인 구분선 + 여백으로 '쭉 읽히게'.
+ *  (파운더 요청: 유료도 박스 안에 텍스트 넣지 말고 스크롤로 쭉 읽히게.) */
 function Panel({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return (
-    <div
-      style={{
-        background: INK.surface,
-        border: `1px solid ${INK.border}`,
-        borderRadius: 16,
-        padding: 22,
-        position: "relative",
-        overflow: "hidden",
-        ...style,
-      }}
-    >
+    <section style={{ borderTop: `1px solid rgba(255,255,255,.07)`, padding: "26px 4px 0", position: "relative", ...style }}>
       {children}
-    </div>
+    </section>
   );
 }
 
 function SecTitle({ n, children }: { n: string; children: ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
-      <span style={{ fontFamily: INK.mono, fontSize: 11, fontWeight: 600, color: INK.accent2 }}>{n}</span>
-      <span style={{ fontFamily: INK.display, fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em", color: INK.white, lineHeight: 1.3 }}>
+    <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+      <span style={{ fontFamily: INK.mono, fontSize: 12, fontWeight: 600, color: INK.accent2 }}>{n}</span>
+      <span style={{ fontFamily: INK.display, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: INK.white, lineHeight: 1.3 }}>
         {children}
       </span>
     </div>
@@ -277,10 +271,10 @@ function Prose({ text, style }: { text: string; style?: CSSProperties }) {
     <p
       style={{
         fontFamily: INK.font,
-        fontSize: 15.5,
-        lineHeight: 1.8,
+        fontSize: 16.5,
+        lineHeight: 1.9,
         letterSpacing: "-0.005em",
-        color: INK.t72,
+        color: INK.t82,
         margin: 0,
         whiteSpace: "pre-line",
         ...style,
@@ -291,165 +285,6 @@ function Prose({ text, style }: { text: string; style?: CSSProperties }) {
   );
 }
 
-/* ───────────────── 카드 덱 ───────────────── */
-
-function CardDeck({ cards }: { cards: { key: string; kicker: string; node: ReactNode }[] }) {
-  const [i, setI] = useState(0);
-  const [start, setStart] = useState<{ x: number; y: number } | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const total = cards.length;
-  const go = (d: number) => setI((c) => Math.min(total - 1, Math.max(0, c + d)));
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [i]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") setI((c) => Math.min(total - 1, c + 1));
-      else if (e.key === "ArrowLeft") setI((c) => Math.max(0, c - 1));
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [total]);
-
-  const atFirst = i === 0;
-  const atLast = i === total - 1;
-
-  return (
-    <div
-      style={{
-        flex: 1,
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
-        background: INK.shell,
-        border: `1px solid ${INK.border}`,
-        borderRadius: 26,
-        boxShadow: "0 40px 100px -40px rgba(255,90,31,.4)",
-        overflow: "hidden",
-      }}
-    >
-      <style>{`
-        @keyframes icRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-        .ic-scroll::-webkit-scrollbar{width:0;height:0}
-      `}</style>
-
-      {/* 상단바 — 브랜드 + 진행 */}
-      <div style={{ flex: "0 0 auto", padding: "18px 18px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <LogoMark />
-            <span style={{ fontFamily: INK.display, fontWeight: 800, fontSize: 15, letterSpacing: "-0.02em", color: INK.white }}>
-              내면 아이 심층 리포트
-            </span>
-          </div>
-          <span style={{ fontFamily: INK.mono, fontSize: 10, letterSpacing: "0.1em", color: INK.t4 }}>
-            {pad(i + 1)} / {pad(total)}
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: 3 }}>
-          {cards.map((c, idx) => (
-            <span
-              key={c.key}
-              style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 999,
-                background: idx <= i ? INK.accent : "rgba(255,255,255,.14)",
-                transition: "background .25s ease",
-              }}
-            />
-          ))}
-        </div>
-        <div style={{ fontFamily: INK.mono, fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase", color: INK.t38, marginTop: 9 }}>
-          {cards[i].kicker}
-        </div>
-      </div>
-
-      {/* 카드 본체 */}
-      <div
-        ref={scrollRef}
-        className="ic-scroll"
-        onTouchStart={(e) => setStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
-        onTouchEnd={(e) => {
-          if (!start) return;
-          const dx = e.changedTouches[0].clientX - start.x;
-          const dy = e.changedTouches[0].clientY - start.y;
-          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
-          setStart(null);
-        }}
-        style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "4px 12px 12px" }}
-      >
-        <div key={cards[i].key} style={{ animation: "icRise .28s ease" }}>
-          {cards[i].node}
-        </div>
-      </div>
-
-      {/* 네비게이션 */}
-      <div style={{ flex: "0 0 auto", display: "flex", gap: 10, padding: "14px 16px 16px", borderTop: `1px solid ${INK.line}` }}>
-        <button
-          type="button"
-          onClick={() => go(-1)}
-          disabled={atFirst}
-          style={{
-            flex: "0 0 auto",
-            padding: "14px 18px",
-            borderRadius: 12,
-            border: `1px solid ${INK.line14}`,
-            background: "transparent",
-            color: atFirst ? INK.t25 : INK.t6,
-            fontFamily: INK.font,
-            fontWeight: 700,
-            fontSize: 15,
-            cursor: atFirst ? "default" : "pointer",
-          }}
-        >
-          ‹ 이전
-        </button>
-        {atLast ? (
-          <button
-            type="button"
-            onClick={() => setI(0)}
-            style={{
-              flex: 1,
-              padding: "14px 18px",
-              borderRadius: 12,
-              border: `1px solid ${INK.line14}`,
-              background: "transparent",
-              color: INK.t72,
-              fontFamily: INK.font,
-              fontWeight: 700,
-              fontSize: 15,
-              cursor: "pointer",
-            }}
-          >
-            처음으로 ↑
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => go(1)}
-            style={{
-              flex: 1,
-              padding: "14px 18px",
-              borderRadius: 12,
-              border: "none",
-              background: INK.grad,
-              color: INK.shell,
-              fontFamily: INK.font,
-              fontWeight: 800,
-              fontSize: 15,
-              cursor: "pointer",
-            }}
-          >
-            다음 장 →
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function LogoMark() {
   return (
@@ -464,12 +299,10 @@ function LogoMark() {
 function ReportBody({
   report,
   score,
-  free,
   purchaseId,
 }: {
   report: PaidReportGenerated;
   score: ScoreResult | null;
-  free: FreeReportGenerated | null;
   purchaseId: string;
 }) {
   const primaryCard: TypeCard | null = score ? getTypeCard(score.primary_child.schema_id) : null;
@@ -493,13 +326,35 @@ function ReportBody({
     cards.push({
       key: "structure",
       kicker: "이 아이의 전체 구조",
-      node: <StructureCard n={nextN()} card={primaryCard} childName={score?.primary_child.child_name ?? primaryCard.child_name} />,
+      node: <StructureCard n={nextN()} card={primaryCard} childName={score?.primary_child.child_name ?? primaryCard.child_name} domains={report.daily_domains} />,
     });
   }
 
-  // ── 무료 리포트에서 옮겨온 해설 카드 3종 (자주 하는 생각 · 스트레스 신호 · 겉과 속/관계 패턴) ──
-  // 전부 primaryCard(TypeCard) 고정 필드에서 렌더된다. 관계 패턴 카드만 무료 때 생성해 둔
-  // LLM 문장(free.gap/relation_pattern)을 함께 쓰되, 없어도 고정 필드로 성립한다.
+  // 2. 같은 상처가 반복되는 구조 (앞으로 이동 — 생성 + 5스텝 다이어그램)
+  cards.push({
+    key: "loop",
+    kicker: "같은 상처가 반복되는 구조",
+    node: <LoopCard n={nextN()} stages={report.loop_stages} />,
+  });
+
+  // 3. 방어 시스템: 지킴이 (앞으로 이동 — 고정 정의 블록 + 생성)
+  if (score) {
+    cards.push({
+      key: "guardian",
+      kicker: "방어 시스템: 지킴이",
+      node: <GuardianCard n={nextN()} definition={guardianDefinitionBlock(score.guardian.type)} anatomy={report.guardian_anatomy} />,
+    });
+  }
+
+  // 4. 이 아이가 만들어내는 갈등과 문제 (신규 생성)
+  cards.push({
+    key: "conflict",
+    kicker: "갈등과 문제",
+    node: <ConflictCard n={nextN()} text={report.conflict_problems} />,
+  });
+
+  // ── 무료 리포트에서 옮겨온 해설 카드 (자주 하는 생각 · 스트레스 신호) ──
+  // primaryCard(TypeCard) 고정 필드로 렌더된다. (겉과 속/관계 패턴 카드는 제거됨.)
   if (primaryCard) {
     cards.push({
       key: "thoughts",
@@ -511,71 +366,68 @@ function ReportBody({
       kicker: "스트레스 신호",
       node: <StressCard n={nextN()} card={primaryCard} />,
     });
-    cards.push({
-      key: "gap-relation",
-      kicker: "겉과 속 · 관계 패턴",
-      node: <GapRelationCard n={nextN()} card={primaryCard} gap={free?.gap ?? null} relation={free?.relation_pattern ?? null} />,
-    });
   }
 
-  // 2. 같은 상처가 반복되는 구조 (생성 + 5스텝 다이어그램)
-  cards.push({
-    key: "loop",
-    kicker: "같은 상처가 반복되는 구조",
-    node: <LoopCard n={nextN()} loop={report.loop_narrative} />,
-  });
-
-  // 3. 두 번째 아이의 신호 (고정 요약 + 생성)
+  // 5. 두 번째 아이의 신호 (고정 요약 + 생성)
   cards.push({
     key: "second-child",
     kicker: "두 번째 아이의 신호",
     node: <SecondChildCard n={nextN()} card={secondCard} relation={report.second_child_relation} />,
   });
 
-  // 4. 방어 시스템: 지킴이 (고정 정의 블록 + 생성)
-  if (score) {
-    cards.push({
-      key: "guardian",
-      kicker: "방어 시스템: 지킴이",
-      node: <GuardianCard n={nextN()} definition={guardianDefinitionBlock(score.guardian.type)} anatomy={report.guardian_anatomy} />,
-    });
-  }
-
-  // 5. 이 아이가 정말 원했던 것 (생성 + 고정 core_need)
+  // 6. 이 아이가 정말 원했던 것 (생성 + 고정 core_need)
   cards.push({
     key: "core-need",
     kicker: "정말 원했던 것",
     node: <CoreNeedCard n={nextN()} bridge={report.core_need_bridge} coreNeed={primaryCard?.core_need ?? null} />,
   });
 
-  // 6. 지금의 당신이 줄 수 있는 것 (SCT 기반 생성 실행계획 + 생성 closing + 상담 CTA)
+  // 7. 이 아이와 잘 지내는 법 (신규 생성 — 실용 해결책)
+  cards.push({
+    key: "getting-along",
+    kicker: "이 아이와 잘 지내는 법",
+    node: <SolutionCard n={nextN()} text={report.getting_along} />,
+  });
+
+  // 8. 지금의 당신이 줄 수 있는 것 (SCT 기반 생성 실행계획 + 생성 closing + 상담 CTA)
   cards.push({
     key: "reparenting",
     kicker: "지금의 당신이 줄 수 있는 것",
     node: <ReparentingCard n={nextN()} reparenting={report.reparenting} card={primaryCard} closing={report.closing} />,
   });
 
+  // 스크롤형 — 장 넘김(CardDeck) 대신 6섹션을 한 페이지에서 쭉 읽는다(무료 리포트와 동일 언어).
   return (
     <div
       style={{
-        height: "100dvh",
-        boxSizing: "border-box",
+        minHeight: "100dvh",
         background: "#050506",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "10px 12px",
         fontFamily: INK.font,
+        paddingBottom: "calc(28px + env(safe-area-inset-bottom, 0px))",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 440, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        <CardDeck cards={cards} />
+      <style>{`@keyframes icRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}`}</style>
+      <div style={{ maxWidth: 440, margin: "0 auto", padding: "16px 14px 0", display: "flex", flexDirection: "column", gap: 18 }}>
+        {/* 브랜드 헤더 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "2px 2px 2px" }}>
+          <LogoMark />
+          <span style={{ fontFamily: INK.display, fontWeight: 800, fontSize: 15, letterSpacing: "-0.02em", color: INK.white }}>
+            내면 아이 심층 리포트
+          </span>
+        </div>
+
+        {cards.map((c) => (
+          <div key={c.key} style={{ animation: "icRise .4s ease both" }}>
+            {c.node}
+          </div>
+        ))}
+
         {/* 재열람 링크 복사 바 — 이 유료 리포트(구매 UUID) 링크를 스스로 저장하게 한다.
             비로그인 구매자가 알림톡/브라우저 기록에만 의존하지 않도록 하는 안전망. */}
-        <div style={{ flex: "0 0 auto" }}>
+        <div>
           <MindsResultLinkBar leadId={purchaseId} base="/inner-child/full" />
         </div>
-        <p style={{ flex: "0 0 auto", fontFamily: INK.mono, fontSize: 10, color: INK.t38, lineHeight: 1.7, textAlign: "center", marginTop: 12 }}>
+        <p style={{ fontFamily: INK.mono, fontSize: 10, color: INK.t38, lineHeight: 1.7, textAlign: "center", marginTop: 6 }}>
           기분 리포트 · INNER CHILD REPORT · {DISCLAIMER}
         </p>
       </div>
@@ -604,30 +456,32 @@ function ReadBeforeCard() {
 }
 
 /* ─── 섹션 1 ─── */
-function StructureCard({ n, card, childName }: { n: string; card: TypeCard; childName: string }) {
-  const domains: [string, string][] = [
-    ["관계", card.domains["관계"]],
-    ["일", card.domains["일"]],
-    ["자기관리", card.domains["자기관리"]],
+function StructureCard({ n, card, childName, domains }: { n: string; card: TypeCard; childName: string; domains: DailyDomains }) {
+  const areas: [string, string][] = [
+    ["관계", domains.relationship],
+    ["일", domains.work],
+    ["자기관리", domains.self_care],
   ];
   return (
-    <Panel style={{ padding: "24px 22px" }}>
+    <Panel>
       <SecTitle n={n}>이 아이의 전체 구조</SecTitle>
       {/* 캐릭터 프로필 + 유형명 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 6px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 20px" }}>
         <TypeAvatar schemaId={card.schema_id} alt={childName} size={64} />
-        <p style={{ fontFamily: INK.font, fontSize: 16, fontWeight: 700, color: INK.white, margin: 0 }}>{childName}</p>
+        <p style={{ fontFamily: INK.font, fontSize: 17, fontWeight: 700, color: INK.white, margin: 0 }}>{childName}</p>
       </div>
-      <div style={{ padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12, marginBottom: 20 }}>
-        <div style={clbStyle}>이 아이가 만들어진 배경</div>
-        <Prose text={card.origin_hypothesis} style={{ fontSize: 15 }} />
-      </div>
-      <div style={clbStyle}>일상에서의 발현</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
-        {domains.map(([k, v]) => (
-          <div key={k}>
-            <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.accent2, margin: 0 }}>{k}</p>
-            <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.72, color: INK.t72, margin: "4px 0 0" }}>{v}</p>
+
+      {/* 이 아이가 만들어진 배경 (열림) */}
+      <div style={clbStyle}>이 아이가 만들어진 배경</div>
+      <Prose text={card.origin_hypothesis} />
+
+      {/* 일상에서의 발현 — 관계·일·자기관리 영역별 풍성 해설(생성, 소제목별) */}
+      <div style={{ ...clbStyle, marginTop: 28 }}>일상에서의 발현</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {areas.map(([label, body]) => (
+          <div key={label}>
+            <h4 style={{ fontFamily: INK.font, fontSize: 17, fontWeight: 800, color: INK.accent2, margin: "0 0 8px" }}>{label}</h4>
+            <Prose text={body} />
           </div>
         ))}
       </div>
@@ -636,15 +490,21 @@ function StructureCard({ n, card, childName }: { n: string; card: TypeCard; chil
 }
 
 /* ─── 섹션 2 ─── */
-const LOOP_STEPS = ["촉발", "해석", "행동", "결과", "강화"];
-function LoopCard({ n, loop }: { n: string; loop: string }) {
+const LOOP_STEPS: { key: keyof LoopStages; label: string }[] = [
+  { key: "trigger", label: "촉발" },
+  { key: "interpretation", label: "해석" },
+  { key: "action", label: "행동" },
+  { key: "result", label: "결과" },
+  { key: "reinforcement", label: "강화" },
+];
+function LoopCard({ n, stages }: { n: string; stages: LoopStages }) {
   return (
-    <Panel style={{ padding: "24px 22px" }}>
+    <Panel>
       <SecTitle n={n}>같은 상처가 반복되는 구조</SecTitle>
       {/* 반복 루프 요약 다이어그램 — 촉발 → 해석 → 행동 → 결과 → 강화 */}
-      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, margin: "18px 0 20px" }}>
-        {LOOP_STEPS.map((s, i) => (
-          <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, margin: "18px 0 24px" }}>
+        {LOOP_STEPS.map(({ key, label }, i) => (
+          <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span
               style={{
                 fontFamily: INK.font,
@@ -657,7 +517,7 @@ function LoopCard({ n, loop }: { n: string; loop: string }) {
                 border: `1px solid rgba(255,138,76,.3)`,
               }}
             >
-              {s}
+              {label}
             </span>
             {i < LOOP_STEPS.length - 1 && (
               <span style={{ fontFamily: INK.mono, fontSize: 12, color: INK.accent2 }}>→</span>
@@ -666,7 +526,19 @@ function LoopCard({ n, loop }: { n: string; loop: string }) {
         ))}
         <span style={{ fontFamily: INK.mono, fontSize: 11, color: INK.t38, marginLeft: 2 }}>↻</span>
       </div>
-      <Prose text={loop} />
+
+      {/* 단계별 소제목 + 본문 */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+        {LOOP_STEPS.map(({ key, label }, i) => (
+          <div key={key}>
+            <h4 style={{ display: "flex", alignItems: "baseline", gap: 9, margin: "0 0 8px" }}>
+              <span style={{ fontFamily: INK.mono, fontSize: 12, fontWeight: 600, color: INK.accent2 }}>{pad(i + 1)}</span>
+              <span style={{ fontFamily: INK.display, fontSize: 18, fontWeight: 800, letterSpacing: "-0.02em", color: INK.white }}>{label}</span>
+            </h4>
+            <Prose text={stages[key]} />
+          </div>
+        ))}
+      </div>
     </Panel>
   );
 }
@@ -674,7 +546,7 @@ function LoopCard({ n, loop }: { n: string; loop: string }) {
 /* ─── 섹션 3 ─── */
 function SecondChildCard({ n, card, relation }: { n: string; card: TypeCard | null; relation: string }) {
   return (
-    <Panel style={{ padding: "24px 22px" }}>
+    <Panel>
       <SecTitle n={n}>두 번째 아이의 신호</SecTitle>
       {card ? (
         <div style={{ marginTop: 16, padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
@@ -690,12 +562,11 @@ function SecondChildCard({ n, card, relation }: { n: string; card: TypeCard | nu
 /* ─── 섹션 4 ─── */
 function GuardianCard({ n, definition, anatomy }: { n: string; definition: string; anatomy: string }) {
   return (
-    <Panel style={{ padding: "24px 22px" }}>
+    <Panel>
       <SecTitle n={n}>방어 시스템: 지킴이</SecTitle>
-      <div style={{ marginTop: 16, padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
-        <Prose text={definition} style={{ fontSize: 14.5, color: INK.t68 }} />
-      </div>
-      <div style={{ ...clbStyle, marginTop: 22 }}>당신의 지킴이는 이렇게 작동해요</div>
+      <div style={{ ...clbStyle, marginTop: 16 }}>이 지킴이는</div>
+      <Prose text={definition} style={{ color: INK.t72 }} />
+      <div style={{ ...clbStyle, marginTop: 26 }}>당신의 지킴이는 이렇게 작동해요</div>
       <Prose text={anatomy} />
     </Panel>
   );
@@ -704,7 +575,7 @@ function GuardianCard({ n, definition, anatomy }: { n: string; definition: strin
 /* ─── 섹션 5 ─── */
 function CoreNeedCard({ n, bridge, coreNeed }: { n: string; bridge: string; coreNeed: string | null }) {
   return (
-    <Panel style={{ padding: "24px 22px" }}>
+    <Panel>
       <SecTitle n={n}>이 아이가 정말 원했던 것</SecTitle>
       <Prose text={bridge} style={{ marginTop: 16 }} />
       {coreNeed ? (
@@ -736,7 +607,7 @@ function CoreNeedCard({ n, bridge, coreNeed }: { n: string; bridge: string; core
 function ThoughtsCard({ n, card }: { n: string; card: TypeCard }) {
   const notes = card.auto_thought_notes ?? [];
   return (
-    <Panel style={{ padding: "24px 22px" }}>
+    <Panel>
       <SecTitle n={n}>자주 하는 생각</SecTitle>
       <div style={{ marginTop: 6 }}>
         {card.auto_thoughts.map((t, i) => (
@@ -769,7 +640,7 @@ function ThoughtsCard({ n, card }: { n: string; card: TypeCard }) {
 function StressCard({ n, card }: { n: string; card: TypeCard }) {
   const notes = card.trigger_notes ?? [];
   return (
-    <Panel style={{ padding: "24px 22px" }}>
+    <Panel>
       <SecTitle n={n}>스트레스 신호</SecTitle>
       <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, marginTop: 14 }}>
         이 아이가 특히 크게 반응하는 순간들, 그리고 왜 그 순간이 유독 힘든지예요.
@@ -793,53 +664,30 @@ function StressCard({ n, card }: { n: string; card: TypeCard }) {
   );
 }
 
-/** gap_hint "외부: X / 내부: Y" → [겉, 속] 파싱. */
-function parseGapHint(h: string): [string, string] {
-  const parts = h.split("/").map((s) => s.trim());
-  const strip = (s: string) => s.replace(/^외부\s*[:：]\s*/, "").replace(/^내부\s*[:：]\s*/, "").trim();
-  return [strip(parts[0] ?? ""), strip(parts[1] ?? "")];
+/** 이 아이가 만들어내는 갈등과 문제 — 생성 문단. (겉과 속 카드는 제거됨.) */
+function ConflictCard({ n, text }: { n: string; text: string }) {
+  return (
+    <Panel>
+      <SecTitle n={n}>이 아이가 만들어내는 갈등과 문제</SecTitle>
+      <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, marginTop: 14 }}>
+        이 아이가 관계와 일에서 실제로 어떤 마찰을 만들어내는지예요. 내 탓이 아니라, 이 아이가
+        스스로를 지키려다 남긴 자국이에요.
+      </p>
+      <Prose text={text} style={{ marginTop: 16 }} />
+    </Panel>
+  );
 }
 
-/** 겉과 속 + 관계에서의 패턴 — 한 섹션에. 고정 필드가 뼈대, LLM 문장은 있으면 덧붙인다. */
-function GapRelationCard({ n, card, gap, relation }: { n: string; card: TypeCard; gap: string | null; relation: string | null }) {
-  const [outer, inner] = parseGapHint(card.gap_hint);
-  const scenes = card.typical_scenes ?? [];
-  const notes = card.typical_scene_notes ?? [];
+/** 이 아이와 잘 지내는 법 — 실용 해결책(생성 문단). 박스 없이 열린 섹션. */
+function SolutionCard({ n, text }: { n: string; text: string }) {
   return (
-    <Panel style={{ padding: "24px 22px" }}>
-      {/* 겉과 속 */}
-      <SecTitle n={n}>겉과 속</SecTitle>
-      <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, marginTop: 14 }}>
-        겉으로 보이는 모습과, 속에서 실제로 일어나는 일 사이엔 생각보다 큰 간극이 있어요.
+    <Panel>
+      <SecTitle n={n}>이 아이와 잘 지내는 법</SecTitle>
+      <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: 1.75, color: INK.t62, marginTop: 14 }}>
+        이 아이를 없애는 게 아니라, 데리고 잘 살아가는 법이에요. 오늘부터 바로 써볼 수 있는
+        방법들이에요.
       </p>
-      <div style={{ marginTop: 16, padding: "15px 16px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
-        <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.accent2, margin: 0 }}>겉 — 남들이 보는 나</p>
-        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.72, color: INK.t72, margin: "5px 0 0" }}>{outer}</p>
-      </div>
-      <div style={{ marginTop: 12, padding: "15px 16px", background: "rgba(255,90,31,.06)", border: `1px solid rgba(255,138,76,.25)`, borderRadius: 12 }}>
-        <p style={{ fontFamily: INK.font, fontSize: 15, fontWeight: 700, color: INK.accent2, margin: 0 }}>속 — 실제로 일어나는 일</p>
-        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.72, color: INK.t72, margin: "5px 0 0" }}>{inner}</p>
-      </div>
-      {gap && <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.8, color: INK.t72, marginTop: 18 }}>{gap}</p>}
-
-      {/* 관계에서의 패턴 */}
-      {(relation || scenes.length > 0) && (
-        <div style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${INK.line}` }}>
-          <div style={{ fontFamily: INK.display, fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em", color: INK.white }}>관계에서의 패턴</div>
-          {relation && <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.78, color: INK.t72, marginTop: 14 }}>{relation}</p>}
-          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
-            {scenes.map((s, i) => (
-              <div key={i}>
-                <div style={{ display: "flex", gap: 9, alignItems: "baseline" }}>
-                  <span style={{ fontFamily: INK.mono, fontSize: 11, fontWeight: 600, color: INK.accent2 }}>{pad(i + 1)}</span>
-                  <span style={{ fontFamily: INK.font, fontWeight: 700, fontSize: 15.5, color: INK.white }}>{s}</span>
-                </div>
-                {notes[i] && <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t68, margin: "7px 0 0", paddingLeft: 20 }}>{notes[i]}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <Prose text={text} style={{ marginTop: 16 }} />
     </Panel>
   );
 }
@@ -865,7 +713,7 @@ function ReparentingCard({
         : [];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <Panel style={{ padding: "24px 22px" }}>
+      <Panel>
         <SecTitle n={n}>지금의 당신이 줄 수 있는 것</SecTitle>
         {reparenting?.scene ? (
           <div style={{ marginTop: 14 }}>
