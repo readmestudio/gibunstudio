@@ -12,7 +12,7 @@
  * 몰입을 한 번 더 끌어올린다 — 그래서 이 장들에는 항상 결제 CTA가 따라붙는다.
  *
  * 결제: 페이월/이후 카드의 CTA는 페이지 이동 없이 그 자리에서 MindsCheckoutModal 을
- * 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩19,900) — 비로그인 leadId 결제 →
+ * 띄운다. 판매 상품은 "다섯 배역 + 관계 해설" 리포트(₩9,900) — 비로그인 leadId 결제 →
  * 승인 후 /minds/relationship/[id] 리포트 페이지로 이동.
  *
  * 카드 넘김은 검증된 husband-match CardCarousel을 재사용한다(스와이프+화살표+도트).
@@ -40,8 +40,7 @@ import {
 export function MindsFreeReport({ partsMap, leadId }: { partsMap: PartsMap; leadId?: string }) {
   const views = buildCharacterViews(partsMap);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  // 가격 A/B — leadId 로 variant(₩9,900/₩19,900)를 뽑는다. 표시·픽셀 전용이며 실제 결제
-  // 금액은 서버가 같은 leadId 로 재확정한다(단일 출처). leadId 없으면 안전하게 B로 폴백.
+  // 유료 리포트 단일가(₩9,900) — 표시·픽셀 전용이며 실제 결제 금액은 서버가 재확정한다(단일 출처).
   const pricing = reportPricing(leadId);
 
   // 카카오 로그인 복귀 자동 결제 재개 — 인증 관문에서 카카오로 로그인하면 /auth/callback 이
@@ -75,7 +74,7 @@ export function MindsFreeReport({ partsMap, leadId }: { partsMap: PartsMap; lead
     });
     // ③ 운영자 슬랙 알림 — 결제 의향 신호(sendBeacon).
     trackMindsFunnel("checkout_click");
-    // 워크북 페이지로 이동하지 않고, 그 자리에서 결제 모달을 연다(₩19,900 리포트).
+    // 워크북 페이지로 이동하지 않고, 그 자리에서 결제 모달을 연다(₩9,900 리포트).
     setCheckoutOpen(true);
   };
 
@@ -105,7 +104,7 @@ export function MindsFreeReport({ partsMap, leadId }: { partsMap: PartsMap; lead
   return (
     <div className="w-full">
       <CardCarousel cards={cards} />
-      {/* 페이월 CTA → 그 자리에서 결제 모달(관계 해설 리포트). 표시가는 leadId variant. */}
+      {/* 페이월 CTA → 그 자리에서 결제 모달(관계 해설 리포트). 표시가는 단일가(₩9,900). */}
       <MindsCheckoutModal
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}

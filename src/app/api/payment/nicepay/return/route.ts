@@ -246,10 +246,9 @@ async function handleMindsRelationshipPayment(params: {
     return fail("status", String(purchase.status));
   }
 
-  // 금액 검증 — minds(MR-)·inner-child(IC-) 모두 가격 A/B 실험 중(₩9,900/₩19,900).
-  // create 가 leadId 로 확정해 저장한 purchase.amount 와 NicePay 금액이 일치하고(위변조
-  // 방지), 그 금액이 유효한 리포트 판매가여야 한다. amount 자체가 variant 를 인코딩하므로
-  // 별도 컬럼 없이 검증한다(무마이그레이션). 실험이전 minds 금액(₩19,900)도 그대로 통과.
+  // 금액 검증 — minds(MR-)·inner-child(IC-) 모두 단일가(₩9,900). create 가 저장한
+  // purchase.amount 와 NicePay 금액이 일치하고(위변조 방지), 그 금액이 유효한 리포트
+  // 판매가여야 한다. 가격 A/B 실험 중 생성된 미승인 legacy(₩19,900) 결제도 통과시킨다.
   if (purchase.amount !== amount || !isReportPrice(amount)) {
     console.error("[minds-relationship] 결제 금액 불일치:", {
       dbAmount: purchase.amount,
