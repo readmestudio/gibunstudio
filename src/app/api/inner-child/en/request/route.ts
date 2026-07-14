@@ -1,9 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { sendSlackMessage, SLACK_OPEN_NOTIFY_CHANNEL } from "@/lib/slack";
-import { getSavedFreeReport } from "@/lib/minds/inner-child/free-report-store";
-import { getEnTypeCard } from "@/lib/minds/inner-child/en/type-cards";
+import { notifyEnReportRequest } from "@/lib/minds/inner-child/en/notify";
 
 /**
  * POST /api/inner-child/en/request  (public — no login)
@@ -24,8 +22,6 @@ import { getEnTypeCard } from "@/lib/minds/inner-child/en/type-cards";
  */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://gibunstudio.com";
 
 export async function POST(req: NextRequest) {
   const limited = checkRateLimit(req, RATE_LIMITS.general);
@@ -65,55 +61,4 @@ export async function POST(req: NextRequest) {
   after(() => notifyEnReportRequest({ leadId, email }));
 
   return NextResponse.json({ ok: true });
-}
-
-/** 영문 유료 리포트 요청 슬랙 알림 — 유형·결과링크를 붙여 수동 발송을 돕는다. */
-async function notifyEnReportRequest(p: { leadId: string; email: string }) {
-  let childName = "(unknown type)";
-  let resultLink = "";
-  try {
-    if (p.leadId) {
-      const blob = await getSavedFreeReport(p.leadId);
-      const schemaId = blob?.score_result?.primary_child?.schema_id;
-      if (schemaId) {
-        const card = getEnTypeCard(schemaId);
-        childName = card?.child_name || schemaId;
-      }
-      resultLink = `${SITE_URL}/inner-child/en/r/${p.leadId}`;
-    }
-  } catch {
-    // 조회 실패는 무시 — 이메일만이라도 알린다.
-  }
-
-  await sendSlackMessage({
-    channel: SLACK_OPEN_NOTIFY_CHANNEL,
-    text: `🌍 [EN] Paid report requested — ${p.email}`,
-    blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: [
-            "🌍 *[EN] Inner Child — paid report requested*",
-            `• *Email:* ${p.email}`,
-            `• *Type:* ${childName}`,
-            resultLink ? `• *Free result:* ${resultLink}` : null,
-            p.leadId ? `• *Lead:* \`${p.leadId}\`` : null,
-            "→ Write the English paid report and send it to this email manually.",
-          ]
-            .filter(Boolean)
-            .join("\n"),
-        },
-      },
-      {
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: `📅 ${new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" })} (KST) · /inner-child/en`,
-          },
-        ],
-      },
-    ],
-  });
 }

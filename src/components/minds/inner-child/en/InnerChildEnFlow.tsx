@@ -24,6 +24,7 @@ import { InnerChildEnFreeReport } from "./report/InnerChildEnFreeReport";
 import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getEnTypeCard } from "@/lib/minds/inner-child/en/type-cards";
 import { detectCrisisEn } from "@/lib/minds/inner-child/en/crisis-words";
+import { trackEnFunnel } from "@/lib/minds/inner-child/en/track";
 
 type Phase = "landing" | "test" | "analyzing" | "report";
 
@@ -82,10 +83,12 @@ export function InnerChildEnFlow() {
     }
   };
 
-  // 테스트 시작 — 전환 픽셀 + 익명 리드 확보 + 테스트 진입(로그인 없음).
+  // 테스트 시작 — 전환 픽셀 + 운영자 슬랙(⓪) + 익명 리드 확보 + 테스트 진입(로그인 없음).
   const beginTest = () => {
     trackMetaCustom("StartTest", { content_name: "inner_child_en" });
     trackMetaEvent("Lead", { content_name: "inner_child_en" });
+    // 이 시점엔 아직 리드 생성 전이라 익명으로 뜬다(KR 과 동일).
+    trackEnFunnel("test_start");
     void createAnonLead();
     setPhase("test");
   };

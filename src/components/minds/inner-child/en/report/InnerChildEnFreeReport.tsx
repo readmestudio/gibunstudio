@@ -10,11 +10,12 @@
  *  - trackMindsFunnel(운영자 슬랙) 미사용 — KR 퍼널 신호와 섞지 않음. Meta 픽셀만 유지.
  */
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { DISCLAIMER } from "@/lib/minds/inner-child/en/questions";
 import { RequestReportModal } from "@/components/minds/inner-child/en/RequestReportModal";
 import { TypeAvatar } from "@/components/minds/inner-child/report/TypeAvatar";
 import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackEnFunnel } from "@/lib/minds/inner-child/en/track";
 import type { FreeReportGenerated, TypeCard } from "@/lib/minds/inner-child/report-types";
 
 /* ─── ink-orange tokens ─── */
@@ -75,13 +76,14 @@ export function InnerChildEnFreeReport({
   const insight = free?.insight?.trim() || staticInsight(card);
   const dailyPrediction = free?.daily_prediction?.trim() || staticDaily(card);
 
-  // 요청 모달 오픈 — 구매 최적화 신호(InitiateCheckout, USD)로 발화. 결제창은 없다.
+  // 요청 모달 오픈 — 구매 최적화 신호(InitiateCheckout, USD) + 운영자 슬랙(②). 결제창은 없다.
   const openRequest = () => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "inner_child_en_full",
       value: 9.9,
       currency: "USD",
     });
+    trackEnFunnel("request_click", leadId);
     setRequestOpen(true);
   };
 
@@ -109,7 +111,7 @@ export function InnerChildEnFreeReport({
         <DomainsSection card={card} n="03" prediction={dailyPrediction} />
         <MetricsSection card={card} />
         <InsightSection insight={insight} />
-        <PaywallSection onRequest={openRequest} />
+        <PaywallSection onRequest={openRequest} leadId={leadId} />
 
         <p style={{ fontFamily: INK.mono, fontSize: 10, color: INK.t38, lineHeight: 1.7, textAlign: "center", marginTop: 4 }}>
           GIBUN Report · INNER CHILD REPORT · {DISCLAIMER}
@@ -426,9 +428,32 @@ const PAY_TEASERS: { title: string; body: string }[] = [
   },
 ];
 
-function PaywallSection({ onRequest }: { onRequest: () => void }) {
+function PaywallSection({ onRequest, leadId }: { onRequest: () => void; leadId?: string }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  // 페이월이 화면에 들어오는 순간 = 무료 콘텐츠를 다 읽고 잠금에 도달한 순간(①).
+  // 스크롤 레이아웃이라 mount 가 아니라 IntersectionObserver 로 "실제로 보였을 때"를 잡는다.
+  // 세션당 1회만 발화(trackEnFunnel 내부 dedupe).
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      trackEnFunnel("reached_paywall", leadId);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          trackEnFunnel("reached_paywall", leadId);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [leadId]);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       <LockedPreview />
 
       <div
