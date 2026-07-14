@@ -24,7 +24,7 @@ import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
 import { MindsLanding } from "../MindsLanding";
 import { MindsAnalyzing } from "../MindsAnalyzing";
 import { InnerChildTest, CrisisScreen } from "./InnerChildTest";
-import { InnerChildFreeReport } from "./report/InnerChildFreeReport";
+import { InnerChildSalesPage } from "./report/InnerChildSalesPage";
 import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
 import { M, dispStyle, leadStyle, LabelS } from "../quiet-editorial";
@@ -261,7 +261,7 @@ function PaymentFailedScreen({ onRetry }: { onRetry: () => void }) {
  *
  * API 호출 자체가 실패했거나 leadId 를 확보하지 못한 희귀 케이스. 코드 채점이 본체이므로
  * computeScore 를 클라에서 돌려 유형카드 고정필드만으로 리포트를 인라인 렌더한다
- * (LLM 2필드 자리는 생략). 위기 응답이면 위기 안내를 보인다.
+ * (생성 portrait 자리는 렌더러의 정적 폴백이 채운다). 위기 응답이면 위기 안내를 보인다.
  */
 function InlineFallbackReport({ input }: { input: ScoreInput }) {
   const score = computeScore(input);
@@ -278,5 +278,5 @@ function InlineFallbackReport({ input }: { input: ScoreInput }) {
       </div>
     );
   }
-  return <InnerChildFreeReport card={card} />;
+  return <InnerChildSalesPage card={card} />;
 }

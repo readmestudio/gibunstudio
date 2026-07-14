@@ -68,8 +68,8 @@ const ABANDONMENT: TypeCard = {
   ],
   metrics: [
     { name: "관계 민감도", value: 92, tone: "hot", desc: "상대의 말투·반응 속도 같은 미세한 신호를 남들보다 빠르고 예민하게 감지해요." },
-    { name: "자기 점검 경향", value: 87, tone: "hot", desc: "관계에 문제가 생기면 '내가 뭘 잘못했나'부터 돌아보는 경향이 강해요." },
-    { name: "안정 신뢰", value: 34, tone: "cool", desc: "관계가 계속 안정적일 거라는 믿음은 상대적으로 약해, 늘 확인이 필요해요." },
+    { name: "자기 점검 경향", value: 87, tone: "hot", desc: "관계가 삐걱대면 원인을 가장 먼저 자기 쪽에서 찾아보는 회로가 빠르게 돌아요." },
+    { name: "안정 신뢰", value: 34, tone: "cool", desc: "관계가 알아서 이어질 거라 믿고 손을 놓아보는 감각이에요. 신호를 이토록 정확히 읽어내면서 동시에 안심하기는 어렵죠 — 낮은 건 믿는 힘이 아니라, 확인하지 않아도 괜찮았던 경험이에요." },
   ],
   symbol_action: "문 앞에 서 있을까요",
   key_emotion: "경계심",
@@ -139,8 +139,8 @@ const UNRELENTING_STANDARDS: TypeCard = {
   ],
   metrics: [
     { name: "성취 기준", value: 94, tone: "hot", desc: "스스로에게 매기는 기준선이 매우 높아, 웬만한 성과로는 만족에 닿지 않아요." },
-    { name: "자기 점검 경향", value: 90, tone: "hot", desc: "결과가 좋아도 부족했던 점부터 먼저 점검하는 습관이 강해요." },
-    { name: "자기 만족", value: 28, tone: "cool", desc: "잘 해낸 순간을 스스로 인정하고 누리는 감각은 상대적으로 약해요." },
+    { name: "자기 점검 경향", value: 90, tone: "hot", desc: "결과가 좋아도 더 나아질 지점부터 먼저 짚어내는 검토력이 높아요." },
+    { name: "자기 만족", value: 28, tone: "cool", desc: "잘 해낸 순간에 그냥 머물러보는 감각이에요. 기준선을 이렇게 높이 세워둔 채로 만족에 닿기는 구조적으로 어렵습니다 — 못 누리는 게 아니라, 결승선이 계속 앞으로 움직이는 거예요." },
   ],
   symbol_action: "채찍을 들고 있을까요",
   key_emotion: "부족감",
@@ -211,7 +211,7 @@ const SELF_SACRIFICE: TypeCard = {
   metrics: [
     { name: "타인 배려", value: 93, tone: "hot", desc: "상대의 필요와 감정을 먼저 감지하고 챙기는 능력이 매우 높아요." },
     { name: "책임 감수", value: 88, tone: "hot", desc: "빈자리가 보이면 '내가 해야지' 하고 떠안는 경향이 강해요." },
-    { name: "자기 돌봄", value: 26, tone: "cool", desc: "정작 자신의 필요를 챙기고 표현하는 감각은 상대적으로 약해요." },
+    { name: "자기 돌봄", value: 26, tone: "cool", desc: "내 필요를 알아차리고 말로 꺼내는 감각이에요. 남의 필요를 먼저 잡아내는 안테나가 이만큼 켜져 있으면 내 쪽 신호는 뒤로 밀립니다 — 자신을 아끼지 않는 게 아니라, 순서가 그렇게 굳은 거예요." },
   ],
   symbol_action: "남을 먼저 챙기고 있을까요",
   key_emotion: "서운함",
@@ -284,7 +284,7 @@ const MISTRUST_ABUSE: TypeCard = {
   metrics: [
     { name: "의도 감지", value: 92, tone: "hot", desc: "말과 행동의 어긋남, 숨은 의도를 남들보다 빠르고 정확하게 포착해요." },
     { name: "자기 보호 경계", value: 89, tone: "hot", desc: "관계가 가까워져도 마음의 마지막 한 겹을 지키는 경계가 강해요." },
-    { name: "믿고 기대기", value: 26, tone: "cool", desc: "검증 없이 사람에게 기대어 쉬는 감각은 상대적으로 약해요." },
+    { name: "믿고 기대기", value: 26, tone: "cool", desc: "검증을 멈추고 사람에게 기대어 쉬는 감각이에요. 숨은 의도를 이렇게까지 정확히 읽어내는 사람에게 경계를 푸는 일은 비용이 큽니다 — 못 믿는 게 아니라, 믿어도 안전했던 경험이 아직 적은 거예요." },
   ],
   symbol_action: "등을 벽에 붙이고 있을까요",
   key_emotion: "긴장감",
@@ -355,7 +355,7 @@ const EMOTIONAL_DEPRIVATION: TypeCard = {
   metrics: [
     { name: "공감 안테나", value: 91, tone: "hot", desc: "다른 사람의 외로움과 결핍을 알아보고 채워주는 감각이 매우 높아요." },
     { name: "정서 허기 민감도", value: 88, tone: "hot", desc: "마음이 덜 채워지는 순간을 예민하게 느끼고 오래 기억해요." },
-    { name: "필요 표현", value: 27, tone: "cool", desc: "받고 싶은 것을 말로 꺼내 요청하는 감각은 상대적으로 약해요." },
+    { name: "필요 표현", value: 27, tone: "cool", desc: "받고 싶은 걸 말로 꺼내 요청하는 감각이에요. 남의 결핍을 이만큼 알아보는 사람이 정작 자기 몫을 청하기는 어렵습니다 — 표현을 못 하는 게 아니라, 말하지 않아도 알아봐 주길 오래 기다려온 거예요." },
   ],
   symbol_action: "허기를 혼자 달래고 있을까요",
   key_emotion: "허전함",
@@ -425,8 +425,8 @@ const DEFECTIVENESS_SHAME: TypeCard = {
   ],
   metrics: [
     { name: "인상 관리", value: 93, tone: "hot", desc: "상대가 좋아할 모습을 정교하게 선별해 보여주는 능력이 매우 높아요." },
-    { name: "자기 성찰", value: 90, tone: "hot", desc: "자신의 부족한 점을 스스로 깊이 들여다보고 점검하는 습관이 강해요." },
-    { name: "자기 수용", value: 24, tone: "cool", desc: "부족한 모습까지 나로 받아들이는 감각은 상대적으로 약해요." },
+    { name: "자기 성찰", value: 90, tone: "hot", desc: "자기 자신을 남들보다 훨씬 깊고 오래 들여다보는 성찰력이 높아요." },
+    { name: "자기 수용", value: 24, tone: "cool", desc: "덜 다듬어진 모습까지 나로 두는 감각이에요. 보여줄 모습을 이토록 정교하게 선별하는 사람은 선별되지 않은 자신과 마주할 자리가 줄어듭니다 — 자신을 미워하는 게 아니라, 아직 다 보여준 적이 없는 거예요." },
   ],
   symbol_action: "숨어 있을까요",
   key_emotion: "부끄러움",
@@ -497,7 +497,7 @@ const SOCIAL_ISOLATION: TypeCard = {
   metrics: [
     { name: "관찰자 시점", value: 91, tone: "hot", desc: "무리에서 한 발 떨어져 전체 흐름을 읽는 조망 능력이 매우 높아요." },
     { name: "분위기 판독", value: 87, tone: "hot", desc: "자리의 공기와 사람들 사이의 미묘한 흐름을 예민하게 감지해요." },
-    { name: "소속감", value: 25, tone: "cool", desc: "애쓰지 않아도 무리의 일부라고 느끼는 감각은 상대적으로 약해요." },
+    { name: "소속감", value: 25, tone: "cool", desc: "애쓰지 않아도 여기 속해 있다고 느끼는 감각이에요. 한 발 떨어져 전체를 읽는 자리에서는 안이 잘 보이지만, 그 자리는 원래 바깥입니다 — 어울리지 못하는 게 아니라, 관찰석에 앉아 있는 거예요." },
   ],
   symbol_action: "창밖에 서 있을까요",
   key_emotion: "외로움",
@@ -570,7 +570,7 @@ const DEPENDENCE_INCOMPETENCE: TypeCard = {
   metrics: [
     { name: "확인 욕구", value: 92, tone: "hot", desc: "결정 전후로 누군가의 동의를 구해 안심하려는 경향이 매우 강해요." },
     { name: "조언 수용력", value: 88, tone: "hot", desc: "여러 사람의 의견을 모으고 귀 기울이는 능력이 높아요." },
-    { name: "자기 확신", value: 23, tone: "cool", desc: "확인 없이 내 판단을 믿고 밀고 가는 감각은 상대적으로 약해요." },
+    { name: "자기 확신", value: 23, tone: "cool", desc: "확인 없이 내 판단으로 밀고 가는 감각이에요. 여러 의견을 이만큼 성실히 모으는 사람은 자기 판단만 남는 순간이 오히려 낯설어집니다 — 능력이 없는 게 아니라, 혼자 옳았던 경험이 쌓일 자리가 적었던 거예요." },
   ],
   symbol_action: "누군가의 손을 잡고 있을까요",
   key_emotion: "막막함",
@@ -641,7 +641,7 @@ const VULNERABILITY_HARM: TypeCard = {
   metrics: [
     { name: "위험 감지", value: 93, tone: "hot", desc: "잘못될 수 있는 지점을 남들보다 먼저, 넓게 스캔하는 감각이 매우 높아요." },
     { name: "대비 태세", value: 89, tone: "hot", desc: "최악의 경우를 그려보고 미리 준비해두는 경향이 강해요." },
-    { name: "이완·안심", value: 24, tone: "cool", desc: "긴장을 완전히 풀고 지금의 안전을 누리는 감각은 상대적으로 약해요." },
+    { name: "이완·안심", value: 24, tone: "cool", desc: "긴장을 풀고 지금이 안전하다고 느끼는 감각이에요. 잘못될 지점을 먼저 스캔하는 레이더가 켜져 있는 동안 안심은 순서를 기다립니다 — 예민한 게 아니라, 경보가 아직 해제되지 않은 거예요." },
   ],
   symbol_action: "웅크리고 있을까요",
   key_emotion: "불안",
@@ -712,7 +712,7 @@ const ENMESHMENT: TypeCard = {
   metrics: [
     { name: "맞춤 동조력", value: 90, tone: "hot", desc: "상대의 기분과 취향에 자연스럽게 스며들어 맞추는 능력이 매우 높아요." },
     { name: "관계 밀착도", value: 88, tone: "hot", desc: "소중한 사람과 마음을 포개고 함께 움직이려는 경향이 강해요." },
-    { name: "자기 윤곽", value: 22, tone: "cool", desc: "상대와 분리된 내 취향·욕구를 또렷하게 잡는 감각은 상대적으로 약해요." },
+    { name: "자기 윤곽", value: 22, tone: "cool", desc: "상대와 분리된 내 취향과 욕구를 또렷하게 잡는 감각이에요. 상대에게 이토록 자연스럽게 스며드는 사람은 경계선을 그을 일이 줄어듭니다 — 내가 없는 게 아니라, 겹쳐 있어 아직 윤곽이 안 보이는 거예요." },
   ],
   symbol_action: "그림자처럼 붙어 있을까요",
   key_emotion: "공허함",
@@ -782,8 +782,8 @@ const FAILURE: TypeCard = {
   ],
   metrics: [
     { name: "실망 방어력", value: 89, tone: "hot", desc: "기대를 미리 낮춰 실망의 충격으로부터 자신을 보호하는 힘이 강해요." },
-    { name: "자기 평가 엄격도", value: 86, tone: "hot", desc: "자신의 가능성을 남들보다 훨씬 낮게 채점하는 경향이 강해요." },
-    { name: "시도 동력", value: 23, tone: "cool", desc: "결과를 모른 채 일단 출발해보는 감각은 상대적으로 약해요." },
+    { name: "자기 평가 엄격도", value: 86, tone: "hot", desc: "자신을 평가할 때, 남에게 대는 것보다 훨씬 엄격한 잣대를 씁니다." },
+    { name: "시도 동력", value: 23, tone: "cool", desc: "결과를 모른 채 일단 출발해보는 감각이에요. 기대를 미리 낮춰 충격을 줄이는 방식은 실망을 막아주지만 출발선도 함께 뒤로 당깁니다 — 의지가 약한 게 아니라, 안전장치가 아주 잘 작동하는 거예요." },
   ],
   symbol_action: "주저앉아 있을까요",
   key_emotion: "무력감",
@@ -856,7 +856,7 @@ const ENTITLEMENT: TypeCard = {
   metrics: [
     { name: "주도성", value: 91, tone: "hot", desc: "원하는 것을 분명히 알고 요구하며 밀고 나가는 추진력이 매우 높아요." },
     { name: "존재감 욕구", value: 89, tone: "hot", desc: "특별한 존재로 확인받고 싶은 마음이 강하게 작동해요." },
-    { name: "평범함 수용", value: 23, tone: "cool", desc: "여럿 중 하나로 머무는 순간을 편안하게 받아들이는 감각은 상대적으로 약해요." },
+    { name: "평범함 수용", value: 23, tone: "cool", desc: "여럿 중 하나로 머무는 순간을 편안하게 두는 감각이에요. 특별함으로 자리를 확인해온 사람에게 평범한 자리는 위태롭게 느껴집니다 — 오만한 게 아니라, 특별하지 않아도 괜찮았던 경험이 적은 거예요." },
   ],
   symbol_action: "왕관을 쓰고 있을까요",
   key_emotion: "억울함",
@@ -929,7 +929,7 @@ const SUBJUGATION: TypeCard = {
   metrics: [
     { name: "갈등 감지", value: 90, tone: "hot", desc: "공기가 팽팽해지는 조짐을 남들보다 먼저 알아채는 감각이 매우 높아요." },
     { name: "분위기 조율", value: 88, tone: "hot", desc: "자기 의견을 접어서라도 자리를 매끄럽게 지키는 능력이 강해요." },
-    { name: "자기 표현", value: 24, tone: "cool", desc: "불편을 감수하고 내 생각을 그 자리에서 꺼내는 감각은 상대적으로 약해요." },
+    { name: "자기 표현", value: 24, tone: "cool", desc: "불편을 감수하고 내 생각을 그 자리에서 꺼내는 감각이에요. 공기가 팽팽해지는 걸 먼저 알아채는 사람은 그 공기를 지키는 쪽을 먼저 고르게 됩니다 — 소신이 없는 게 아니라, 대가를 먼저 계산하는 거예요." },
   ],
   symbol_action: "고개를 숙이고 있을까요",
   key_emotion: "답답함",
@@ -1000,7 +1000,7 @@ const APPROVAL_SEEKING: TypeCard = {
   metrics: [
     { name: "반응 판독력", value: 92, tone: "hot", desc: "사람들이 무엇을 좋아하고 어떻게 볼지 읽어내는 감각이 매우 높아요." },
     { name: "기대 부응력", value: 88, tone: "hot", desc: "기대에 맞춰 모습과 성과를 끌어올리는 능력이 강해요." },
-    { name: "내적 기준", value: 25, tone: "cool", desc: "반응과 무관하게 스스로 만족을 매기는 감각은 상대적으로 약해요." },
+    { name: "내적 기준", value: 25, tone: "cool", desc: "반응과 무관하게 스스로 만족을 매기는 감각이에요. 사람들이 어떻게 볼지 이토록 정확히 읽어내면 채점 기준은 자연히 바깥에 놓입니다 — 줏대가 없는 게 아니라, 눈금자를 남에게 맡겨둔 거예요." },
   ],
   symbol_action: "무대 위에 서 있을까요",
   key_emotion: "초조함",
@@ -1073,7 +1073,7 @@ const NEGATIVITY_PESSIMISM: TypeCard = {
   metrics: [
     { name: "변수 점검력", value: 91, tone: "hot", desc: "계획의 빈틈과 어긋날 지점을 먼저 찾아내는 검토 능력이 매우 높아요." },
     { name: "실망 대비력", value: 87, tone: "hot", desc: "나쁜 결말을 미리 그려 충격을 줄여두는 경향이 강해요." },
-    { name: "낙관 회로", value: 24, tone: "cool", desc: "좋은 일을 의심 없이 그대로 누리는 감각은 상대적으로 약해요." },
+    { name: "낙관 회로", value: 24, tone: "cool", desc: "좋은 일을 의심 없이 그대로 누리는 감각이에요. 빈틈을 먼저 찾아내는 검토력이 이만큼이면 좋은 소식에도 점검이 먼저 걸립니다 — 부정적인 게 아니라, 대비를 멈춰도 된다고 배울 자리가 없었던 거예요." },
   ],
   symbol_action: "걱정을 끌어안고 있을까요",
   key_emotion: "조마조마함",
@@ -1144,7 +1144,7 @@ const EMOTIONAL_INHIBITION: TypeCard = {
   metrics: [
     { name: "감정 조절력", value: 93, tone: "hot", desc: "어떤 상황에서도 감정에 휩쓸리지 않고 평정을 지키는 힘이 매우 높아요." },
     { name: "침착 유지", value: 89, tone: "hot", desc: "위기와 갈등 앞에서 차분함을 유지해 주변에 안정감을 줘요." },
-    { name: "감정 표현", value: 22, tone: "cool", desc: "느낀 것을 그 온도 그대로 밖으로 전하는 감각은 상대적으로 약해요." },
+    { name: "감정 표현", value: 22, tone: "cool", desc: "느낀 것을 그 온도 그대로 밖으로 전하는 감각이에요. 어떤 상황에서도 평정을 지켜내는 힘이 이만큼이면 온도는 안에 남습니다 — 무딘 게 아니라, 밖으로 내보내지 않는 쪽이 오래 안전했던 거예요." },
   ],
   symbol_action: "얼어붙어 있을까요",
   key_emotion: "먹먹함",

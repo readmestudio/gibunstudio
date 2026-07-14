@@ -1,18 +1,27 @@
 "use client";
 
 /**
- * 내면 아이 유료 리포트 뷰 — 생성/로딩/에러 상태 + 6섹션 본문 렌더.
+ * 내면 아이 유료 리포트 뷰 — 생성/로딩/에러 상태 + 전체 본문 렌더.
  *
  * 최초 진입(캐시 없음)이면 마운트 시 생성 라우트(/api/inner-child/report)를 호출하고(~30초)
  * 진행 화면을 보여준다. 캐시가 있으면(server 에서 initialReport 주입) 즉시 본문을 렌더한다.
  *
- * 디자인은 무료 리포트(InnerChildFreeReport)와 같은 잉크 오렌지(다크) 스크롤 언어를 따른다.
- * (장 넘김 카드 덱 → 한 페이지 스크롤로 전환 — 6섹션을 한 번에 읽는다.)
- * 섹션(현재 순서):
- *   읽기 전에 · 이 아이의 전체 구조(영역별 daily_domains) · 같은 상처가 반복되는 구조(단계별
- *   loop_stages) · 방어 시스템: 지킴이 · 이 아이가 만들어내는 갈등과 문제 · 자주 하는 생각 ·
- *   스트레스 신호 · 두 번째 아이의 신호 · 정말 원했던 것 · 이 아이와 잘 지내는 법 ·
- *   지금의 당신이 줄 수 있는 것 (+ 상담 연계 CTA)
+ * 디자인은 판매 페이지(InnerChildSalesPage)와 같은 잉크 오렌지(다크) 스크롤 언어를 따른다.
+ * (장 넘김 카드 덱 → 한 페이지 스크롤로 전환 — 전체를 한 번에 읽는다.)
+ *
+ * ★ 이 리포트가 유형 이름을 처음 공개하는 자리다. 앞단(InnerChildSalesPage)은 "분석이
+ *   끝났다"까지만 알리고 유형·해설·측정 지표를 전부 잠가둔 판매 페이지이므로, 결제한
+ *   사람이 가장 먼저 확인하고 싶은 건 "그래서 내 아이가 누구냐"다 — 그래서 유형 공개
+ *   (TypeRevealCard)가 맨 앞이다.
+ *
+ * 섹션(현재 순서) — 앞의 다섯 섹션은 개편 때 무료에서 옮겨온 것이다("이 아이가 누구인지 →
+ * 왜 그러는지 → 어떤 장면으로 나오는지 → 어떻게 측정됐는지 → 일상 전반" 흐름):
+ *   읽기 전에 · 당신의 아이는(유형 공개 + 고정 traits·strength·voice) · 왜 자꾸 이럴까(생성
+ *   insight) · 이런 순간 있지 않나요(고정 typical_scenes) · Signal Index(고정 metrics) ·
+ *   이 아이의 전체 구조(고정 origin_hypothesis + 생성 daily_domains·daily_prediction) ·
+ *   같은 상처가 반복되는 구조(단계별 loop_stages) · 방어 시스템: 지킴이 · 이 아이가 만들어내는
+ *   갈등과 문제 · 자주 하는 생각 · 스트레스 신호 · 두 번째 아이의 신호 · 정말 원했던 것 ·
+ *   이 아이와 잘 지내는 법 · 지금의 당신이 줄 수 있는 것 (+ 상담 연계 CTA)
  * 텍스트는 박스 없이 열린 스크롤(Panel = 헤어라인 구분선)로 쭉 읽힌다.
  */
 
@@ -26,7 +35,7 @@ import { TypeAvatar } from "@/components/minds/inner-child/report/TypeAvatar";
 import type { DailyDomains, LoopStages, PaidReportGenerated, ReparentingPlan, TypeCard } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
-/* ─── 잉크 오렌지 토큰 (InnerChildFreeReport 와 동일) ─── */
+/* ─── 잉크 오렌지 토큰 (InnerChildSalesPage 와 동일) ─── */
 const INK = {
   shell: "#0A0A0B",
   surface: "#141519",
@@ -321,12 +330,45 @@ function ReportBody({
     node: <ReadBeforeCard />,
   });
 
-  // 1. 이 아이의 전체 구조 (고정)
+  // ── 유형 공개 + 무료에서 옮겨온 도입 해설 ──
+  // 앞단(판매 페이지)은 유형을 흐릿한 실루엣으로 잠가뒀다. 결제하고 처음 확인하고 싶은 게
+  // "그래서 내 아이가 누구냐"이므로, 유형 공개가 리포트의 첫 장면이다.
+  if (primaryCard) {
+    cards.push({
+      key: "type-reveal",
+      kicker: "당신의 아이는",
+      node: <TypeRevealCard n={nextN()} card={primaryCard} childName={score?.primary_child.child_name ?? primaryCard.child_name} />,
+    });
+  }
+
+  // 왜 자꾸 이럴까 (생성) — 결제 직후 첫 개인화 문단. "결제하길 잘했다"가 나와야 하는 자리.
+  cards.push({
+    key: "insight",
+    kicker: "왜 자꾸 이럴까",
+    node: <InsightCard n={nextN()} text={report.insight} />,
+  });
+
+  if (primaryCard) {
+    cards.push({
+      key: "scenes",
+      kicker: "이런 순간, 있지 않나요",
+      node: <ScenesCard n={nextN()} card={primaryCard} />,
+    });
+    // Signal Index — 판매 페이지에서 뺀 측정 지표(파운더 지시 2026-07-14). 진단 근거이자
+    // "진짜로 측정했구나"의 증거라 결제 뒤로 옮겼다.
+    cards.push({
+      key: "metrics",
+      kicker: "Signal Index",
+      node: <MetricsCard n={nextN()} card={primaryCard} />,
+    });
+  }
+
+  // 1. 이 아이의 전체 구조 (고정 배경 + 생성 영역별 해설 + 생성 일상 예측)
   if (primaryCard) {
     cards.push({
       key: "structure",
       kicker: "이 아이의 전체 구조",
-      node: <StructureCard n={nextN()} card={primaryCard} childName={score?.primary_child.child_name ?? primaryCard.child_name} domains={report.daily_domains} />,
+      node: <StructureCard n={nextN()} card={primaryCard} domains={report.daily_domains} prediction={report.daily_prediction} />,
     });
   }
 
@@ -455,8 +497,10 @@ function ReadBeforeCard() {
   );
 }
 
-/* ─── 섹션 1 ─── */
-function StructureCard({ n, card, childName, domains }: { n: string; card: TypeCard; childName: string; domains: DailyDomains }) {
+/* ─── 섹션 1 ───
+ * 캐릭터 프로필(TypeAvatar)은 앞선 TypeExplainCard 로 옮겼다 — 무료에서 유형 해설이 넘어오며
+ * 그쪽이 '이 아이를 처음 만나는' 자리가 됐기 때문. */
+function StructureCard({ n, card, domains, prediction }: { n: string; card: TypeCard; domains: DailyDomains; prediction: string }) {
   const areas: [string, string][] = [
     ["관계", domains.relationship],
     ["일", domains.work],
@@ -465,14 +509,9 @@ function StructureCard({ n, card, childName, domains }: { n: string; card: TypeC
   return (
     <Panel>
       <SecTitle n={n}>이 아이의 전체 구조</SecTitle>
-      {/* 캐릭터 프로필 + 유형명 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "16px 0 20px" }}>
-        <TypeAvatar schemaId={card.schema_id} alt={childName} size={64} />
-        <p style={{ fontFamily: INK.font, fontSize: 17, fontWeight: 700, color: INK.white, margin: 0 }}>{childName}</p>
-      </div>
 
       {/* 이 아이가 만들어진 배경 (열림) */}
-      <div style={clbStyle}>이 아이가 만들어진 배경</div>
+      <div style={{ ...clbStyle, marginTop: 18 }}>이 아이가 만들어진 배경</div>
       <Prose text={card.origin_hypothesis} />
 
       {/* 일상에서의 발현 — 관계·일·자기관리 영역별 풍성 해설(생성, 소제목별) */}
@@ -482,6 +521,161 @@ function StructureCard({ n, card, childName, domains }: { n: string; card: TypeC
           <div key={label}>
             <h4 style={{ fontFamily: INK.font, fontSize: 17, fontWeight: 800, color: INK.accent2, margin: "0 0 8px" }}>{label}</h4>
             <Prose text={body} />
+          </div>
+        ))}
+      </div>
+
+      {/* 예측형 개인화(생성) — 영역별 해설에 쐐기를 박는 구체 장면 예측. 무료에서 이관. */}
+      <div style={{ marginTop: 24, padding: "18px 18px", background: "rgba(255,255,255,.035)", border: `1px solid ${INK.line}`, borderRadius: 14 }}>
+        <div style={{ ...clbStyle, marginBottom: 10 }}>아마 당신은 —</div>
+        <Prose text={prediction} />
+      </div>
+    </Panel>
+  );
+}
+
+/* ─── 무료에서 옮겨온 도입 해설 (유형 설명 · 아하 모먼트 · 닮은 장면) ───
+ *
+ * 개편 전에는 이 셋이 무료 리포트에 있었다. 무료가 해설을 다 보여준 뒤 결제를 물어 전환이
+ * 나지 않아, 무료를 '유형 진단 + 훅'까지로 좁히면서 결제 뒤로 옮겼다. 유형 설명·닮은 장면은
+ * 유형카드 고정 필드라 콘텐츠 그대로 위치만 옮겼고, 왜 자꾸 이럴까(insight)는 무료 생성에서
+ * 유료 생성으로 이관했다(결제하지 않는 리드에 나가던 LLM 비용 제거).
+ */
+
+/**
+ * 당신의 아이는 — 유형 공개 + 기본 성향 + 강점 + 내면의 목소리.
+ * 판매 페이지가 흐릿한 실루엣으로 잠가둔 캐릭터가 여기서 처음 얼굴을 드러낸다. 그래서
+ * 프로필을 크게(112px) 가운데 세워 '공개' 순간의 무게를 준다.
+ */
+function TypeRevealCard({ n, card, childName }: { n: string; card: TypeCard; childName: string }) {
+  const words = childName.trim().split(" ");
+  const last = words.pop() ?? "";
+  const head = words.join(" ");
+  return (
+    <Panel>
+      <SecTitle n={n}>당신의 아이는</SecTitle>
+
+      {/* 공개 — 16가지 중 확정된 그 아이. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", margin: "22px 0 26px" }}>
+        <TypeAvatar schemaId={card.schema_id} alt={childName} size={112} />
+        <h3 style={{ fontFamily: INK.display, fontSize: 28, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.035em", color: INK.white, margin: "18px 0 0" }}>
+          {head}
+          {head ? " " : ""}
+          <span style={{ background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{last}</span>
+        </h3>
+        <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.6, color: INK.t6, margin: "12px 0 0", maxWidth: 340 }}>{card.one_liner}</p>
+        <span style={{ display: "inline-flex", marginTop: 18, padding: "9px 16px", borderRadius: 999, background: "rgba(255,255,255,.06)", border: `1px solid ${INK.line14}`, fontFamily: INK.font, fontSize: 13.5, fontWeight: 600, color: INK.white }}>
+          {card.core_belief}
+        </span>
+      </div>
+
+      <Prose text={card.traits} />
+
+      {/* 강점 — 결함이 아니라 과발달된 능력으로 프레이밍(서술 원칙 2: 강점 선행). */}
+      <div style={{ marginTop: 22, padding: "17px 18px", background: "rgba(255,90,31,.06)", border: `1px solid rgba(255,138,76,.22)`, borderRadius: 14 }}>
+        <div style={clbStyle}>이 유형의 강점</div>
+        <p style={{ fontFamily: INK.font, fontSize: 16.5, lineHeight: 1.8, color: "rgba(255,255,255,.9)", margin: 0 }}>{card.strength}</p>
+        <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, marginTop: 10 }}>
+          없애야 할 약점이 아니라, 상황에 따라 크게 쓰이는 능력이에요. 다만 이 감각이 필요
+          이상으로 오래 켜져 있을 때, 강점이 나를 소모시키곤 합니다.
+        </p>
+      </div>
+
+      {/* 내면의 목소리 */}
+      <div style={{ ...clbStyle, marginTop: 28 }}>Inner Voice · 내면의 목소리</div>
+      <p style={{ fontFamily: INK.font, fontStyle: "italic", fontWeight: 600, fontSize: 22, lineHeight: 1.5, letterSpacing: "-0.01em", color: INK.white, margin: 0 }}>
+        “{card.voice}”
+      </p>
+      <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, margin: "14px 0 0" }}>
+        이 아이가 마음속에서 반복하는 한마디예요. 평소엔 잘 들리지 않다가, 힘든 순간이 오면 이
+        목소리가 마치 내 생각처럼 또렷하게 들립니다.
+      </p>
+    </Panel>
+  );
+}
+
+/** 왜 자꾸 이럴까 — 아하 모먼트(생성). 강조 박스로 눈에 걸리게. */
+function InsightCard({ n, text }: { n: string; text: string }) {
+  return (
+    <Panel>
+      <SecTitle n={n}>왜 자꾸 이럴까</SecTitle>
+      <div
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: 16,
+          padding: "22px 20px",
+          marginTop: 16,
+          background: "rgba(255,90,31,.06)",
+          border: `1px solid rgba(255,138,76,.28)`,
+        }}
+      >
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(70% 60% at 0% 0%, rgba(255,90,31,.14), transparent 62%)" }} />
+        <div style={{ position: "relative" }}>
+          <Prose text={text} />
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/**
+ * Signal Index — 측정 지표(유형카드 고정). 판매 페이지에서 뺀 뒤 이리로 옮겼다.
+ * 도입 문구가 트레이드오프 프레임을 먼저 깐다 — 이 한 줄이 없으면 낮은 막대가 "내가 부족한
+ * 것"으로 읽힌다(결핍 프레임 금지, 파운더 지시 2026-07-14).
+ */
+function MetricsCard({ n, card }: { n: string; card: TypeCard }) {
+  const metrics = card.metrics ?? [];
+  if (metrics.length === 0) return null;
+  return (
+    <Panel>
+      <SecTitle n={n}>당신의 응답은 이렇게 측정됐어요</SecTitle>
+      <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, margin: "14px 0 22px" }}>
+        높은 쪽도 낮은 쪽도 우열이 아니라, 이 아이가 어디에 힘을 몰아줬는지를 보여주는 눈금이에요.
+        한쪽이 높으면 다른 쪽은 그 대가로 낮아집니다.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {metrics.map((m, i) => {
+          const cool = m.tone === "cool";
+          return (
+            <div key={i}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontFamily: INK.font, fontSize: 16.5, fontWeight: 600, color: "rgba(255,255,255,.92)" }}>{m.name}</span>
+                <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums", color: cool ? "rgba(255,255,255,.55)" : INK.accent2 }}>{m.value}</span>
+              </div>
+              <div style={{ height: 6, background: "rgba(255,255,255,.09)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${m.value}%`, background: cool ? "rgba(255,255,255,.4)" : INK.grad, borderRadius: 3 }} />
+              </div>
+              {m.desc && <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, margin: "9px 0 0" }}>{m.desc}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
+/** 이런 순간, 있지 않나요 — 닮은 장면(유형카드 고정). */
+function ScenesCard({ n, card }: { n: string; card: TypeCard }) {
+  const scenes = card.typical_scenes ?? [];
+  const notes = card.typical_scene_notes ?? [];
+  if (scenes.length === 0) return null;
+  return (
+    <Panel>
+      <SecTitle n={n}>이런 순간, 있지 않나요?</SecTitle>
+      <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.7, color: INK.t62, marginTop: 14 }}>
+        이 아이가 사는 사람에게서 자주 되풀이되는 장면이에요. 하나쯤, 낯설지 않을 거예요.
+      </p>
+      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 22 }}>
+        {scenes.map((s, i) => (
+          <div key={i}>
+            <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+              <span style={{ fontFamily: INK.mono, fontSize: 12, fontWeight: 600, color: INK.accent2 }}>{pad(i + 1)}</span>
+              <span style={{ fontFamily: INK.font, fontWeight: 700, fontSize: 17, lineHeight: 1.5, color: INK.white }}>{s}</span>
+            </div>
+            {notes[i] && (
+              <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t72, margin: "8px 0 0", paddingLeft: 22 }}>{notes[i]}</p>
+            )}
           </div>
         ))}
       </div>
@@ -596,11 +790,10 @@ function CoreNeedCard({ n, bridge, coreNeed }: { n: string; bridge: string; core
   );
 }
 
-/* ─── 무료에서 옮겨온 해설 카드 (자주 하는 생각 · 스트레스 신호 · 겉과 속/관계 패턴) ───
+/* ─── 무료에서 옮겨온 해설 카드 (자주 하는 생각 · 스트레스 신호) ───
  *
- * 셋 다 primaryCard(TypeCard) 고정 필드로 렌더된다. 원래 무료 리포트(InnerChildFreeReport)
- * 에 있던 카드를 결제 뒤로 옮긴 것 — 콘텐츠는 그대로, 공개 위치만 유료로. 관계 패턴 카드만
- * 무료 때 생성해 둔 LLM 문장(free.gap/relation_pattern)을 함께 쓰되, 없어도 성립한다.
+ * 둘 다 primaryCard(TypeCard) 고정 필드로 렌더된다. 원래 무료 리포트(현 InnerChildSalesPage)
+ * 에 있던 카드를 결제 뒤로 옮긴 것 — 콘텐츠는 그대로, 공개 위치만 유료로.
  */
 
 /** 자주 하는 생각 — 대사 + 해석 + 믿음의 기원. */

@@ -5,20 +5,23 @@
  *
  * 테스트/결제 없이 리포트 화면을 유형별로 바로 확인하기 위한 dev 전용 페이지.
  * 상단 컨트롤: (1) 무료/유료 전환 (2) 16유형 전환.
- * 무료=InnerChildFreeReport, 유료=InnerChildPaidView 를 목 데이터로 렌더한다.
+ * 무료(=결제 전환 랜딩)=InnerChildSalesPage, 유료=InnerChildPaidView 를 목 데이터로 렌더한다.
  * (프로필 일러스트 + 상단바 확인용. 배포 화면과 무관, 언제든 삭제 가능.)
  */
 
 import { useState } from "react";
-import { InnerChildFreeReport } from "@/components/minds/inner-child/report/InnerChildFreeReport";
+import { InnerChildSalesPage } from "@/components/minds/inner-child/report/InnerChildSalesPage";
 import { InnerChildPaidView } from "@/app/inner-child/full/[id]/InnerChildPaidView";
 import { TYPE_CARDS, getTypeCard } from "@/lib/minds/inner-child/type-cards";
+import { devPersona } from "@/lib/minds/inner-child/dev-personas";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
 import type { PaidReportGenerated, FreeReportGenerated } from "@/lib/minds/inner-child/report-types";
 
 const IDS = Object.keys(TYPE_CARDS);
 
 // 대표 아이 = 선택 유형, 두 번째 아이 = 목록상 다음 유형(순환).
+// SCT 는 **유형별** 페르소나를 쓴다(dev-personas.ts) — 예전엔 전 유형이 하나를 공유해서
+// 드롭다운을 돌려도 늘 같은 사람 얘기가 나왔다.
 function mockScore(schemaId: string): ScoreResult {
   const card = getTypeCard(schemaId)!;
   const secId = IDS[(IDS.indexOf(schemaId) + 1) % IDS.length];
@@ -27,32 +30,33 @@ function mockScore(schemaId: string): ScoreResult {
     test_version: "v2.0",
     crisis_flag: false,
     areas: {},
-    primary_child: { schema_id: schemaId, child_name: card.child_name, score: 20, conditional: false },
+    primary_child: {
+      schema_id: schemaId,
+      child_name: card.child_name,
+      score: 20,
+      conditional: false,
+      top_item_text: card.typical_scenes?.[0] ?? "",
+    },
     secondary_children: [{ schema_id: secId, child_name: secCard.child_name, score: 12, conditional: false }],
     entitlement_score: 0,
     guardian: { type: "avoidance", label: "피하는 지킴이", answers: [] },
-    sct: {
-      childhood_self: "혼자서도 괜찮은 척하는",
-      inner_voice: "티내면 안 돼, 혼자 삼켜",
-      family_rule: "힘든 걸 티내지 않아야",
-      regression_trigger: "혼자 중요한 결정을 내려야",
-      escape_behavior: "잠으로",
-    },
+    sct: devPersona(schemaId),
   } as unknown as ScoreResult;
 }
 
-const MOCK_FREE: FreeReportGenerated = {
-  portrait:
-    "당신은 웬만해선 힘들다는 말을 먼저 꺼내지 않는 사람이에요. 괜찮냐는 물음에 습관처럼 괜찮다고 답하고, 정작 무거운 건 혼자 삼키죠.\n\n어릴 적, 힘든 걸 티내지 않는 게 이 집의 공기였을 거예요. 그런 환경에서는 감정을 삼키는 게 가장 안전한 선택이었고, 그렇게 '혼자서도 괜찮은 아이'가 만들어졌습니다. 그래서 지금도 당신은 남들에겐 사소해 보이는 순간에 먼저 표정부터 정리하게 돼요.",
-  insight:
-    "혼자 중요한 결정을 떠안아야 하는 순간, 유독 이 아이가 크게 깨어나요. 겉으로는 담담해 보여도, 사실은 기댈 곳이 없다는 오래된 감각이 되살아나는 거예요. 그럴 때 잠으로 물러나는 건 회피가 아니라, 감당하기 벅찬 순간에서 스스로를 지키려던 익숙한 방식이었어요. 그런데 왜 하필 그 순간이고, 어떻게 여기서 벗어날 수 있는지는 아직 남아 있어요.",
-  daily_prediction:
-    "아마 이런 순간, 꽤 있지 않나요. 회식 자리에서 웃고 떠들다가도 어느 순간 한 발 물러나 관찰자처럼 지켜보고, 단톡방에서는 할 말을 몇 번이나 지웠다 쓰다 결국 안 보내죠. 주말엔 아무도 안 찾으면 편하면서도 어딘가 서운하고요. 매번 상황은 달라 보여도, 그 밑에서 움직이는 건 같은 아이예요.",
-  gap: "겉으로는 담담하고 무던해 보이지만, 속에서는 관계의 온도를 끊임없이 재고 있습니다.",
-  relation_pattern: "가까워질수록 확인이 늘고, 상대의 미세한 변화에 마음이 크게 흔들립니다.",
-};
+// ⚠️ 고정 목 portrait 은 두지 않는다. 예전엔 손으로 쓴 문장 하나를 박아뒀는데, 16유형 중
+// 무엇을 골라도 같은 글이 떠서(목은 유형과 무관) 정작 이 화면의 목적인 "유형별 카피 검수"가
+// 안 됐다. 대신:
+//   · free={null} → 판매 페이지가 staticPortrait(card) 로 폴백한다. core_belief 기반이라
+//     유형별로 실제 달라지고, 무엇보다 **실서비스가 쓰는 진짜 폴백 문구**다.
+//   · "실제 LLM으로 생성" 버튼 → /api/dev/inner-child-portrait (dev 전용)가 실제 프롬프트로
+//     뽑아준다. 진짜 필력은 이걸로만 확인할 수 있다.
 
 const MOCK_PAID: PaidReportGenerated = {
+  insight:
+    "혼자 중요한 결정을 떠안아야 하는 순간, 유독 이 아이가 크게 깨어나요. 겉으로는 담담해 보여도, 사실은 기댈 곳이 없다는 오래된 감각이 되살아나는 거예요. 그럴 때 잠으로 물러나는 건 회피가 아니라, 감당하기 벅찬 순간에서 스스로를 지키려던 익숙한 방식이었어요. 그 방식이 지금까지 당신을 데려온 겁니다. 이제 그 익숙한 손길이 어떤 구조 안에서 움직이는지, 하나씩 펼쳐볼게요.",
+  daily_prediction:
+    "아마 이런 순간, 꽤 있지 않나요. 회식 자리에서 웃고 떠들다가도 어느 순간 한 발 물러나 관찰자처럼 지켜보고, 단톡방에서는 할 말을 몇 번이나 지웠다 쓰다 결국 안 보내죠. 주말엔 아무도 안 찾으면 편하면서도 어딘가 서운하고요. 매번 상황은 달라 보여도, 그 밑에서 움직이는 건 같은 아이예요.",
   daily_domains: {
     relationship:
       "가까워질수록 좋으면서도 불안이 함께 커집니다. 상대의 답장 속도, 말투, 표정의 미세한 변화까지 안테나를 세워 읽어내고, 조금이라도 온도가 식은 것 같으면 '내가 뭘 잘못했나'부터 떠올립니다. 서운함이 생겨도 바로 말하기보다 혼자 삼키다, 어느 순간 먼저 거리를 둬버려 상대를 어리둥절하게 만들기도 합니다. 정작 가장 가까워지고 싶을 때 물러서는 거예요.",
@@ -93,7 +97,33 @@ const MOCK_PAID: PaidReportGenerated = {
 export default function Page() {
   const [id, setId] = useState(IDS[0]);
   const [paid, setPaid] = useState(false);
+  // 실제 LLM 으로 뽑은 portrait — 유형별로 따로 캐시한다(같은 유형을 다시 눌러도 재호출 안 함).
+  const [llm, setLlm] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const card = getTypeCard(id)!;
+
+  // free={null} 이면 판매 페이지가 staticPortrait(실서비스 폴백)로 떨어진다 — 유형별로 다르다.
+  const free: FreeReportGenerated | null = llm[id] ? { portrait: llm[id] } : null;
+
+  const generate = async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/dev/inner-child-portrait", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schemaId: id, sct: mockScore(id).sct }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.portrait) throw new Error(json?.error || "생성 실패");
+      setLlm((m) => ({ ...m, [id]: json.portrait }));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "생성 실패");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div style={{ position: "relative" }}>
@@ -152,7 +182,56 @@ export default function Page() {
             </option>
           ))}
         </select>
+
+        {/* portrait 실생성 — 판매 페이지일 때만. 목이 아니라 진짜 LLM 필력을 보는 유일한 길. */}
+        {!paid && (
+          <button
+            type="button"
+            onClick={() => void generate()}
+            disabled={busy}
+            title="이 유형으로 실제 프롬프트를 태워 portrait 을 뽑습니다 (dev 전용, ~20초)"
+            style={{
+              border: "1px solid rgba(255,138,76,.6)",
+              borderRadius: 999,
+              padding: "4px 12px",
+              fontSize: 12,
+              cursor: busy ? "wait" : "pointer",
+              background: llm[id] ? "rgba(255,90,31,.25)" : "transparent",
+              color: busy ? "rgba(255,255,255,.5)" : "#FF8A4C",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {busy ? "생성 중…" : llm[id] ? "↻ 다시 생성" : "⚡ 실제 LLM"}
+          </button>
+        )}
       </div>
+
+      {/* 지금 보고 있는 portrait 의 출처 표시 — 폴백을 LLM 필력으로 착각하지 않도록. */}
+      {!paid && (
+        <div
+          style={{
+            position: "fixed",
+            top: 46,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 80,
+            fontSize: 11,
+            fontFamily: "ui-monospace,Menlo,monospace",
+            color: err ? "#ff8a8a" : llm[id] ? "#FF8A4C" : "rgba(255,255,255,.45)",
+            background: "rgba(0,0,0,.6)",
+            border: "1px solid rgba(255,255,255,.14)",
+            borderRadius: 999,
+            padding: "3px 10px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {err
+            ? `⚠ ${err}`
+            : llm[id]
+              ? "portrait: 실제 LLM 생성본"
+              : "portrait: 정적 폴백 (실제는 LLM 생성 — ⚡ 눌러 확인)"}
+        </div>
+      )}
 
       {paid ? (
         <InnerChildPaidView
@@ -163,7 +242,7 @@ export default function Page() {
           score={mockScore(id)}
         />
       ) : (
-        <InnerChildFreeReport key={`free-${id}`} card={card} free={MOCK_FREE} />
+        <InnerChildSalesPage key={`free-${id}-${llm[id] ? "llm" : "static"}`} card={card} free={free} />
       )}
     </div>
   );

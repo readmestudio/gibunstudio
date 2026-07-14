@@ -3,14 +3,14 @@
 /**
  * 저장된 /inner-child 결과 다시보기 화면.
  *  - 위기(crisis) 블롭: 전문기관 안내(CrisisScreen)만 렌더 — 페이월 미노출.
- *  - 정상 결과: 링크 복사 바 + 무료 리포트(InnerChildFreeReport).
+ *  - 정상 결과: 링크 복사 바 + 결제 전환 랜딩(InnerChildSalesPage). 리포트 내용은 유료 뒤에 있다.
  *  - 결과 없음/깨짐: 친절한 안내 + 새로 시작 링크. (이 leadId 가 자동복원용으로
  *    localStorage 에 남아 있었다면 지워 무효 링크로 무한 복원되는 것을 막는다.)
  */
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { InnerChildFreeReport } from "@/components/minds/inner-child/report/InnerChildFreeReport";
+import { InnerChildSalesPage } from "@/components/minds/inner-child/report/InnerChildSalesPage";
 import { CrisisScreen } from "@/components/minds/inner-child/InnerChildTest";
 import { MindsResultLinkBar } from "@/components/minds/MindsResultLinkBar";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
@@ -66,7 +66,7 @@ export function InnerChildResultView({
   // 잉크 오렌지 다크 풀스크린 리포트. 링크 복사 바는 footerExtra 로 카드 아래에 얹는다.
   if (card) {
     return (
-      <InnerChildFreeReport
+      <InnerChildSalesPage
         card={card}
         free={blob.free_report}
         leadId={leadId}

@@ -4,7 +4,7 @@
  * 내면 아이 찾기 — 개발용 프리뷰 (/dev/inner-child).
  *
  * 실제 /inner-child 퍼널과 동일하게 /minds 랜딩으로 시작 → 테스트(skipIntro) → 무료 리포트.
- * 리포트는 실컴포넌트(InnerChildFreeReport)를 그대로 렌더한다(생성필드만 dev mock).
+ * 판매 페이지는 실컴포넌트(InnerChildSalesPage)를 그대로 렌더한다(생성필드만 dev mock).
  * 채점은 클라이언트 computeScore 로만 돌려 LLM/DB 없이 확인한다.
  */
 
@@ -12,7 +12,7 @@ import { useState, type CSSProperties } from "react";
 import { M, LabelS, Hr } from "@/components/minds/quiet-editorial";
 import { MindsLanding } from "@/components/minds/MindsLanding";
 import { InnerChildTest } from "@/components/minds/inner-child/InnerChildTest";
-import { InnerChildFreeReport } from "@/components/minds/inner-child/report/InnerChildFreeReport";
+import { InnerChildSalesPage } from "@/components/minds/inner-child/report/InnerChildSalesPage";
 import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
 import type { ScoreResult } from "@/lib/minds/inner-child/types";
@@ -35,7 +35,7 @@ export default function InnerChildDevPage() {
     return (
       <>
         {card ? (
-          <InnerChildFreeReport card={card} />
+          <InnerChildSalesPage card={card} />
         ) : (
           <div style={{ height: "100dvh", background: "#050506", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
             <p style={{ color: "#fff", fontFamily: "'Pretendard',sans-serif", textAlign: "center" }}>

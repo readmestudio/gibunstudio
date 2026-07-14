@@ -35,24 +35,23 @@ export function readFreeReportBlob(raw: unknown): StoredFreeReport | null {
   const primary = (score as Record<string, unknown>).primary_child;
   if (!primary || typeof primary !== "object") return null;
 
+  // 생성필드는 전부 옵션 — 있는 것만 실어 보낸다. 퍼널마다 생성하는 필드가 다르기 때문이다
+  // (한국어=portrait 만 / 영어=5필드). 특정 필드를 필수로 요구하면 그 필드를 안 만드는 쪽의
+  // free_report 가 통째로 null 이 되어 개인화가 사라진다.
   const fr = o.free_report;
   let free: FreeReportGenerated | null = null;
   if (fr && typeof fr === "object") {
-    const g = (fr as Record<string, unknown>).gap;
-    const r = (fr as Record<string, unknown>).relation_pattern;
-    const p = (fr as Record<string, unknown>).portrait;
-    const ins = (fr as Record<string, unknown>).insight;
-    const dp = (fr as Record<string, unknown>).daily_prediction;
-    if (typeof g === "string" && typeof r === "string") {
-      // portrait·insight·daily_prediction 은 옵션 — 있으면 무료 개인화 필드로 함께 넘긴다.
-      free = {
-        gap: g,
-        relation_pattern: r,
-        ...(typeof p === "string" && p ? { portrait: p } : {}),
-        ...(typeof ins === "string" && ins ? { insight: ins } : {}),
-        ...(typeof dp === "string" && dp ? { daily_prediction: dp } : {}),
-      };
+    const f = fr as Record<string, unknown>;
+    const pick = (k: string): string | null => {
+      const v = f[k];
+      return typeof v === "string" && v.trim() ? v : null;
+    };
+    const fields: FreeReportGenerated = {};
+    for (const k of ["portrait", "insight", "daily_prediction", "gap", "relation_pattern"] as const) {
+      const v = pick(k);
+      if (v) fields[k] = v;
     }
+    if (Object.keys(fields).length > 0) free = fields;
   }
 
   return {

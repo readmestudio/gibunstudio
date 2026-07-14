@@ -23,7 +23,7 @@ import {
  * POST /api/inner-child/free-report  (공개 — 로그인 불필요)
  *
  * 내면 아이 테스트 *원응답*(ScoreInput)을 받아 서버가 computeScore 로 권위 채점을
- * 재수행하고(클라 값 불신), 유형카드 고정필드 + LLM 생성 2필드(gap·relation_pattern)로
+ * 재수행하고(클라 값 불신), 유형카드 고정필드 + LLM 생성 1필드(portrait)로
  * 무료 리포트 블롭을 만들어 리드 행(minds_leads)에 저장한다.
  *
  * /api/minds/parts-map 의 비용방어 3겹(리드당 1회 캐시 · IP 레이트리밋 · 일일 예산)을
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
 
   const card = getTypeCard(score.primary_child.schema_id);
 
-  // 생성 2필드 — 유형카드가 있고 예산이 남았을 때만 LLM. 실패 시 결정론적 폴백.
+  // 생성 1필드(portrait) — 유형카드가 있고 예산이 남았을 때만 LLM. 실패 시 결정론적 폴백.
   let free: FreeReportGenerated | null = null;
   if (card && (await withinDailyBudget())) {
     for (let attempt = 0; attempt < 2 && !free; attempt++) {
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
       }
     }
   }
-  if (!free) free = buildFallbackFreeReport(card, score);
+  if (!free) free = buildFallbackFreeReport(card);
 
   if (leadId) {
     try {
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, crisis: false });
 }
 
-/* ─────────────── LLM 생성 (gap · relation_pattern) ─────────────── */
+/* ─────────────── LLM 생성 (portrait) ─────────────── */
 
 async function generateFreeReport(
   card: TypeCard,
@@ -213,7 +213,12 @@ async function generateFreeReport(
     {
       // 무료라도 개인화 필력을 최우선 — pro + thinking 허용(파운더 지시). 비용은 상단
       // 비용가드(IP 레이트리밋 + 일일 상한 withinDailyBudget)로 천장이 잡혀 있다.
-      // portrait+insight+gap+relation 4필드라 토큰 넉넉히.
+      //
+      // ⚠️ max_tokens 를 내리지 말 것. portrait 은 300자 남짓이라 낮춰도 될 것 같지만,
+      // gemini-2.5-pro 는 thinking 이 이 예산을 함께 쓴다 — 2048 로 낮추면 생각에 다 쓰고
+      // **빈 문자열**이 돌아온다(2026-07-14 실측: 2048→0자 / 4096→324자 / 8192→273자).
+      // 그러면 safeJsonParse 실패 → 재시도도 실패 → 전원이 정적 폴백을 받는다.
+      // 게다가 max_tokens 는 상한이지 예약이 아니라, 낮춰도 비용은 한 푼도 안 준다.
       model: "gemini-2.5-pro",
       temperature: 0.7,
       max_tokens: 8192,
@@ -224,56 +229,27 @@ async function generateFreeReport(
   const parsed = safeJsonParse<Record<string, unknown>>(response);
   if (!parsed || typeof parsed !== "object") return null;
   const portrait = typeof parsed.portrait === "string" ? parsed.portrait.trim() : "";
-  const insight = typeof parsed.insight === "string" ? parsed.insight.trim() : "";
-  const daily = typeof parsed.daily_prediction === "string" ? parsed.daily_prediction.trim() : "";
-  const gap = typeof parsed.gap === "string" ? parsed.gap.trim() : "";
-  const relation = typeof parsed.relation_pattern === "string" ? parsed.relation_pattern.trim() : "";
-  // gap/relation 은 안정 검증용 필수 필드 — 없으면 실패로 보고 재시도/폴백.
-  // portrait·insight·daily_prediction 은 무료 개인화 옵션 — 있으면 싣고, 없으면 렌더러가 정적 대체.
-  if (!gap || !relation) return null;
-  return {
-    gap,
-    relation_pattern: relation,
-    ...(portrait ? { portrait } : {}),
-    ...(insight ? { insight } : {}),
-    ...(daily ? { daily_prediction: daily } : {}),
-  };
+  // portrait 은 무료의 유일한 생성 문단 — 없으면 실패로 보고 재시도/폴백.
+  if (!portrait) return null;
+  return { portrait };
 }
 
 /* ─────────────── 결정론적 폴백 (무료라 항상 결과 보장) ─────────────── */
 
-function buildFallbackFreeReport(
-  card: TypeCard | null,
-  score: ScoreResult,
-): FreeReportGenerated {
-  // 개인화 도입부·통찰(polyfill) — LLM 이 없을 때의 결정론적 대체. 유저 응답을 되풀이하지
-  // 않는 게 원칙이므로(고정 리포트 인상 방지) 여기서는 유형카드 필드만으로 조립한다.
+/**
+ * LLM 이 없을 때의 결정론적 portrait. 유저 응답을 되풀이하지 않는 게 원칙이므로
+ * (고정 리포트 인상 방지) 유형카드 필드만으로 조립한다. 프롬프트와 같은 네 박자
+ * (장면 → 규칙 → 반전 → 여운)를 지킨다. 반전 박자("그건 A가 아니라 B")를 빼면 판정으로
+ * 읽히므로 폴백에도 반드시 넣는다.
+ *
+ * ⚠️ one_liner·child_name·traits 절대 금지 — 전부 유형을 특정하거나 유료 소구 대상이다
+ * (one_liner 예: "늘 문 쪽을 바라보는 아이" = 유형명 그 자체). core_belief 만 쓴다.
+ * 판매 페이지 렌더러의 staticPortrait 과 같은 문장 — 둘 다 마지막 방어선이다.
+ */
+function buildFallbackFreeReport(card: TypeCard | null): FreeReportGenerated {
   const portrait = card
-    ? `${card.one_liner}. ${card.traits}\n\n마음 깊은 곳에는 '${card.core_belief}'는 믿음이 자리 잡고 있어요. 그래서 남들에겐 사소해 보이는 순간에도, 당신은 먼저 반응하게 됩니다. 이 아이가 어떤 아이인지, 지금부터 하나씩 만나볼게요.`
-    : `당신 안에는 오래 자리를 지켜온 내면 아이가 있어요. 이 아이가 어떤 아이인지, 지금부터 함께 만나볼게요.`;
+    ? `남들에겐 사소해 보이는 순간에, 유독 당신만 먼저 반응하게 되는 때가 있죠. 마음 깊은 곳에 '${card.core_belief}'는 믿음이 자리 잡고 있어서, 이 아이는 그 순간을 그냥 지나치지 못하거든요.\n\n그건 예민해서가 아니라, 그렇게 먼저 알아차리는 일이 오래 당신을 지켜줬기 때문이에요. 다만 왜 하필 그 순간에 이 아이가 깨어나는지는, 아직 설명되지 않은 채 남아 있어요.`
+    : `당신 안에는 오래 자리를 지켜온 내면 아이가 있어요. 남들에겐 사소해 보이는 순간에 당신이 먼저 반응하게 되는 건, 이 아이가 그 순간을 그냥 지나치지 못하기 때문이에요.\n\n그건 예민해서가 아니라, 그렇게 먼저 알아차리는 일이 오래 당신을 지켜줬기 때문이에요. 다만 왜 하필 그 순간인지는, 아직 설명되지 않은 채 남아 있어요.`;
 
-  const insight = card
-    ? `평소엔 조용하던 이 아이는 특정한 순간에 유독 크게 깨어나요. 그때 당신은 ‘${card.surface_reaction}’ 모습으로 먼저 나서곤 합니다. 겉으로는 ${card.key_emotion}처럼 보여도, 그 밑에는 스스로를 지키려는 오래된 마음이 있어요. 그건 나약함이 아니라, 예전엔 실제로 당신을 지켜주던 방식이었습니다. 그런데 ‘왜’ 하필 그 순간이고, 여기서 어떻게 벗어날 수 있는지는 아직 남아 있어요.`
-    : `당신의 반응에는 스스로를 지키려는 오래된 마음이 담겨 있어요. 그것이 왜 그런지, 어떻게 달라질 수 있는지는 지금부터 함께 살펴볼게요.`;
-
-  // 일상 예측(polyfill) — 유형카드 domains 를 예측형 어조로. 유저 응답은 되풀이하지 않는다.
-  const daily_prediction = card
-    ? `아마 이런 순간, 꽤 있지 않나요. 관계에서는 ${card.domains["관계"]} 일에서는 ${card.domains["일"]} 그리고 혼자 있을 때조차 ${card.domains["자기관리"]} 매번 상황은 달라 보여도, 그 밑에서 움직이는 건 같은 아이예요.`
-    : `상황은 매번 달라 보여도, 그 밑에서 움직이는 건 늘 같은 아이예요. 관계에서도, 일에서도, 혼자 있을 때조차 비슷한 결이 반복됩니다.`;
-
-  const gap = card
-    ? `${card.gap_hint}. 겉으로 보이는 모습과 속의 상태 사이에는 이런 간극이 있지만, 정작 그 간극을 알아채는 사람은 드뭅니다. 지금 이 리포트가 그 간극을 읽어냈습니다.`
-    : "겉으로 보이는 모습과 속의 상태 사이에는 좀처럼 알아채기 어려운 간극이 있습니다. 지금 이 리포트가 그 간극을 읽어냈습니다.";
-
-  const top = score.primary_child.top_item_text ?? "";
-  const sctQuote =
-    score.sct.childhood_self?.trim() ||
-    score.sct.regression_trigger?.trim() ||
-    score.sct.inner_voice?.trim() ||
-    "";
-  const relation_pattern = `${top ? `'${top}'라는 패턴이 관계 안에서 반복되는 경향이 있습니다. ` : ""}${
-    sctQuote ? `"${sctQuote}"라는 응답은 이 패턴과 일치합니다. ` : ""
-  }이 아이는 관계 안에서 같은 신호에 반복적으로 반응합니다.`;
-
-  return { gap, relation_pattern, portrait, insight, daily_prediction };
+  return { portrait };
 }
