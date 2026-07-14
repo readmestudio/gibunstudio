@@ -1,7 +1,8 @@
 /**
  * 내면 아이 유형별 캐릭터 동그라미 프로필.
  *
- * 무료(InnerChildFreeReport)·유료(InnerChildPaidView) 리포트 첫 카드에서 공용으로 쓴다.
+ * 유료 리포트(InnerChildPaidView)의 유형 공개 카드에서 쓴다. 판매 페이지는 같은 에셋을
+ * 블러+자물쇠로 잠가 쓰므로(LockedAvatar) 이 컴포넌트를 쓰지 않는다.
  * 에셋: `public/inner-child/types/{schema_id}.png` (Higgsfield 손그림 blob 16종, 크림 배경 1:1).
  * 이미지가 없는(미지원) 유형이면 아무것도 렌더하지 않는다 → 호출부는 그냥 넣기만 하면 된다.
  */

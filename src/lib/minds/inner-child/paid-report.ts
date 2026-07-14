@@ -1,11 +1,14 @@
 /**
- * 내면 아이 유료 리포트 엔진 (₩9,900) — 생성 9필드 + 정규화 리더.
+ * 내면 아이 유료 리포트 엔진 (₩9,900) — 생성 11필드 + 정규화 리더.
  *
- * 무료 리포트는 pro + 5필드(portrait·insight·daily_prediction·gap·relation_pattern). 유료는 pro + 9필드
- * (daily_domains{관계·일·자기관리}·loop_stages{촉발·해석·행동·결과·강화}·guardian_anatomy·
- * conflict_problems·second_child_relation·core_need_bridge·getting_along·reparenting·closing)로
- * 깊게 파고들어, 결제 레코드(minds_relationship_purchases.report_json)에 1회 캐시된다.
+ * 무료 리포트는 pro + 1필드(portrait — 유형 진단 화면의 짧은 훅). 유료는 pro + 11필드
+ * (insight·daily_prediction·daily_domains{관계·일·자기관리}·loop_stages{촉발·해석·행동·결과·
+ * 강화}·guardian_anatomy·conflict_problems·second_child_relation·core_need_bridge·
+ * getting_along·reparenting·closing)로 깊게 파고들어, 결제 레코드
+ * (minds_relationship_purchases.report_json)에 1회 캐시된다.
  * reparenting 은 그 사람의 SCT 트리거·도피행동을 해석한 개인화 실행계획(고정 3단계 대체).
+ * insight·daily_prediction 은 무료에서 이관된 필드 — 옛 캐시엔 없으므로 여기서 throw 가 나고
+ * 라우트가 새 프롬프트로 재생성한다(스키마 자동 업그레이드).
  *
  * 설계 원칙(relationship-report.ts 미러):
  *  - 유료 산출물이라 **폴백 없음**. 필드 중 하나라도 비거나 지나치게 짧으면 readPaidReport 가
@@ -21,6 +24,8 @@ import type { ScoreResult } from "./types";
 
 /** 서술형 필드 각각의 최소 유효 길이(자). 이보다 짧으면 생성이 잘렸거나 빈 것으로 보고 재시도. */
 const MIN_LEN: Record<
+  | "insight"
+  | "daily_prediction"
   | "guardian_anatomy"
   | "conflict_problems"
   | "second_child_relation"
@@ -29,6 +34,8 @@ const MIN_LEN: Record<
   | "closing",
   number
 > = {
+  insight: 120,
+  daily_prediction: 100,
   guardian_anatomy: 100,
   conflict_problems: 120,
   second_child_relation: 60,
@@ -105,6 +112,8 @@ export function readPaidReport(parsed: unknown): PaidReportGenerated {
   }
   const o = parsed as Record<string, unknown>;
   const strFields = {
+    insight: str(o.insight),
+    daily_prediction: str(o.daily_prediction),
     guardian_anatomy: str(o.guardian_anatomy),
     conflict_problems: str(o.conflict_problems),
     second_child_relation: str(o.second_child_relation),

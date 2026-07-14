@@ -226,17 +226,32 @@ export default async function AdminInnerChildDetailPage({
               )}
             </div>
 
-            {/* 무료 리포트 텍스트 */}
+            {/* 무료 리포트 텍스트 — 생성 필드는 퍼널마다 다르다(한국어=portrait 만,
+                영어=portrait·insight·daily_prediction·gap·relation_pattern). 있는 것만 보여준다. */}
             {blob?.free_report && (
               <>
                 <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]/40">
                   무료 리포트 (LLM 생성)
                 </p>
                 <div className="flex flex-col gap-3 text-sm text-[var(--foreground)]/80">
-                  <p className="whitespace-pre-wrap">{blob.free_report.gap}</p>
-                  <p className="whitespace-pre-wrap">
-                    {blob.free_report.relation_pattern}
-                  </p>
+                  {(
+                    [
+                      ["portrait", blob.free_report.portrait],
+                      ["insight", blob.free_report.insight],
+                      ["daily_prediction", blob.free_report.daily_prediction],
+                      ["gap", blob.free_report.gap],
+                      ["relation_pattern", blob.free_report.relation_pattern],
+                    ] as [string, string | undefined][]
+                  )
+                    .filter(([, v]) => Boolean(v))
+                    .map(([k, v]) => (
+                      <div key={k}>
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]/40">
+                          {k}
+                        </span>
+                        <p className="whitespace-pre-wrap">{v}</p>
+                      </div>
+                    ))}
                 </div>
               </>
             )}

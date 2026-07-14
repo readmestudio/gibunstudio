@@ -3,7 +3,8 @@
 /**
  * Inner Child free report — ENGLISH (ink-orange dark scroll report).
  *
- * 한국어 InnerChildFreeReport.tsx 의 영어판. 구조·디자인 동일. 다른 점:
+ * 한국어 무료 리포트(개편 전 InnerChildFreeReport.tsx — 현재는 판매 페이지 InnerChildSalesPage
+ * 로 대체됨)의 영어판. 영어는 개편 전 8섹션 리포트 구조를 그대로 유지한다. 다른 점:
  *  - 모든 카피 영어
  *  - 결제(MindsCheckoutModal) → 요청(RequestReportModal, 이메일 수집)
  *  - 가격 표기 $9.90 단일가(해외 결제 미지원 — 실제로는 베타 무료 발송)

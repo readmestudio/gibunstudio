@@ -37,26 +37,30 @@ export interface TypeCard {
   guardian_cost: Record<GuardianType, string>; // 지킴이 유형별 장기 상실
 }
 
-/** 무료 리포트 LLM 생성 구간. HANDOFF 5-2 + 개인화 도입부(portrait). */
+/**
+ * 무료 리포트 LLM 생성 구간. 한국어/영어 퍼널이 공유하는 타입이라 필드가 모두 옵션이다
+ * — 퍼널마다 생성하는 필드가 다르기 때문(아래 참조).
+ *
+ * 한국어(/inner-child): portrait 만 생성한다. 무료를 '유형 진단 + 훅'까지로 좁히고 나머지
+ *   해설을 유료로 옮기면서(파운더 지시), insight·daily_prediction 은 유료 생성으로 이관됐고
+ *   gap·relation_pattern 은 폐기됐다(렌더되는 곳이 없었다 — 어드민 뷰만 읽던 고아 필드).
+ * 영어(/inner-child/en): 5필드를 모두 생성한다(개편 전 한국어 구조 유지).
+ */
 export interface FreeReportGenerated {
   /**
-   * 무료 리포트 개인화 도입부(400~550자). SCT 응답의 의미를 해석해(원문 인용 없이) "이건
-   * 내 얘기"의 몰입을 만드는, 무료에서 가장 먼저 읽히는 문단. 옵션 — 구버전 블롭·폴백
-   * 미생성 시 렌더러가 유형카드 고정필드로 정적 도입부를 대신 만든다.
+   * 개인화 도입부. 무료에서 유일한 생성 문단이자 '이건 내 얘기' 훅.
+   * 한국어는 짧은 훅(150~220자), 영어는 긴 도입부(400~550자 상당).
+   * 옵션 — 없으면 렌더러가 유형카드로 정적 도입부를 조립한다(LLM 실패·구버전 블롭 방어).
    */
   portrait?: string;
-  /**
-   * 무료 리포트 개인화 통찰(300~420자). 페이월 직전의 '아하 모먼트'(원인+반전). SCT 의
-   * 트리거·도피행동 의미를 해석해 녹인다. 옵션 — 없으면 렌더러가 정적 통찰로 대체.
-   */
+  /** 개인화 통찰(원인+반전). 영어 퍼널 전용 — 한국어는 유료 PaidReportGenerated.insight 로 이관. */
   insight?: string;
-  /**
-   * 무료 '일상에서의 발현' 섹션에 붙는 예측형 개인화(250~380자). "오 이거 내 얘기"가 되도록
-   * 일상의 구체 장면을 약간의 예측으로 짚는다. SCT 해석 반영·인용 금지. 옵션.
-   */
+  /** 일상 예측 문단. 영어 퍼널 전용 — 한국어는 유료 PaidReportGenerated.daily_prediction 으로 이관. */
   daily_prediction?: string;
-  gap: string; // 겉과 속(200~250자) — 유료 GapRelationCard 가 소비
-  relation_pattern: string; // 관계에서의 패턴(250~300자) — 유료 GapRelationCard 가 소비
+  /** 겉과 속. 영어 퍼널 전용(어드민 뷰에서만 열람) — 한국어는 생성하지 않는다. */
+  gap?: string;
+  /** 관계에서의 패턴. 영어 퍼널 전용(어드민 뷰에서만 열람) — 한국어는 생성하지 않는다. */
+  relation_pattern?: string;
 }
 
 /** 유료 6번 '지금의 당신이 줄 수 있는 것' — 한 단계(제목 + 본문). */
@@ -90,8 +94,19 @@ export interface DailyDomains {
   self_care: string; // 자기관리
 }
 
-/** 유료 리포트 LLM 생성 구간(9필드). HANDOFF 6-4 + 재양육 개인화 + 갈등/해결 + 구조화. */
+/** 유료 리포트 LLM 생성 구간(11필드). HANDOFF 6-4 + 재양육 개인화 + 갈등/해결 + 구조화. */
 export interface PaidReportGenerated {
+  /**
+   * '왜 자꾸 이럴까'(300~420자) — 원인+반전의 아하 모먼트. 무료에 있던 insight 를 유료로
+   * 옮긴 것. 무료판과 달리 페이월 티저("아직 남아 있어요")로 닫지 않고, 이어지는 유료
+   * 본문으로 넘긴다.
+   */
+  insight: string;
+  /**
+   * '아마 당신은 —'(250~380자) — 일상 발현 섹션에 붙는 예측형 개인화. 무료에서 이관.
+   * daily_domains(영역별 해설) 뒤에 붙어 구체 장면으로 쐐기를 박는다.
+   */
+  daily_prediction: string;
   daily_domains: DailyDomains; // 이 아이의 전체 구조 — 일상 발현(영역별 풍성)
   loop_stages: LoopStages; // 같은 상처가 반복되는 구조(단계별 소제목)
   guardian_anatomy: string; // 방어 시스템: 지킴이(450~600자)
