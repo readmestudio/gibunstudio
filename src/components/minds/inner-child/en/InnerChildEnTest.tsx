@@ -124,19 +124,39 @@ function topScreeningText(screening: Record<string, ScaleValue>): string {
   return best?.text ?? "";
 }
 
+/**
+ * 랜딩에서 이미 받아온 스크리닝 답의 개수 — 그만큼 앞에서부터 건너뛰고 시작한다.
+ * 앞에서부터 연속으로 채워진 것만 센다(중간이 비면 거기서 멈춰 정상 노출).
+ */
+function seededPrefixLength(seed: Record<string, ScaleValue> | undefined): number {
+  if (!seed) return 0;
+  let i = 0;
+  while (i < PREFIX_STEPS.length) {
+    const s = PREFIX_STEPS[i];
+    if (s.kind === "scale" && s.part === "screening" && seed[s.id] !== undefined) i++;
+    else break;
+  }
+  return i;
+}
+
 export function InnerChildEnTest({
   onComplete,
   skipIntro = false,
+  seedScreening,
 }: {
   onComplete: (input: ScoreInput) => void;
   skipIntro?: boolean;
+  /** 랜딩 Q1 미리보기에서 이미 답한 스크리닝 문항. 해당 스텝은 건너뛴 채 시작한다. */
+  seedScreening?: Record<string, ScaleValue>;
 }) {
   const [started, setStarted] = useState(skipIntro);
   const [crisis, setCrisis] = useState(false);
   const [steps, setSteps] = useState<Step[]>(PREFIX_STEPS);
-  const [idx, setIdx] = useState(0);
+  // 랜딩에서 답을 들고 들어오면 그 뒤 문항부터 시작한다. 마운트 시 한 번만 계산.
+  const [startIdx] = useState(() => seededPrefixLength(seedScreening));
+  const [idx, setIdx] = useState(startIdx);
 
-  const [screening, setScreening] = useState<Record<string, ScaleValue>>({});
+  const [screening, setScreening] = useState<Record<string, ScaleValue>>(seedScreening ?? {});
   const [common, setCommon] = useState<ScaleValue | undefined>(undefined);
   const [drilldown, setDrilldown] = useState<Record<string, ScaleValue>>({});
   const [guardian, setGuardian] = useState<Record<string, GuardianType>>({});
@@ -228,7 +248,7 @@ export function InnerChildEnTest({
       <ProgressHead chapter={chapter} position={isQuestion ? answeredInChapter + 1 : undefined} total={chapterQuestions.length} />
       <div key={step.id} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", animation: "svqRise .4s cubic-bezier(0.22,1,0.36,1)" }}>
         {step.kind === "scale" && (
-          <CircleScale text={step.text} showInfo={chapter === 1 && idx === 0} onAnswer={(v) => answerScale(step, v)} />
+          <CircleScale text={step.text} showInfo={chapter === 1 && idx === startIdx} onAnswer={(v) => answerScale(step, v)} />
         )}
         {step.kind === "slider" && <BlockScale text={step.text} onAnswer={(v) => answerSlider(step, v)} />}
         {step.kind === "choice" && <ChoiceQuestion prompt={step.prompt} options={step.options} onAnswer={(v) => answerChoice(step, v)} />}
