@@ -188,7 +188,7 @@ export async function notifyEnReportRequest(p: {
     ? `• *다음 순서:* \`LEAD_ID=${p.leadId} EXTEND_ONLY=1 node scripts/put-en-manual-report.js\` → 링크 회신`
     : c.hasReport
       ? null
-      : `• *다음 순서:* ① Lead 로 응답 조회 → ② 원고(JSON) 작성 → ③ \`LEAD_ID=${p.leadId} REPORT_FILE=… node scripts/put-en-manual-report.js\` (배포 불필요) → ④ 링크 회신 · 절차: \`docs/EN_REPORT_DELIVERY.md\``;
+      : `• *다음 순서:* ① Lead 로 응답 조회 → ② 원고(JSON) 작성 → ③ \`LEAD_ID=${p.leadId} REPORT_FILE=… SEND_EMAIL=1 node scripts/put-en-manual-report.js\` — 저장+메일 발송까지 한 번에(배포 불필요) · 절차: \`docs/EN_REPORT_DELIVERY.md\``;
 
   const linkState = c.expired
     ? " ⏳ 만료됨(지금은 만료 안내가 뜸)"

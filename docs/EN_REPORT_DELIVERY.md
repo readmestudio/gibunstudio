@@ -100,9 +100,29 @@ LEAD_ID=<uuid> REPORT_FILE=./report.json DRY_RUN=1 node scripts/put-en-manual-re
 # 실제 저장 (만료 기본 7일)
 LEAD_ID=<uuid> REPORT_FILE=./report.json node scripts/put-en-manual-report.js
 
+# 저장 + 링크 메일 자동 발송 ← 보통 이걸 쓴다
+LEAD_ID=<uuid> REPORT_FILE=./report.json SEND_EMAIL=1 node scripts/put-en-manual-report.js
+
 # 만료만 연장 — 재발급 요청이 왔을 때(원고는 그대로)
 LEAD_ID=<uuid> EXTEND_ONLY=1 node scripts/put-en-manual-report.js
 ```
+
+### 메일 자동 발송
+
+`SEND_EMAIL=1` 이면 저장 직후 Resend 로 링크 안내 메일이 나간다. 만료 문구는 **실제 `expires_at`
+에서 계산**하므로 `EXPIRES_DAYS` 를 바꿔도 안내가 어긋나지 않는다.
+
+| 항목 | 값 |
+|---|---|
+| From | `Jian (GIBUN Studio) <jian@gibunstudio.com>` (`EN_REPORT_FROM` 으로 변경) |
+| Reply-To | `allhandslounge@gmail.com` (`EN_REPORT_REPLY_TO` 으로 변경) |
+| 발송 도메인 | `gibunstudio.com` — Resend 인증 완료(2026-07-15) |
+
+⚠️ **`@gmail.com` 주소로는 자동 발송이 불가능하다.** SPF/DKIM 으로 도메인 소유를 증명해야 하는데
+gmail.com 은 구글 소유라 인증할 수 없다. 그래서 발송은 우리 도메인에서 하고 **Reply-To 로 답장만**
+회사 지메일로 받는다. 리포트 메일이 "틀리면 답장 달라"로 끝나므로 이 경로가 실제로 쓰인다.
+
+발송이 실패해도 **원고 저장은 이미 끝난 상태**이므로 스크립트가 링크를 출력한다 — 그걸로 수동 발송.
 
 ### 만료 (7일)
 
