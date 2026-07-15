@@ -8,7 +8,8 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getManualReport } from "@/lib/minds/inner-child/en/manual-reports";
+import { getManualReport } from "@/lib/minds/inner-child/en/manual-report-store";
+import { isManualReportExpired } from "@/lib/minds/inner-child/en/manual-reports";
 import { InnerChildEnFullReport } from "@/components/minds/inner-child/en/report/InnerChildEnFullReport";
 
 export const metadata: Metadata = {
@@ -25,12 +26,37 @@ export default async function InnerChildEnFullReportPage({
   const report = await getManualReport(id);
 
   if (!report) return <NotReadyNotice />;
+  // 고객에게 "7일 후 만료"라고 안내하므로 실제로 닫는다(안내만 하고 열어두면 거짓말이 된다).
+  if (isManualReportExpired(report)) return <ExpiredNotice />;
 
   return <InnerChildEnFullReport report={report} />;
 }
 
+/**
+ * 만료된 링크 — 본인의 심리 리포트라 영구 차단하지 않고 재발급 경로를 준다.
+ * (재발급 = 운영자가 scripts/put-en-manual-report.js 를 다시 실행해 expires_at 갱신)
+ */
+function ExpiredNotice() {
+  return (
+    <Notice
+      title="This link has expired"
+      body="Your full report was open for 7 days. If you'd like to read it again, just reply to the email we sent and we'll reopen it for you — your report is still here."
+    />
+  );
+}
+
 /** 원고가 아직 없는 링크 — 깨진 페이지 대신 상태를 정직하게 알린다. */
 function NotReadyNotice() {
+  return (
+    <Notice
+      title="This report isn’t ready yet"
+      body="Full reports are written by hand, one at a time. If you requested yours, it’s on the way — we’ll email you the moment it’s finished."
+    />
+  );
+}
+
+/** 리포트가 열리지 않는 모든 경우의 공용 안내(다크 셸 + CTA). */
+function Notice({ title, body }: { title: string; body: string }) {
   return (
     <div
       style={{
@@ -46,11 +72,10 @@ function NotReadyNotice() {
       }}
     >
       <h1 style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", margin: 0 }}>
-        This report isn&rsquo;t ready yet
+        {title}
       </h1>
-      <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,.55)", maxWidth: 340 }}>
-        Full reports are written by hand, one at a time. If you requested yours, it&rsquo;s on the way — we&rsquo;ll
-        email you the moment it&rsquo;s finished.
+      <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,.55)", maxWidth: 360 }}>
+        {body}
       </p>
       <Link
         href="/inner-child/en"

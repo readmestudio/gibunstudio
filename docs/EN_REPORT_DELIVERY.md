@@ -94,12 +94,26 @@ fetch(`${u}/rest/v1/minds_leads?id=eq.${LEAD}&select=email,created_at,answers,pa
 원고는 DB 에 들어가므로 **배포가 필요 없다.** 등록 즉시 링크가 열린다.
 
 ```bash
-# 확인만 (저장 안 함) — 리드·유형·기존 원고 유무·무료 블롭 보존 여부를 보여준다
+# 확인만 (저장 안 함) — 리드·유형·기존 원고 유무·만료·무료 블롭 보존 여부를 보여준다
 LEAD_ID=<uuid> REPORT_FILE=./report.json DRY_RUN=1 node scripts/put-en-manual-report.js
 
-# 실제 저장
+# 실제 저장 (만료 기본 7일)
 LEAD_ID=<uuid> REPORT_FILE=./report.json node scripts/put-en-manual-report.js
+
+# 만료만 연장 — 재발급 요청이 왔을 때(원고는 그대로)
+LEAD_ID=<uuid> EXTEND_ONLY=1 node scripts/put-en-manual-report.js
 ```
+
+### 만료 (7일)
+
+요청 모달과 회신 메일 모두 **"7일간 열린다"** 고 안내하므로 **실제로 닫힌다.** 안내만 하고 열어두면
+그건 고객에게 하는 거짓말이고, 이 리포트는 "인용은 전부 당신이 쓴 문장이니 검증해보라"고 말하는
+물건이라 특히 안 맞는다. `expires_at`(ISO)을 스크립트가 넣고 페이지가 검사한다.
+
+- 만료 후에는 만료 안내가 뜨고, **회신하면 다시 열어준다**(`EXTEND_ONLY=1`) — 본인의 심리 리포트를
+  영구히 막지 않는다
+- 기간을 바꾸려면 `EXPIRES_DAYS=14`. **바꾸면 모달·메일 문구도 같이 고칠 것**(숫자가 어긋나면 안 된다)
+- 슬랙 재요청 알림이 만료 상태(`⏳ 만료됨`)와 연장 명령을 함께 띄운다
 
 스크립트가 하는 일:
 
@@ -136,7 +150,8 @@ left the numbers in so you can check my work.
 **It's not a diagnosis.** Nothing in there says something is wrong with you. Every
 pattern in it was, at some point, a good idea.
 
-The link doesn't expire, and it's yours alone — nobody finds it without it.
+The link is yours alone — nobody finds it without it. It stays open for 7 days; if you
+need more time, just reply and I'll reopen it.
 
 If any of it misses, just reply and tell me which part. Beta readers are the only reason
 the English version will get better, and a "that's not me" is more useful to me than a
