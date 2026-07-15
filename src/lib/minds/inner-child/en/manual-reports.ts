@@ -1,5 +1,5 @@
 /**
- * 영어 퍼널 — 손으로 쓴 유료 리포트의 타입 + 조회.
+ * 영어 퍼널 — 손으로 쓴 유료 리포트의 타입 + 판정(순수).
  *
  * 영어판은 해외 결제가 없어 "Request the full report · $9.90" → 베타 무료 → 운영자가 직접
  * 써서 보낸다(자동 생성 파이프라인 미착수). 그 원고를 이메일 본문에 넣으면 Gmail 에서 잘리고
@@ -11,10 +11,11 @@
  *    parts_map 은 이미 jsonb 라 마이그레이션이 필요 없고, `readFreeReportBlob` 은 test_version
  *    과 score_result 만 검증하므로 sibling 키 추가는 무료 리포트에 영향이 없다.
  *
+ * 이 모듈은 **순수**하다(타입 + 판정만). DB 조회는 `manual-report-store.ts` — 무료 리포트의
+ * `free-report-store.ts` 와 같은 구성이다.
+ *
  * 원고 등록 절차와 이메일 템플릿: `docs/EN_REPORT_DELIVERY.md`
  */
-
-import { createAdminClient } from "@/lib/supabase/admin";
 
 /** 본문 블록 — 문단 / 본인이 쓴 문장 인용 / 강조 콜아웃 / 실행 스텝 / 큰 한 문장. */
 export type ManualBlock =
@@ -38,6 +39,22 @@ export interface ManualReport {
   intro: string[];
   sections: ManualSection[];
   closing: string[];
+  /**
+   * 열람 만료 시각(ISO). 등록 스크립트가 기본 7일로 넣는다.
+   *
+   * 고객에게 "7일 후 만료"라고 안내하므로 **실제로 만료돼야 한다.** 안내만 하고 열어두면
+   * 그건 고객에게 하는 거짓말이다. 만료 후에는 회신으로 재발급(스크립트 재실행)한다.
+   * 값이 없으면 만료 없음(과거 원고 호환).
+   */
+  expires_at?: string;
+}
+
+/** 만료됐나. expires_at 이 없거나 파싱 불가면 만료 없음으로 본다(열어주는 쪽이 안전). */
+export function isManualReportExpired(report: ManualReport, now: Date = new Date()): boolean {
+  if (!report.expires_at) return false;
+  const at = Date.parse(report.expires_at);
+  if (Number.isNaN(at)) return false;
+  return now.getTime() > at;
 }
 
 /** parts_map.manual_report 원본(unknown)을 형태 검증. 깨졌으면 null(캐스팅 금지). */
@@ -56,24 +73,6 @@ export function readManualReport(raw: unknown): ManualReport | null {
     closing: Array.isArray(o.closing)
       ? (o.closing.filter((t) => typeof t === "string") as string[])
       : [],
+    expires_at: typeof o.expires_at === "string" ? o.expires_at : undefined,
   };
-}
-
-/** leadId → 손으로 쓴 리포트. 없거나 깨졌으면 null(호출부가 "준비 중" 안내). */
-export async function getManualReport(leadId: string): Promise<ManualReport | null> {
-  if (!leadId) return null;
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("minds_leads")
-      .select("parts_map")
-      .eq("id", leadId)
-      .maybeSingle();
-    if (error || !data?.parts_map) return null;
-    const partsMap = data.parts_map as Record<string, unknown>;
-    return readManualReport(partsMap.manual_report);
-  } catch (err) {
-    console.error("[inner-child/en] manual_report 조회 실패:", err);
-    return null;
-  }
 }

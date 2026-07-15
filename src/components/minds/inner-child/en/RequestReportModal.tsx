@@ -239,7 +239,7 @@ function DoneView({ email, onClose }: { email: string; onClose: () => void }) {
       <p style={{ fontSize: 14.5, lineHeight: 1.75, color: INK.t62, margin: "14px auto 0", maxWidth: 360 }}>
         We&rsquo;ll write your full Inner Child report by hand and email a private link to it at{" "}
         <b style={{ color: INK.t82, fontWeight: 700, wordBreak: "break-all" }}>{email || "your email"}</b>,
-        usually within a day or two. The link is yours alone and doesn&rsquo;t expire. Keep an eye on your
+        usually within a day or two. The link is yours alone and stays open for 7 days. Keep an eye on your
         inbox (and the spam folder, just in case).
       </p>
       <button type="button" onClick={onClose} style={{ ...btnStyle, marginTop: 24 }}>

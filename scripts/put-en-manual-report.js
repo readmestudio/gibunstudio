@@ -8,6 +8,12 @@
  * 사용법:
  *   LEAD_ID=<uuid> REPORT_FILE=./report.json node scripts/put-en-manual-report.js
  *   LEAD_ID=<uuid> REPORT_FILE=./report.json DRY_RUN=1 node scripts/put-en-manual-report.js
+ *   LEAD_ID=<uuid> REPORT_FILE=./report.json EXPIRES_DAYS=14 node ...   # 기본 7일
+ *   LEAD_ID=<uuid> EXTEND_ONLY=1 node ...                              # 만료만 연장(원고 유지)
+ *
+ * 만료: 고객에게 "7일 후 만료"라고 안내하므로 **실제로 닫아야 한다**(안내만 하고 열어두면
+ * 거짓말이 된다). expires_at 을 넣으면 페이지가 만료 화면을 띄운다. 재발급 요청이 오면
+ * EXTEND_ONLY=1 로 다시 실행한다.
  *
  * REPORT_FILE 형식(ManualReport — src/lib/minds/inner-child/en/manual-reports.ts):
  *   {
@@ -44,6 +50,8 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const LEAD_ID = process.env.LEAD_ID;
 const REPORT_FILE = process.env.REPORT_FILE;
 const DRY_RUN = process.env.DRY_RUN === '1';
+const EXTEND_ONLY = process.env.EXTEND_ONLY === '1';
+const EXPIRES_DAYS = Number(process.env.EXPIRES_DAYS || 7);
 
 function die(msg) {
   console.error(`❌ ${msg}`);
@@ -52,7 +60,8 @@ function die(msg) {
 
 if (!SUPABASE_URL || !SERVICE_KEY) die('NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 가 없습니다.');
 if (!LEAD_ID) die('LEAD_ID 를 지정하세요. 예: LEAD_ID=<uuid> REPORT_FILE=./report.json node scripts/put-en-manual-report.js');
-if (!REPORT_FILE) die('REPORT_FILE 을 지정하세요(ManualReport JSON 경로).');
+if (!REPORT_FILE && !EXTEND_ONLY) die('REPORT_FILE 을 지정하세요(ManualReport JSON 경로). 만료만 연장하려면 EXTEND_ONLY=1.');
+if (!Number.isFinite(EXPIRES_DAYS) || EXPIRES_DAYS <= 0) die(`EXPIRES_DAYS 가 잘못됐습니다: ${process.env.EXPIRES_DAYS}`);
 
 /** 페이지의 readManualReport 와 같은 최소 불변식 — 여기서 먼저 막아 깨진 원고가 들어가지 않게 한다. */
 function validate(r) {
@@ -78,11 +87,6 @@ function validate(r) {
 }
 
 async function main() {
-  const report = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
-
-  const errs = validate(report);
-  if (errs.length) die(`원고 형식 오류:\n   - ${errs.join('\n   - ')}`);
-
   const headers = {
     apikey: SERVICE_KEY,
     Authorization: `Bearer ${SERVICE_KEY}`,
@@ -99,11 +103,29 @@ async function main() {
 
   const row = rows[0];
   const partsMap = row.parts_map && typeof row.parts_map === 'object' ? row.parts_map : {};
+  const existing = partsMap.manual_report;
+
+  // 2) 원고 결정 — EXTEND_ONLY 면 기존 원고를 그대로 두고 만료만 민다.
+  let report;
+  if (EXTEND_ONLY) {
+    if (!existing) die('EXTEND_ONLY 인데 기존 원고가 없습니다. REPORT_FILE 로 먼저 등록하세요.');
+    report = { ...existing };
+  } else {
+    report = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+    const errs = validate(report);
+    if (errs.length) die(`원고 형식 오류:\n   - ${errs.join('\n   - ')}`);
+  }
+
+  // 3) 만료 — 고객 안내("7일 후 만료")와 실제 동작을 일치시킨다.
+  const expiresAt = new Date(Date.now() + EXPIRES_DAYS * 24 * 60 * 60 * 1000);
+  report.expires_at = expiresAt.toISOString();
 
   console.log(`📇 리드: ${row.email || '(이메일 없음)'} / ${LEAD_ID}`);
   console.log(`   유형: ${report.child_name} (${report.schema_id})`);
   console.log(`   섹션: ${report.sections.length}개 · 블록 ${report.sections.reduce((n, s) => n + s.blocks.length, 0)}개`);
-  console.log(`   기존 원고: ${partsMap.manual_report ? '있음 → 덮어씀' : '없음 → 신규'}`);
+  console.log(`   원고: ${EXTEND_ONLY ? '기존 유지(만료만 연장)' : existing ? '있음 → 덮어씀' : '없음 → 신규'}`);
+  if (existing?.expires_at) console.log(`   기존 만료: ${existing.expires_at}`);
+  console.log(`   새 만료: ${report.expires_at} (${EXPIRES_DAYS}일 뒤 · KST ${expiresAt.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })})`);
   console.log(`   무료 블롭 보존: ${partsMap.free_report ? 'free_report ✅' : '(없음)'} / ${partsMap.score_result ? 'score_result ✅' : '(없음)'}`);
 
   if (DRY_RUN) {
@@ -111,7 +133,7 @@ async function main() {
     return;
   }
 
-  // 2) manual_report 만 병합해 되돌린다.
+  // 4) manual_report 만 병합해 되돌린다.
   const next = { ...partsMap, manual_report: report };
   const patch = await fetch(`${SUPABASE_URL}/rest/v1/minds_leads?id=eq.${LEAD_ID}`, {
     method: 'PATCH',
