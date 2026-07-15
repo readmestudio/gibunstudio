@@ -4,6 +4,7 @@ import {
   notifyWorkshopBuyAttempt,
   notifyWorkshopTestStart,
 } from "@/lib/minds/notify";
+import { recordFunnelEvent } from "@/lib/funnel-events";
 
 /**
  * POST /api/workshop/track
@@ -55,14 +56,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "알 수 없는 출처입니다." }, { status: 400 });
   }
 
-  // 알림은 부가 기능 — fire-and-forget 으로 보내고 즉시 200.
+  // 기록(집계)과 알림(실시간 인지)을 함께 건다 — 둘 다 부가 기능이므로
+  // fire-and-forget 으로 보내고 즉시 200.
   if (b.event === "test_start") {
+    after(() =>
+      recordFunnelEvent({
+        funnel: "workshop",
+        event: "test_start",
+        source,
+        notified: true,
+      })
+    );
     after(() => notifyWorkshopTestStart({ source }));
   } else if (b.event === "buy_attempt") {
     const method =
       typeof b.method === "string" && KNOWN_METHODS.has(b.method)
         ? b.method
         : null;
+    after(() =>
+      recordFunnelEvent({
+        funnel: "workshop",
+        event: "buy_attempt",
+        source,
+        method,
+        notified: true,
+      })
+    );
     after(() => notifyWorkshopBuyAttempt({ method, source }));
   } else {
     return NextResponse.json({ error: "알 수 없는 이벤트입니다." }, { status: 400 });
