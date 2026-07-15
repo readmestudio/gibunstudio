@@ -5,6 +5,7 @@ import {
   notifyEnReachedPaywall,
   notifyEnRequestClick,
 } from "@/lib/minds/inner-child/en/notify";
+import { recordFunnelEvent } from "@/lib/funnel-events";
 
 /**
  * POST /api/inner-child/en/track
@@ -44,20 +45,28 @@ export async function POST(req: NextRequest) {
   const leadId =
     typeof b.leadId === "string" && UUID_RE.test(b.leadId) ? b.leadId : null;
 
-  if (
-    b.event !== "test_start" &&
-    b.event !== "reached_paywall" &&
-    b.event !== "request_click"
-  ) {
+  const EVENTS = ["test_start", "reached_paywall", "request_click"] as const;
+  const event = EVENTS.find((e) => e === b.event);
+  if (!event) {
     return NextResponse.json({ error: "Unknown event." }, { status: 400 });
   }
 
-  // 알림은 부가 기능 — fire-and-forget 으로 보내고 즉시 200.
-  if (b.event === "test_start") {
+  // 기록(집계)과 알림(실시간 인지)을 함께 건다 — 둘 다 부가 기능이므로
+  // fire-and-forget 으로 보내고 즉시 200.
+  after(() =>
+    recordFunnelEvent({
+      funnel: "inner_child_en",
+      event,
+      leadId,
+      notified: true,
+    })
+  );
+
+  if (event === "test_start") {
     after(() => notifyEnTestStart({ leadId }));
-  } else if (b.event === "reached_paywall") {
+  } else if (event === "reached_paywall") {
     after(() => notifyEnReachedPaywall({ leadId }));
-  } else if (b.event === "request_click") {
+  } else if (event === "request_click") {
     after(() => notifyEnRequestClick({ leadId }));
   }
 
