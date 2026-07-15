@@ -25,6 +25,8 @@ import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getEnTypeCard } from "@/lib/minds/inner-child/en/type-cards";
 import { detectCrisisEn } from "@/lib/minds/inner-child/en/crisis-words";
 import { trackEnFunnel } from "@/lib/minds/inner-child/en/track";
+import { SCREENING_ITEMS, SCALE_LABELS, SCALE_MAX, TIME_FRAME_NOTICE } from "@/lib/minds/inner-child/en/questions";
+import type { ScaleValue } from "@/lib/minds/inner-child/types";
 
 type Phase = "landing" | "test" | "analyzing" | "report";
 
@@ -54,6 +56,8 @@ export function InnerChildEnFlow() {
   const [phase, setPhase] = useState<Phase>("landing");
   const [leadId, setLeadId] = useState<string | null>(null);
   const [fallbackInput, setFallbackInput] = useState<ScoreInput | null>(null);
+  // 랜딩 Q1 에서 받아온 답 — 테스트 컴포넌트가 이 문항을 건너뛰고 시작하는 데 쓴다.
+  const [seedScreening, setSeedScreening] = useState<Record<string, ScaleValue> | undefined>(undefined);
   const router = useRouter();
 
   // 재방문 자동 복원 — 이전에 분석을 마친 브라우저면 저장된 결과 페이지로 보낸다.
@@ -84,12 +88,14 @@ export function InnerChildEnFlow() {
   };
 
   // 테스트 시작 — 전환 픽셀 + 운영자 슬랙(⓪) + 익명 리드 확보 + 테스트 진입(로그인 없음).
-  const beginTest = () => {
+  // seed: 랜딩 Q1 미리보기에서 이미 받은 답. 있으면 그 문항은 건너뛴 채 다음 문항부터 시작한다.
+  const beginTest = (seed?: { id: string; value: ScaleValue }) => {
     trackMetaCustom("StartTest", { content_name: "inner_child_en" });
     trackMetaEvent("Lead", { content_name: "inner_child_en" });
     // 이 시점엔 아직 리드 생성 전이라 익명으로 뜬다(KR 과 동일).
     trackEnFunnel("test_start");
     void createAnonLead();
+    if (seed) setSeedScreening({ [seed.id]: seed.value });
     setPhase("test");
   };
 
@@ -118,7 +124,7 @@ export function InnerChildEnFlow() {
   };
 
   if (phase === "test") {
-    return <InnerChildEnTest skipIntro onComplete={(input) => void runAnalysis(input)} />;
+    return <InnerChildEnTest skipIntro seedScreening={seedScreening} onComplete={(input) => void runAnalysis(input)} />;
   }
   if (phase === "report" && fallbackInput) {
     return <InlineFallbackReport input={fallbackInput} />;
@@ -167,7 +173,9 @@ function InlineFallbackReport({ input }: { input: ScoreInput }) {
 const CAST_TILES = ["leader", "villain", "rake", "manager", "exile"].map((n) => `/minds/cast/${n}.png`);
 const HERO_TILES = [0, 1, 2, 3, 4, 2, 0, 4, 1].map((i) => CAST_TILES[i]);
 
-function EnLanding({ onStart }: { onStart: () => void }) {
+function EnLanding({ onStart }: { onStart: (seed?: { id: string; value: ScaleValue }) => void }) {
+  // 첫 화면에 그대로 노출하는 1번 문항 — 여기서 답하면 그 답을 들고 테스트로 들어간다.
+  const q1 = SCREENING_ITEMS[0];
   const CARDS = [
     { t: "Who reacts the loudest", d: "Of 16 inner children, the one most awake in you right now." },
     { t: "Why the same things sting", d: "The old belief underneath your strongest reactions." },
@@ -179,10 +187,14 @@ function EnLanding({ onStart }: { onStart: () => void }) {
         @keyframes enRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
         .en-cta{transition:transform .12s ease}
         .en-cta:active{transform:scale(.99)}
+        .en-circ{transition:transform .12s ease,border-color .12s ease,color .12s ease,background .12s ease}
+        .en-circ:hover{border-color:${INK.accent2};color:#fff;background:rgba(255,90,31,.14)}
+        .en-circ:active{transform:scale(.93)}
       `}</style>
       <div style={{ maxWidth: 448, margin: "0 auto", padding: "16px 20px 0" }}>
         {/* hero — dark character mosaic + scrim + hook copy (KR 첫 화면과 동일 이미지 처리) */}
-        <div style={{ position: "relative", overflow: "hidden", borderRadius: 22, background: INK.shell, border: `1px solid ${INK.border}`, minHeight: 380, display: "flex", flexDirection: "column", justifyContent: "flex-end", animation: "enRise .4s ease both" }}>
+        {/* paddingTop 은 상단 라벨(absolute)의 자리를 비워두는 용도 — 카피가 길어져도 겹치지 않는다. */}
+        <div style={{ position: "relative", overflow: "hidden", borderRadius: 22, background: INK.shell, border: `1px solid ${INK.border}`, minHeight: 296, paddingTop: 56, display: "flex", flexDirection: "column", justifyContent: "flex-end", animation: "enRise .4s ease both" }}>
           {/* 배경: 어두운 캐릭터 일러스트 타일 모자이크 */}
           <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", opacity: 0.55 }}>
             {HERO_TILES.map((src, i) => (
@@ -202,15 +214,46 @@ function EnLanding({ onStart }: { onStart: () => void }) {
           </div>
           {/* 하단 훅 카피 */}
           <div style={{ position: "relative", padding: "0 22px 26px" }}>
-            <h1 style={{ fontFamily: INK.display, fontSize: 30, fontWeight: 800, lineHeight: 1.22, letterSpacing: "-0.035em", color: INK.white, margin: 0 }}>
-              Some moments shake you
+            {/* 27px — 390px 폭에서 "You're not overreacting." 이 한 줄에 들어가는 상한. 더 키우면 3줄로 깨진다. */}
+            <h1 style={{ fontFamily: INK.display, fontSize: 27, fontWeight: 800, lineHeight: 1.24, letterSpacing: "-0.035em", color: INK.white, margin: 0 }}>
+              You&rsquo;re not overreacting.
               <br />
-              far harder than they should.
+              You&rsquo;re remembering.
             </h1>
-            <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.75, color: "rgba(255,255,255,.78)", margin: "16px 0 0", maxWidth: 360 }}>
-              At the root of that reaction is an old inner child — one that learned, long ago, to protect you.
-              In 3 minutes, meet the child reacting the loudest in you right now.
+            <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.7, color: "rgba(255,255,255,.78)", margin: "14px 0 0", maxWidth: 360 }}>
+              Going cold. Over-apologizing. Needing the last word. Each one is a part of you that learned to survive
+              something — meet the one that&rsquo;s loudest in you right now.
             </p>
+          </div>
+        </div>
+
+        {/* Q1 — 첫 화면에서 바로 답하게 한다. 시작을 '결심'에서 '반사'로 내리는 자리라
+            버튼(아래 sticky CTA)과 별개로 여기서 답하면 그 답을 들고 테스트로 진입한다. */}
+        <div style={{ marginTop: 14, padding: "18px 20px 20px", background: INK.surface, border: `1px solid ${INK.border}`, borderRadius: 18, animation: "enRise .4s ease .06s both" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <span style={{ fontFamily: INK.mono, fontSize: 10.5, letterSpacing: "0.2em", textTransform: "uppercase", color: INK.accent2, whiteSpace: "nowrap" }}>Question 1</span>
+            <span style={{ fontFamily: INK.font, fontSize: 11.5, color: INK.t4, textAlign: "right" }}>{TIME_FRAME_NOTICE}</span>
+          </div>
+          <p style={{ fontFamily: INK.font, fontSize: 17.5, fontWeight: 700, lineHeight: 1.45, letterSpacing: "-0.02em", color: INK.white, margin: "13px 0 0" }}>
+            {q1.text}
+          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 20 }}>
+            {Array.from({ length: SCALE_MAX }, (_, i) => (i + 1) as ScaleValue).map((v) => (
+              <button
+                key={v}
+                type="button"
+                className="en-circ"
+                onClick={() => onStart({ id: q1.id, value: v })}
+                aria-label={v === 1 ? SCALE_LABELS.min : v === SCALE_MAX ? SCALE_LABELS.max : `${v}`}
+                style={{ flex: 1, aspectRatio: "1", maxWidth: 54, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,.2)", background: "transparent", color: INK.t5, fontFamily: INK.mono, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 13 }}>
+            <span style={{ fontFamily: INK.font, fontSize: 12, color: INK.t4 }}>{SCALE_LABELS.min}</span>
+            <span style={{ fontFamily: INK.font, fontSize: 12, color: INK.t62, fontWeight: 700 }}>{SCALE_LABELS.max}</span>
           </div>
         </div>
 
@@ -236,7 +279,9 @@ function EnLanding({ onStart }: { onStart: () => void }) {
       </div>
 
       {/* sticky CTA */}
-      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 40, display: "flex", justifyContent: "center", padding: "12px 20px calc(env(safe-area-inset-bottom, 0px) + 16px)", background: "linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.86) 40%, #050506 100%)", pointerEvents: "none" }}>
+      {/* 스크림은 안내 문구가 시작되기 전에 이미 불투명해야 한다 — 옅은 구간에 글자가 걸리면
+          뒤 본문과 겹쳐 읽힌다(기존 40% 지점 시작이라 겹쳤음). */}
+      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 40, display: "flex", justifyContent: "center", padding: "22px 20px calc(env(safe-area-inset-bottom, 0px) + 16px)", background: "linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.94) 26%, #050506 52%)", pointerEvents: "none" }}>
         <div style={{ width: "100%", maxWidth: 408, pointerEvents: "auto" }}>
           <p style={{ textAlign: "center", margin: "0 0 10px", fontSize: 12, color: INK.t5, fontFamily: INK.font }}>
             Not a diagnosis — a mirror for who you are right now.
@@ -244,10 +289,11 @@ function EnLanding({ onStart }: { onStart: () => void }) {
           <button
             type="button"
             className="en-cta"
-            onClick={onStart}
+            /* onStart 는 seed 를 선택 인자로 받는다 — onClick 을 그대로 넘기면 MouseEvent 가 seed 로 들어간다. */
+            onClick={() => onStart()}
             style={{ width: "100%", padding: 17, borderRadius: 14, background: INK.grad, color: INK.shell, border: "none", fontFamily: INK.font, fontWeight: 800, fontSize: 16, cursor: "pointer", boxShadow: "0 16px 40px -16px rgba(255,90,31,.7)" }}
           >
-            Take the free 3-min test →
+            Meet your inner child — free, 3 min →
           </button>
         </div>
       </div>
