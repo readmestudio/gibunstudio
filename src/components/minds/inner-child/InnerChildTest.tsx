@@ -30,6 +30,9 @@ import {
   INTERSTITIAL_TO_GUARDIAN,
   DRILLDOWN_SCALE_LABELS,
   GUARDIAN_SCENE_INTRO,
+  CONCERN_PROMPT,
+  CONCERN_HINT,
+  CONCERN_PLACEHOLDER,
 } from "@/lib/minds/inner-child/questions";
 import { scoreAreas, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { detectCrisis } from "@/lib/minds/inner-child/crisis-words";
@@ -91,6 +94,7 @@ type Step =
   | { kind: "slider"; id: string; text: string; chapter: 2 }
   | { kind: "choice"; id: string; prompt: string; options: { value: GuardianType; text: string }[]; chapter: 2 }
   | { kind: "sct"; id: string; slot: keyof SctAnswers; text: string; chapter: 3 }
+  | { kind: "concern"; id: string; chapter: 3 }
   | { kind: "interstitial"; id: string; chapter: Chapter; kicker: string; lines: string[]; cta: string };
 
 const PREFIX_STEPS: Step[] = [
@@ -123,7 +127,8 @@ export function InnerChildTest({
   onComplete,
   skipIntro = false,
 }: {
-  onComplete: (input: ScoreInput) => void;
+  /** extra.concern: 고민 자유서술(텍스트, 스킵 시 빈 문자열). 채점 무관. */
+  onComplete: (input: ScoreInput, extra?: { concern?: string }) => void;
   /** true 면 자체 IntroScreen 을 건너뛰고 1부 첫 문항에서 시작(랜딩이 시작의 주인인 임베드 경로용). */
   skipIntro?: boolean;
 }) {
@@ -140,14 +145,10 @@ export function InnerChildTest({
 
   const advance = () => setIdx((i) => i + 1);
 
-  const finalize = (sctFinal: SctAnswers) => {
-    if (
-      detectCrisis([sctFinal.childhood_self, sctFinal.inner_voice, sctFinal.family_rule, sctFinal.regression_trigger, sctFinal.escape_behavior])
-    ) {
-      setCrisis(true);
-      return;
-    }
-    onComplete({ screening, common: common!, drilldown, guardian, sct: sctFinal });
+  // 최종 완료 — 고민 칩(chip id 배열)을 함께 넘긴다. 위기 판정은 SCT 마지막(answerSct)에서
+  // 이미 끝났으므로 여기선 하지 않는다(정상 응답만 도달).
+  const complete = (concern: string, sctFinal: SctAnswers = sct) => {
+    onComplete({ screening, common: common!, drilldown, guardian, sct: sctFinal }, { concern });
   };
 
   /** 공통 C1 직후: 상위 2영역 계산 → 인터스티셜·드릴다운·지킴이·SCT 를 이어붙인다. */
@@ -182,8 +183,10 @@ export function InnerChildTest({
     }));
     const inter3: Step = { kind: "interstitial", id: "I3", chapter: 3, kicker: "마지막 장", lines: [SCT_TRANSITION], cta: "계속" };
     const sctSteps: Step[] = SCT_ITEMS.map((s): Step => ({ kind: "sct", id: s.id, slot: s.slot, text: s.text, chapter: 3 }));
+    // 고민 칩 — SCT 뒤, 마지막 스텝. 채점·안전 무관(스킵 유도해도 OK). 위기 판정은 SCT 끝에서 한다.
+    const concernStep: Step = { kind: "concern", id: "CONCERN", chapter: 3 };
 
-    setSteps((prev) => [...prev, inter1, ...drillSteps, inter2, ...guardSteps, inter3, ...sctSteps]);
+    setSteps((prev) => [...prev, inter1, ...drillSteps, inter2, ...guardSteps, inter3, ...sctSteps, concernStep]);
   };
 
   const answerScale = (step: Extract<Step, { kind: "scale" }>, value: ScaleValue) => {
@@ -205,9 +208,28 @@ export function InnerChildTest({
   const answerSct = (step: Extract<Step, { kind: "sct" }>, value: string) => {
     const next = { ...sct, [step.slot]: value };
     setSct(next);
-    if (idx + 1 >= steps.length) finalize(next);
-    else advance();
+    // SCT 마지막(다음이 고민 칩이거나 스텝 끝)이면 여기서 위기 판정 — 고민 칩(비안전 스텝)
+    // 진입 전에 CrisisScreen 으로 전환한다. 안전필터는 오직 SCT 5슬롯이다.
+    const nextIsConcern = steps[idx + 1]?.kind === "concern";
+    const isLast = idx + 1 >= steps.length;
+    if (nextIsConcern || isLast) {
+      if (
+        detectCrisis([next.childhood_self, next.inner_voice, next.family_rule, next.regression_trigger, next.escape_behavior])
+      ) {
+        setCrisis(true);
+        return;
+      }
+      // 방어: 고민 입력 스텝이 없는 구조(구버전)면 바로 완료.
+      if (isLast) {
+        complete("", next);
+        return;
+      }
+    }
+    advance();
   };
+
+  // 고민 자유서술 — 채점·안전 무관. 입력(또는 스킵=빈 문자열)으로 최종 완료.
+  const answerConcern = (text: string) => complete(text);
 
   // ── 렌더 ──
   if (crisis) return <CrisisScreen />;
@@ -229,6 +251,7 @@ export function InnerChildTest({
         {step.kind === "slider" && <BlockScale text={step.text} onAnswer={(v) => answerSlider(step, v)} />}
         {step.kind === "choice" && <ChoiceQuestion prompt={step.prompt} options={step.options} onAnswer={(v) => answerChoice(step, v)} />}
         {step.kind === "sct" && <SentenceComplete text={step.text} onAnswer={(v) => answerSct(step, v)} />}
+        {step.kind === "concern" && <ConcernText onSubmit={answerConcern} />}
         {step.kind === "interstitial" && <Interstitial kicker={step.kicker} lines={step.lines} cta={step.cta} onNext={advance} />}
       </div>
     </Shell>
@@ -581,6 +604,44 @@ function SentenceComplete({ text, onAnswer }: { text: string; onAnswer: (v: stri
       )}
       <div style={{ flex: 1, minHeight: 20 }} />
       <button type="button" className="svq-next" onClick={() => onAnswer(value.trim())} style={nextBtnStyle}>다음 →</button>
+    </div>
+  );
+}
+
+/**
+ * 고민 자유서술 — 텍스트 입력 · **스킵 가능**. 채점·안전필터와 무관하므로 스킵을 유도해도 된다.
+ * 쓴 텍스트는 결과 '고민 카드'에서 그대로 되돌려주고, 유료 프롬프트가 반영한다.
+ */
+function ConcernText({ onSubmit }: { onSubmit: (text: string) => void }) {
+  const [value, setValue] = useState("");
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <p style={{ fontFamily: INK.font, fontSize: 13, color: INK.t5, margin: 0 }}>{CONCERN_HINT}</p>
+      <p style={{ ...qTitleStyle, margin: "18px 0 0" }}>{CONCERN_PROMPT}</p>
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        rows={3}
+        placeholder={CONCERN_PLACEHOLDER}
+        style={{
+          width: "100%",
+          marginTop: 24,
+          padding: "14px 16px",
+          borderRadius: 12,
+          border: `1px solid ${INK.border2}`,
+          background: INK.surface,
+          fontFamily: INK.font,
+          fontSize: 16,
+          lineHeight: 1.6,
+          color: INK.white,
+          resize: "vertical",
+          outline: "none",
+        }}
+      />
+      <div style={{ flex: 1, minHeight: 20 }} />
+      <button type="button" className="svq-next" onClick={() => onSubmit(value.trim())} style={nextBtnStyle}>
+        {value.trim() ? "다음 →" : "건너뛰기 →"}
+      </button>
     </div>
   );
 }

@@ -181,6 +181,20 @@ export const SCT_ITEMS: SctItem[] = [
   { id: "SCT5", slot: "escape_behavior", text: "마음이 힘들 때 나는 ______로 도망친다." },
 ];
 
+/**
+ * 3부 마지막 — 고민 자유서술(텍스트 입력·**스킵 가능**). 채점·안전필터와 완전 무관.
+ *
+ * ⚠️ SCT(자·타해 안전필터의 유일 입력)와 달리 이 입력은 스킵을 유도해도 안전하다. 그래서
+ *    청월당식 "쓰지 않아도 넘어갈 수 있어요" 안내를 SCT 가 아니라 **여기에** 둔다.
+ *    (project_inner_child_sct_crisis_filter: SCT 는 감축·스킵유도 금지)
+ *
+ * 쓴 텍스트는 결과 페이지의 '고민 카드'에서 그대로 되돌려주고(개인화 증거), 유료 리포트
+ * 프롬프트가 이를 반영한다. 무료는 되돌려주기까지 — LLM 불필요.
+ */
+export const CONCERN_PROMPT = "마지막으로, 요즘 가장 자주 마음에 걸리는 게 있다면?";
+export const CONCERN_HINT = "쓰지 않고 넘어가도 괜찮아요";
+export const CONCERN_PLACEHOLDER = "예: 이 관계를 계속해도 될지, 일이 자꾸 나를 갉아먹는 것 같아요…";
+
 /** 시작 화면 + 리포트 하단 고정 면책 문구(HANDOFF 10-4). */
 export const DISCLAIMER =
   "본 테스트는 자기이해를 돕는 콘텐츠이며 심리검사·진단 도구가 아닙니다.";

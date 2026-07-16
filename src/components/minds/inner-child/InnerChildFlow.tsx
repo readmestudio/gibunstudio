@@ -21,7 +21,7 @@ import { getAttribution } from "@/lib/attribution";
 import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
 import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
-import { MindsLanding } from "../MindsLanding";
+import { InnerChildLanding } from "./InnerChildLanding";
 import { MindsAnalyzing } from "../MindsAnalyzing";
 import { InnerChildTest, CrisisScreen } from "./InnerChildTest";
 import { InnerChildSalesPage } from "./report/InnerChildSalesPage";
@@ -143,13 +143,14 @@ export function InnerChildFlow() {
   };
 
   // 테스트 완료 → 서버 무료 리포트 생성 → 저장본 페이지로 이동.
-  const runAnalysis = async (input: ScoreInput) => {
+  // concern: 고민 자유서술(텍스트, 스킵 시 빈 문자열) — blob 에 저장돼 결과 '고민 카드'로 되돌려준다.
+  const runAnalysis = async (input: ScoreInput, concern = "") => {
     setPhase("analyzing");
     try {
       const res = await fetch("/api/inner-child/free-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, leadId }),
+        body: JSON.stringify({ input, leadId, concern }),
       });
       const json = await res.json().catch(() => null);
       // 서버가 저장을 마쳤고(leadId 확보) 결과 페이지가 렌더 가능하면 그리로 보낸다.
@@ -184,7 +185,12 @@ export function InnerChildFlow() {
 
   // 테스트·폴백 리포트는 자체 풀스크린(다크). 랜딩·분석은 라이트 컨테이너 유지.
   if (phase === "test") {
-    return <InnerChildTest skipIntro onComplete={(input) => void runAnalysis(input)} />;
+    return (
+      <InnerChildTest
+        skipIntro
+        onComplete={(input, extra) => void runAnalysis(input, extra?.concern ?? "")}
+      />
+    );
   }
   if (phase === "report" && fallbackInput) {
     return <InlineFallbackReport input={fallbackInput} />;
@@ -193,7 +199,7 @@ export function InnerChildFlow() {
   return (
     <div className="mx-auto w-full max-w-[448px] px-6 py-8 sm:py-10">
       {phase === "landing" && (
-        <MindsLanding
+        <InnerChildLanding
           onStart={async () => {
             const supabase = createClient();
             const {
@@ -278,5 +284,5 @@ function InlineFallbackReport({ input }: { input: ScoreInput }) {
       </div>
     );
   }
-  return <InnerChildSalesPage card={card} />;
+  return <InnerChildSalesPage card={card} score={score} />;
 }

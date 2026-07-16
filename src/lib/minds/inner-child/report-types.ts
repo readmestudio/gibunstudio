@@ -123,4 +123,9 @@ export interface FreeReportBlob {
   test_version: "v2.0";
   score_result: import("./types").ScoreResult;
   free_report: FreeReportGenerated;
+  /**
+   * 고민 자유서술(텍스트, 스킵 시 없음). 채점 무관 — 결과 '고민 카드'에서 되돌려주고
+   * 유료 프롬프트가 반영한다. score_result 를 오염시키지 않으려고 blob 최상위에 둔다.
+   */
+  concern?: string;
 }

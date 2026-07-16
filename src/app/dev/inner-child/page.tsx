@@ -10,7 +10,7 @@
 
 import { useState, type CSSProperties } from "react";
 import { M, LabelS, Hr } from "@/components/minds/quiet-editorial";
-import { MindsLanding } from "@/components/minds/MindsLanding";
+import { InnerChildLanding } from "@/components/minds/inner-child/InnerChildLanding";
 import { InnerChildTest } from "@/components/minds/inner-child/InnerChildTest";
 import { InnerChildSalesPage } from "@/components/minds/inner-child/report/InnerChildSalesPage";
 import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
@@ -19,12 +19,18 @@ import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
 export default function InnerChildDevPage() {
   const [result, setResult] = useState<ScoreResult | null>(null);
+  const [concern, setConcern] = useState("");
   const [started, setStarted] = useState(false);
   const [runKey, setRunKey] = useState(0);
 
-  const handleComplete = (input: ScoreInput) => setResult(computeScore(input));
+  // 고민 자유서술(extra.concern)을 받아 결과 판매 페이지로 넘긴다 — 로그인·DB 없이 고민 카드까지 확인.
+  const handleComplete = (input: ScoreInput, extra?: { concern?: string }) => {
+    setResult(computeScore(input));
+    setConcern(extra?.concern ?? "");
+  };
   const restart = () => {
     setResult(null);
+    setConcern("");
     setStarted(false);
     setRunKey((k) => k + 1);
   };
@@ -35,7 +41,7 @@ export default function InnerChildDevPage() {
     return (
       <>
         {card ? (
-          <InnerChildSalesPage card={card} />
+          <InnerChildSalesPage card={card} score={result} concern={concern} />
         ) : (
           <div style={{ height: "100dvh", background: "#050506", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
             <p style={{ color: "#fff", fontFamily: "'Pretendard',sans-serif", textAlign: "center" }}>
@@ -88,7 +94,7 @@ export default function InnerChildDevPage() {
           </p>
         </div>
         <Hr style={{ marginBottom: 24 }} />
-        <MindsLanding onStart={() => setStarted(true)} />
+        <InnerChildLanding onStart={() => setStarted(true)} />
       </div>
     </main>
   );

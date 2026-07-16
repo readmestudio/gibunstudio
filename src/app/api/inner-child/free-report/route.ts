@@ -121,6 +121,8 @@ export async function POST(req: NextRequest) {
   }
   const b = (body ?? {}) as Record<string, unknown>;
   const leadId = typeof b.leadId === "string" ? b.leadId : "";
+  // 고민 자유서술(텍스트) — 채점 무관, blob 최상위에 그대로 저장한다. 결과 '고민 카드' 되돌려주기용.
+  const concern = typeof b.concern === "string" ? b.concern.trim() : "";
 
   if (!isScoreInput(b.input)) {
     return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
@@ -188,7 +190,12 @@ export async function POST(req: NextRequest) {
         .from("minds_leads")
         .update({
           answers,
-          parts_map: { test_version: "v2.0", score_result: score, free_report: free },
+          parts_map: {
+            test_version: "v2.0",
+            score_result: score,
+            free_report: free,
+            ...(concern.length ? { concern } : {}),
+          },
         })
         .eq("id", leadId);
     } catch (err) {

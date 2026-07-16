@@ -29,7 +29,12 @@ function mockScore(schemaId: string): ScoreResult {
   return {
     test_version: "v2.0",
     crisis_flag: false,
-    areas: {},
+    areas: {
+      disconnection: { score: 20, rank: 1 },
+      overvigilance: { score: 14, rank: 2 },
+      other_directedness: { score: 9, rank: 3 },
+      impaired_autonomy: { score: 6, rank: 4 },
+    },
     primary_child: {
       schema_id: schemaId,
       child_name: card.child_name,
@@ -242,7 +247,7 @@ export default function Page() {
           score={mockScore(id)}
         />
       ) : (
-        <InnerChildSalesPage key={`free-${id}-${llm[id] ? "llm" : "static"}`} card={card} free={free} />
+        <InnerChildSalesPage key={`free-${id}-${llm[id] ? "llm" : "static"}`} card={card} free={free} score={mockScore(id)} concern={"요즘 일이 너무 많아서 나를 잃어가는 것 같아요"} />
       )}
     </div>
   );

@@ -68,7 +68,9 @@ export function InnerChildResultView({
     return (
       <InnerChildSalesPage
         card={card}
+        score={blob.score_result}
         free={blob.free_report}
+        concern={blob.concern}
         leadId={leadId}
         footerExtra={
           <div style={{ maxWidth: 440, margin: "0 auto" }}>
