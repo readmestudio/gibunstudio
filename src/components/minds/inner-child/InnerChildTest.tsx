@@ -30,9 +30,9 @@ import {
   INTERSTITIAL_TO_GUARDIAN,
   DRILLDOWN_SCALE_LABELS,
   GUARDIAN_SCENE_INTRO,
-  CONCERN_CHIPS,
   CONCERN_PROMPT,
   CONCERN_HINT,
+  CONCERN_PLACEHOLDER,
 } from "@/lib/minds/inner-child/questions";
 import { scoreAreas, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { detectCrisis } from "@/lib/minds/inner-child/crisis-words";
@@ -127,8 +127,8 @@ export function InnerChildTest({
   onComplete,
   skipIntro = false,
 }: {
-  /** extra.concern: 고민 칩 선택값(chip id 배열, 스킵 시 빈 배열). 채점 무관. */
-  onComplete: (input: ScoreInput, extra?: { concern?: string[] }) => void;
+  /** extra.concern: 고민 자유서술(텍스트, 스킵 시 빈 문자열). 채점 무관. */
+  onComplete: (input: ScoreInput, extra?: { concern?: string }) => void;
   /** true 면 자체 IntroScreen 을 건너뛰고 1부 첫 문항에서 시작(랜딩이 시작의 주인인 임베드 경로용). */
   skipIntro?: boolean;
 }) {
@@ -147,7 +147,7 @@ export function InnerChildTest({
 
   // 최종 완료 — 고민 칩(chip id 배열)을 함께 넘긴다. 위기 판정은 SCT 마지막(answerSct)에서
   // 이미 끝났으므로 여기선 하지 않는다(정상 응답만 도달).
-  const complete = (concern: string[], sctFinal: SctAnswers = sct) => {
+  const complete = (concern: string, sctFinal: SctAnswers = sct) => {
     onComplete({ screening, common: common!, drilldown, guardian, sct: sctFinal }, { concern });
   };
 
@@ -219,17 +219,17 @@ export function InnerChildTest({
         setCrisis(true);
         return;
       }
-      // 방어: 고민 칩 스텝이 없는 구조(구버전)면 바로 완료.
+      // 방어: 고민 입력 스텝이 없는 구조(구버전)면 바로 완료.
       if (isLast) {
-        complete([], next);
+        complete("", next);
         return;
       }
     }
     advance();
   };
 
-  // 고민 칩 — 채점·안전 무관. 선택(또는 스킵=빈 배열)으로 최종 완료.
-  const answerConcern = (chips: string[]) => complete(chips);
+  // 고민 자유서술 — 채점·안전 무관. 입력(또는 스킵=빈 문자열)으로 최종 완료.
+  const answerConcern = (text: string) => complete(text);
 
   // ── 렌더 ──
   if (crisis) return <CrisisScreen />;
@@ -251,7 +251,7 @@ export function InnerChildTest({
         {step.kind === "slider" && <BlockScale text={step.text} onAnswer={(v) => answerSlider(step, v)} />}
         {step.kind === "choice" && <ChoiceQuestion prompt={step.prompt} options={step.options} onAnswer={(v) => answerChoice(step, v)} />}
         {step.kind === "sct" && <SentenceComplete text={step.text} onAnswer={(v) => answerSct(step, v)} />}
-        {step.kind === "concern" && <ConcernChips onSubmit={answerConcern} />}
+        {step.kind === "concern" && <ConcernText onSubmit={answerConcern} />}
         {step.kind === "interstitial" && <Interstitial kicker={step.kicker} lines={step.lines} cta={step.cta} onNext={advance} />}
       </div>
     </Shell>
@@ -609,46 +609,38 @@ function SentenceComplete({ text, onAnswer }: { text: string; onAnswer: (v: stri
 }
 
 /**
- * 고민 칩 — 복수선택(토글) · **스킵 가능**. 채점·안전필터와 무관하므로 스킵을 유도해도 된다.
- * 선택값(chip id 배열)은 결과 '고민 카드'를 개인화한다(청월당식 "고민을 대신 써주기").
+ * 고민 자유서술 — 텍스트 입력 · **스킵 가능**. 채점·안전필터와 무관하므로 스킵을 유도해도 된다.
+ * 쓴 텍스트는 결과 '고민 카드'에서 그대로 되돌려주고, 유료 프롬프트가 반영한다.
  */
-function ConcernChips({ onSubmit }: { onSubmit: (ids: string[]) => void }) {
-  const [sel, setSel] = useState<string[]>([]);
-  const toggle = (id: string) =>
-    setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+function ConcernText({ onSubmit }: { onSubmit: (text: string) => void }) {
+  const [value, setValue] = useState("");
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <p style={{ fontFamily: INK.font, fontSize: 13, color: INK.t5, margin: 0 }}>{CONCERN_HINT}</p>
       <p style={{ ...qTitleStyle, margin: "18px 0 0" }}>{CONCERN_PROMPT}</p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 26 }}>
-        {CONCERN_CHIPS.map((c) => {
-          const on = sel.includes(c.id);
-          return (
-            <button
-              key={c.id}
-              type="button"
-              className="svq-opt"
-              onClick={() => toggle(c.id)}
-              style={{
-                padding: "12px 16px",
-                borderRadius: 999,
-                background: on ? "rgba(255,90,31,.14)" : INK.surface,
-                border: `1px solid ${on ? INK.accent2 : INK.border2}`,
-                color: on ? INK.white : INK.t9,
-                fontFamily: INK.font,
-                fontSize: 14.5,
-                fontWeight: on ? 700 : 500,
-                cursor: "pointer",
-              }}
-            >
-              {c.label}
-            </button>
-          );
-        })}
-      </div>
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        rows={3}
+        placeholder={CONCERN_PLACEHOLDER}
+        style={{
+          width: "100%",
+          marginTop: 24,
+          padding: "14px 16px",
+          borderRadius: 12,
+          border: `1px solid ${INK.border2}`,
+          background: INK.surface,
+          fontFamily: INK.font,
+          fontSize: 16,
+          lineHeight: 1.6,
+          color: INK.white,
+          resize: "vertical",
+          outline: "none",
+        }}
+      />
       <div style={{ flex: 1, minHeight: 20 }} />
-      <button type="button" className="svq-next" onClick={() => onSubmit(sel)} style={nextBtnStyle}>
-        {sel.length ? "다음 →" : "건너뛰기 →"}
+      <button type="button" className="svq-next" onClick={() => onSubmit(value.trim())} style={nextBtnStyle}>
+        {value.trim() ? "다음 →" : "건너뛰기 →"}
       </button>
     </div>
   );

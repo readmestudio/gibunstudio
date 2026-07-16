@@ -247,7 +247,7 @@ export default function Page() {
           score={mockScore(id)}
         />
       ) : (
-        <InnerChildSalesPage key={`free-${id}-${llm[id] ? "llm" : "static"}`} card={card} free={free} score={mockScore(id)} concern={["work"]} />
+        <InnerChildSalesPage key={`free-${id}-${llm[id] ? "llm" : "static"}`} card={card} free={free} score={mockScore(id)} concern={"요즘 일이 너무 많아서 나를 잃어가는 것 같아요"} />
       )}
     </div>
   );

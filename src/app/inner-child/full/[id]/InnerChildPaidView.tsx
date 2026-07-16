@@ -60,10 +60,9 @@ const INK = {
   mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
 };
 
-/** 라이트/다크 팔레트 — 판매 페이지와 같은 크림/잉크/라벤더. 밤하늘 서사·히어로는 양 테마 고정. */
+/** 다크 고정 팔레트 — 판매 페이지와 동일하게 항상 다크(라이트/OS 자동 대응 없음, 파운더 지시). */
 const ICP_ROOT_CSS =
-  ".icp-root{--icp-page:#FBF7EE;--icp-shell:#F3ECDD;--icp-border:#DFD5C1;--icp-mute:#8A8073;--icp-accent:#6C6AA8;--icp-accent2:#8B89C4;--icp-accent3:#A8A6D6;--icp-ink:43 38 34;--icp-accent-rgb:108 106 168;}" +
-  "@media(prefers-color-scheme:dark){.icp-root{--icp-page:#15120D;--icp-shell:#211D18;--icp-border:#3A3228;--icp-mute:#9A9082;--icp-accent:#A6A2E0;--icp-accent2:#8B89C4;--icp-accent3:#9A97C8;--icp-ink:237 228 211;--icp-accent-rgb:166 162 224;}}";
+  ".icp-root{--icp-page:#15120D;--icp-shell:#211D18;--icp-border:#3A3228;--icp-mute:#9A9082;--icp-accent:#A6A2E0;--icp-accent2:#8B89C4;--icp-accent3:#9A97C8;--icp-ink:237 228 211;--icp-accent-rgb:166 162 224;}";
 
 const LOADING_STEPS = [
   "응답을 다시 읽고 있어요",

@@ -34,7 +34,6 @@ import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
 import { innerChildIllustration } from "@/lib/minds/inner-child/type-cards";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
-import { CONCERN_CHIPS, type ConcernDomain } from "@/lib/minds/inner-child/questions";
 import type { FreeReportGenerated, TypeCard } from "@/lib/minds/inner-child/report-types";
 import type { ScoreResult, AreaId, AreaScore } from "@/lib/minds/inner-child/types";
 
@@ -43,13 +42,6 @@ const AREA_LABEL: Record<AreaId, string> = {
   impaired_autonomy: "자율성",
   other_directedness: "타인중심",
   overvigilance: "과잉경계",
-};
-
-/** 고민 칩 도메인 → '고민 카드' 제목. card.domains[domain] 본문 앞에 붙는다. */
-const DOMAIN_TITLE: Record<ConcernDomain, string> = {
-  관계: "이 아이는 지금,\n당신의 관계 속에 있어요",
-  일: "이 아이는 지금,\n당신 일터에 같이 출근해요",
-  자기관리: "이 아이는 혼자 있는\n시간에도 깨어 있어요",
 };
 
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
@@ -78,19 +70,16 @@ export function InnerChildSalesPage({
   footerExtra?: ReactNode;
   /** 결제·픽셀에 쓰는 leadId(무료 테스트 리드). */
   leadId?: string;
-  /** 고민 칩 선택값(chip id 배열). 있으면 '고민 카드'를 유형별 domains 문구로 개인화 렌더. */
-  concern?: string[];
+  /** 고민 자유서술(텍스트). 있으면 '고민 카드'에서 그대로 되돌려준다(개인화 증거). */
+  concern?: string;
 }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const pricing = reportPricing(leadId);
   const portrait = free?.portrait?.trim() || staticPortrait(card);
   const secondChild = score?.secondary_children?.[0] ?? null;
-  // 고민 카드 — 선택한 첫 칩의 도메인으로 유형별 domains 문구를 고른다. LLM 불필요.
-  const concernChip = concern?.length
-    ? CONCERN_CHIPS.find((c) => concern.includes(c.id)) ?? null
-    : null;
-  const concernText = concernChip ? card.domains?.[concernChip.domain] ?? null : null;
+  // 고민 카드 — 쓴 텍스트를 그대로 되돌려준다. LLM 불필요(무료는 되돌려주기까지).
+  const concernText = concern?.trim() || null;
 
   useEffect(() => {
     trackMindsFunnel("reached_paywall", INNER_CHILD_FUNNEL);
@@ -298,23 +287,25 @@ export function InnerChildSalesPage({
       </div>
 
       {/* ── 고민 카드 (고민 칩 반영, 정적 개인화) ── */}
-      {concernChip && concernText && (
+      {concernText && (
         <>
           <section className="ic-scene ic-anim">
             <div className="ic-inner">
-              <p className="ic-line">그런데 이 아이가 요즘,</p>
-              <p className="ic-big ic-line ic-d1"><b>어디서 가장 크게</b><br />울고 있는지 아세요?</p>
-              <p className="ic-hint ic-line ic-d2">당신이 남긴 고민을 따라가 볼게요</p>
+              <p className="ic-line">그리고 마지막에 남긴</p>
+              <p className="ic-big ic-line ic-d1"><b>그 고민,</b><br />그냥 지나칠 수 없죠.</p>
+              <p className="ic-hint ic-line ic-d2">이 아이와 어떻게 연결되는지 따라가 볼게요</p>
             </div>
             <span className="ic-scrollhint"><ArrowDown /></span>
           </section>
           <div className="ic-cardwrap ic-anim">
             <div className="ic-card">
-              <div className="ic-center"><span className="ic-worry">당신이 남긴 고민 · {concernChip.label}</span></div>
-              <h2 className="ic-h2" style={{ whiteSpace: "pre-line" }}>{DOMAIN_TITLE[concernChip.domain]}</h2>
-              <p className="ic-muted" style={{ margin: "14px 0 0", fontSize: 15.5, lineHeight: 1.8 }}>{concernText}</p>
+              <div className="ic-center"><span className="ic-worry">당신이 남긴 고민</span></div>
+              <blockquote className="ic-concern-quote">“{concernText}”</blockquote>
+              <p className="ic-muted ic-center" style={{ margin: "16px 0 0", fontSize: 15.5, lineHeight: 1.8 }}>
+                이 고민을 그냥 지나치지 못하는 건, 우연이 아니라 <b className="ic-ink">이 아이 때문</b>일지 몰라요.
+              </p>
               <p className="ic-fillsent ic-center">
-                그리고 여기서 진짜 힘든 건<br />
+                이 고민 뒤에서 진짜 걸리는 건<br />
                 <span className="ic-blank"><span>●●●●●●</span></span> 이에요.
               </p>
               <Lockbox
@@ -592,19 +583,16 @@ function LockIcon({ size = 20 }: { size?: number }) {
 /* ─────────────── CSS (밤하늘 서사 + 크림 카드, 라벤더 포인트) ─────────────── */
 
 const CSS = `
+/* 항상 다크 — 판매 페이지는 다크 고정(라이트/OS 자동 대응 없음, 파운더 지시). */
 .ic-root{
-  --paper:#FBF7EE;--paper-2:#F3ECDD;--ink:#2B2622;--pencil:#8A8073;
-  --rule:#E7DFCE;--edge:#DFD5C1;--sage:#6C6AA8;--sage-soft:#E6E4F1;
-  --shadow:20 16 8;--lock-veil:251 247 238;
+  --paper:#211D18;--paper-2:#29241D;--ink:#EDE4D3;--pencil:#9A9082;
+  --rule:#342D24;--edge:#3A3228;--sage:#A6A2E0;--sage-soft:#322F47;
+  --shadow:0 0 0;--lock-veil:33 29 24;
   background:var(--paper);color:var(--ink);
   font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
   line-height:1.7;-webkit-font-smoothing:antialiased;
   max-width:440px;margin:0 auto;position:relative;overflow-x:hidden;
 }
-@media (prefers-color-scheme:dark){.ic-root{
-  --paper:#211D18;--paper-2:#29241D;--ink:#EDE4D3;--pencil:#9A9082;
-  --rule:#342D24;--edge:#3A3228;--sage:#A6A2E0;--sage-soft:#322F47;--lock-veil:33 29 24;
-}}
 .ic-root *{box-sizing:border-box;}
 .ic-root h2,.ic-root p,.ic-root ul{margin:0;}
 .ic-ink{color:var(--ink);}
@@ -647,6 +635,7 @@ const CSS = `
 .ic-free{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--sage);border:1.5px solid var(--sage);border-radius:999px;padding:3px 10px 3px 8px;margin-bottom:8px;}
 .ic-free::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--sage);}
 .ic-worry{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--sage);background:var(--sage-soft);border-radius:999px;padding:5px 13px 5px 10px;margin-bottom:12px;}
+.ic-concern-quote{margin:16px 0 0;padding:16px 18px;background:var(--paper);border:1px solid var(--edge);border-left:3px solid var(--sage);border-radius:4px 12px 12px 4px;font-size:16px;line-height:1.75;font-weight:600;color:var(--ink);white-space:pre-wrap;}
 .ic-worry::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sage);}
 
 .ic-lockbox{border:1.6px dashed var(--sage);border-radius:16px;padding:24px 20px 20px;margin-top:22px;text-align:center;background:rgb(var(--lock-veil)/.5);}

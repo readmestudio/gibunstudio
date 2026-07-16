@@ -121,10 +121,8 @@ export async function POST(req: NextRequest) {
   }
   const b = (body ?? {}) as Record<string, unknown>;
   const leadId = typeof b.leadId === "string" ? b.leadId : "";
-  // 고민 칩(chip id 배열) — 채점 무관, blob 최상위에 그대로 저장한다. 결과 '고민 카드' 개인화용.
-  const concern = Array.isArray(b.concern)
-    ? (b.concern.filter((x) => typeof x === "string" && x.trim()) as string[])
-    : [];
+  // 고민 자유서술(텍스트) — 채점 무관, blob 최상위에 그대로 저장한다. 결과 '고민 카드' 되돌려주기용.
+  const concern = typeof b.concern === "string" ? b.concern.trim() : "";
 
   if (!isScoreInput(b.input)) {
     return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });

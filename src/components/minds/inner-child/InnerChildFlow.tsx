@@ -143,8 +143,8 @@ export function InnerChildFlow() {
   };
 
   // 테스트 완료 → 서버 무료 리포트 생성 → 저장본 페이지로 이동.
-  // concern: 고민 칩 선택값(chip id 배열, 스킵 시 빈 배열) — blob 에 저장돼 결과 '고민 카드'를 개인화한다.
-  const runAnalysis = async (input: ScoreInput, concern: string[] = []) => {
+  // concern: 고민 자유서술(텍스트, 스킵 시 빈 문자열) — blob 에 저장돼 결과 '고민 카드'로 되돌려준다.
+  const runAnalysis = async (input: ScoreInput, concern = "") => {
     setPhase("analyzing");
     try {
       const res = await fetch("/api/inner-child/free-report", {
@@ -188,7 +188,7 @@ export function InnerChildFlow() {
     return (
       <InnerChildTest
         skipIntro
-        onComplete={(input, extra) => void runAnalysis(input, extra?.concern ?? [])}
+        onComplete={(input, extra) => void runAnalysis(input, extra?.concern ?? "")}
       />
     );
   }
