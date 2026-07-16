@@ -1,36 +1,32 @@
 "use client";
 
 /**
- * 내면 아이 — 결제 전환 랜딩(판매 페이지). 잉크 오렌지(다크 프리미엄) 스크롤.
+ * 내면 아이 — 결과 스크롤(시네마틱 서사 + 잠금 카드). 판매 페이지.
  *
- * ★ 이 화면은 '무료 리포트'가 아니다. 설문을 마친 사람에게 **분석이 끝났다는 사실만** 알리고
- *   바로 결제로 보내는 **마케팅 랜딩**이다(파운더 지시 2026-07-14). 리포트 내용은 유형
- *   이름까지 포함해 전부 유료 뒤에 있다.
+ * ★ 개편 이력 (2026-07-16, 청월당 레퍼런스):
+ *   1차: 무료가 8섹션을 다 보여준 뒤 결제를 물었다 → 전환 0.
+ *   2차: 무료를 '유형 진단 + 훅'까지로 좁힘.
+ *   3차: 유형 이름·측정 지표마저 유료로(순수 판매 페이지) → 전환 여전히 0.
+ *   4차(현재): **청월당식 서사↔카드 교대.** 유형 이름·얼굴·게이지·장면을 무료로 공개하고,
+ *     각 카드는 "정보 공개 → + 이런 풀이를 더 해드려요(편익 체크리스트)"로 잠근다.
+ *     서사는 밤하늘 배경 위 중앙정렬 텍스트가 한 문장씩 여러 화면에 흐르는 시네마틱.
+ *     근거: `.claude/refs/cheongwoldang/PLAN.md` §9 + 메모리 project_cheongwoldang_reference.
  *
- * 왜 이렇게까지 갔나 — 개편 이력:
- *   1차: 무료가 8섹션(유형 해설·목소리·장면·일상 발현·통찰)을 다 보여준 뒤 결제를 물었다.
- *        → 전환이 나지 않았다. 다 보여주고 파는 구조였다.
- *   2차: 무료를 '유형 진단 + 훅'까지로 좁혔다(히어로·portrait·Signal Index·페이월).
- *   3차(현재): 유형 이름과 측정 지표마저 유료로. 무료 화면 = 순수 판매 페이지.
+ * 무료로 공개(정적 데이터 — LLM 불필요):
+ *   - 마음의 지형: score.areas (4영역 게이지, 완전 공개)
+ *   - 유형 공개: card.child_name / one_liner / 선명한 일러스트
+ *   - 자동적 사고: card.auto_thoughts (3개 공개, core_belief 는 빈칸)
+ *   - 지킴이: guardian.label / card.surface_reaction (guardian_cost 는 빈칸)
+ *   - 두 번째 아이: secondary_children[0] 블러 일러스트
+ *   - 서사 개인화: free.portrait (유일한 LLM 생성 / 폴백 staticPortrait)
+ * 잠금 뒤(유료 소구): 원인·해석·성장법. 편익으로 번역해 카피(feedback_benefit_translation_copy).
+ *   ⚠️ 유료 소구 실값(core_belief 해석·guardian_cost 등)은 DOM 텍스트로 넣지 않는다(빈칸=더미).
  *
- * 소구 구조(위→아래) — "당신이 겪는 이 문제, 우리가 풉니다" 앵글:
- *   1 분석 완료 — ✓ 배지 + 잠긴 캐릭터 실루엣("이 아이는 리포트에서 만나요")
- *   2 portrait  — 유일한 개인화. 이 사람 응답을 읽고 쓴 글이라는 **증거**이자 훅 (LLM/폴백)
- *   3 통증      — "당신의 응답에서 이게 반복되고 있어요"(typical_scenes) + "특히 이런
- *                순간에"(triggers). 문제를 이름 붙여 부르되 **답은 주지 않는다**.
- *   4 해결      — "그래서 리포트가 풀어드려요"(PAY_TEASERS)
- *   5 추천      — "이런 분께 추천해요"
- *   6 가격 + CTA
- *
- * ⚠️ 유형 이름(child_name)·해설(traits/voice)·측정 지표(metrics)를 이 화면에 절대 노출하지
- *    말 것. 전부 유료 리포트(InnerChildPaidView)의 소구 대상이다. typical_scenes 는 **제목만**
- *    쓰고 해설(typical_scene_notes)은 유료에 남긴다 — 통증은 짚되 답은 안 준다.
- *
- * 결제 배선: 가격/스티키 CTA → 공용 MindsCheckoutModal(funnel=INNER_CHILD_FUNNEL).
- * 카카오 로그인 복귀 시 ?checkout=1 표식으로 결제 모달이 자동 재개된다(/minds 패턴 이식).
+ * 결제 배선(보존): 가격/스티키 CTA → 공용 MindsCheckoutModal(funnel=INNER_CHILD_FUNNEL).
+ *   카카오 로그인 복귀 시 ?checkout=1 표식으로 결제 모달 자동 재개(/minds 패턴).
  */
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DISCLAIMER } from "@/lib/minds/inner-child/questions";
 import { reportPricing } from "@/lib/minds/price-experiment";
 import { MindsCheckoutModal } from "@/components/minds/MindsCheckoutModal";
@@ -38,74 +34,68 @@ import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
 import { innerChildIllustration } from "@/lib/minds/inner-child/type-cards";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
+import { CONCERN_CHIPS, type ConcernDomain } from "@/lib/minds/inner-child/questions";
 import type { FreeReportGenerated, TypeCard } from "@/lib/minds/inner-child/report-types";
+import type { ScoreResult, AreaId, AreaScore } from "@/lib/minds/inner-child/types";
 
-/* ─── 잉크 오렌지 토큰 ─── */
-const INK = {
-  shell: "#0A0A0B",
-  surface: "#141519",
-  border: "#26272c",
-  payBorder: "#34302b",
-  accent: "#FF5A1F",
-  accent2: "#FF8A4C",
-  grad: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 50%,#FFB68A 100%)",
-  mute: "#8C8E95",
-  white: "#fff",
-  t82: "rgba(255,255,255,.82)",
-  t72: "rgba(255,255,255,.72)",
-  t68: "rgba(255,255,255,.68)",
-  t62: "rgba(255,255,255,.62)",
-  t6: "rgba(255,255,255,.6)",
-  t4: "rgba(255,255,255,.4)",
-  t38: "rgba(255,255,255,.38)",
-  line: "rgba(255,255,255,.08)",
-  line14: "rgba(255,255,255,.14)",
-  font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
-  display: "'Inter','Pretendard',-apple-system,system-ui,sans-serif",
-  mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
+const AREA_LABEL: Record<AreaId, string> = {
+  disconnection: "단절",
+  impaired_autonomy: "자율성",
+  other_directedness: "타인중심",
+  overvigilance: "과잉경계",
 };
 
-const won = (n: number) => `₩${n.toLocaleString("ko-KR")}`;
+/** 고민 칩 도메인 → '고민 카드' 제목. card.domains[domain] 본문 앞에 붙는다. */
+const DOMAIN_TITLE: Record<ConcernDomain, string> = {
+  관계: "이 아이는 지금,\n당신의 관계 속에 있어요",
+  일: "이 아이는 지금,\n당신 일터에 같이 출근해요",
+  자기관리: "이 아이는 혼자 있는\n시간에도 깨어 있어요",
+};
+
+const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 
 /**
- * portrait 정적 폴백 — 생성 훅이 없을 때(LLM 실패·구버전 블롭·인라인 프리뷰) 유형카드로
- * 조립한다. 유저 응답을 되풀이하지 않는 게 원칙(고정 리포트 인상 방지)이라 SCT 를 인용하지
- * 않는다. 서버 buildFallbackFreeReport 과 같은 문장.
- *
- * ⚠️ one_liner·child_name·traits 절대 금지 — 전부 유형을 특정하거나 유료 소구 대상이다
- * (one_liner 예: "늘 문 쪽을 바라보는 아이" = 유형명 그 자체). core_belief 만 쓴다:
- * 통증의 뿌리라 훅으로 강하면서도 유형을 특정하지 않는다.
+ * portrait 정적 폴백 — 생성 훅이 없을 때(LLM 실패·구버전 블롭·프리뷰). 유저 응답을 되풀이하지
+ * 않는 게 원칙(고정 리포트 인상 방지)이라 SCT 를 인용하지 않는다. core_belief 만 쓴다.
  */
 function staticPortrait(card: TypeCard): string {
-  return `남들에겐 사소해 보이는 순간에, 유독 당신만 먼저 반응하게 되는 때가 있죠. 마음 깊은 곳에 '${card.core_belief}'는 믿음이 자리 잡고 있어서, 이 아이는 그 순간을 그냥 지나치지 못하거든요.\n\n그건 예민해서가 아니라, 그렇게 먼저 알아차리는 일이 오래 당신을 지켜줬기 때문이에요. 다만 왜 하필 그 순간에 이 아이가 깨어나는지는, 아직 설명되지 않은 채 남아 있어요.`;
+  return `남들에겐 사소해 보이는 순간에, 유독 당신만 먼저 반응하게 되는 때가 있죠. 마음 깊은 곳에 '${card.core_belief}'는 믿음이 자리 잡고 있어서, 이 아이는 그 순간을 그냥 지나치지 못하거든요.`;
 }
 
 export function InnerChildSalesPage({
   card,
+  score,
   free,
   footerExtra,
   leadId,
+  concern,
 }: {
   card: TypeCard;
+  /** 채점 결과. 지형(areas)·두 번째 아이(secondary_children)·지킴이 렌더에 쓴다. 없으면 해당 카드 생략. */
+  score?: ScoreResult | null;
   /** 생성 훅. portrait 만 읽는다. 없으면 정적 폴백. */
   free?: FreeReportGenerated | null;
   footerExtra?: ReactNode;
-  /** 결제·픽셀에 쓰는 leadId(무료 테스트 리드). 표시가는 단일가(₩9,900). */
+  /** 결제·픽셀에 쓰는 leadId(무료 테스트 리드). */
   leadId?: string;
+  /** 고민 칩 선택값(chip id 배열). 있으면 '고민 카드'를 유형별 domains 문구로 개인화 렌더. */
+  concern?: string[];
 }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  // 유료 리포트 단일가(₩9,900) — 표시·픽셀 전용이며 실제 결제 금액은 서버가 재확정한다(단일 출처).
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const pricing = reportPricing(leadId);
   const portrait = free?.portrait?.trim() || staticPortrait(card);
+  const secondChild = score?.secondary_children?.[0] ?? null;
+  // 고민 카드 — 선택한 첫 칩의 도메인으로 유형별 domains 문구를 고른다. LLM 불필요.
+  const concernChip = concern?.length
+    ? CONCERN_CHIPS.find((c) => concern.includes(c.id)) ?? null
+    : null;
+  const concernText = concernChip ? card.domains?.[concernChip.domain] ?? null : null;
 
-  // 이제 이 화면 자체가 페이월이다(무료 본문이 없다). 그래서 스크롤 도달이 아니라 진입 시점에
-  // 발화한다 — 지표 의미가 "무료를 다 읽고 잠금에 닿음" → "분석 완료 후 판매 페이지 도달"로
-  // 바뀐 것이며, 개편 전후 수치를 직접 비교하면 안 된다.
   useEffect(() => {
     trackMindsFunnel("reached_paywall", INNER_CHILD_FUNNEL);
   }, []);
 
-  // 결제 모달 오픈 — InitiateCheckout(퍼널 분리 content_name) + 운영자 슬랙 checkout_click.
   const openCheckout = () => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "inner_child_full",
@@ -116,9 +106,7 @@ export function InnerChildSalesPage({
     setCheckoutOpen(true);
   };
 
-  // 카카오 로그인 복귀 자동 재개 — 인증 관문에서 카카오로 로그인하면 /auth/callback 이
-  // /inner-child/r/[leadId]?checkout=1 로 되돌려보낸다. 그 표식을 보면 결제 모달을 자동으로
-  // 다시 연다(이제 로그인 상태). 표식은 URL 에서 즉시 지운다(재트리거 방지).
+  // 카카오 로그인 복귀 자동 재개 — ?checkout=1 표식이 있으면 결제 모달을 다시 연다.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -129,49 +117,413 @@ export function InnerChildSalesPage({
     return () => window.clearTimeout(id);
   }, []);
 
+  // 모션: 서사 화면에 별 레이어 주입 + 스크롤 진입 fade + 별 패럴럭스. reduced-motion 정지.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const scenes = Array.from(root.querySelectorAll<HTMLElement>(".ic-scene"));
+    const starEls: HTMLElement[] = [];
+    scenes.forEach((s) => {
+      const d = document.createElement("div");
+      d.className = "ic-stars";
+      s.insertBefore(d, s.firstChild);
+      starEls.push(d);
+    });
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add("in");
+          e.target.querySelectorAll<HTMLElement>(".ic-fill").forEach((f) => {
+            f.style.width = (f.getAttribute("data-w") || "0") + "%";
+          });
+          io.unobserve(e.target);
+        });
+      },
+      { threshold: 0.16 },
+    );
+    root.querySelectorAll(".ic-anim").forEach((el) => io.observe(el));
+
+    let onScroll: (() => void) | null = null;
+    if (!reduce && scenes.length) {
+      let ticking = false;
+      const run = () => {
+        const vh = window.innerHeight;
+        scenes.forEach((el, i) => {
+          const r = el.getBoundingClientRect();
+          if (r.bottom < -60 || r.top > vh + 60) return;
+          const progress = (r.top + r.height / 2 - vh / 2) / vh;
+          starEls[i].style.transform = `translateY(${(progress * 46).toFixed(1)}px)`;
+        });
+        ticking = false;
+      };
+      onScroll = () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(run);
+        }
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      run();
+    }
+
+    return () => {
+      io.disconnect();
+      if (onScroll) window.removeEventListener("scroll", onScroll);
+      starEls.forEach((d) => d.remove());
+    };
+  }, []);
+
+  const src = innerChildIllustration(card.schema_id);
+  const secondSrc = secondChild ? innerChildIllustration(secondChild.schema_id) : null;
+  const areaRows = score
+    ? (Object.entries(score.areas) as [AreaId, AreaScore][]).sort(
+        (a, b) => a[1].rank - b[1].rank,
+      )
+    : [];
+  const areaMax = Math.max(1, ...areaRows.map(([, v]) => v.score));
+
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        background: "#050506",
-        fontFamily: INK.font,
-        // 하단 스티키 CTA 바(고정)에 가리지 않도록 여백 확보.
-        paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
-      }}
-    >
-      <style>{`
-        @keyframes icRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-        .ic-cta{transition:transform .12s ease,box-shadow .2s ease}
-        .ic-cta:active{transform:scale(.99)}
-      `}</style>
+    <div className="ic-root" ref={rootRef}>
+      <style>{CSS}</style>
 
-      <div style={{ maxWidth: 440, margin: "0 auto", padding: "14px 14px 0", display: "flex", flexDirection: "column", gap: 22 }}>
-        {/* 1 · 분석 완료 (유형은 잠금) */}
-        <DoneHero card={card} />
+      {/* ── 오프닝 시네마틱 (한 문장씩) ── */}
+      <section className="ic-scene ic-tall ic-anim">
+        <div className="ic-inner">
+          <p className="ic-eyebrow ic-line">분석 완료</p>
+          <p className="ic-big ic-line ic-d1">
+            당신이 방금 남긴 <b>24개의 대답</b>,
+          </p>
+          <p className="ic-big ic-line ic-d2">하나도 흘리지 않았어요.</p>
+        </div>
+        <span className="ic-scrollhint"><ArrowDown /></span>
+      </section>
 
-        {/* 2 · 개인화 훅 — "내 답을 읽고 썼다"는 유일한 증거 */}
-        <PortraitHook portrait={portrait} />
+      <section className="ic-scene ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">당신의 대답을 하나하나 따라가다 보니,</p>
+          <p className="ic-line ic-d1">마음 안쪽에 <b>아이</b>가 하나 앉아 있었어요.</p>
+        </div>
+        <span className="ic-scrollhint"><ArrowDown /></span>
+      </section>
 
-        {/* 3 · 통증 — 문제를 이름 붙여 부른다. 답은 주지 않는다. */}
-        <PainSection card={card} />
+      <section className="ic-scene ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">오래전부터 거기 있었는데,</p>
+          <p className="ic-line ic-d1">그동안 아무도 이름을 불러주지 않았대요.</p>
+        </div>
+      </section>
 
-        {/* 4 · 해결 — 그래서 리포트가 이걸 풀어준다 */}
-        <BenefitSection />
-
-        {/* 5 · 추천 대상 */}
-        <RecommendSection />
-
-        {/* 6 · 가격 + CTA */}
-        <PriceCta price={pricing.price} originalPrice={pricing.originalPrice} onCheckout={openCheckout} />
-
-        <p style={{ fontFamily: INK.mono, fontSize: 10, color: INK.t38, lineHeight: 1.7, textAlign: "center", marginTop: 4 }}>
-          기분 리포트 · INNER CHILD REPORT · {DISCLAIMER}
-        </p>
-        {footerExtra ? <div style={{ marginTop: 4 }}>{footerExtra}</div> : null}
+      {/* ── 개인화 훅 (portrait) ── */}
+      <div className="ic-cardwrap ic-anim">
+        <div className="ic-card">
+          <p className="ic-eyebrow2">당신의 이야기</p>
+          <p className="ic-portrait">{portrait}</p>
+        </div>
       </div>
 
-      {/* 스티키 CTA — 스크롤 내내 항상 노출. 결제 모달을 연다. */}
-      <StickyCta onCheckout={openCheckout} price={pricing.price} originalPrice={pricing.originalPrice} />
+      {/* ── 마음의 지형 (무료·전체 공개) ── */}
+      {areaRows.length > 0 && (
+        <>
+          <section className="ic-scene ic-short ic-anim">
+            <div className="ic-inner">
+              <p className="ic-line">먼저, 당신 마음이 어디로 기울어 있는지<br />가만히 들여다볼게요.</p>
+            </div>
+          </section>
+          <div className="ic-cardwrap ic-anim">
+            <div className="ic-card">
+              <div className="ic-center"><span className="ic-free">무료 · 전체 공개</span></div>
+              <h2 className="ic-h2">당신 마음의 지형</h2>
+              <p className="ic-muted ic-center ic-small" style={{ marginBottom: 20 }}>
+                네 갈래 중 어디에 마음이 쏠려 있는지, 당신 응답 그대로.
+              </p>
+              <div className="ic-map">
+                {areaRows.map(([area, v], i) => (
+                  <div className="ic-row" key={area}>
+                    <span className="ic-rl">{AREA_LABEL[area]}</span>
+                    <span className="ic-track">
+                      <span
+                        className={"ic-fill" + (i > 1 ? " ic-dim" : "")}
+                        data-w={String(Math.max(14, Math.round((v.score / areaMax) * 100)))}
+                      />
+                    </span>
+                    <span className="ic-rv">{v.score}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="ic-small ic-muted ic-center" style={{ marginTop: 20 }}>
+                가장 크게 대답한 곳은 <b className="ic-ink">{AREA_LABEL[areaRows[0][0]]}</b> 쪽이에요.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── 유형 공개 (이름·얼굴 무료 + 잠금) ── */}
+      <section className="ic-scene ic-short ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">그 갈래 안에서도,</p>
+          <p className="ic-line ic-d1">유난히 크게 대답한 아이가 하나 있었어요.</p>
+        </div>
+      </section>
+      <section className="ic-scene ic-short ic-anim">
+        <div className="ic-inner">
+          <p className="ic-big ic-line">이 아이한테는 이미<br /><b>이름</b>이 있더라고요.</p>
+        </div>
+        <span className="ic-scrollhint"><ArrowDown /></span>
+      </section>
+
+      <div className="ic-cardwrap ic-anim">
+        <div className="ic-card ic-reveal">
+          <span className="ic-free">이름과 얼굴은 무료</span>
+          {src ? (
+            <img className="ic-avatar" src={src} alt={card.child_name} draggable={false} />
+          ) : (
+            <div className="ic-avatar" style={{ background: "#2a2a2e" }} />
+          )}
+          <p className="ic-name">{card.child_name}</p>
+          <p className="ic-muted" style={{ margin: "0 4px" }}>{card.one_liner}</p>
+          <Lockbox
+            checks={[
+              <>왜 유독 나만 <b>이렇게 반응하는지</b></>,
+              <>이 마음이 <b>지켜준 것</b>과 앞으로 살릴 강점</>,
+              <>관계에서 <b>덜 흔들리며</b> 지내는 법</>,
+              <>이 아이가 <b>편안해지는 순간</b></>,
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* ── 고민 카드 (고민 칩 반영, 정적 개인화) ── */}
+      {concernChip && concernText && (
+        <>
+          <section className="ic-scene ic-anim">
+            <div className="ic-inner">
+              <p className="ic-line">그런데 이 아이가 요즘,</p>
+              <p className="ic-big ic-line ic-d1"><b>어디서 가장 크게</b><br />울고 있는지 아세요?</p>
+              <p className="ic-hint ic-line ic-d2">당신이 남긴 고민을 따라가 볼게요</p>
+            </div>
+            <span className="ic-scrollhint"><ArrowDown /></span>
+          </section>
+          <div className="ic-cardwrap ic-anim">
+            <div className="ic-card">
+              <div className="ic-center"><span className="ic-worry">당신이 남긴 고민 · {concernChip.label}</span></div>
+              <h2 className="ic-h2" style={{ whiteSpace: "pre-line" }}>{DOMAIN_TITLE[concernChip.domain]}</h2>
+              <p className="ic-muted" style={{ margin: "14px 0 0", fontSize: 15.5, lineHeight: 1.8 }}>{concernText}</p>
+              <p className="ic-fillsent ic-center">
+                그리고 여기서 진짜 힘든 건<br />
+                <span className="ic-blank"><span>●●●●●●</span></span> 이에요.
+              </p>
+              <Lockbox
+                checks={[
+                  <>이 고민이 <b>이 아이와 어떻게 연결</b>되는지</>,
+                  <>그 자리에서 <b>덜 휘둘리는</b> 법</>,
+                  <>이 마음이 오히려 <b>강점이 되는</b> 순간</>,
+                ]}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── 자동적 사고 (3개 공개 + 빈칸 + 잠금) ── */}
+      {card.auto_thoughts?.length > 0 && (
+        <>
+          <section className="ic-scene ic-short ic-anim">
+            <div className="ic-inner">
+              <p className="ic-line">이 아이가 깨어나면, 머릿속엔</p>
+              <p className="ic-big ic-line ic-d1">거의 <b>똑같은 생각</b>이<br />자동으로 켜져요.</p>
+            </div>
+          </section>
+          <div className="ic-cardwrap ic-anim">
+            <div className="ic-card">
+              <div className="ic-center"><span className="ic-free">생각은 그대로 공개</span></div>
+              <h2 className="ic-h2">당신이 자주 하는 생각</h2>
+              <div className="ic-thoughts">
+                {card.auto_thoughts.slice(0, 3).map((t, i) => (
+                  <div className="ic-thought" key={i}>{t}</div>
+                ))}
+              </div>
+              <p className="ic-fillsent ic-center">
+                세 문장은 달라 보여도, 뿌리는<br />
+                <span className="ic-blank"><span>●●●●●●●</span></span> 하나예요.
+              </p>
+              <Lockbox
+                checks={[
+                  <>왜 자꾸 <b>같은 생각에 빠지는지</b></>,
+                  <>그 생각을 <b>믿지 않아도 되는</b> 이유</>,
+                  <>생각이 나를 흔들 때 <b>빠져나오는</b> 법</>,
+                ]}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── 반복 고리 (3단계 공개, 4·5 잠금) ── */}
+      <section className="ic-scene ic-short ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">이 생각들은 아무 데서나 튀어나오는 게 아니에요.</p>
+          <p className="ic-big ic-line ic-d1">매번 <b>똑같은 길</b>을 돌거든요.</p>
+        </div>
+      </section>
+      <div className="ic-cardwrap ic-anim">
+        <div className="ic-card">
+          <div className="ic-center"><span className="ic-free">앞 세 칸은 무료</span></div>
+          <h2 className="ic-h2">같은 상처가 도는 길</h2>
+          <div className="ic-loop">
+            <LoopStep n="1" t="신호" d="마음이 걸리는 순간이 생긴다" />
+            <LoopStep n="2" t="해석" d="최악을 먼저 가정한다" />
+            <LoopStep n="3" t="행동" d="확인하거나, 먼저 물러난다" />
+            <LoopStep n="4" t="돌아오는 결과" d="그 행동이 남기는 것, 그리고 나에게 돌아오는 것" locked />
+            <LoopStep n="5" t="굳어지는 믿음" d="고리가 끝날 때마다 아이가 다시 확인받는 그 문장" locked />
+          </div>
+          <Lockbox
+            checks={[
+              <>이 반복이 <b>어떻게 끝나는지</b></>,
+              <>같은 자리로 <b>다시 안 돌아오는</b> 법</>,
+              <>이 고리를 끊고 <b>한 걸음 나아가는</b> 법</>,
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* ── 지킴이 (정체 공개 + 빈칸 + 잠금) ── */}
+      {score?.guardian && (
+        <>
+          <section className="ic-scene ic-anim">
+            <div className="ic-inner">
+              <p className="ic-line">그런데 이 아이는, 사실</p>
+              <p className="ic-big ic-line ic-d1">당신을 <b>지키려고</b><br />이 모든 걸 해온 거예요.</p>
+            </div>
+          </section>
+          <div className="ic-cardwrap ic-anim">
+            <div className="ic-card">
+              <div className="ic-center"><span className="ic-free">지킴이 정체는 공개</span></div>
+              <h2 className="ic-h2">이 아이를 지켜온 것</h2>
+              <div className="ic-gname"><span className="ic-badge">{score.guardian.label}</span></div>
+              {card.surface_reaction && (
+                <p className="ic-muted ic-center ic-small" style={{ margin: "10px 0 0" }}>
+                  겉으로는 <b className="ic-ink">{card.surface_reaction}</b> 모습으로 나타나요.
+                </p>
+              )}
+              <p className="ic-fillsent ic-center" style={{ marginTop: 14 }}>
+                이 지킴이가 당신 대신 조용히 치른 값은<br />
+                <span className="ic-blank"><span>●●●●●●</span></span> 이에요.
+              </p>
+              <Lockbox
+                checks={[
+                  <>이 방어가 <b>대신 내준 것</b></>,
+                  <>애쓰지 않아도 <b>안전해지는</b> 법</>,
+                  <>나를 지키는 <b>더 편한 방식</b></>,
+                ]}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── 시작일 뿐 (강) ── */}
+      <section className="ic-scene ic-tall ic-anim">
+        <div className="ic-inner">
+          <p className="ic-big ic-line">그리고 여기까지는…</p>
+          <p className="ic-big ic-line ic-d1">그저 <b>시작</b>일 뿐이에요.</p>
+          <p className="ic-line ic-d2" style={{ marginTop: 22 }}>
+            당신 안엔 아직 얼굴을<br />안 보여준 게 더 있거든요.
+          </p>
+        </div>
+        <span className="ic-scrollhint"><ArrowDown /></span>
+      </section>
+
+      {/* ── 예고 티저 레일 ── */}
+      <div className="ic-teaser ic-anim">
+        <div className="ic-th"><p>리포트에서 이어지는 것들</p><p className="ic-sub">→ 옆으로 넘겨보세요</p></div>
+        <div className="ic-rail">
+          <TeaserCard t={<>이 아이의<br />전체 구조</>} d="이름 뒤에 숨은 형성 배경과 세 영역 발현" />
+          <TeaserCard t={<>두 번째<br />아이</>} d="얼굴을 가린 또 하나의 아이와 둘의 관계" />
+          <TeaserCard t={<>이 아이와<br />잘 지내는 법</>} d="관계에서·혼자일 때·마음속 실천" />
+          <TeaserCard t={<>마무리<br />편지</>} d="오늘의 내가 그 아이에게 건네는 말" />
+        </div>
+      </div>
+
+      {/* ── 두 번째 아이 (블러 + 잠금) ── */}
+      {secondChild && (
+        <div className="ic-cardwrap ic-anim">
+          <div className="ic-card ic-second">
+            <div className="ic-swrap">
+              {secondSrc ? (
+                <img src={secondSrc} alt="" aria-hidden draggable={false} />
+              ) : (
+                <div style={{ width: "100%", height: "100%", borderRadius: 999, background: "#2a2a2e" }} />
+              )}
+              <span className="ic-lk"><LockIcon size={40} /></span>
+            </div>
+            <h2 className="ic-h2">두 번째 아이는,<br />아직 얼굴을 가리고 있어요</h2>
+            <Lockbox
+              center
+              checks={[
+                <>두 번째 아이의 <b>이름과 얼굴</b></>,
+                <>두 마음이 부딪힐 때 <b>나를 다루는</b> 법</>,
+                <>어떤 날은 왜 <b>완전히 다른 내가</b> 되는지</>,
+              ]}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── 마무리 서사 ── */}
+      <section className="ic-scene ic-tall ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">이 아이는 당신을 오래 지켜온 아이예요.</p>
+          <p className="ic-line ic-d1">없애야 할 아이가 아니라,<br />이제 <b>이름을 불러줄</b> 아이죠.</p>
+          {card.reparenting_line && (
+            <p className="ic-voice ic-line ic-d2" style={{ marginTop: 28 }}>“{card.reparenting_line}”</p>
+          )}
+        </div>
+      </section>
+
+      {/* ── 가격 (자미두수식 계산표) ── */}
+      <div className="ic-cardwrap ic-anim">
+        <h2 className="ic-center" style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.34, letterSpacing: "-0.01em" }}>
+          가려둔 곳까지,<br />끝까지 만나볼까요?
+        </h2>
+        <p className="ic-muted ic-center" style={{ margin: "10px 0 18px" }}>
+          지금까지 궁금했던 것들이, <b className="ic-ink">그래서 어떻게 나아질지</b>까지 전부 열려요.
+        </p>
+        <div className="ic-card">
+          <p className="ic-prod-title">내면 아이 심층 리포트<span className="ic-prod-sub">14개 이야기</span></p>
+          <ul className="ic-toc" style={{ margin: "16px 0 0" }}>
+            <li>왜 유독 나만 이런지 — <b>이 마음의 뿌리</b></li>
+            <li>이 아이가 <b>처음 생긴 곳</b>과 전체 구조</li>
+            <li>반복되는 생각에서 <b>자유로워지는</b> 법</li>
+            <li>같은 상처를 <b>끊고 나아가는</b> 법</li>
+            <li>관계에서 <b>나를 지키는 더 편한 방식</b></li>
+            <li>두 번째 아이까지 만나고, <b>오늘의 나에게 건네는 편지</b></li>
+          </ul>
+        </div>
+        <div className="ic-pricebox">
+          <div className="ic-pline"><span>내면 아이 심층 리포트</span><span className="ic-was">{won(pricing.originalPrice)}</span></div>
+          <div className="ic-pline">
+            <span className="ic-disc-label">특별할인 <span className="ic-pct">{Math.round((1 - pricing.price / pricing.originalPrice) * 100)}%</span></span>
+            <span className="ic-minus">−{won(pricing.originalPrice - pricing.price)}</span>
+          </div>
+          <div className="ic-pdiv" />
+          <div className="ic-pline ic-total"><span className="ic-tlabel">최종 결제가</span><span className="ic-final">{won(pricing.price)}</span></div>
+        </div>
+      </div>
+
+      <p className="ic-disc">기분 리포트 · INNER CHILD REPORT · {DISCLAIMER}</p>
+      {footerExtra ? <div className="ic-foot-extra">{footerExtra}</div> : null}
+      <div className="ic-foot-space" />
+
+      {/* ── 스티키 CTA ── */}
+      <div className="ic-sticky">
+        <p className="ic-cap">3초면 열려요 · 링크로 언제든 다시 볼 수 있어요</p>
+        <button type="button" className="ic-cta" onClick={openCheckout}>전체 리포트 받아보기 →</button>
+      </div>
 
       <MindsCheckoutModal
         open={checkoutOpen}
@@ -183,457 +535,208 @@ export function InnerChildSalesPage({
   );
 }
 
-/* ─────────────── 공통 조각 ─────────────── */
+/* ─────────────── 조각 ─────────────── */
 
-const clbStyle: CSSProperties = {
-  fontFamily: INK.mono,
-  fontWeight: 600,
-  fontSize: 9.5,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: INK.mute,
-  marginBottom: 12,
-};
-
-function SecTitle({ children }: { children: ReactNode }) {
+function Lockbox({ checks, center = false }: { checks: ReactNode[]; center?: boolean }) {
   return (
-    <h2 style={{ fontFamily: INK.display, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.35, color: INK.white, margin: 0 }}>
-      {children}
-    </h2>
-  );
-}
-
-/** 흐르는 섹션 — 박스 대신 헤어라인 구분선 + 넉넉한 여백. */
-function OpenSection({ children }: { children: ReactNode }) {
-  return (
-    <section style={{ padding: "26px 4px 0", borderTop: `1px solid rgba(255,255,255,.07)`, animation: "icRise .4s ease both" }}>
-      {children}
-    </section>
-  );
-}
-
-const READ = { size: 17, line: 1.9, noteSize: 16, noteLine: 1.85 };
-
-/* ─────────────── 1 · 분석 완료 ─────────────── */
-
-/** 잠긴 캐릭터 — 실루엣만 보이게 블러 + 자물쇠. 유형 공개는 결제 뒤. */
-function LockedAvatar({ schemaId, size = 116 }: { schemaId: string; size?: number }) {
-  const src = innerChildIllustration(schemaId);
-  return (
-    <div style={{ position: "relative", width: size, height: size, flex: "0 0 auto" }}>
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: 999,
-          overflow: "hidden",
-          background: "#FBF7EE",
-          border: "1px solid rgba(255,255,255,.16)",
-          boxShadow: "0 10px 26px -10px rgba(255,90,31,.55)",
-        }}
-      >
-        {src ? (
-          // 강한 블러 + 낮은 대비 — 뭔가 있다는 건 보이되 무엇인지는 알 수 없게.
-          <img
-            src={src}
-            alt=""
-            aria-hidden
-            draggable={false}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              transform: "scale(1.3)",
-              display: "block",
-              filter: "blur(13px) saturate(.7)",
-              userSelect: "none",
-            }}
-          />
-        ) : (
-          <div style={{ width: "100%", height: "100%", background: "#2a2a2e" }} />
-        )}
-      </div>
-      {/* 자물쇠 배지 */}
-      <span
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "rgba(20,21,25,.72)",
-        }}
-      >
-        <LockIcon size={30} />
-      </span>
+    <div className="ic-lockbox" style={center ? { textAlign: "center" } : undefined}>
+      <span className="ic-lock-ico"><LockIcon size={34} /></span>
+      <p className="ic-lh">+ 이런 풀이를 더 해드려요!</p>
+      <div className="ic-hr" />
+      <ul className="ic-checks" style={center ? { maxWidth: 300, margin: "0 auto" } : undefined}>
+        {checks.map((c, i) => <li key={i}>{c}</li>)}
+      </ul>
     </div>
   );
 }
 
-function DoneHero({ card }: { card: TypeCard }) {
+function LoopStep({ n, t, d, locked = false }: { n: string; t: string; d: string; locked?: boolean }) {
   return (
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: 20, background: INK.shell, border: `1px solid ${INK.border}`, padding: "30px 22px 28px", animation: "icRise .4s ease both" }}>
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
-          WebkitMaskImage: "radial-gradient(ellipse at 50% 10%, #000, transparent 72%)",
-          maskImage: "radial-gradient(ellipse at 50% 10%, #000, transparent 72%)",
-        }}
-      />
-      <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(60% 44% at 50% 0%, rgba(255,90,31,.3), transparent 70%)" }} />
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-        {/* 완료 배지 */}
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 14px", borderRadius: 999, background: "rgba(255,90,31,.12)", border: `1px solid rgba(255,138,76,.45)` }}>
-          <CheckIcon />
-          <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK.accent2 }}>
-            Analysis Complete · 분석 완료
-          </span>
-        </span>
-
-        <h1 style={{ fontFamily: INK.display, fontSize: 29, fontWeight: 800, lineHeight: 1.28, letterSpacing: "-0.035em", color: INK.white, margin: "20px 0 0" }}>
-          16가지 내면 아이 중
-          <br />
-          <span style={{ background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>당신의 아이가 확정됐어요</span>
-        </h1>
-        <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.7, letterSpacing: "-0.01em", color: INK.t6, margin: "13px 0 0", maxWidth: 340 }}>
-          당신이 쓴 문장들을 하나씩 읽고, 그 안에서 반복되는 결을 찾아냈어요.
-        </p>
-
-        <div style={{ marginTop: 26 }}>
-          <LockedAvatar schemaId={card.schema_id} />
-        </div>
-        <p style={{ fontFamily: INK.font, fontSize: 14.5, fontWeight: 700, color: INK.white, margin: "16px 0 0" }}>
-          이 아이가 누구인지는 리포트에서 만나요
-        </p>
-        <p style={{ fontFamily: INK.font, fontSize: 13.5, lineHeight: 1.7, color: INK.t4, margin: "7px 0 0" }}>
-          이름 · 얼굴 · 성향 · 반복 구조 전부
-        </p>
+    <div className={"ic-st" + (locked ? " ic-locked" : "")}>
+      <span className="ic-dot">{n}</span>
+      <div>
+        <p className="ic-st-t">{t}</p>
+        <p className="ic-st-d">{d}</p>
       </div>
     </div>
   );
 }
 
-/* ─────────────── 2 · 개인화 훅 ─────────────── */
-
-function PortraitHook({ portrait }: { portrait: string }) {
+function TeaserCard({ t, d }: { t: ReactNode; d: string }) {
   return (
-    <div style={{ padding: "2px 4px 0", animation: "icRise .4s ease both" }}>
-      <div style={clbStyle}>Your Story · 당신의 이야기</div>
-      <p
-        style={{
-          fontFamily: INK.font,
-          fontSize: 17.5,
-          lineHeight: 1.92,
-          letterSpacing: "-0.006em",
-          color: INK.t82,
-          margin: 0,
-          whiteSpace: "pre-line",
-        }}
-      >
-        {portrait}
-      </p>
+    <div className="ic-tcard">
+      <span className="ic-tlock"><LockIcon size={18} /></span>
+      <p className="ic-tt">{t}</p>
+      <p className="ic-td">{d}</p>
     </div>
   );
 }
 
-/* ─────────────── 3 · 통증 ─────────────── */
-
-/**
- * 문제를 이름 붙여 부르는 섹션. typical_scenes 는 **제목만** 쓴다 — 해설
- * (typical_scene_notes)과 그 장면이 왜 벌어지는지는 유료 리포트 몫이다.
- */
-function PainSection({ card }: { card: TypeCard }) {
-  const scenes = card.typical_scenes ?? [];
-  const triggers = card.triggers ?? [];
+function ArrowDown() {
   return (
-    <OpenSection>
-      <SecTitle>당신의 응답에서 이게 반복되고 있어요</SecTitle>
-      <p style={{ fontFamily: INK.font, fontSize: 16, lineHeight: 1.75, color: INK.t62, marginTop: 14 }}>
-        상황은 매번 달라 보여도, 그 밑에서 움직이는 건 늘 같은 아이예요.
-      </p>
-
-      {scenes.length > 0 && (
-        <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 14 }}>
-          {scenes.map((s, i) => (
-            <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "16px 18px", background: "rgba(255,255,255,.035)", border: `1px solid ${INK.line}`, borderRadius: 14 }}>
-              <span aria-hidden style={{ fontFamily: INK.mono, fontSize: 12, fontWeight: 600, color: INK.accent2, lineHeight: 1.6, flex: "0 0 auto" }}>
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <span style={{ fontFamily: INK.font, fontWeight: 600, fontSize: 16.5, lineHeight: 1.65, color: INK.t82 }}>{s}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {triggers.length > 0 && (
-        <>
-          <div style={{ ...clbStyle, marginTop: 28 }}>특히 이런 순간에</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {triggers.map((t, i) => (
-              <span
-                key={i}
-                style={{
-                  fontFamily: INK.font,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: INK.white,
-                  padding: "9px 14px",
-                  borderRadius: 999,
-                  background: "rgba(255,90,31,.1)",
-                  border: `1px solid rgba(255,138,76,.3)`,
-                }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        </>
-      )}
-
-      <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t68, marginTop: 22 }}>
-        여기까지는 <b style={{ color: INK.t82, fontWeight: 700 }}>무슨 일이 벌어지는지</b>예요. 정작 답답한 건 그다음이죠 —
-        <b style={{ color: INK.t82, fontWeight: 700 }}> 왜 하필 그 순간이고, 어떻게 여기서 벗어나는지.</b> 그게 리포트에 있어요.
-      </p>
-    </OpenSection>
+    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 5v14M6 13l6 6 6-6" />
+    </svg>
   );
 }
 
-/* ─────────────── 4 · 해결 ─────────────── */
-
-/** 유료 리포트에 실제로 담기는 것들. 유료 본문 순서와 맞춘다. */
-const PAY_TEASERS: { title: string; body: string }[] = [
-  {
-    title: "당신의 아이가 누구인지",
-    body: "16가지 중 당신의 아이가 무엇인지, 이름과 얼굴부터 공개해요. 그 아이가 어떤 성향으로 살아왔는지, 어떤 강점이 과하게 발달했는지, 마음속에서 반복하는 한마디가 무엇인지까지. 유형을 아는 것만으로 지금까지 이해되지 않던 내 반응들이 하나로 꿰어집니다.",
-  },
-  {
-    title: "왜 자꾸 이럴까",
-    body: "평소엔 조용하던 이 아이가 유독 크게 깨어나는 순간이 언제인지, 그리고 겉으로 보이는 반응 밑에 사실은 무엇이 있었는지를 당신의 응답만으로 짚어드려요. ‘아, 내가 이래서 그랬구나’ — 자책하던 자리를 이해로 바꾸는, 리포트에서 가장 많이 멈춰 서게 되는 대목이에요.",
-  },
-  {
-    title: "당신의 응답이 어떻게 측정됐는지",
-    body: "당신의 감각 중 무엇이 유독 세게, 무엇이 낮게 켜져 있는지를 수치로 보여드려요. 중요한 건 우열이 아니라 트레이드오프예요 — 한쪽이 높으면 다른 쪽은 그 대가로 낮아집니다. 낮게 나온 자리가 사실은 결함이 아니라 대가였다는 걸 알게 되면, 스스로를 탓하던 시선이 바뀝니다.",
-  },
-  {
-    title: "같은 상처가 반복되는 구조",
-    body: "촉발 → 해석 → 행동 → 결과가 어떻게 맞물려 같은 상처를 되풀이하는지, 당신의 응답만으로 그 고리를 재구성했어요. 왜 그 행동이 결국 가장 두려워하던 결과를 불러오는지, 다섯 단계 반복 구조를 한 장의 그림으로 보여드려요. 반복은 의지의 문제가 아니라 구조의 문제예요 — 구조를 바깥에서 볼 수 있어야, 그 안에서 빠져나올 지점이 보입니다.",
-  },
-  {
-    title: "방어기제(지킴이)의 정체",
-    body: "당신이 힘든 순간에 스스로를 어떻게 지켜왔는지, 그 반응 패턴을 세 가지 지킴이 유형으로 분석했어요. 이 지킴이가 언제·어떻게 작동하는지, 무엇을 지켜주는 대신 무엇을 대가로 가져가는지 낱낱이 풀어드려요. 정체를 알아보기 전까지는 그 반응이 '원래 내 성격'처럼 느껴져 바꿀 수 없다고 여기게 됩니다.",
-  },
-  {
-    title: "이 아이가 만들어내는 갈등과 문제",
-    body: "이 아이가 관계와 일에서 실제로 어떤 갈등·문제를 만들어내는지, 당신의 응답을 근거로 구체적인 장면까지 짚어드려요. ‘왜 나는 늘 비슷한 지점에서 관계가 틀어질까’ — 그 반복되는 마찰의 정체를 밖에서 보게 되면, 비로소 그게 내 탓이 아니라 이 아이의 작동 방식이었음이 보입니다.",
-  },
-  {
-    title: "이 아이가 반복하는 생각과 그 뿌리",
-    body: "당신 안의 내면 아이가 자꾸 되뇌는 생각들을 뽑아, 그 밑에 깔린 하나의 믿음 — 이 아이가 아주 어릴 때 갖게 된 믿음 — 과 그 믿음이 어디서 생겨났는지까지 이어드려요. 그 뿌리를 봐야, 왜 같은 생각이 어른이 된 지금까지 반복되는지 비로소 이해됩니다.",
-  },
-  {
-    title: "두 번째 아이의 신호",
-    body: "대표 아이 외에, 특정 상황에서 먼저 튀어나오는 또 다른 내면 아이의 신호를 잡아냈어요. 두 아이가 어떤 상황에서 교대하는지, 한 아이가 다른 아이를 어떻게 가리고 있는지 짚어드려요. 대표 아이만 봐서는 '왜 어떤 날은 전혀 다른 내가 되는지' 설명되지 않아요.",
-  },
-  {
-    title: "이 아이가 정말 원했던 것",
-    body: "이 아이가 자란 환경에서 채워지지 못한 것, 그리고 그 결핍이 지금의 반응으로 어떻게 이어지는지 분석했어요. 아이가 진짜로 원했던 것의 정체와, 그것을 지금의 당신이 스스로에게 줄 수 있는 구체적인 방법(재양육 3단계)까지 담겨요. 이해를 넘어 회복의 출발점을 드립니다.",
-  },
-  {
-    title: "이 아이와 잘 지내는 법",
-    body: "이 아이를 없애는 게 아니라 함께 잘 지내는 게 목표예요. 이 아이가 갈등을 일으키려 할 때 관계를 지키면서 다독이는 실용적인 방법을, 당신의 상황에 맞춰 알려드려요. 정체를 아는 데서 끝나지 않고 ‘그래서 내일부터 뭘 어떻게’까지 — 오늘의 당신이 바로 쓸 수 있게.",
-  },
-];
-
-function BenefitSection() {
-  return (
-    <OpenSection>
-      <SecTitle>그래서 리포트가 풀어드려요</SecTitle>
-      <p style={{ fontFamily: INK.font, fontSize: 16, lineHeight: 1.75, color: INK.t62, marginTop: 14 }}>
-        당신이 쓴 답을 근거로, 오직 당신 한 사람을 위해 쓰입니다. {PAY_TEASERS.length}가지가 열려요.
-      </p>
-      <div style={{ margin: "22px 0 4px" }}>
-        {PAY_TEASERS.map((t, i) => (
-          <div key={i} style={{ paddingTop: i === 0 ? 0 : 18, marginTop: i === 0 ? 0 : 18, borderTop: i === 0 ? "none" : `1px solid ${INK.line}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 6, border: `1px solid rgba(255,138,76,.6)`, color: INK.accent2, flex: "0 0 auto" }}>
-                <LockIcon />
-              </span>
-              <span style={{ fontFamily: INK.font, fontSize: 15.5, fontWeight: 700, color: INK.white }}>{t.title}</span>
-            </div>
-            <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.78, color: INK.t68, margin: "9px 0 0", paddingLeft: 30 }}>{t.body}</p>
-          </div>
-        ))}
-      </div>
-    </OpenSection>
-  );
-}
-
-/* ─────────────── 5 · 추천 대상 ─────────────── */
-
-const RECOMMEND: string[] = [
-  "같은 지점에서 관계가 자꾸 틀어지는데, 이유를 모르겠는 분",
-  "내가 왜 이러는지 스스로도 설명이 안 되는 분",
-  "머리로는 아는데 그 순간이 오면 늘 똑같이 반응하게 되는 분",
-  "성격 탓이라고 넘겨왔지만, 사실은 바꾸고 싶은 분",
-  "상담까지는 부담스럽지만, 나를 제대로 한번 들여다보고 싶은 분",
-];
-
-function RecommendSection() {
-  return (
-    <OpenSection>
-      <SecTitle>이런 분께 추천해요</SecTitle>
-      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 13 }}>
-        {RECOMMEND.map((r, i) => (
-          <div key={i} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-            <span style={{ flex: "0 0 auto", marginTop: 3, color: INK.accent2 }}>
-              <CheckIcon size={13} />
-            </span>
-            <span style={{ fontFamily: INK.font, fontSize: 16, lineHeight: 1.7, color: INK.t82 }}>{r}</span>
-          </div>
-        ))}
-      </div>
-      <p style={{ fontFamily: INK.font, fontSize: 14, lineHeight: 1.7, color: INK.t4, marginTop: 20 }}>
-        내면 아이 리포트는 의료 행위가 아니며 진단을 대신하지 않아요. 나를 이해하는 지도로 써주세요.
-      </p>
-    </OpenSection>
-  );
-}
-
-/* ─────────────── 6 · 가격 + CTA ─────────────── */
-
-function PriceCta({ price, originalPrice, onCheckout }: { price: number; originalPrice: number; onCheckout: () => void }) {
-  return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: 18,
-        padding: "28px 22px",
-        background: "linear-gradient(180deg,#181920,#131318)",
-        border: `1px solid ${INK.payBorder}`,
-        boxShadow: "0 26px 60px -30px rgba(255,90,31,.5)",
-        animation: "icRise .4s ease both",
-      }}
-    >
-      <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(74% 60% at 100% 0%, rgba(255,90,31,.22), transparent 60%)" }} />
-      <div style={{ position: "relative" }}>
-        <h3 style={{ fontFamily: INK.display, fontSize: 23, fontWeight: 800, lineHeight: 1.34, letterSpacing: "-0.03em", color: INK.white, margin: "0 0 12px", textAlign: "center" }}>
-          당신의 아이는 이미
-          <br />
-          당신을 기다리고 있어요
-        </h3>
-        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.8, color: INK.t62, margin: "0 0 4px", textAlign: "center" }}>
-          분석은 끝났어요. 이제 열어보기만 하면 됩니다.
-        </p>
-
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 11, margin: "24px 0 14px" }}>
-          <span style={{ fontFamily: INK.display, fontSize: 15, color: INK.t4, textDecoration: "line-through" }}>{won(originalPrice)}</span>
-          <span style={{ fontFamily: INK.display, fontSize: 38, fontWeight: 800, letterSpacing: "-0.035em", fontVariantNumeric: "tabular-nums", background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
-            {won(price)}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          className="ic-cta"
-          onClick={onCheckout}
-          style={{
-            width: "100%",
-            padding: "16px 18px",
-            borderRadius: 13,
-            background: INK.grad,
-            color: INK.shell,
-            border: "none",
-            fontFamily: INK.font,
-            fontWeight: 800,
-            fontSize: 16,
-            cursor: "pointer",
-            boxShadow: "0 16px 40px -16px rgba(255,90,31,.7)",
-          }}
-        >
-          내 리포트 확인하기 →
-        </button>
-        <p style={{ fontFamily: INK.mono, fontSize: 10, color: INK.t4, textAlign: "center", marginTop: 13 }}>
-          3초 발급 · 링크로 언제든 다시 열람
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────── 스티키 CTA ─────────────── */
-
-function StickyCta({ onCheckout, price, originalPrice }: { onCheckout: () => void; price: number; originalPrice: number }) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 50,
-        display: "flex",
-        justifyContent: "center",
-        padding: "10px 12px calc(10px + env(safe-area-inset-bottom, 0px))",
-        background: "linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.85) 40%, #050506 100%)",
-        pointerEvents: "none",
-      }}
-    >
-      <button
-        type="button"
-        className="ic-cta"
-        onClick={onCheckout}
-        style={{
-          pointerEvents: "auto",
-          width: "100%",
-          maxWidth: 440,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          padding: "14px 18px",
-          borderRadius: 14,
-          background: INK.grad,
-          color: INK.shell,
-          border: "none",
-          fontFamily: INK.font,
-          cursor: "pointer",
-          boxShadow: "0 18px 44px -14px rgba(255,90,31,.7)",
-        }}
-      >
-        <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.25 }}>
-          <span style={{ fontWeight: 800, fontSize: 15.5 }}>내 리포트 확인하기 →</span>
-          <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <span style={{ fontSize: 11.5, opacity: 0.55, textDecoration: "line-through" }}>{won(originalPrice)}</span>
-            <span style={{ fontSize: 13, fontWeight: 800 }}>{won(price)}</span>
-          </span>
-        </span>
-        <span style={{ fontFamily: INK.mono, fontSize: 10.5, fontWeight: 600, opacity: 0.7, whiteSpace: "nowrap" }}>3초 발급</span>
-      </button>
-    </div>
-  );
-}
-
-/* ─────────────── 아이콘 ─────────────── */
-
-function LockIcon({ size = 11 }: { size?: number }) {
+function LockIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x={4} y={11} width={16} height={9} rx={2} />
-      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      <rect x={4} y={10} width={16} height={11} rx={2.5} />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
     </svg>
   );
 }
 
-function CheckIcon({ size = 12 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ color: "currentColor" }}>
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
+/* ─────────────── CSS (밤하늘 서사 + 크림 카드, 라벤더 포인트) ─────────────── */
+
+const CSS = `
+.ic-root{
+  --paper:#FBF7EE;--paper-2:#F3ECDD;--ink:#2B2622;--pencil:#8A8073;
+  --rule:#E7DFCE;--edge:#DFD5C1;--sage:#6C6AA8;--sage-soft:#E6E4F1;
+  --shadow:20 16 8;--lock-veil:251 247 238;
+  background:var(--paper);color:var(--ink);
+  font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  line-height:1.7;-webkit-font-smoothing:antialiased;
+  max-width:440px;margin:0 auto;position:relative;overflow-x:hidden;
 }
+@media (prefers-color-scheme:dark){.ic-root{
+  --paper:#211D18;--paper-2:#29241D;--ink:#EDE4D3;--pencil:#9A9082;
+  --rule:#342D24;--edge:#3A3228;--sage:#A6A2E0;--sage-soft:#322F47;--lock-veil:33 29 24;
+}}
+.ic-root *{box-sizing:border-box;}
+.ic-root h2,.ic-root p,.ic-root ul{margin:0;}
+.ic-ink{color:var(--ink);}
+.ic-muted{color:var(--pencil);}
+.ic-small{font-size:13px;}
+.ic-center{text-align:center;}
+.ic-h2{font-size:24px;line-height:1.34;letter-spacing:-.01em;font-weight:800;text-align:center;text-wrap:balance;}
+
+/* 서사 (밤하늘, 테마 무관 고정) */
+.ic-scene{position:relative;min-height:78vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 34px;color:#F1E9DA;overflow:hidden;background:radial-gradient(62% 42% at 50% 20%,rgba(92,88,142,.30),transparent 72%),#1C1813;box-shadow:inset 0 -90px 110px -30px rgba(0,0,0,.72),inset 0 70px 90px -40px rgba(0,0,0,.5);}
+.ic-scene.ic-short{min-height:60vh;}
+.ic-scene.ic-tall{min-height:92vh;}
+.ic-stars{position:absolute;inset:-16% 0;z-index:0;pointer-events:none;will-change:transform;}
+.ic-stars::before,.ic-stars::after{content:"";position:absolute;inset:0;}
+.ic-stars::before{background:radial-gradient(1.5px 1.5px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 28% 42%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 45% 12%,rgba(255,255,255,.9),transparent),radial-gradient(1px 1px at 62% 30%,rgba(255,255,255,.65),transparent),radial-gradient(1.5px 1.5px at 78% 22%,#fff,transparent),radial-gradient(1px 1px at 35% 90%,rgba(255,255,255,.6),transparent);animation:icTw1 4.5s ease-in-out infinite;}
+.ic-stars::after{background:radial-gradient(1px 1px at 88% 48%,rgba(255,255,255,.75),transparent),radial-gradient(1px 1px at 18% 68%,rgba(255,255,255,.6),transparent),radial-gradient(1.5px 1.5px at 52% 78%,rgba(255,255,255,.8),transparent),radial-gradient(1px 1px at 72% 88%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 8% 40%,rgba(255,255,255,.5),transparent),radial-gradient(1.5px 1.5px at 92% 14%,#fff,transparent);animation:icTw2 6s ease-in-out infinite;}
+@keyframes icTw1{0%,100%{opacity:.95}50%{opacity:.5}}
+@keyframes icTw2{0%,100%{opacity:.5}50%{opacity:.95}}
+.ic-inner{position:relative;z-index:1;max-width:340px;}
+.ic-scene p{font-size:21px;line-height:1.85;font-weight:600;color:#F1E9DA;text-wrap:balance;}
+.ic-scene p+p{margin-top:18px;}
+.ic-scene p b{color:#fff;font-weight:800;}
+.ic-scene .ic-big{font-size:25px;}
+.ic-scene .ic-eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#9A9DB8;font-weight:700;margin-bottom:22px;}
+.ic-scene .ic-hint{margin-top:22px;font-size:12.5px;letter-spacing:.14em;color:#8E93AD;font-weight:700;}
+.ic-scene .ic-voice{font-style:italic;color:#B5B1E4;font-size:23px;font-weight:500;line-height:1.7;}
+.ic-scrollhint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:1;color:#8E93AD;opacity:.8;}
+.ic-scrollhint svg{animation:icBob 1.8s ease-in-out infinite;}
+@keyframes icBob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+.ic-line{opacity:0;transform:translateY(16px);filter:blur(7px);transition:opacity 1s ease,transform 1.1s cubic-bezier(.2,.7,.2,1),filter 1.1s ease;}
+.ic-scene.in .ic-line{opacity:1;transform:none;filter:none;}
+.ic-scene.in .ic-d1{transition-delay:.3s;}
+.ic-scene.in .ic-d2{transition-delay:.75s;}
+
+/* 카드 */
+.ic-cardwrap{padding:42px 26px;position:relative;}
+.ic-card{background:var(--paper-2);border:1.5px solid var(--edge);border-radius:18px;padding:26px 22px;box-shadow:0 12px 30px -20px rgb(var(--shadow)/.5);}
+.ic-eyebrow2{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--pencil);font-weight:700;margin-bottom:12px;text-align:center;}
+.ic-portrait{font-size:17px;line-height:1.9;color:var(--ink);white-space:pre-line;}
+.ic-free{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--sage);border:1.5px solid var(--sage);border-radius:999px;padding:3px 10px 3px 8px;margin-bottom:8px;}
+.ic-free::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--sage);}
+.ic-worry{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--sage);background:var(--sage-soft);border-radius:999px;padding:5px 13px 5px 10px;margin-bottom:12px;}
+.ic-worry::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sage);}
+
+.ic-lockbox{border:1.6px dashed var(--sage);border-radius:16px;padding:24px 20px 20px;margin-top:22px;text-align:center;background:rgb(var(--lock-veil)/.5);}
+.ic-lock-ico{color:var(--sage);display:block;margin:0 auto 10px;height:34px;}
+.ic-lh{font-weight:800;font-size:15.5px;margin-bottom:4px;}
+.ic-hr{height:1px;background:var(--edge);margin:15px 2px 17px;}
+.ic-checks{list-style:none;text-align:left;display:grid;gap:13px;}
+.ic-checks li{position:relative;padding-left:30px;font-size:14.5px;line-height:1.5;}
+.ic-checks li::before{content:"";position:absolute;left:0;top:1px;width:19px;height:19px;border-radius:50%;background:var(--sage);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6 9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6 9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px no-repeat;}
+.ic-checks b{font-weight:700;}
+
+.ic-fillsent{font-size:15.5px;line-height:1.95;margin-top:4px;}
+.ic-blank{display:inline-block;border:1.5px solid var(--sage);border-radius:999px;padding:1px 18px;vertical-align:middle;background:var(--sage-soft);}
+.ic-blank span{filter:blur(6px);user-select:none;font-weight:700;color:var(--ink);}
+
+.ic-map{display:grid;gap:13px;margin-top:6px;}
+.ic-row{display:grid;grid-template-columns:74px 1fr 32px;align-items:center;gap:10px;}
+.ic-rl{font-size:13.5px;font-weight:600;}
+.ic-track{height:12px;background:var(--rule);border-radius:999px;overflow:hidden;}
+.ic-fill{display:block;height:100%;background:var(--sage);border-radius:999px;width:0;transition:width 1.1s cubic-bezier(.2,.7,.2,1);}
+.ic-fill.ic-dim{background:var(--edge);}
+.ic-rv{font-size:12.5px;font-weight:700;text-align:right;color:var(--pencil);font-variant-numeric:tabular-nums;}
+
+.ic-reveal{text-align:center;}
+.ic-avatar{width:168px;height:168px;border-radius:50%;object-fit:cover;border:3px solid var(--paper);box-shadow:0 0 0 2px var(--sage),0 14px 30px -12px rgb(var(--shadow)/.5);margin:6px 0 18px;}
+.ic-name{font-size:27px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px;}
+
+.ic-thoughts{display:grid;gap:11px;margin:16px 0 4px;}
+.ic-thought{background:var(--paper);border:1.5px solid var(--edge);border-radius:16px 16px 16px 4px;padding:12px 15px;font-size:15px;font-weight:600;position:relative;}
+.ic-thought::after{content:"\\201D";position:absolute;right:12px;bottom:2px;color:var(--edge);font-size:22px;}
+
+.ic-loop{display:grid;gap:0;margin:16px 0 4px;}
+.ic-st{display:grid;grid-template-columns:30px 1fr;gap:12px;padding:0 0 18px;position:relative;}
+.ic-st:not(:last-child)::before{content:"";position:absolute;left:14px;top:28px;bottom:-2px;width:2px;background:var(--edge);}
+.ic-dot{width:28px;height:28px;border-radius:50%;background:var(--sage);color:#fff;font-weight:800;font-size:12px;display:grid;place-items:center;z-index:1;}
+.ic-st-t{font-weight:700;font-size:14.5px;margin:3px 0 3px;}
+.ic-st-d{font-size:13px;color:var(--pencil);}
+.ic-st.ic-locked .ic-dot{background:var(--edge);color:var(--pencil);}
+.ic-st.ic-locked .ic-st-t,.ic-st.ic-locked .ic-st-d{filter:blur(5px);user-select:none;}
+
+.ic-gname{display:flex;align-items:center;gap:10px;margin:6px 0 4px;justify-content:center;}
+.ic-badge{font-size:12.5px;font-weight:800;color:var(--paper);background:var(--ink);border-radius:8px;padding:5px 12px;}
+
+.ic-second{text-align:center;}
+.ic-swrap{position:relative;width:150px;height:150px;margin:6px auto 16px;}
+.ic-swrap img{width:100%;height:100%;border-radius:50%;object-fit:cover;filter:blur(11px) saturate(.7);transform:scale(1.15);}
+.ic-lk{position:absolute;inset:0;display:grid;place-items:center;color:var(--sage);}
+
+.ic-teaser{padding:40px 0 44px;background:#1C1813;position:relative;overflow:hidden;}
+.ic-teaser::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.6),transparent),radial-gradient(1.5px 1.5px at 70% 20%,#fff,transparent),radial-gradient(1px 1px at 85% 60%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 40% 75%,rgba(255,255,255,.5),transparent);}
+.ic-th{text-align:center;padding:0 26px 18px;position:relative;z-index:1;}
+.ic-th p{font-size:20px;font-weight:800;color:#F1E9DA;}
+.ic-th .ic-sub{font-size:13px;color:#9096B0;font-weight:600;margin-top:6px;}
+.ic-rail{display:flex;gap:14px;overflow-x:auto;padding:6px 26px 14px;scroll-snap-type:x mandatory;scrollbar-width:none;position:relative;z-index:1;}
+.ic-rail::-webkit-scrollbar{display:none;}
+.ic-tcard{flex:0 0 150px;scroll-snap-align:center;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:14px;padding:18px 15px;min-height:148px;position:relative;color:#F1E9DA;}
+.ic-tlock{position:absolute;top:12px;right:12px;color:var(--sage);opacity:.9;}
+.ic-tt{font-weight:800;font-size:15px;margin:26px 0 8px;}
+.ic-td{font-size:12.5px;color:#A79E8E;filter:blur(2.5px);}
+
+.ic-prod-title{font-weight:800;font-size:16px;text-align:center;}
+.ic-prod-sub{color:var(--pencil);font-weight:600;font-size:13px;margin-left:8px;}
+.ic-toc{list-style:none;display:grid;gap:10px;}
+.ic-toc li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;}
+.ic-toc li::before{content:"";margin-top:7px;width:5px;height:5px;border-radius:50%;background:var(--sage);flex:none;}
+.ic-pricebox{margin-top:20px;padding:4px 4px 0;}
+.ic-pline{display:flex;justify-content:space-between;align-items:center;font-size:15px;padding:8px 2px;}
+.ic-was{color:var(--pencil);text-decoration:line-through;font-variant-numeric:tabular-nums;}
+.ic-disc-label{color:var(--sage);font-weight:700;display:inline-flex;align-items:center;gap:8px;}
+.ic-pct{background:var(--sage);color:#fff;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;}
+.ic-minus{color:var(--sage);font-weight:800;font-variant-numeric:tabular-nums;}
+.ic-pdiv{height:1.5px;background:var(--edge);margin:8px 0;}
+.ic-total{padding-top:12px;}
+.ic-tlabel{font-weight:800;font-size:16px;}
+.ic-final{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+
+.ic-disc{font-size:11.5px;color:var(--pencil);line-height:1.6;padding:26px 26px 10px;text-align:center;}
+.ic-foot-extra{padding:0 26px;}
+.ic-foot-space{height:104px;}
+
+.ic-sticky{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;z-index:60;background:linear-gradient(180deg,transparent,var(--paper) 30%);padding:30px 26px calc(18px + env(safe-area-inset-bottom,0px));}
+.ic-cap{text-align:center;font-size:12px;color:var(--pencil);margin-bottom:10px;}
+.ic-cta{display:block;width:100%;text-align:center;cursor:pointer;background:var(--ink);color:var(--paper);border:none;border-radius:14px;font-size:16.5px;font-weight:800;padding:17px;font-family:inherit;}
+
+.ic-anim{opacity:0;transform:translateY(22px) scale(.985);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1);}
+.ic-anim.in{opacity:1;transform:none;}
+@media (prefers-reduced-motion:reduce){
+  .ic-anim,.ic-line{opacity:1;transform:none;filter:none;transition:none;}
+  .ic-fill{transition:none;}
+  .ic-scrollhint svg,.ic-stars::before,.ic-stars::after{animation:none;}
+  .ic-stars{transform:none!important;}
+}
+`;

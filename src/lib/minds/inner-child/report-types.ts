@@ -123,4 +123,9 @@ export interface FreeReportBlob {
   test_version: "v2.0";
   score_result: import("./types").ScoreResult;
   free_report: FreeReportGenerated;
+  /**
+   * 고민 칩 선택값(ConcernChip.id 배열, 스킵 시 없음). 채점 무관 — 결과 '고민 카드'
+   * 개인화 전용. score_result 를 오염시키지 않으려고 blob 최상위에 둔다.
+   */
+  concern?: string[];
 }

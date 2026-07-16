@@ -22,6 +22,8 @@ export interface StoredFreeReport {
   test_version: "v2.0";
   score_result: ScoreResult;
   free_report: FreeReportGenerated | null;
+  /** 고민 칩 선택값(chip id 배열). 없으면 undefined. */
+  concern?: string[];
 }
 
 /** parts_map 원본(unknown)을 형태 검증해 StoredFreeReport 로 정규화. 깨졌으면 null. */
@@ -54,10 +56,17 @@ export function readFreeReportBlob(raw: unknown): StoredFreeReport | null {
     if (Object.keys(fields).length > 0) free = fields;
   }
 
+  // 고민 칩(chip id 배열) — 채점 무관, 결과 '고민 카드' 개인화용. 없으면 undefined.
+  const concernRaw = o.concern;
+  const concern = Array.isArray(concernRaw)
+    ? concernRaw.filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    : undefined;
+
   return {
     test_version: "v2.0",
     score_result: score as ScoreResult,
     free_report: free,
+    concern: concern && concern.length ? concern : undefined,
   };
 }
 

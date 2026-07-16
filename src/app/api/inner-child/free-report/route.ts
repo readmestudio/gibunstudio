@@ -121,6 +121,10 @@ export async function POST(req: NextRequest) {
   }
   const b = (body ?? {}) as Record<string, unknown>;
   const leadId = typeof b.leadId === "string" ? b.leadId : "";
+  // 고민 칩(chip id 배열) — 채점 무관, blob 최상위에 그대로 저장한다. 결과 '고민 카드' 개인화용.
+  const concern = Array.isArray(b.concern)
+    ? (b.concern.filter((x) => typeof x === "string" && x.trim()) as string[])
+    : [];
 
   if (!isScoreInput(b.input)) {
     return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
@@ -188,7 +192,12 @@ export async function POST(req: NextRequest) {
         .from("minds_leads")
         .update({
           answers,
-          parts_map: { test_version: "v2.0", score_result: score, free_report: free },
+          parts_map: {
+            test_version: "v2.0",
+            score_result: score,
+            free_report: free,
+            ...(concern.length ? { concern } : {}),
+          },
         })
         .eq("id", leadId);
     } catch (err) {

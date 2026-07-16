@@ -181,6 +181,34 @@ export const SCT_ITEMS: SctItem[] = [
   { id: "SCT5", slot: "escape_behavior", text: "마음이 힘들 때 나는 ______로 도망친다." },
 ];
 
+/**
+ * 3부 마지막 — 고민 칩(객관식·복수선택·**스킵 가능**). 채점·안전필터와 완전 무관.
+ *
+ * ⚠️ SCT(자·타해 안전필터의 유일 입력)와 달리 이 칩은 스킵을 유도해도 안전하다. 그래서
+ *    청월당식 "답하지 않아도 넘어갈 수 있어요" 안내를 SCT 가 아니라 **여기에** 둔다.
+ *    (project_inner_child_sct_crisis_filter: SCT 는 감축·스킵유도 금지)
+ *
+ * 선택값(chip id 배열)은 결과 페이지의 '고민 카드'에서 되돌려주고(개인화 증거),
+ * chip.domain 으로 card.domains[domain] 문구를 골라 유형별로 개인화한다. LLM 불필요.
+ * domain 은 TypeCard.domains 키(관계/일/자기관리)와 정확히 일치해야 한다.
+ */
+export type ConcernDomain = "관계" | "일" | "자기관리";
+export interface ConcernChip {
+  id: string;
+  label: string;
+  domain: ConcernDomain;
+}
+export const CONCERN_PROMPT = "마지막으로, 요즘 가장 자주 마음에 걸리는 게 있다면?";
+export const CONCERN_HINT = "고르지 않고 넘어가도 괜찮아요 · 여러 개 골라도 돼요";
+export const CONCERN_CHIPS: ConcernChip[] = [
+  { id: "distance", label: "관계에서 자꾸 멀어져요", domain: "관계" },
+  { id: "work", label: "일·직장이 나를 갉아먹어요", domain: "일" },
+  { id: "refuse", label: "거절을 잘 못 해요", domain: "관계" },
+  { id: "anger", label: "화가 늦게 터져요", domain: "관계" },
+  { id: "rest", label: "쉬어도 마음이 안 놓여요", domain: "자기관리" },
+  { id: "mask", label: "괜찮은 척이 익숙해요", domain: "자기관리" },
+];
+
 /** 시작 화면 + 리포트 하단 고정 면책 문구(HANDOFF 10-4). */
 export const DISCLAIMER =
   "본 테스트는 자기이해를 돕는 콘텐츠이며 심리검사·진단 도구가 아닙니다.";
