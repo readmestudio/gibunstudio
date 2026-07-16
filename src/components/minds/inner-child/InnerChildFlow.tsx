@@ -21,7 +21,7 @@ import { getAttribution } from "@/lib/attribution";
 import { trackMetaEvent, trackMetaCustom } from "@/lib/meta-pixel";
 import { trackMindsFunnel } from "@/lib/minds/track";
 import { INNER_CHILD_FUNNEL } from "@/lib/minds/funnel-config";
-import { MindsLanding } from "../MindsLanding";
+import { InnerChildLanding } from "./InnerChildLanding";
 import { MindsAnalyzing } from "../MindsAnalyzing";
 import { InnerChildTest, CrisisScreen } from "./InnerChildTest";
 import { InnerChildSalesPage } from "./report/InnerChildSalesPage";
@@ -199,7 +199,7 @@ export function InnerChildFlow() {
   return (
     <div className="mx-auto w-full max-w-[448px] px-6 py-8 sm:py-10">
       {phase === "landing" && (
-        <MindsLanding
+        <InnerChildLanding
           onStart={async () => {
             const supabase = createClient();
             const {
