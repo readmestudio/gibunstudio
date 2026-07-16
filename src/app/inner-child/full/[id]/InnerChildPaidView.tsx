@@ -37,28 +37,33 @@ import type { ScoreResult } from "@/lib/minds/inner-child/types";
 
 /* ─── 잉크 오렌지 토큰 (InnerChildSalesPage 와 동일) ─── */
 const INK = {
-  shell: "#0A0A0B",
-  surface: "#141519",
-  border: "#26272c",
-  accent: "#FF5A1F",
-  accent2: "#FF8A4C",
-  grad: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 50%,#FFB68A 100%)",
-  mute: "#8C8E95",
-  white: "#fff",
-  t82: "rgba(255,255,255,.82)",
-  t72: "rgba(255,255,255,.72)",
-  t68: "rgba(255,255,255,.68)",
-  t62: "rgba(255,255,255,.62)",
-  t6: "rgba(255,255,255,.6)",
-  t4: "rgba(255,255,255,.4)",
-  t38: "rgba(255,255,255,.38)",
-  t25: "rgba(255,255,255,.25)",
-  line: "rgba(255,255,255,.08)",
-  line14: "rgba(255,255,255,.14)",
+  shell: "var(--icp-shell)",
+  surface: "var(--icp-shell)",
+  border: "var(--icp-border)",
+  accent: "var(--icp-accent)",
+  accent2: "var(--icp-accent2)",
+  grad: "linear-gradient(135deg,var(--icp-accent) 0%,var(--icp-accent2) 50%,var(--icp-accent3) 100%)",
+  mute: "var(--icp-mute)",
+  white: "rgb(var(--icp-ink))",
+  t82: "rgb(var(--icp-ink) / .82)",
+  t72: "rgb(var(--icp-ink) / .72)",
+  t68: "rgb(var(--icp-ink) / .68)",
+  t62: "rgb(var(--icp-ink) / .62)",
+  t6: "rgb(var(--icp-ink) / .6)",
+  t4: "rgb(var(--icp-ink) / .4)",
+  t38: "rgb(var(--icp-ink) / .38)",
+  t25: "rgb(var(--icp-ink) / .25)",
+  line: "rgb(var(--icp-ink) / .08)",
+  line14: "rgb(var(--icp-ink) / .14)",
   font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
   display: "'Inter','Pretendard',-apple-system,system-ui,sans-serif",
   mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
 };
+
+/** 라이트/다크 팔레트 — 판매 페이지와 같은 크림/잉크/라벤더. 밤하늘 서사·히어로는 양 테마 고정. */
+const ICP_ROOT_CSS =
+  ".icp-root{--icp-page:#FBF7EE;--icp-shell:#F3ECDD;--icp-border:#DFD5C1;--icp-mute:#8A8073;--icp-accent:#6C6AA8;--icp-accent2:#8B89C4;--icp-accent3:#A8A6D6;--icp-ink:43 38 34;--icp-accent-rgb:108 106 168;}" +
+  "@media(prefers-color-scheme:dark){.icp-root{--icp-page:#15120D;--icp-shell:#211D18;--icp-border:#3A3228;--icp-mute:#9A9082;--icp-accent:#A6A2E0;--icp-accent2:#8B89C4;--icp-accent3:#9A97C8;--icp-ink:237 228 211;--icp-accent-rgb:166 162 224;}}";
 
 const LOADING_STEPS = [
   "응답을 다시 읽고 있어요",
@@ -140,8 +145,9 @@ export function InnerChildPaidView({
 function Shell({ children }: { children: ReactNode }) {
   return (
     <div
+      className="icp-root"
       style={{
-        background: "#050506",
+        background: "var(--icp-page)",
         minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
@@ -151,6 +157,7 @@ function Shell({ children }: { children: ReactNode }) {
         fontFamily: INK.font,
       }}
     >
+      <style>{ICP_ROOT_CSS}</style>
       <div style={{ width: "100%", maxWidth: 440, textAlign: "center" }}>{children}</div>
     </div>
   );
@@ -257,7 +264,7 @@ const READ = { size: 17, line: 1.9, noteSize: 16, noteLine: 1.85 };
  *  (파운더 요청: 유료도 박스 안에 텍스트 넣지 말고 스크롤로 쭉 읽히게.) */
 function Panel({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return (
-    <section style={{ borderTop: `1px solid rgba(255,255,255,.07)`, padding: "26px 4px 0", position: "relative", ...style }}>
+    <section style={{ borderTop: `1px solid rgb(var(--icp-ink) / .07)`, padding: "26px 4px 0", position: "relative", ...style }}>
       {children}
     </section>
   );
@@ -297,13 +304,107 @@ function Prose({ text, style }: { text: string; style?: CSSProperties }) {
 
 function LogoMark() {
   return (
-    <span style={{ position: "relative", display: "inline-block", width: 16, height: 16, borderRadius: 999, background: "linear-gradient(135deg,#FF5A1F,#FF8A4C,#FFB68A)" }}>
+    <span style={{ position: "relative", display: "inline-block", width: 16, height: 16, borderRadius: 999, background: "linear-gradient(135deg,var(--icp-accent),var(--icp-accent2),var(--icp-accent3))" }}>
       <span style={{ position: "absolute", inset: 4, borderRadius: 999, background: INK.shell }} />
     </span>
   );
 }
 
 /* ───────────────── 6섹션 본문 ───────────────── */
+
+/** 서사 브릿지 — 밤하늘 배경 + 중앙 텍스트. 판매 페이지 시네마틱 서사와 같은 결(챕터 전환). */
+function PaidScene({ lines }: { lines: ReactNode[] }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 18,
+        padding: "46px 28px",
+        background: "radial-gradient(60% 42% at 50% 16%, rgba(92,88,142,.34), transparent 72%), #1C1813",
+        textAlign: "center",
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(1.3px 1.3px at 16% 22%,#fff,transparent),radial-gradient(1px 1px at 60% 28%,rgba(255,255,255,.7),transparent),radial-gradient(1.3px 1.3px at 82% 20%,#fff,transparent),radial-gradient(1px 1px at 38% 76%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 88% 64%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 26% 54%,rgba(255,255,255,.5),transparent)",
+        }}
+      />
+      <div style={{ position: "relative" }}>
+        {lines.map((l, i) => (
+          <p
+            key={i}
+            style={{
+              fontFamily: INK.font,
+              fontSize: 20,
+              fontWeight: 700,
+              lineHeight: 1.75,
+              color: "#F1E9DA",
+              margin: i ? "10px 0 0" : 0,
+            }}
+          >
+            {l}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 유료 히어로 — 밤하늘 위 캐릭터 공개(결제 첫 화면). 청월당 제1장 히어로 결. 항상 다크. */
+function PaidHero({ card, childName }: { card: TypeCard; childName: string }) {
+  const journey = [
+    "이 아이가 누구이고, 어떻게 만들어졌는지",
+    "왜 자꾸 같은 자리로 돌아오는지",
+    "오늘부터 이 아이와 잘 지내는 법",
+  ];
+  return (
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 20,
+        background: "radial-gradient(72% 52% at 50% 16%, rgba(92,88,142,.44), transparent 72%), #1C1813",
+        padding: "40px 26px 32px",
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(1.4px 1.4px at 14% 20%,#fff,transparent),radial-gradient(1px 1px at 60% 16%,rgba(255,255,255,.7),transparent),radial-gradient(1.4px 1.4px at 84% 24%,#fff,transparent),radial-gradient(1px 1px at 30% 40%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 88% 52%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 20% 64%,rgba(255,255,255,.5),transparent)",
+        }}
+      />
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+        <TypeAvatar schemaId={card.schema_id} alt={childName} size={132} />
+        <span style={{ fontFamily: INK.mono, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 600, color: "#B5B1E4", marginTop: 20 }}>
+          Inner Child Report · 심층 리포트
+        </span>
+        <h1 style={{ fontFamily: INK.display, fontSize: 29, fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.2, color: "#fff", margin: "13px 0 0" }}>
+          {childName}
+        </h1>
+        <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.65, color: "rgba(255,255,255,.64)", margin: "12px 0 0", maxWidth: 320 }}>
+          {card.one_liner}
+        </p>
+        <div style={{ height: 1, background: "rgba(255,255,255,.13)", width: "100%", margin: "24px 0 18px" }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "stretch", textAlign: "left" }}>
+          {journey.map((t, i) => (
+            <div key={i} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+              <span style={{ color: "#B5B1E4", marginTop: 1, fontWeight: 800 }}>•</span>
+              <span style={{ fontFamily: INK.font, fontSize: 14.5, lineHeight: 1.5, color: "rgba(255,255,255,.82)" }}>{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ReportBody({
   report,
@@ -328,6 +429,13 @@ function ReportBody({
     key: "read-before",
     kicker: "읽기 전에",
     node: <ReadBeforeCard />,
+  });
+
+  // [서사] 오프닝 — 판매 페이지에서 가려뒀던 이야기를 편다.
+  cards.push({
+    key: "scene-open",
+    kicker: "",
+    node: <PaidScene lines={[<>이제, 가려뒀던 이야기를</>, <>전부 펼쳐볼게요.</>]} />,
   });
 
   // ── 유형 공개 + 무료에서 옮겨온 도입 해설 ──
@@ -372,6 +480,13 @@ function ReportBody({
     });
   }
 
+  // [서사] 반복 고리로.
+  cards.push({
+    key: "scene-loop",
+    kicker: "",
+    node: <PaidScene lines={[<>이 아이가 왜 자꾸</>, <>같은 자리로 돌아오는지,</>, <>그 길을 따라가 볼게요.</>]} />,
+  });
+
   // 2. 같은 상처가 반복되는 구조 (앞으로 이동 — 생성 + 5스텝 다이어그램)
   cards.push({
     key: "loop",
@@ -381,6 +496,11 @@ function ReportBody({
 
   // 3. 방어 시스템: 지킴이 (앞으로 이동 — 고정 정의 블록 + 생성)
   if (score) {
+    cards.push({
+      key: "scene-guardian",
+      kicker: "",
+      node: <PaidScene lines={[<>그런데 이 아이는 사실,</>, <>당신을 <b style={{ color: "#fff" }}>지키려고</b></>, <>그래온 거예요.</>]} />,
+    });
     cards.push({
       key: "guardian",
       kicker: "방어 시스템: 지킴이",
@@ -410,6 +530,13 @@ function ReportBody({
     });
   }
 
+  // [서사] 두 번째 아이로.
+  cards.push({
+    key: "scene-second",
+    kicker: "",
+    node: <PaidScene lines={[<>여기까지가 첫 번째 아이예요.</>, <>아직 얼굴을 다 안 보여준</>, <>두 번째 아이가 있어요.</>]} />,
+  });
+
   // 5. 두 번째 아이의 신호 (고정 요약 + 생성)
   cards.push({
     key: "second-child",
@@ -431,6 +558,13 @@ function ReportBody({
     node: <SolutionCard n={nextN()} text={report.getting_along} />,
   });
 
+  // [서사] 마무리로.
+  cards.push({
+    key: "scene-reparenting",
+    kicker: "",
+    node: <PaidScene lines={[<>이제, 오늘의 당신이</>, <>그 아이에게 건넬 말을</>, <>준비했어요.</>]} />,
+  });
+
   // 8. 지금의 당신이 줄 수 있는 것 (SCT 기반 생성 실행계획 + 생성 closing + 상담 CTA)
   cards.push({
     key: "reparenting",
@@ -441,14 +575,15 @@ function ReportBody({
   // 스크롤형 — 장 넘김(CardDeck) 대신 6섹션을 한 페이지에서 쭉 읽는다(무료 리포트와 동일 언어).
   return (
     <div
+      className="icp-root"
       style={{
         minHeight: "100dvh",
-        background: "#050506",
+        background: "var(--icp-page)",
         fontFamily: INK.font,
         paddingBottom: "calc(28px + env(safe-area-inset-bottom, 0px))",
       }}
     >
-      <style>{`@keyframes icRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}`}</style>
+      <style>{`${ICP_ROOT_CSS}@keyframes icRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}`}</style>
       <div style={{ maxWidth: 440, margin: "0 auto", padding: "16px 14px 0", display: "flex", flexDirection: "column", gap: 18 }}>
         {/* 브랜드 헤더 */}
         <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "2px 2px 2px" }}>
@@ -457,6 +592,11 @@ function ReportBody({
             내면 아이 심층 리포트
           </span>
         </div>
+
+        {/* 히어로 — 결제 첫 화면에서 캐릭터 공개(밤하늘). */}
+        {primaryCard && (
+          <PaidHero card={primaryCard} childName={score?.primary_child.child_name ?? primaryCard.child_name} />
+        )}
 
         {cards.map((c) => (
           <div key={c.key} style={{ animation: "icRise .4s ease both" }}>
@@ -482,7 +622,7 @@ function ReadBeforeCard() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div style={{ position: "relative", overflow: "hidden", borderRadius: 18, background: INK.shell, padding: "30px 22px 28px" }}>
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(60% 44% at 50% 0%, rgba(255,90,31,.28), transparent 70%)" }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(60% 44% at 50% 0%, rgb(var(--icp-accent-rgb) / .28), transparent 70%)" }} />
         <div style={{ position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 14 }}>
             <span style={{ width: 5, height: 5, borderRadius: 999, background: INK.accent, display: "inline-block" }} />
@@ -526,7 +666,7 @@ function StructureCard({ n, card, domains, prediction }: { n: string; card: Type
       </div>
 
       {/* 예측형 개인화(생성) — 영역별 해설에 쐐기를 박는 구체 장면 예측. 무료에서 이관. */}
-      <div style={{ marginTop: 24, padding: "18px 18px", background: "rgba(255,255,255,.035)", border: `1px solid ${INK.line}`, borderRadius: 14 }}>
+      <div style={{ marginTop: 24, padding: "18px 18px", background: "rgb(var(--icp-ink) / .035)", border: `1px solid ${INK.line}`, borderRadius: 14 }}>
         <div style={{ ...clbStyle, marginBottom: 10 }}>아마 당신은 —</div>
         <Prose text={prediction} />
       </div>
@@ -564,7 +704,7 @@ function TypeRevealCard({ n, card, childName }: { n: string; card: TypeCard; chi
           <span style={{ background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{last}</span>
         </h3>
         <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.6, color: INK.t6, margin: "12px 0 0", maxWidth: 340 }}>{card.one_liner}</p>
-        <span style={{ display: "inline-flex", marginTop: 18, padding: "9px 16px", borderRadius: 999, background: "rgba(255,255,255,.06)", border: `1px solid ${INK.line14}`, fontFamily: INK.font, fontSize: 13.5, fontWeight: 600, color: INK.white }}>
+        <span style={{ display: "inline-flex", marginTop: 18, padding: "9px 16px", borderRadius: 999, background: "rgb(var(--icp-ink) / .06)", border: `1px solid ${INK.line14}`, fontFamily: INK.font, fontSize: 13.5, fontWeight: 600, color: INK.white }}>
           {card.core_belief}
         </span>
       </div>
@@ -572,9 +712,9 @@ function TypeRevealCard({ n, card, childName }: { n: string; card: TypeCard; chi
       <Prose text={card.traits} />
 
       {/* 강점 — 결함이 아니라 과발달된 능력으로 프레이밍(서술 원칙 2: 강점 선행). */}
-      <div style={{ marginTop: 22, padding: "17px 18px", background: "rgba(255,90,31,.06)", border: `1px solid rgba(255,138,76,.22)`, borderRadius: 14 }}>
+      <div style={{ marginTop: 22, padding: "17px 18px", background: "rgb(var(--icp-accent-rgb) / .06)", border: `1px solid rgb(var(--icp-accent-rgb) / .22)`, borderRadius: 14 }}>
         <div style={clbStyle}>이 유형의 강점</div>
-        <p style={{ fontFamily: INK.font, fontSize: 16.5, lineHeight: 1.8, color: "rgba(255,255,255,.9)", margin: 0 }}>{card.strength}</p>
+        <p style={{ fontFamily: INK.font, fontSize: 16.5, lineHeight: 1.8, color: "rgb(var(--icp-ink) / .9)", margin: 0 }}>{card.strength}</p>
         <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, marginTop: 10 }}>
           없애야 할 약점이 아니라, 상황에 따라 크게 쓰이는 능력이에요. 다만 이 감각이 필요
           이상으로 오래 켜져 있을 때, 강점이 나를 소모시키곤 합니다.
@@ -606,11 +746,11 @@ function InsightCard({ n, text }: { n: string; text: string }) {
           borderRadius: 16,
           padding: "22px 20px",
           marginTop: 16,
-          background: "rgba(255,90,31,.06)",
-          border: `1px solid rgba(255,138,76,.28)`,
+          background: "rgb(var(--icp-accent-rgb) / .06)",
+          border: `1px solid rgb(var(--icp-accent-rgb) / .28)`,
         }}
       >
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(70% 60% at 0% 0%, rgba(255,90,31,.14), transparent 62%)" }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(70% 60% at 0% 0%, rgb(var(--icp-accent-rgb) / .14), transparent 62%)" }} />
         <div style={{ position: "relative" }}>
           <Prose text={text} />
         </div>
@@ -640,11 +780,11 @@ function MetricsCard({ n, card }: { n: string; card: TypeCard }) {
           return (
             <div key={i}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontFamily: INK.font, fontSize: 16.5, fontWeight: 600, color: "rgba(255,255,255,.92)" }}>{m.name}</span>
-                <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums", color: cool ? "rgba(255,255,255,.55)" : INK.accent2 }}>{m.value}</span>
+                <span style={{ fontFamily: INK.font, fontSize: 16.5, fontWeight: 600, color: "rgb(var(--icp-ink) / .92)" }}>{m.name}</span>
+                <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums", color: cool ? "rgb(var(--icp-ink) / .55)" : INK.accent2 }}>{m.value}</span>
               </div>
-              <div style={{ height: 6, background: "rgba(255,255,255,.09)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${m.value}%`, background: cool ? "rgba(255,255,255,.4)" : INK.grad, borderRadius: 3 }} />
+              <div style={{ height: 6, background: "rgb(var(--icp-ink) / .09)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${m.value}%`, background: cool ? "rgb(var(--icp-ink) / .4)" : INK.grad, borderRadius: 3 }} />
               </div>
               {m.desc && <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, margin: "9px 0 0" }}>{m.desc}</p>}
             </div>
@@ -707,8 +847,8 @@ function LoopCard({ n, stages }: { n: string; stages: LoopStages }) {
                 color: INK.white,
                 padding: "6px 11px",
                 borderRadius: 999,
-                background: "rgba(255,90,31,.1)",
-                border: `1px solid rgba(255,138,76,.3)`,
+                background: "rgb(var(--icp-accent-rgb) / .1)",
+                border: `1px solid rgb(var(--icp-accent-rgb) / .3)`,
               }}
             >
               {label}
@@ -743,7 +883,7 @@ function SecondChildCard({ n, card, relation }: { n: string; card: TypeCard | nu
     <Panel>
       <SecTitle n={n}>두 번째 아이의 신호</SecTitle>
       {card ? (
-        <div style={{ marginTop: 16, padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
+        <div style={{ marginTop: 16, padding: "16px 18px", background: "rgb(var(--icp-ink) / .03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
           <p style={{ fontFamily: INK.font, fontSize: 16, fontWeight: 800, color: INK.white, margin: 0 }}>{card.child_name}</p>
           <p style={{ fontFamily: INK.font, fontSize: 14.5, lineHeight: 1.6, color: INK.t62, margin: "6px 0 0" }}>{card.one_liner}</p>
         </div>
@@ -777,8 +917,8 @@ function CoreNeedCard({ n, bridge, coreNeed }: { n: string; bridge: string; core
           style={{
             marginTop: 18,
             padding: "18px 20px",
-            background: "rgba(255,90,31,.06)",
-            border: `1px solid rgba(255,138,76,.25)`,
+            background: "rgb(var(--icp-accent-rgb) / .06)",
+            border: `1px solid rgb(var(--icp-accent-rgb) / .25)`,
             borderRadius: 12,
           }}
         >
@@ -814,7 +954,7 @@ function ThoughtsCard({ n, card }: { n: string; card: TypeCard }) {
       </div>
 
       {/* 이런 생각을 자주 하게 되는 이유 + 믿음의 기원 유추 */}
-      <div style={{ marginTop: 18, padding: "16px 18px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
+      <div style={{ marginTop: 18, padding: "16px 18px", background: "rgb(var(--icp-ink) / .03)", border: `1px solid ${INK.line}`, borderRadius: 12 }}>
         <div style={clbStyle}>이런 생각을 자주 하게 되는 이유</div>
         <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.75, color: INK.t72, margin: 0 }}>
           이 생각들은 서로 다른 말 같지만 뿌리는 하나예요 — ‘{card.core_belief}’. 이 믿음이 마음
@@ -849,7 +989,7 @@ function StressCard({ n, card }: { n: string; card: TypeCard }) {
           </div>
         ))}
       </div>
-      <p style={{ fontFamily: INK.font, fontSize: 14.5, lineHeight: 1.7, color: INK.t62, marginTop: 20, padding: "13px 15px", background: "rgba(255,255,255,.03)", border: `1px solid ${INK.line}`, borderRadius: 10 }}>
+      <p style={{ fontFamily: INK.font, fontSize: 14.5, lineHeight: 1.7, color: INK.t62, marginTop: 20, padding: "13px 15px", background: "rgb(var(--icp-ink) / .03)", border: `1px solid ${INK.line}`, borderRadius: 10 }}>
         이런 순간, 이 아이는 ‘{card.surface_reaction}’ 반응으로 먼저 나섭니다. 왜 그런지는 뒤의
         ‘지킴이’ 장에서 이어집니다.
       </p>
@@ -923,7 +1063,7 @@ function ReparentingCard({
                     width: 28,
                     height: 28,
                     borderRadius: "50%",
-                    border: `1.5px solid rgba(255,138,76,.5)`,
+                    border: `1.5px solid rgb(var(--icp-accent-rgb) / .5)`,
                     color: INK.accent2,
                     fontFamily: INK.mono,
                     fontWeight: 700,
@@ -955,11 +1095,11 @@ function ReparentingCard({
           overflow: "hidden",
           borderRadius: 18,
           padding: "26px 22px",
-          background: "linear-gradient(180deg,#181920,#131318)",
-          border: `1px solid #34302b`,
+          background: "rgb(var(--icp-accent-rgb) / .08)",
+          border: `1px solid rgb(var(--icp-accent-rgb) / .32)`,
         }}
       >
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(74% 60% at 100% 0%, rgba(255,90,31,.2), transparent 60%)" }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(74% 60% at 100% 0%, rgb(var(--icp-accent-rgb) / .14), transparent 60%)" }} />
         <div style={{ position: "relative" }}>
           <div style={clbStyle}>다음 한 걸음</div>
           <h3 style={{ fontFamily: INK.display, fontSize: 19, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.5, color: INK.white, margin: "0 0 10px" }}>
