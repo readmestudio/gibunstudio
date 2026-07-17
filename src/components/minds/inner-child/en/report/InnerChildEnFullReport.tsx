@@ -18,19 +18,19 @@ import type {
 
 /* ─── ink-orange tokens (무료 리포트와 동일) ─── */
 const INK = {
-  shell: "#0A0A0B",
-  surface: "#141519",
-  border: "#26272c",
-  accent: "#FF5A1F",
-  accent2: "#FF8A4C",
-  grad: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 50%,#FFB68A 100%)",
-  mute: "#8C8E95",
-  white: "#fff",
-  t82: "rgba(255,255,255,.82)",
-  t72: "rgba(255,255,255,.72)",
-  t6: "rgba(255,255,255,.6)",
-  t4: "rgba(255,255,255,.4)",
-  t38: "rgba(255,255,255,.38)",
+  shell: "#211D18",
+  surface: "#29241D",
+  border: "#3A3228",
+  accent: "#A6A2E0",
+  accent2: "#8B89C4",
+  grad: "linear-gradient(135deg,#A6A2E0 0%,#8B89C4 50%,#9A97C8 100%)",
+  mute: "#9A9082",
+  white: "#EDE4D3",
+  t82: "rgba(237,228,211,.82)",
+  t72: "rgba(237,228,211,.72)",
+  t6: "rgba(237,228,211,.6)",
+  t4: "rgba(237,228,211,.4)",
+  t38: "rgba(237,228,211,.38)",
   font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
   display: "'Inter','Pretendard',-apple-system,system-ui,sans-serif",
   mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
@@ -167,7 +167,7 @@ function Section({ section }: { section: ManualSection }) {
     <section
       style={{
         padding: "26px 4px 0",
-        borderTop: "1px solid rgba(255,255,255,.07)",
+        borderTop: "1px solid rgba(237,228,211,.07)",
         animation: "icRise .4s ease both",
       }}
     >
@@ -313,7 +313,7 @@ function ClosingSection({ lines }: { lines: string[] }) {
     <section
       style={{
         padding: "26px 4px 0",
-        borderTop: "1px solid rgba(255,255,255,.07)",
+        borderTop: "1px solid rgba(237,228,211,.07)",
         animation: "icRise .4s ease both",
       }}
     >

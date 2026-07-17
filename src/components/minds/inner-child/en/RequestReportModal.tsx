@@ -14,17 +14,17 @@ import { useState, type CSSProperties } from "react";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 
 const INK = {
-  shell: "#0A0A0B",
-  surface: "#141519",
-  border: "#26272c",
-  accent: "#FF5A1F",
-  accent2: "#FF8A4C",
-  grad: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 50%,#FFB68A 100%)",
-  white: "#fff",
-  t82: "rgba(255,255,255,.82)",
-  t62: "rgba(255,255,255,.62)",
-  t4: "rgba(255,255,255,.4)",
-  line: "rgba(255,255,255,.08)",
+  shell: "#211D18",
+  surface: "#29241D",
+  border: "#3A3228",
+  accent: "#A6A2E0",
+  accent2: "#8B89C4",
+  grad: "linear-gradient(135deg,#A6A2E0 0%,#8B89C4 50%,#9A97C8 100%)",
+  white: "#EDE4D3",
+  t82: "rgba(237,228,211,.82)",
+  t62: "rgba(237,228,211,.62)",
+  t4: "rgba(237,228,211,.4)",
+  line: "rgba(237,228,211,.08)",
   font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
   display: "'Inter','Pretendard',-apple-system,system-ui,sans-serif",
   mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
@@ -99,7 +99,7 @@ export function RequestReportModal({
           maxHeight: "92vh",
           overflowY: "auto",
           fontFamily: INK.font,
-          boxShadow: "0 -20px 60px -20px rgba(255,90,31,.4)",
+          boxShadow: "0 -20px 60px -20px rgba(166,162,224,.4)",
         }}
       >
         {/* handle + close */}
@@ -261,5 +261,5 @@ const btnStyle: CSSProperties = {
   fontWeight: 800,
   fontSize: 16,
   cursor: "pointer",
-  boxShadow: "0 16px 40px -16px rgba(255,90,31,.7)",
+  boxShadow: "0 16px 40px -16px rgba(166,162,224,.7)",
 };

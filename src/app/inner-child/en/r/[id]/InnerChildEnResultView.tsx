@@ -17,10 +17,10 @@ import type { StoredFreeReport } from "@/lib/minds/inner-child/free-report-store
 const KEY = "inner_child_en_lead_id";
 
 const INK = {
-  accent2: "#FF8A4C",
-  grad: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 100%)",
-  surface: "#141519",
-  border: "#26272c",
+  accent2: "#8B89C4",
+  grad: "linear-gradient(135deg,#A6A2E0 0%,#8B89C4 100%)",
+  surface: "#29241D",
+  border: "#3A3228",
   font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
   mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
 };
@@ -40,16 +40,16 @@ export function InnerChildEnResultView({
 
   if (!blob) {
     return (
-      <div style={{ minHeight: "100dvh", background: "#050506", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center", fontFamily: INK.font }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+      <div style={{ minHeight: "100dvh", background: "#15120D", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", textAlign: "center", fontFamily: INK.font }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: "#EDE4D3", letterSpacing: "-0.02em" }}>
           We couldn&rsquo;t find this result
         </h1>
-        <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,.55)", maxWidth: 340 }}>
+        <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: "rgba(237,228,211,.55)", maxWidth: 340 }}>
           The link may be wrong, or the result may no longer be stored.
         </p>
         <Link
           href="/inner-child/en"
-          style={{ marginTop: 28, display: "inline-block", borderRadius: 999, background: INK.grad, color: "#0A0A0B", padding: "13px 24px", fontSize: 14.5, fontWeight: 800, textDecoration: "none" }}
+          style={{ marginTop: 28, display: "inline-block", borderRadius: 999, background: INK.grad, color: "#211D18", padding: "13px 24px", fontSize: 14.5, fontWeight: 800, textDecoration: "none" }}
         >
           Start the inner child test
         </Link>
@@ -81,11 +81,11 @@ export function InnerChildEnResultView({
 
   // Unwritten type — dark notice.
   return (
-    <div style={{ minHeight: "100dvh", background: "#050506", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
-      <h1 style={{ fontFamily: INK.font, fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>
+    <div style={{ minHeight: "100dvh", background: "#15120D", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+      <h1 style={{ fontFamily: INK.font, fontSize: 26, fontWeight: 800, color: "#EDE4D3", letterSpacing: "-0.03em" }}>
         {blob.score_result.primary_child.child_name}
       </h1>
-      <p style={{ fontFamily: INK.font, fontSize: 14, color: "rgba(255,255,255,.6)", marginTop: 12, lineHeight: 1.7 }}>
+      <p style={{ fontFamily: INK.font, fontSize: 14, color: "rgba(237,228,211,.6)", marginTop: 12, lineHeight: 1.7 }}>
         The detailed report for this child is on its way. You&rsquo;ll be able to meet it soon.
       </p>
     </div>
@@ -119,7 +119,7 @@ function CopyLinkBar({ leadId }: { leadId: string }) {
         borderRadius: 12,
         background: INK.surface,
         border: `1px solid ${INK.border}`,
-        color: copied ? INK.accent2 : "rgba(255,255,255,.72)",
+        color: copied ? INK.accent2 : "rgba(237,228,211,.72)",
         fontFamily: INK.font,
         fontSize: 13.5,
         fontWeight: 700,
