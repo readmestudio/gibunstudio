@@ -203,13 +203,15 @@ function EnLanding({ onStart }: { onStart: () => void }) {
           {/* 하단 훅 카피 */}
           <div style={{ position: "relative", padding: "0 22px 26px" }}>
             <h1 style={{ fontFamily: INK.display, fontSize: 30, fontWeight: 800, lineHeight: 1.22, letterSpacing: "-0.035em", color: INK.white, margin: 0 }}>
-              Some moments shake you
+              They left you on read.
               <br />
-              far harder than they should.
+              It&rsquo;s been 20 minutes.
+              <br />
+              You&rsquo;ve already decided what it means.
             </h1>
             <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.75, color: "rgba(237,228,211,.78)", margin: "16px 0 0", maxWidth: 360 }}>
-              At the root of that reaction is an old inner child — one that learned, long ago, to protect you.
-              In 3 minutes, meet the child reacting the loudest in you right now.
+              That&rsquo;s not a flaw. It&rsquo;s a child who learned to watch the door — long before you had words for it.
+              Meet yours in 3 minutes.
             </p>
           </div>
         </div>

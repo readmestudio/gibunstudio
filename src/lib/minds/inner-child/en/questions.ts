@@ -59,7 +59,7 @@ export const COMMON_ITEM = {
   schema_id: "entitlement",
   child_name: "The Child Wearing a Crown",
   conditional: false,
-  text: "It stings when I'm treated as just one of the crowd.",
+  text: "It stings when I'm treated like I'm nothing special.",
 } as const;
 
 // ───────────────────────── Part 3. Drilldown pool (15) ─────────────────────────
@@ -77,7 +77,7 @@ export const DRILLDOWN_ITEMS: DrilldownItem[] = [
   // Area 1. Disconnection & Rejection (5) — all unconditional
   { id: "D01", area: "disconnection", schema_id: "abandonment", child_name: "The Child Waiting by the Door", conditional: false, text: "The more precious someone is, the more I keep checking, afraid of losing them." },
   { id: "D02", area: "disconnection", schema_id: "mistrust_abuse", child_name: "The Child with Their Back to the Wall", conditional: false, text: "Even with people I'm close to, I keep one layer of myself held back." },
-  { id: "D03", area: "disconnection", schema_id: "emotional_deprivation", child_name: "The Hungry Child", conditional: false, text: "I wish people would just know without my saying it, and I feel let down alone when they don't." },
+  { id: "D03", area: "disconnection", schema_id: "emotional_deprivation", child_name: "The Hungry Child", conditional: false, text: "I shouldn't have to ask — and it quietly hurts that I do." },
   { id: "D04", area: "disconnection", schema_id: "defectiveness_shame", child_name: "The Child Who Hid Away", conditional: false, text: "I can't fully open up, unsure whether people would still like the real me." },
   { id: "D05", area: "disconnection", schema_id: "social_isolation", child_name: "The Child at the Window", conditional: false, text: "Even while laughing together, I suddenly feel like the only one on the outside." },
 
@@ -88,9 +88,9 @@ export const DRILLDOWN_ITEMS: DrilldownItem[] = [
   { id: "D09", area: "impaired_autonomy", schema_id: "failure", child_name: "The Child Who Sat Down", conditional: false, text: "To avoid disappointment, I lower my hopes and put off starting." },
 
   // Area 4. Other-Directedness (3) — all conditional
-  { id: "D10", area: "other_directedness", schema_id: "subjugation", child_name: "The Child with a Bowed Head", conditional: true, text: "I swallow my own opinion to keep the mood, and the words stay with me after I turn away." },
+  { id: "D10", area: "other_directedness", schema_id: "subjugation", child_name: "The Child with a Bowed Head", conditional: true, text: "I swallow my opinion to keep the peace, then replay what I should've said." },
   { id: "D11", area: "other_directedness", schema_id: "self_sacrifice", child_name: "The Child Who Grew Up Too Soon", conditional: true, text: "After looking after everyone, I feel a lonely ache — 'who looks after me?'" },
-  { id: "D12", area: "other_directedness", schema_id: "approval_seeking", child_name: "The Child on Stage", conditional: true, text: "Being noticed lifts me up; getting no reaction leaves me shaken." },
+  { id: "D12", area: "other_directedness", schema_id: "approval_seeking", child_name: "The Child on Stage", conditional: true, text: "Praise lifts me; silence makes me spiral." },
 
   // Area 5. Overvigilance & Inhibition (3) — only negativity/pessimism unconditional, rest conditional
   { id: "D13", area: "overvigilance", schema_id: "negativity_pessimism", child_name: "The Child Holding Their Worries", conditional: false, text: "When something good happens, I start bracing for what could go wrong." },
@@ -172,7 +172,7 @@ export const SCT_ITEMS: SctItem[] = [
   { id: "SCT2", slot: "inner_voice", text: 'The voice inside that drives or stops me says, "______"' },
   { id: "SCT3", slot: "family_rule", text: "In my family, you had to ______." },
   { id: "SCT4", slot: "regression_trigger", text: "When I ______, I suddenly feel like a little kid again." },
-  { id: "SCT5", slot: "escape_behavior", text: "When my heart is heavy, I escape into ______." },
+  { id: "SCT5", slot: "escape_behavior", text: "When everything gets heavy, I escape into ______." },
 ];
 
 /** Fixed disclaimer on the intro screen and at the bottom of the report. */
@@ -183,7 +183,7 @@ export const DISCLAIMER =
 
 /** Three-part chapter labels. The progress bar is absorbed into chapters. */
 export const CHAPTER_LABELS: Record<1 | 2 | 3, string> = {
-  1: "The Lay of Your Heart",
+  1: "Where Your Mind Leans",
   2: "A Little Closer",
   3: "Your Story",
 };
