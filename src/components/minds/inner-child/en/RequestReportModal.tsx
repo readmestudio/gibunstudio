@@ -3,7 +3,7 @@
 /**
  * English funnel — "Request the full report" modal (replaces payment checkout).
  *
- * 해외 결제 미지원이라 결제창 대신 이메일만 받는다. 유저가 "Request the full report · $9.9"
+ * 해외 결제 미지원이라 결제창 대신 이메일만 받는다. 유저가 "Get the full report · $12.90"
  * 를 누르면 이 모달이 뜨고, 무료 베타테스터 선정 축하 + 이메일 입력을 받아
  * POST /api/inner-child/en/request 로 접수한다(운영자 수동 발송).
  *
@@ -167,7 +167,7 @@ function FormView({
       {/* value strip */}
       <div style={{ margin: "20px 0 4px", padding: "14px 16px", background: INK.surface, border: `1px solid ${INK.border}`, borderRadius: 12 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 10 }}>
-          <span style={{ fontFamily: INK.display, fontSize: 15, color: INK.t4, textDecoration: "line-through" }}>$9.90</span>
+          <span style={{ fontFamily: INK.display, fontSize: 15, color: INK.t4, textDecoration: "line-through" }}>$12.90</span>
           <span style={{ fontFamily: INK.display, fontSize: 24, fontWeight: 800, background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
             Free · beta
           </span>
