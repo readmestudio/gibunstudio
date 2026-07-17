@@ -17,5 +17,9 @@ export function isImmersiveRoute(pathname: string | null): boolean {
   // `/inner-child/english` 같은 다른 경로가 걸리지 않게 정확히 끊는다.
   if (pathname === "/inner-child/en" || pathname.startsWith("/inner-child/en/")) return true;
 
+  // K-Saju 영어 퍼널(/saju/en 및 하위 r/) — 같은 이유. 2026-07-17 누락 발견:
+  // 발송된 영문 리포트 상단에 한국어 헤더("기분 레터"·"로그인")가 그대로 떴다.
+  if (pathname === "/saju/en" || pathname.startsWith("/saju/en/")) return true;
+
   return false;
 }
