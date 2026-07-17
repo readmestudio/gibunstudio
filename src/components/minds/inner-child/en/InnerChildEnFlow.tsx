@@ -32,19 +32,19 @@ const KEY = "inner_child_en_lead_id";
 const FREE_BASE = "/inner-child/en/r";
 
 const INK = {
-  backdrop: "#050506",
-  shell: "#0A0A0B",
-  surface: "#141519",
-  border: "#26272c",
-  accent: "#FF5A1F",
-  accent2: "#FF8A4C",
-  grad: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 50%,#FFB68A 100%)",
-  white: "#fff",
-  t82: "rgba(255,255,255,.82)",
-  t62: "rgba(255,255,255,.62)",
-  t5: "rgba(255,255,255,.5)",
-  t4: "rgba(255,255,255,.4)",
-  line: "rgba(255,255,255,.09)",
+  backdrop: "#15120D",
+  shell: "#211D18",
+  surface: "#29241D",
+  border: "#3A3228",
+  accent: "#A6A2E0",
+  accent2: "#8B89C4",
+  grad: "linear-gradient(135deg,#A6A2E0 0%,#8B89C4 50%,#9A97C8 100%)",
+  white: "#EDE4D3",
+  t82: "rgba(237,228,211,.82)",
+  t62: "rgba(237,228,211,.62)",
+  t5: "rgba(237,228,211,.5)",
+  t4: "rgba(237,228,211,.4)",
+  line: "rgba(237,228,211,.09)",
   font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
   display: "'Inter','Pretendard',-apple-system,system-ui,sans-serif",
   mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
@@ -194,10 +194,10 @@ function EnLanding({ onStart }: { onStart: () => void }) {
           </div>
           {/* 가독성 스크림 — 위는 옅게, 아래로 갈수록 진하게(하단 글자 보호) */}
           <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,5,6,0.35) 0%, rgba(5,5,6,0.72) 58%, rgba(10,10,11,0.96) 100%)" }} />
-          <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(60% 40% at 50% 0%, rgba(255,90,31,.22), transparent 70%)" }} />
+          <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(60% 40% at 50% 0%, rgba(166,162,224,.22), transparent 70%)" }} />
           {/* 상단 라벨 */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px" }}>
-            <span style={{ fontFamily: INK.mono, fontSize: 10.5, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,.9)" }}>GIBUN Studio</span>
+            <span style={{ fontFamily: INK.mono, fontSize: 10.5, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(237,228,211,.9)" }}>GIBUN Studio</span>
             <span style={{ fontFamily: INK.mono, fontSize: 10.5, letterSpacing: "0.22em", textTransform: "uppercase", color: INK.accent2 }}>Free · 3 min</span>
           </div>
           {/* 하단 훅 카피 */}
@@ -207,7 +207,7 @@ function EnLanding({ onStart }: { onStart: () => void }) {
               <br />
               far harder than they should.
             </h1>
-            <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.75, color: "rgba(255,255,255,.78)", margin: "16px 0 0", maxWidth: 360 }}>
+            <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.75, color: "rgba(237,228,211,.78)", margin: "16px 0 0", maxWidth: 360 }}>
               At the root of that reaction is an old inner child — one that learned, long ago, to protect you.
               In 3 minutes, meet the child reacting the loudest in you right now.
             </p>
@@ -236,7 +236,7 @@ function EnLanding({ onStart }: { onStart: () => void }) {
       </div>
 
       {/* sticky CTA */}
-      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 40, display: "flex", justifyContent: "center", padding: "12px 20px calc(env(safe-area-inset-bottom, 0px) + 16px)", background: "linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.86) 40%, #050506 100%)", pointerEvents: "none" }}>
+      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 40, display: "flex", justifyContent: "center", padding: "12px 20px calc(env(safe-area-inset-bottom, 0px) + 16px)", background: "linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.86) 40%, #15120D 100%)", pointerEvents: "none" }}>
         <div style={{ width: "100%", maxWidth: 408, pointerEvents: "auto" }}>
           <p style={{ textAlign: "center", margin: "0 0 10px", fontSize: 12, color: INK.t5, fontFamily: INK.font }}>
             Not a diagnosis — a mirror for who you are right now.
@@ -245,7 +245,7 @@ function EnLanding({ onStart }: { onStart: () => void }) {
             type="button"
             className="en-cta"
             onClick={onStart}
-            style={{ width: "100%", padding: 17, borderRadius: 14, background: INK.grad, color: INK.shell, border: "none", fontFamily: INK.font, fontWeight: 800, fontSize: 16, cursor: "pointer", boxShadow: "0 16px 40px -16px rgba(255,90,31,.7)" }}
+            style={{ width: "100%", padding: 17, borderRadius: 14, background: INK.grad, color: INK.shell, border: "none", fontFamily: INK.font, fontWeight: 800, fontSize: 16, cursor: "pointer", boxShadow: "0 16px 40px -16px rgba(166,162,224,.7)" }}
           >
             Take the free 3-min test →
           </button>

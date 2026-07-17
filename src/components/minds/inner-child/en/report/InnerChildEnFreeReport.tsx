@@ -21,24 +21,24 @@ import type { FreeReportGenerated, TypeCard } from "@/lib/minds/inner-child/repo
 
 /* ─── ink-orange tokens ─── */
 const INK = {
-  shell: "#0A0A0B",
-  surface: "#141519",
-  border: "#26272c",
-  payBorder: "#34302b",
-  accent: "#FF5A1F",
-  accent2: "#FF8A4C",
-  grad: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 50%,#FFB68A 100%)",
-  mute: "#8C8E95",
-  white: "#fff",
-  t82: "rgba(255,255,255,.82)",
-  t72: "rgba(255,255,255,.72)",
-  t68: "rgba(255,255,255,.68)",
-  t62: "rgba(255,255,255,.62)",
-  t6: "rgba(255,255,255,.6)",
-  t4: "rgba(255,255,255,.4)",
-  t38: "rgba(255,255,255,.38)",
-  line: "rgba(255,255,255,.08)",
-  line14: "rgba(255,255,255,.14)",
+  shell: "#211D18",
+  surface: "#29241D",
+  border: "#3A3228",
+  payBorder: "#3A3228",
+  accent: "#A6A2E0",
+  accent2: "#8B89C4",
+  grad: "linear-gradient(135deg,#A6A2E0 0%,#8B89C4 50%,#9A97C8 100%)",
+  mute: "#9A9082",
+  white: "#EDE4D3",
+  t82: "rgba(237,228,211,.82)",
+  t72: "rgba(237,228,211,.72)",
+  t68: "rgba(237,228,211,.68)",
+  t62: "rgba(237,228,211,.62)",
+  t6: "rgba(237,228,211,.6)",
+  t4: "rgba(237,228,211,.4)",
+  t38: "rgba(237,228,211,.38)",
+  line: "rgba(237,228,211,.08)",
+  line14: "rgba(237,228,211,.14)",
   font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
   display: "'Inter','Pretendard',-apple-system,system-ui,sans-serif",
   mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
@@ -92,7 +92,7 @@ export function InnerChildEnFreeReport({
     <div
       style={{
         minHeight: "100dvh",
-        background: "#050506",
+        background: "#15120D",
         fontFamily: INK.font,
         paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
       }}
@@ -105,12 +105,15 @@ export function InnerChildEnFreeReport({
 
       <div style={{ maxWidth: 440, margin: "0 auto", padding: "14px 14px 0", display: "flex", flexDirection: "column", gap: 22 }}>
         <Hero card={card} />
+        <EnScene lines={["There's a child", "who has been sitting quietly inside you."]} />
         <PortraitSection portrait={portrait} />
         <TypeExplainSection card={card} n="01" />
         <VoiceSection card={card} />
+        <EnScene lines={["You have probably", "lived these moments."]} />
         <ScenesSection card={card} n="02" />
         <DomainsSection card={card} n="03" prediction={dailyPrediction} />
         <MetricsSection card={card} />
+        <EnScene lines={["So — why does this", "keep happening?"]} />
         <InsightSection insight={insight} />
         <PaywallSection onRequest={openRequest} leadId={leadId} />
 
@@ -150,13 +153,46 @@ function SecTitle({ n, children }: { n: string; children: ReactNode }) {
 
 function OpenSection({ children }: { children: ReactNode }) {
   return (
-    <section style={{ padding: "26px 4px 0", borderTop: `1px solid rgba(255,255,255,.07)`, animation: "icRise .4s ease both" }}>
+    <section style={{ padding: "26px 4px 0", borderTop: `1px solid rgba(237,228,211,.07)`, animation: "icRise .4s ease both" }}>
       {children}
     </section>
   );
 }
 
 const READ = { size: 17, line: 1.9, noteSize: 16, noteLine: 1.85 };
+
+/** Cinematic narration bridge — starfield + centered line, matching the KR redesign. Always dark. */
+function EnScene({ lines }: { lines: string[] }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 18,
+        padding: "46px 28px",
+        background: "radial-gradient(60% 42% at 50% 16%, rgba(92,88,142,.34), transparent 72%), #1C1813",
+        textAlign: "center",
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(1.3px 1.3px at 16% 22%,#fff,transparent),radial-gradient(1px 1px at 60% 28%,rgba(255,255,255,.7),transparent),radial-gradient(1.3px 1.3px at 82% 20%,#fff,transparent),radial-gradient(1px 1px at 38% 76%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 88% 64%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 26% 54%,rgba(255,255,255,.5),transparent)",
+        }}
+      />
+      <div style={{ position: "relative" }}>
+        {lines.map((l, i) => (
+          <p key={i} style={{ fontFamily: INK.font, fontSize: 20, fontWeight: 700, lineHeight: 1.75, color: "#F1E9DA", margin: i ? "10px 0 0" : 0 }}>
+            {l}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ─────────────── 1 · hero ─────────────── */
 
@@ -165,20 +201,16 @@ function Hero({ card }: { card: TypeCard }) {
   const last = words.pop() ?? "";
   const head = words.join(" ");
   return (
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: 20, background: INK.shell, border: `1px solid ${INK.border}`, padding: "30px 22px 28px", animation: "icRise .4s ease both" }}>
+    <div style={{ position: "relative", overflow: "hidden", borderRadius: 20, background: "radial-gradient(72% 52% at 50% 12%, rgba(92,88,142,.42), transparent 72%), #1C1813", border: `1px solid ${INK.border}`, padding: "30px 22px 28px", animation: "icRise .4s ease both" }}>
       <div
         aria-hidden
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
-          WebkitMaskImage: "radial-gradient(ellipse at 50% 10%, #000, transparent 72%)",
-          maskImage: "radial-gradient(ellipse at 50% 10%, #000, transparent 72%)",
+          background:
+            "radial-gradient(1.4px 1.4px at 14% 20%,#fff,transparent),radial-gradient(1px 1px at 60% 16%,rgba(255,255,255,.7),transparent),radial-gradient(1.4px 1.4px at 84% 24%,#fff,transparent),radial-gradient(1px 1px at 30% 40%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 88% 52%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 20% 64%,rgba(255,255,255,.5),transparent)",
         }}
       />
-      <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(60% 44% at 50% 0%, rgba(255,90,31,.3), transparent 70%)" }} />
       <div style={{ position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <span style={{ width: 5, height: 5, borderRadius: 999, background: INK.accent, display: "inline-block" }} />
@@ -197,7 +229,7 @@ function Hero({ card }: { card: TypeCard }) {
           <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.6, letterSpacing: "-0.01em", color: INK.t6, margin: "12px 0 0", maxWidth: 340 }}>
             {card.one_liner}
           </p>
-          <span style={{ display: "inline-flex", marginTop: 18, padding: "9px 16px", borderRadius: 999, background: "rgba(255,255,255,.06)", border: `1px solid ${INK.line14}`, fontFamily: INK.font, fontSize: 13.5, fontWeight: 600, color: INK.white }}>
+          <span style={{ display: "inline-flex", marginTop: 18, padding: "9px 16px", borderRadius: 999, background: "rgba(237,228,211,.06)", border: `1px solid ${INK.line14}`, fontFamily: INK.font, fontSize: 13.5, fontWeight: 600, color: INK.white }}>
             {card.core_belief}
           </span>
         </div>
@@ -238,9 +270,9 @@ function TypeExplainSection({ card, n }: { card: TypeCard; n: string }) {
       <p style={{ fontFamily: INK.font, fontSize: READ.size, lineHeight: READ.line, letterSpacing: "-0.005em", color: INK.t82, marginTop: 16 }}>
         {card.traits}
       </p>
-      <div style={{ marginTop: 20, padding: "17px 18px", background: "rgba(255,90,31,.06)", border: `1px solid rgba(255,138,76,.22)`, borderRadius: 14 }}>
+      <div style={{ marginTop: 20, padding: "17px 18px", background: "rgba(166,162,224,.06)", border: `1px solid rgba(166,162,224,.22)`, borderRadius: 14 }}>
         <div style={clbStyle}>This type&rsquo;s strength</div>
-        <p style={{ fontFamily: INK.font, fontSize: 16.5, lineHeight: 1.8, color: "rgba(255,255,255,.9)", margin: 0 }}>{card.strength}</p>
+        <p style={{ fontFamily: INK.font, fontSize: 16.5, lineHeight: 1.8, color: "rgba(237,228,211,.9)", margin: 0 }}>{card.strength}</p>
         <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, marginTop: 10 }}>
           This isn&rsquo;t a weakness to erase — it&rsquo;s an ability that serves you powerfully in the right moments.
           It only wears you down when it stays switched on far longer than the situation needs.
@@ -319,7 +351,7 @@ function DomainsSection({ card, n, prediction }: { card: TypeCard; n: string; pr
         ))}
       </div>
 
-      <div style={{ marginTop: 22, padding: "18px 18px", background: "rgba(255,255,255,.035)", border: `1px solid ${INK.line}`, borderRadius: 14 }}>
+      <div style={{ marginTop: 22, padding: "18px 18px", background: "rgba(237,228,211,.035)", border: `1px solid ${INK.line}`, borderRadius: 14 }}>
         <div style={{ ...clbStyle, marginBottom: 10 }}>You probably —</div>
         <p style={{ fontFamily: INK.font, fontSize: READ.size, lineHeight: READ.line, letterSpacing: "-0.005em", color: INK.t82, margin: 0, whiteSpace: "pre-line" }}>
           {prediction}
@@ -346,11 +378,11 @@ function MetricsSection({ card }: { card: TypeCard }) {
           return (
             <div key={i}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontFamily: INK.font, fontSize: 16.5, fontWeight: 600, color: "rgba(255,255,255,.92)" }}>{m.name}</span>
-                <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums", color: cool ? "rgba(255,255,255,.55)" : INK.accent2 }}>{m.value}</span>
+                <span style={{ fontFamily: INK.font, fontSize: 16.5, fontWeight: 600, color: "rgba(237,228,211,.92)" }}>{m.name}</span>
+                <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums", color: cool ? "rgba(237,228,211,.55)" : INK.accent2 }}>{m.value}</span>
               </div>
-              <div style={{ height: 6, background: "rgba(255,255,255,.09)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${m.value}%`, background: cool ? "rgba(255,255,255,.4)" : INK.grad, borderRadius: 3 }} />
+              <div style={{ height: 6, background: "rgba(237,228,211,.09)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${m.value}%`, background: cool ? "rgba(237,228,211,.4)" : INK.grad, borderRadius: 3 }} />
               </div>
               {m.desc && <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, margin: "9px 0 0" }}>{m.desc}</p>}
             </div>
@@ -371,12 +403,12 @@ function InsightSection({ insight }: { insight: string }) {
         overflow: "hidden",
         borderRadius: 16,
         padding: "24px 22px",
-        background: "rgba(255,90,31,.06)",
-        border: `1px solid rgba(255,138,76,.28)`,
+        background: "rgba(166,162,224,.06)",
+        border: `1px solid rgba(166,162,224,.28)`,
         animation: "icRise .4s ease both",
       }}
     >
-      <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(70% 60% at 0% 0%, rgba(255,90,31,.14), transparent 62%)" }} />
+      <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(70% 60% at 0% 0%, rgba(166,162,224,.14), transparent 62%)" }} />
       <div style={{ position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <span aria-hidden style={{ fontSize: 15 }}>💡</span>
@@ -466,10 +498,10 @@ function PaywallSection({ onRequest, leadId }: { onRequest: () => void; leadId?:
           marginTop: 14,
           background: "linear-gradient(180deg,#181920,#131318)",
           border: `1px solid ${INK.payBorder}`,
-          boxShadow: "0 26px 60px -30px rgba(255,90,31,.5)",
+          boxShadow: "0 26px 60px -30px rgba(166,162,224,.5)",
         }}
       >
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(74% 60% at 100% 0%, rgba(255,90,31,.22), transparent 60%)" }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(74% 60% at 100% 0%, rgba(166,162,224,.22), transparent 60%)" }} />
         <div style={{ position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ width: 5, height: 5, borderRadius: 999, background: INK.accent, display: "inline-block" }} />
@@ -497,7 +529,7 @@ function PaywallSection({ onRequest, leadId }: { onRequest: () => void; leadId?:
             {PAY_TEASERS.map((t, i) => (
               <div key={i} style={{ paddingTop: i === 0 ? 0 : 18, marginTop: i === 0 ? 0 : 18, borderTop: i === 0 ? "none" : `1px solid ${INK.line}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 6, border: `1px solid rgba(255,138,76,.6)`, color: INK.accent2, flex: "0 0 auto" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 6, border: `1px solid rgba(166,162,224,.6)`, color: INK.accent2, flex: "0 0 auto" }}>
                     <LockIcon />
                   </span>
                   <span style={{ fontFamily: INK.font, fontSize: 15.5, fontWeight: 700, color: INK.white }}>{t.title}</span>
@@ -529,7 +561,7 @@ function PaywallSection({ onRequest, leadId }: { onRequest: () => void; leadId?:
               fontWeight: 800,
               fontSize: 16,
               cursor: "pointer",
-              boxShadow: "0 16px 40px -16px rgba(255,90,31,.7)",
+              boxShadow: "0 16px 40px -16px rgba(166,162,224,.7)",
             }}
           >
             Request the full report · {PRICE_LABEL} →
@@ -564,7 +596,7 @@ function LockedPreview() {
           pointerEvents: "none",
         }}
       >
-        <div style={{ width: 120, height: 13, borderRadius: 4, background: "rgba(255,138,76,.5)", marginBottom: 16 }} />
+        <div style={{ width: 120, height: 13, borderRadius: 4, background: "rgba(166,162,224,.5)", marginBottom: 16 }} />
         {fauxLines.map((l, i) => (
           <p key={i} style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.9, color: INK.t72, margin: 0 }}>{l}</p>
         ))}
@@ -581,7 +613,7 @@ function LockedPreview() {
           background: `linear-gradient(180deg, rgba(20,21,25,.35) 0%, rgba(20,21,25,.75) 55%, ${INK.surface} 100%)`,
         }}
       >
-        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 999, background: "rgba(255,90,31,.14)", border: `1px solid rgba(255,138,76,.5)`, color: INK.accent2 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 999, background: "rgba(166,162,224,.14)", border: `1px solid rgba(166,162,224,.5)`, color: INK.accent2 }}>
           <LockIcon size={18} />
         </span>
         <span style={{ fontFamily: INK.font, fontSize: 14.5, fontWeight: 800, color: INK.white, letterSpacing: "-0.01em" }}>
@@ -606,7 +638,7 @@ function StickyCta({ onRequest }: { onRequest: () => void }) {
         display: "flex",
         justifyContent: "center",
         padding: "10px 12px calc(10px + env(safe-area-inset-bottom, 0px))",
-        background: "linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.85) 40%, #050506 100%)",
+        background: "linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.85) 40%, #15120D 100%)",
         pointerEvents: "none",
       }}
     >
@@ -629,7 +661,7 @@ function StickyCta({ onRequest }: { onRequest: () => void }) {
           border: "none",
           fontFamily: INK.font,
           cursor: "pointer",
-          boxShadow: "0 18px 44px -14px rgba(255,90,31,.7)",
+          boxShadow: "0 18px 44px -14px rgba(166,162,224,.7)",
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.25 }}>
