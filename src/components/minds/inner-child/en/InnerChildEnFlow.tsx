@@ -166,7 +166,7 @@ function InlineFallbackReport({ input }: { input: ScoreInput }) {
       </div>
     );
   }
-  return <InnerChildEnFreeReport card={card} />;
+  return <InnerChildEnFreeReport card={card} score={score} />;
 }
 
 /* ─────────────── landing (ink-orange, inner-child themed) ─────────────── */

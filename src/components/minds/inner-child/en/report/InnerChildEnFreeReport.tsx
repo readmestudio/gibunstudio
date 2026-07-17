@@ -1,473 +1,97 @@
 "use client";
 
 /**
- * Inner Child free report — ENGLISH (ink-orange dark scroll report).
+ * Inner Child result scroll — ENGLISH (cinematic narrative + locked cards).
  *
- * 한국어 무료 리포트(개편 전 InnerChildFreeReport.tsx — 현재는 판매 페이지 InnerChildSalesPage
- * 로 대체됨)의 영어판. 영어는 개편 전 8섹션 리포트 구조를 그대로 유지한다. 다른 점:
- *  - 모든 카피 영어
- *  - 결제(MindsCheckoutModal) → 요청(RequestReportModal, 이메일 수집)
- *  - 가격 표기 $9.90 단일가(해외 결제 미지원 — 실제로는 베타 무료 발송)
- *  - trackMindsFunnel(운영자 슬랙) 미사용 — KR 퍼널 신호와 섞지 않음. Meta 픽셀만 유지.
+ * 한국어 판매 페이지(InnerChildSalesPage)의 영어판. 구조·CSS·시네마틱 서사를 1:1로 이식하고,
+ * 카피만 미국 시장 therapy-speak 로 다시 썼다(feedback_us_market_copy — 한국어 정중한 결을
+ * 직역하면 추상적이라 안 먹힘, 구체 장면 + therapy-speak 로).
+ *
+ * 한국어와 다른 점(퍼널 차이):
+ *  - 결제 없음 → RequestReportModal(이메일 수집). 가격은 $12.90 표기(베타는 무료 발송).
+ *  - trackMindsFunnel(운영자 슬랙) 대신 trackEnFunnel. Meta 픽셀은 InitiateCheckout(USD).
+ *  - 카카오 로그인 복귀(?checkout=1) 자동 재개 분기 없음(영어는 로그인 게이트가 없다).
+ *
+ * 무료로 공개(정적 데이터 — LLM 불필요):
+ *   - 마음의 지형: score.areas · 유형 이름/얼굴 · auto_thoughts 3개 · 지킴이 정체 · 두 번째 아이 블러
+ *   - portrait(유일한 LLM 생성 / 폴백 staticPortrait)
+ * 잠금 뒤(유료 소구): 원인·해석·성장법. 편익으로 번역해 카피(feedback_benefit_translation_copy).
+ *   ⚠️ 유료 실값(guardian cost 해석 등)은 DOM 텍스트로 넣지 않는다(빈칸=더미).
  */
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DISCLAIMER } from "@/lib/minds/inner-child/en/questions";
 import { RequestReportModal } from "@/components/minds/inner-child/en/RequestReportModal";
-import { TypeAvatar } from "@/components/minds/inner-child/report/TypeAvatar";
+import { innerChildIllustration } from "@/lib/minds/inner-child/type-cards";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { trackEnFunnel } from "@/lib/minds/inner-child/en/track";
 import type { FreeReportGenerated, TypeCard } from "@/lib/minds/inner-child/report-types";
+import type { ScoreResult, AreaId, AreaScore, GuardianType } from "@/lib/minds/inner-child/types";
 
-/* ─── ink-orange tokens ─── */
-const INK = {
-  shell: "#211D18",
-  surface: "#29241D",
-  border: "#3A3228",
-  payBorder: "#3A3228",
-  accent: "#A6A2E0",
-  accent2: "#8B89C4",
-  grad: "linear-gradient(135deg,#A6A2E0 0%,#8B89C4 50%,#9A97C8 100%)",
-  mute: "#9A9082",
-  white: "#EDE4D3",
-  t82: "rgba(237,228,211,.82)",
-  t72: "rgba(237,228,211,.72)",
-  t68: "rgba(237,228,211,.68)",
-  t62: "rgba(237,228,211,.62)",
-  t6: "rgba(237,228,211,.6)",
-  t4: "rgba(237,228,211,.4)",
-  t38: "rgba(237,228,211,.38)",
-  line: "rgba(237,228,211,.08)",
-  line14: "rgba(237,228,211,.14)",
-  font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
-  display: "'Inter','Pretendard',-apple-system,system-ui,sans-serif",
-  mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
+const PRICE_LABEL = "$12.90";
+
+const AREA_LABEL: Record<AreaId, string> = {
+  disconnection: "Disconnection",
+  impaired_autonomy: "Autonomy",
+  other_directedness: "Other-focus",
+  overvigilance: "Over-vigilance",
 };
 
-const PRICE_LABEL = "$9.90";
+/** Guardian identity, in US therapy-speak (fawn / flight / fight coping styles). */
+const GUARDIAN_LABEL: Record<GuardianType, string> = {
+  surrender: "Gives in",
+  avoidance: "Slips away",
+  overcompensation: "Pushes back",
+};
 
-/** portrait static fallback — assembled from the type card (no answer quoting). */
+/**
+ * portrait static fallback — used when no generated hook exists (LLM failed, old blob, preview).
+ * Doesn't quote answers (keeps it from reading like a canned report). Uses core_belief only.
+ */
 function staticPortrait(card: TypeCard): string {
-  return `${card.one_liner}. ${card.traits}\n\nDeep down sits the belief that '${card.core_belief}'. So even in moments that look small to others, you're the first to react. Let's meet this child, one piece at a time.`;
-}
-
-/** insight static fallback — the pre-paywall realization, from card fields only. */
-function staticInsight(card: TypeCard): string {
-  return `Usually quiet, this child wakes up unusually strongly in certain moments. In those moments you tend to step forward looking '${card.surface_reaction}'. On the surface it can look like ${card.key_emotion}, but underneath is an old wish to protect yourself. That isn't weakness — it was once a way that genuinely kept you safe. But why it happens in that exact moment, and how to step out of it, is still ahead.`;
-}
-
-/** daily_prediction static fallback — from the card's domains, predictive tone. */
-function staticDaily(card: TypeCard): string {
-  return `Hasn't this happened to you more than once? In relationships, ${card.domains["관계"]} At work, ${card.domains["일"]} And even when you're alone, ${card.domains["자기관리"]} The situations look different each time, but the same child is moving underneath.`;
+  return `In moments that look small to everyone else, you're somehow the first to feel it. Deep down sits the belief that '${card.core_belief}' — so this child can't just let the moment pass.`;
 }
 
 export function InnerChildEnFreeReport({
   card,
+  score,
   free,
   footerExtra,
   leadId,
+  concern,
 }: {
   card: TypeCard;
+  /** Score result — powers the terrain (areas), second child, and guardian cards. Omit to skip those. */
+  score?: ScoreResult | null;
+  /** Generated hook. Only portrait is read. Falls back to staticPortrait. */
   free?: FreeReportGenerated | null;
   footerExtra?: ReactNode;
+  /** leadId for the request modal + pixel. */
   leadId?: string;
+  /** Optional free-text concern — echoed back verbatim as personalization evidence. */
+  concern?: string;
 }) {
   const [requestOpen, setRequestOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const paywallRef = useRef<HTMLDivElement | null>(null);
   const portrait = free?.portrait?.trim() || staticPortrait(card);
-  const insight = free?.insight?.trim() || staticInsight(card);
-  const dailyPrediction = free?.daily_prediction?.trim() || staticDaily(card);
+  const secondChild = score?.secondary_children?.[0] ?? null;
+  const concernText = concern?.trim() || null;
 
-  // 요청 모달 오픈 — 구매 최적화 신호(InitiateCheckout, USD) + 운영자 슬랙(②). 결제창은 없다.
   const openRequest = () => {
     trackMetaEvent("InitiateCheckout", {
       content_name: "inner_child_en_full",
-      value: 9.9,
+      value: 12.9,
       currency: "USD",
     });
     trackEnFunnel("request_click", leadId);
     setRequestOpen(true);
   };
 
-  return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        background: "#15120D",
-        fontFamily: INK.font,
-        paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
-      }}
-    >
-      <style>{`
-        @keyframes icRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-        .ic-cta{transition:transform .12s ease,box-shadow .2s ease}
-        .ic-cta:active{transform:scale(.99)}
-      `}</style>
-
-      <div style={{ maxWidth: 440, margin: "0 auto", padding: "14px 14px 0", display: "flex", flexDirection: "column", gap: 22 }}>
-        <Hero card={card} />
-        <EnScene lines={["There's a child", "who has been sitting quietly inside you."]} />
-        <PortraitSection portrait={portrait} />
-        <TypeExplainSection card={card} n="01" />
-        <VoiceSection card={card} />
-        <EnScene lines={["You have probably", "lived these moments."]} />
-        <ScenesSection card={card} n="02" />
-        <DomainsSection card={card} n="03" prediction={dailyPrediction} />
-        <MetricsSection card={card} />
-        <EnScene lines={["So — why does this", "keep happening?"]} />
-        <InsightSection insight={insight} />
-        <PaywallSection onRequest={openRequest} leadId={leadId} />
-
-        <p style={{ fontFamily: INK.mono, fontSize: 10, color: INK.t38, lineHeight: 1.7, textAlign: "center", marginTop: 4 }}>
-          GIBUN Report · INNER CHILD REPORT · {DISCLAIMER}
-        </p>
-        {footerExtra ? <div style={{ marginTop: 4 }}>{footerExtra}</div> : null}
-      </div>
-
-      <StickyCta onRequest={openRequest} />
-
-      <RequestReportModal open={requestOpen} onClose={() => setRequestOpen(false)} leadId={leadId} />
-    </div>
-  );
-}
-
-/* ─────────────── shared pieces ─────────────── */
-
-const clbStyle: CSSProperties = {
-  fontFamily: INK.mono,
-  fontWeight: 600,
-  fontSize: 9.5,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: INK.mute,
-  marginBottom: 12,
-};
-
-function SecTitle({ n, children }: { n: string; children: ReactNode }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-      <span style={{ fontFamily: INK.mono, fontSize: 12, fontWeight: 600, color: INK.accent2 }}>{n}</span>
-      <span style={{ fontFamily: INK.display, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: INK.white }}>{children}</span>
-    </div>
-  );
-}
-
-function OpenSection({ children }: { children: ReactNode }) {
-  return (
-    <section style={{ padding: "26px 4px 0", borderTop: `1px solid rgba(237,228,211,.07)`, animation: "icRise .4s ease both" }}>
-      {children}
-    </section>
-  );
-}
-
-const READ = { size: 17, line: 1.9, noteSize: 16, noteLine: 1.85 };
-
-/** Cinematic narration bridge — starfield + centered line, matching the KR redesign. Always dark. */
-function EnScene({ lines }: { lines: string[] }) {
-  return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: 18,
-        padding: "46px 28px",
-        background: "radial-gradient(60% 42% at 50% 16%, rgba(92,88,142,.34), transparent 72%), #1C1813",
-        textAlign: "center",
-      }}
-    >
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(1.3px 1.3px at 16% 22%,#fff,transparent),radial-gradient(1px 1px at 60% 28%,rgba(255,255,255,.7),transparent),radial-gradient(1.3px 1.3px at 82% 20%,#fff,transparent),radial-gradient(1px 1px at 38% 76%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 88% 64%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 26% 54%,rgba(255,255,255,.5),transparent)",
-        }}
-      />
-      <div style={{ position: "relative" }}>
-        {lines.map((l, i) => (
-          <p key={i} style={{ fontFamily: INK.font, fontSize: 20, fontWeight: 700, lineHeight: 1.75, color: "#F1E9DA", margin: i ? "10px 0 0" : 0 }}>
-            {l}
-          </p>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────── 1 · hero ─────────────── */
-
-function Hero({ card }: { card: TypeCard }) {
-  const words = card.child_name.trim().split(" ");
-  const last = words.pop() ?? "";
-  const head = words.join(" ");
-  return (
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: 20, background: "radial-gradient(72% 52% at 50% 12%, rgba(92,88,142,.42), transparent 72%), #1C1813", border: `1px solid ${INK.border}`, padding: "30px 22px 28px", animation: "icRise .4s ease both" }}>
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(1.4px 1.4px at 14% 20%,#fff,transparent),radial-gradient(1px 1px at 60% 16%,rgba(255,255,255,.7),transparent),radial-gradient(1.4px 1.4px at 84% 24%,#fff,transparent),radial-gradient(1px 1px at 30% 40%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 88% 52%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 20% 64%,rgba(255,255,255,.5),transparent)",
-        }}
-      />
-      <div style={{ position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <span style={{ width: 5, height: 5, borderRadius: 999, background: INK.accent, display: "inline-block" }} />
-          <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: INK.accent2 }}>
-            Of the 16 inner children, you are
-          </span>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginTop: 18 }}>
-          <TypeAvatar schemaId={card.schema_id} alt={card.child_name} size={112} />
-          <h1 style={{ fontFamily: INK.display, fontSize: 32, fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.04em", color: INK.white, margin: "18px 0 0" }}>
-            {head}
-            {head ? " " : ""}
-            <span style={{ background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>{last}</span>
-          </h1>
-          <p style={{ fontFamily: INK.font, fontSize: 15.5, lineHeight: 1.6, letterSpacing: "-0.01em", color: INK.t6, margin: "12px 0 0", maxWidth: 340 }}>
-            {card.one_liner}
-          </p>
-          <span style={{ display: "inline-flex", marginTop: 18, padding: "9px 16px", borderRadius: 999, background: "rgba(237,228,211,.06)", border: `1px solid ${INK.line14}`, fontFamily: INK.font, fontSize: 13.5, fontWeight: 600, color: INK.white }}>
-            {card.core_belief}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────── 2 · portrait ─────────────── */
-
-function PortraitSection({ portrait }: { portrait: string }) {
-  return (
-    <div style={{ padding: "2px 4px 0", animation: "icRise .4s ease both" }}>
-      <div style={clbStyle}>Your Story</div>
-      <p
-        style={{
-          fontFamily: INK.font,
-          fontSize: 17.5,
-          lineHeight: 1.92,
-          letterSpacing: "-0.006em",
-          color: INK.t82,
-          margin: 0,
-          whiteSpace: "pre-line",
-        }}
-      >
-        {portrait}
-      </p>
-    </div>
-  );
-}
-
-/* ─────────────── 3 · what kind of child is this type ─────────────── */
-
-function TypeExplainSection({ card, n }: { card: TypeCard; n: string }) {
-  return (
-    <OpenSection>
-      <SecTitle n={n}>What kind of child is this?</SecTitle>
-      <p style={{ fontFamily: INK.font, fontSize: READ.size, lineHeight: READ.line, letterSpacing: "-0.005em", color: INK.t82, marginTop: 16 }}>
-        {card.traits}
-      </p>
-      <div style={{ marginTop: 20, padding: "17px 18px", background: "rgba(166,162,224,.06)", border: `1px solid rgba(166,162,224,.22)`, borderRadius: 14 }}>
-        <div style={clbStyle}>This type&rsquo;s strength</div>
-        <p style={{ fontFamily: INK.font, fontSize: 16.5, lineHeight: 1.8, color: "rgba(237,228,211,.9)", margin: 0 }}>{card.strength}</p>
-        <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, marginTop: 10 }}>
-          This isn&rsquo;t a weakness to erase — it&rsquo;s an ability that serves you powerfully in the right moments.
-          It only wears you down when it stays switched on far longer than the situation needs.
-        </p>
-      </div>
-    </OpenSection>
-  );
-}
-
-/* ─────────────── 4 · inner voice ─────────────── */
-
-function VoiceSection({ card }: { card: TypeCard }) {
-  return (
-    <OpenSection>
-      <div style={clbStyle}>Inner Voice</div>
-      <p style={{ fontFamily: INK.font, fontStyle: "italic", fontWeight: 600, fontSize: 22, lineHeight: 1.5, letterSpacing: "-0.01em", color: INK.white, margin: 0 }}>
-        &ldquo;{card.voice}&rdquo;
-      </p>
-      <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, margin: "14px 0 0" }}>
-        This is the one line this child repeats inside. Most of the time you barely hear it — but when a hard moment comes,
-        it rings out as clearly as your own thought.
-      </p>
-    </OpenSection>
-  );
-}
-
-/* ─────────────── 5 · moments like these ─────────────── */
-
-function ScenesSection({ card, n }: { card: TypeCard; n: string }) {
-  const scenes = card.typical_scenes ?? [];
-  const notes = card.typical_scene_notes ?? [];
-  if (scenes.length === 0) return null;
-  return (
-    <OpenSection>
-      <SecTitle n={n}>Moments like these — sound familiar?</SecTitle>
-      <p style={{ fontFamily: INK.font, fontSize: 16, lineHeight: 1.75, color: INK.t62, marginTop: 14 }}>
-        These are scenes that repeat often for someone this child lives in. At least one probably won&rsquo;t feel unfamiliar.
-      </p>
-      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 22 }}>
-        {scenes.map((s, i) => (
-          <div key={i}>
-            <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-              <span style={{ fontFamily: INK.mono, fontSize: 12, fontWeight: 600, color: INK.accent2 }}>{String(i + 1).padStart(2, "0")}</span>
-              <span style={{ fontFamily: INK.font, fontWeight: 700, fontSize: 17, lineHeight: 1.5, color: INK.white }}>{s}</span>
-            </div>
-            {notes[i] && (
-              <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t72, margin: "8px 0 0", paddingLeft: 22 }}>{notes[i]}</p>
-            )}
-          </div>
-        ))}
-      </div>
-    </OpenSection>
-  );
-}
-
-/* ─────────────── 6 · how it shows up day to day ─────────────── */
-
-function DomainsSection({ card, n, prediction }: { card: TypeCard; n: string; prediction: string }) {
-  const domains: [string, string][] = [
-    ["In relationships", card.domains["관계"]],
-    ["At work", card.domains["일"]],
-    ["On your own", card.domains["자기관리"]],
-  ];
-  return (
-    <OpenSection>
-      <SecTitle n={n}>How it shows up day to day</SecTitle>
-      <p style={{ fontFamily: INK.font, fontSize: 16, lineHeight: 1.75, color: INK.t62, marginTop: 14 }}>
-        The same child wears a different face depending on the moment. Here&rsquo;s how it surfaces across three areas.
-      </p>
-      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 18 }}>
-        {domains.map(([k, v]) => (
-          <div key={k}>
-            <p style={{ fontFamily: INK.font, fontSize: 16, fontWeight: 700, color: INK.accent2, margin: 0 }}>{k}</p>
-            <p style={{ fontFamily: INK.font, fontSize: READ.size, lineHeight: 1.78, color: INK.t82, margin: "5px 0 0" }}>{v}</p>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ marginTop: 22, padding: "18px 18px", background: "rgba(237,228,211,.035)", border: `1px solid ${INK.line}`, borderRadius: 14 }}>
-        <div style={{ ...clbStyle, marginBottom: 10 }}>You probably —</div>
-        <p style={{ fontFamily: INK.font, fontSize: READ.size, lineHeight: READ.line, letterSpacing: "-0.005em", color: INK.t82, margin: 0, whiteSpace: "pre-line" }}>
-          {prediction}
-        </p>
-      </div>
-    </OpenSection>
-  );
-}
-
-/* ─────────────── 7 · signal index ─────────────── */
-
-function MetricsSection({ card }: { card: TypeCard }) {
-  const metrics = card.metrics ?? [];
-  if (metrics.length === 0) return null;
-  return (
-    <OpenSection>
-      <div style={clbStyle}>Signal Index</div>
-      <p style={{ fontFamily: INK.font, fontSize: 16, lineHeight: 1.75, color: INK.t62, margin: "0 0 20px" }}>
-        Here&rsquo;s how we read your answers — the senses that run unusually strong, or unusually quiet, in this type.
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        {metrics.map((m, i) => {
-          const cool = m.tone === "cool";
-          return (
-            <div key={i}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontFamily: INK.font, fontSize: 16.5, fontWeight: 600, color: "rgba(237,228,211,.92)" }}>{m.name}</span>
-                <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums", color: cool ? "rgba(237,228,211,.55)" : INK.accent2 }}>{m.value}</span>
-              </div>
-              <div style={{ height: 6, background: "rgba(237,228,211,.09)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${m.value}%`, background: cool ? "rgba(237,228,211,.4)" : INK.grad, borderRadius: 3 }} />
-              </div>
-              {m.desc && <p style={{ fontFamily: INK.font, fontSize: READ.noteSize, lineHeight: READ.noteLine, color: INK.t62, margin: "9px 0 0" }}>{m.desc}</p>}
-            </div>
-          );
-        })}
-      </div>
-    </OpenSection>
-  );
-}
-
-/* ─────────────── 7.5 · insight (aha) ─────────────── */
-
-function InsightSection({ insight }: { insight: string }) {
-  return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: 16,
-        padding: "24px 22px",
-        background: "rgba(166,162,224,.06)",
-        border: `1px solid rgba(166,162,224,.28)`,
-        animation: "icRise .4s ease both",
-      }}
-    >
-      <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(70% 60% at 0% 0%, rgba(166,162,224,.14), transparent 62%)" }} />
-      <div style={{ position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <span aria-hidden style={{ fontSize: 15 }}>💡</span>
-          <span style={{ fontFamily: INK.display, fontSize: 19, fontWeight: 800, letterSpacing: "-0.02em", color: INK.white }}>
-            Why this keeps happening
-          </span>
-        </div>
-        <p style={{ fontFamily: INK.font, fontSize: READ.size, lineHeight: READ.line, letterSpacing: "-0.005em", color: INK.t82, margin: 0, whiteSpace: "pre-line" }}>
-          {insight}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────── 8 · lock + paywall ─────────────── */
-
-const PAY_TEASERS: { title: string; body: string }[] = [
-  {
-    title: "The structure that repeats the same wound",
-    body: "Trigger → interpretation → action → outcome — how they interlock to repeat the same wound, reconstructed from your answers alone. The full report shows why that action ends up summoning the very outcome you feared most, as a five-step loop drawn on a single page. Repetition isn't a matter of willpower but of structure — you can only find the way out once you can see the structure from the outside.",
-  },
-  {
-    title: "The true identity of your guardian (defense)",
-    body: "How you've protected yourself in hard moments, analyzed into three guardian types. The full report lays out when and how this guardian activates — what it protects, and what it quietly takes in return. Until you see the guardian for what it is, the response feels like 'just my personality,' something unchangeable — naming it is what finally puts distance between you and the reaction.",
-  },
-  {
-    title: "The conflicts and problems this child creates",
-    body: "What conflicts and problems this child actually creates in your relationships and work, pinned to concrete scenes, grounded in your answers. 'Why do things always break at the same point with me?' — once you see that recurring friction from the outside, you finally see it wasn't your fault, but this child's way of operating.",
-  },
-  {
-    title: "The thoughts this child repeats — and their root",
-    body: "The thoughts your inner child keeps circling, traced down to the single belief beneath them — one this child formed very early — and where that belief came from. The thoughts look different each time, but it's really one old belief still speaking to you. Only by seeing its root do you understand why the same thought repeats into adulthood.",
-  },
-  {
-    title: "The moment this child wakes up",
-    body: "The moments (triggers) when a normally-hidden inner child wakes up unusually strongly, and why that exact moment is so hard for this child to bear. Knowing the signal in advance lets you catch it a step early — 'ah, that child just woke up' — and steady yourself before the feeling sweeps you off.",
-  },
-  {
-    title: "The signal of a second child",
-    body: "Besides your primary child, the signal of another inner child that jumps out first in certain situations. The report shows when the two children trade places, and how one keeps the other hidden. The primary child alone can't explain 'why some days I become a completely different me' — you need the second child to fully understand your reactions.",
-  },
-  {
-    title: "What this child truly wanted",
-    body: "What went unmet in the environment this child grew up in, and how that gap feeds today's reactions. The report names what the child really wanted — and concrete ways the present-day you can give it to yourself (a 3-step reparenting plan). It doesn't stop at knowing the cause; it hands you a single sentence you can say to yourself right now — the start of recovery, not just understanding.",
-  },
-  {
-    title: "How to get along with this child",
-    body: "The goal isn't to erase this child but to live well alongside it. When this child moves to stir up conflict, you get practical ways to soothe it while protecting the relationship, tailored to your situation. Not just knowing, but 'so, starting tomorrow, what exactly do I do' — usable by the you of today.",
-  },
-];
-
-function PaywallSection({ onRequest, leadId }: { onRequest: () => void; leadId?: string }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  // 페이월이 화면에 들어오는 순간 = 무료 콘텐츠를 다 읽고 잠금에 도달한 순간(①).
-  // 스크롤 레이아웃이라 mount 가 아니라 IntersectionObserver 로 "실제로 보였을 때"를 잡는다.
-  // 세션당 1회만 발화(trackEnFunnel 내부 dedupe).
+  // reached_paywall — fire once when the price/CTA block actually scrolls into view
+  // (scroll layout, so IntersectionObserver, not mount). trackEnFunnel dedupes per session.
   useEffect(() => {
-    const el = ref.current;
+    const el = paywallRef.current;
     if (!el || typeof IntersectionObserver === "undefined") {
       trackEnFunnel("reached_paywall", leadId);
       return;
@@ -479,206 +103,617 @@ function PaywallSection({ onRequest, leadId }: { onRequest: () => void; leadId?:
           io.disconnect();
         }
       },
-      { threshold: 0.25 },
+      { threshold: 0.2 },
     );
     io.observe(el);
     return () => io.disconnect();
   }, [leadId]);
 
+  // Motion: inject star layer per scene + scroll-in fade + star parallax. Stops on reduced-motion.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const scenes = Array.from(root.querySelectorAll<HTMLElement>(".ic-scene"));
+    const starEls: HTMLElement[] = [];
+    scenes.forEach((s) => {
+      const d = document.createElement("div");
+      d.className = "ic-stars";
+      s.insertBefore(d, s.firstChild);
+      starEls.push(d);
+    });
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add("in");
+          e.target.querySelectorAll<HTMLElement>(".ic-fill").forEach((f) => {
+            f.style.width = (f.getAttribute("data-w") || "0") + "%";
+          });
+          io.unobserve(e.target);
+        });
+      },
+      { threshold: 0.16 },
+    );
+    root.querySelectorAll(".ic-anim").forEach((el) => io.observe(el));
+
+    let onScroll: (() => void) | null = null;
+    if (!reduce && scenes.length) {
+      let ticking = false;
+      const run = () => {
+        const vh = window.innerHeight;
+        scenes.forEach((el, i) => {
+          const r = el.getBoundingClientRect();
+          if (r.bottom < -60 || r.top > vh + 60) return;
+          const progress = (r.top + r.height / 2 - vh / 2) / vh;
+          starEls[i].style.transform = `translateY(${(progress * 46).toFixed(1)}px)`;
+        });
+        ticking = false;
+      };
+      onScroll = () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(run);
+        }
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      run();
+    }
+
+    return () => {
+      io.disconnect();
+      if (onScroll) window.removeEventListener("scroll", onScroll);
+      starEls.forEach((d) => d.remove());
+    };
+  }, []);
+
+  const src = innerChildIllustration(card.schema_id);
+  const secondSrc = secondChild ? innerChildIllustration(secondChild.schema_id) : null;
+  const areaRows = score
+    ? (Object.entries(score.areas) as [AreaId, AreaScore][]).sort(
+        (a, b) => a[1].rank - b[1].rank,
+      )
+    : [];
+  const areaMax = Math.max(1, ...areaRows.map(([, v]) => v.score));
+
   return (
-    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      <LockedPreview />
+    <div className="ic-root" ref={rootRef}>
+      <style>{CSS}</style>
 
-      <div
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          borderRadius: 18,
-          padding: "28px 22px",
-          marginTop: 14,
-          background: "linear-gradient(180deg,#181920,#131318)",
-          border: `1px solid ${INK.payBorder}`,
-          boxShadow: "0 26px 60px -30px rgba(166,162,224,.5)",
-        }}
-      >
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(74% 60% at 100% 0%, rgba(166,162,224,.22), transparent 60%)" }} />
-        <div style={{ position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ width: 5, height: 5, borderRadius: 999, background: INK.accent, display: "inline-block" }} />
-            <span style={{ fontFamily: INK.mono, fontWeight: 600, fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: INK.accent2 }}>
-              Analyzed with IFS · complete
-            </span>
-          </div>
-
-          <h3 style={{ fontFamily: INK.display, fontSize: 24, fontWeight: 800, lineHeight: 1.32, letterSpacing: "-0.03em", color: INK.white, margin: "13px 0 12px" }}>
-            That was &lsquo;who you are.&rsquo;
-            <br />
-            Ready to open &lsquo;why&rsquo;?
-          </h3>
-          <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.8, color: INK.t62, margin: "0 0 4px" }}>
-            The free report covers <b style={{ color: INK.t82, fontWeight: 700 }}>who</b> the child inside you is. <b style={{ color: INK.t82, fontWeight: 700 }}>Why it reacts the way it does</b>,
-            <b style={{ color: INK.t82, fontWeight: 700 }}> what conflicts and problems it creates</b>, and
-            <b style={{ color: INK.t82, fontWeight: 700 }}> how to get along with it</b> — all of that lives in the full report.
+      {/* ── opening cinematic (one line at a time) ── */}
+      <section className="ic-scene ic-tall ic-anim">
+        <div className="ic-inner">
+          <p className="ic-eyebrow ic-line">Analysis complete</p>
+          <p className="ic-big ic-line ic-d1">
+            Every answer you just gave —
           </p>
+          <p className="ic-big ic-line ic-d2">we didn&rsquo;t let a single one slip.</p>
+        </div>
+        <span className="ic-scrollhint"><ArrowDown /></span>
+      </section>
 
-          <h4 style={{ fontFamily: INK.font, fontSize: 16.5, fontWeight: 800, letterSpacing: "-0.02em", color: INK.accent2, margin: "22px 0 0", lineHeight: 1.5, wordBreak: "keep-all" }}>
-            {PAY_TEASERS.length} things the full report opens up
-          </h4>
+      <section className="ic-scene ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">Following your answers, one by one,</p>
+          <p className="ic-line ic-d1">we found a <b>child</b> sitting inside you.</p>
+        </div>
+        <span className="ic-scrollhint"><ArrowDown /></span>
+      </section>
 
-          <div style={{ margin: "18px 0 4px" }}>
-            {PAY_TEASERS.map((t, i) => (
-              <div key={i} style={{ paddingTop: i === 0 ? 0 : 18, marginTop: i === 0 ? 0 : 18, borderTop: i === 0 ? "none" : `1px solid ${INK.line}` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 6, border: `1px solid rgba(166,162,224,.6)`, color: INK.accent2, flex: "0 0 auto" }}>
-                    <LockIcon />
-                  </span>
-                  <span style={{ fontFamily: INK.font, fontSize: 15.5, fontWeight: 700, color: INK.white }}>{t.title}</span>
-                </div>
-                <p style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.78, color: INK.t68, margin: "9px 0 0", paddingLeft: 30 }}>{t.body}</p>
-              </div>
-            ))}
-          </div>
+      <section className="ic-scene ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">It&rsquo;s been there a long time —</p>
+          <p className="ic-line ic-d1">and no one has called it by name.</p>
+        </div>
+      </section>
 
-          {/* price */}
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 11, margin: "24px 0 14px" }}>
-            <span style={{ fontFamily: INK.display, fontSize: 38, fontWeight: 800, letterSpacing: "-0.035em", fontVariantNumeric: "tabular-nums", background: INK.grad, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
-              {PRICE_LABEL}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            className="ic-cta"
-            onClick={onRequest}
-            style={{
-              width: "100%",
-              padding: "16px 18px",
-              borderRadius: 13,
-              background: INK.grad,
-              color: INK.shell,
-              border: "none",
-              fontFamily: INK.font,
-              fontWeight: 800,
-              fontSize: 16,
-              cursor: "pointer",
-              boxShadow: "0 16px 40px -16px rgba(166,162,224,.7)",
-            }}
-          >
-            Request the full report · {PRICE_LABEL} →
-          </button>
-          <p style={{ fontFamily: INK.mono, fontSize: 10, color: INK.t4, textAlign: "center", marginTop: 13 }}>
-            Delivered by email · reopen anytime by link
-          </p>
+      {/* ── personalization hook (portrait) ── */}
+      <div className="ic-cardwrap ic-anim">
+        <div className="ic-card">
+          <p className="ic-eyebrow2">Your story</p>
+          <p className="ic-portrait">{portrait}</p>
         </div>
       </div>
-    </div>
-  );
-}
 
-/** Locked transition — blurred faux report body + lock overlay. */
-function LockedPreview() {
-  const fauxLines = [
-    "Beneath the thoughts this child keeps circling",
-    "sits a single belief formed very early on.",
-    "Trigger → interpretation → action → outcome interlock,",
-    "repeating the same wound — reconstructed from your answers.",
-    "The guardian steps forward to protect you, but in return",
-  ];
-  return (
-    <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", border: `1px solid ${INK.border}`, background: INK.surface }}>
-      <div
-        aria-hidden
-        style={{
-          padding: "24px 22px 40px",
-          filter: "blur(6px)",
-          opacity: 0.5,
-          userSelect: "none",
-          pointerEvents: "none",
-        }}
-      >
-        <div style={{ width: 120, height: 13, borderRadius: 4, background: "rgba(166,162,224,.5)", marginBottom: 16 }} />
-        {fauxLines.map((l, i) => (
-          <p key={i} style={{ fontFamily: INK.font, fontSize: 15, lineHeight: 1.9, color: INK.t72, margin: 0 }}>{l}</p>
-        ))}
+      {/* ── the terrain of your heart (free · fully shown) ── */}
+      {areaRows.length > 0 && (
+        <>
+          <section className="ic-scene ic-short ic-anim">
+            <div className="ic-inner">
+              <p className="ic-line">First, let&rsquo;s look at where your heart<br />quietly leans.</p>
+            </div>
+          </section>
+          <div className="ic-cardwrap ic-anim">
+            <div className="ic-card">
+              <div className="ic-center"><span className="ic-free">Free · fully shown</span></div>
+              <h2 className="ic-h2">The lay of your heart</h2>
+              <p className="ic-muted ic-center ic-small" style={{ marginBottom: 20 }}>
+                Which of four directions you lean toward — straight from your own answers.
+              </p>
+              <div className="ic-map">
+                {areaRows.map(([area, v], i) => (
+                  <div className="ic-row" key={area}>
+                    <span className="ic-rl">{AREA_LABEL[area]}</span>
+                    <span className="ic-track">
+                      <span
+                        className={"ic-fill" + (i > 1 ? " ic-dim" : "")}
+                        data-w={String(Math.max(14, Math.round((v.score / areaMax) * 100)))}
+                      />
+                    </span>
+                    <span className="ic-rv">{v.score}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="ic-small ic-muted ic-center" style={{ marginTop: 20 }}>
+                You answered loudest toward <b className="ic-ink">{AREA_LABEL[areaRows[0][0]]}</b>.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── type reveal (name & face free + lock) ── */}
+      <section className="ic-scene ic-short ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">And within that direction,</p>
+          <p className="ic-line ic-d1">one child answered louder than the rest.</p>
+        </div>
+      </section>
+      <section className="ic-scene ic-short ic-anim">
+        <div className="ic-inner">
+          <p className="ic-big ic-line">And this child<br />already has a <b>name</b>.</p>
+        </div>
+        <span className="ic-scrollhint"><ArrowDown /></span>
+      </section>
+
+      <div className="ic-cardwrap ic-anim">
+        <div className="ic-card ic-reveal">
+          <span className="ic-free">Name &amp; face — free</span>
+          {src ? (
+            <img className="ic-avatar" src={src} alt={card.child_name} draggable={false} />
+          ) : (
+            <div className="ic-avatar" style={{ background: "#2a2a2e" }} />
+          )}
+          <p className="ic-name">{card.child_name}</p>
+          <p className="ic-muted" style={{ margin: "0 4px" }}>{card.one_liner}</p>
+          <Lockbox
+            checks={[
+              <>Why <b>you</b> react when others don&rsquo;t</>,
+              <>What this heart has <b>protected</b> — and the strength to keep</>,
+              <>How to stay <b>steadier</b> in your relationships</>,
+              <>The moments this child finally <b>settles</b></>,
+            ]}
+          />
+        </div>
       </div>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          background: `linear-gradient(180deg, rgba(20,21,25,.35) 0%, rgba(20,21,25,.75) 55%, ${INK.surface} 100%)`,
-        }}
-      >
-        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 999, background: "rgba(166,162,224,.14)", border: `1px solid rgba(166,162,224,.5)`, color: INK.accent2 }}>
-          <LockIcon size={18} />
-        </span>
-        <span style={{ fontFamily: INK.font, fontSize: 14.5, fontWeight: 800, color: INK.white, letterSpacing: "-0.01em" }}>
-          Locked from here on
-        </span>
+
+      {/* ── concern card (echoes their free-text, static personalization) ── */}
+      {concernText && (
+        <>
+          <section className="ic-scene ic-anim">
+            <div className="ic-inner">
+              <p className="ic-line">And the worry you left at the end —</p>
+              <p className="ic-big ic-line ic-d1"><b>that one</b><br />we can&rsquo;t just skip past.</p>
+              <p className="ic-hint ic-line ic-d2">Let&rsquo;s trace how it connects to this child</p>
+            </div>
+            <span className="ic-scrollhint"><ArrowDown /></span>
+          </section>
+          <div className="ic-cardwrap ic-anim">
+            <div className="ic-card">
+              <div className="ic-center"><span className="ic-worry">The worry you left</span></div>
+              <blockquote className="ic-concern-quote">&ldquo;{concernText}&rdquo;</blockquote>
+              <p className="ic-muted ic-center" style={{ margin: "16px 0 0", fontSize: 15.5, lineHeight: 1.8 }}>
+                That you can&rsquo;t let this one go isn&rsquo;t random — it&rsquo;s likely <b className="ic-ink">this child</b>.
+              </p>
+              <p className="ic-fillsent ic-center">
+                What&rsquo;s really catching underneath is<br />
+                <span className="ic-blank"><span>●●●●●●</span></span>.
+              </p>
+              <Lockbox
+                checks={[
+                  <>How this worry <b>connects to this child</b></>,
+                  <>How to stay <b>less pulled around</b> in that moment</>,
+                  <>When this very sensitivity becomes a <b>strength</b></>,
+                ]}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── automatic thoughts (3 shown + blank + lock) ── */}
+      {card.auto_thoughts?.length > 0 && (
+        <>
+          <section className="ic-scene ic-short ic-anim">
+            <div className="ic-inner">
+              <p className="ic-line">When this child wakes up, your mind</p>
+              <p className="ic-big ic-line ic-d1">flips on almost the<br /><b>same thought</b>, automatically.</p>
+            </div>
+          </section>
+          <div className="ic-cardwrap ic-anim">
+            <div className="ic-card">
+              <div className="ic-center"><span className="ic-free">The thoughts, shown as-is</span></div>
+              <h2 className="ic-h2">The thoughts you keep having</h2>
+              <div className="ic-thoughts">
+                {card.auto_thoughts.slice(0, 3).map((t, i) => (
+                  <div className="ic-thought" key={i}>{t}</div>
+                ))}
+              </div>
+              <p className="ic-fillsent ic-center">
+                Three lines that look different, but one<br />
+                <span className="ic-blank"><span>●●●●●●●</span></span> underneath them all.
+              </p>
+              <Lockbox
+                checks={[
+                  <>Why you keep <b>falling into the same thought</b></>,
+                  <>Why you <b>don&rsquo;t have to believe it</b></>,
+                  <>How to <b>step out</b> when it pulls you under</>,
+                ]}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── the loop (3 steps free, 4-5 locked) ── */}
+      <section className="ic-scene ic-short ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">These thoughts don&rsquo;t fire at random.</p>
+          <p className="ic-big ic-line ic-d1">They run the <b>same track</b><br />every single time.</p>
+        </div>
+      </section>
+      <div className="ic-cardwrap ic-anim">
+        <div className="ic-card">
+          <div className="ic-center"><span className="ic-free">First three steps — free</span></div>
+          <h2 className="ic-h2">The track the same wound runs</h2>
+          <div className="ic-loop">
+            <LoopStep n="1" t="Signal" d="a moment catches on something" />
+            <LoopStep n="2" t="Reading" d="you assume the worst first" />
+            <LoopStep n="3" t="Action" d="you check for reassurance, or pull back first" />
+            <LoopStep n="4" t="What comes back" d="what that action leaves behind, and what it returns to you" locked />
+            <LoopStep n="5" t="The belief that hardens" d="the line this child gets confirmed, every time the loop closes" locked />
+          </div>
+          <Lockbox
+            checks={[
+              <>How this loop <b>ends</b></>,
+              <>How to <b>stop landing</b> in the same place</>,
+              <>How to break it and <b>take one step forward</b></>,
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* ── guardian (identity shown + blank + lock) ── */}
+      {score?.guardian && (
+        <>
+          <section className="ic-scene ic-anim">
+            <div className="ic-inner">
+              <p className="ic-line">But here&rsquo;s the thing — this child</p>
+              <p className="ic-big ic-line ic-d1">did all of it<br />to <b>protect you</b>.</p>
+            </div>
+          </section>
+          <div className="ic-cardwrap ic-anim">
+            <div className="ic-card">
+              <div className="ic-center"><span className="ic-free">The guardian, named</span></div>
+              <h2 className="ic-h2">What&rsquo;s been guarding this child</h2>
+              <div className="ic-gname"><span className="ic-badge">{GUARDIAN_LABEL[score.guardian.type]}</span></div>
+              {card.surface_reaction && (
+                <p className="ic-muted ic-center ic-small" style={{ margin: "10px 0 0" }}>
+                  On the surface, it shows up as <b className="ic-ink">{card.surface_reaction}</b>.
+                </p>
+              )}
+              <p className="ic-fillsent ic-center" style={{ marginTop: 14 }}>
+                What this guardian quietly paid on your behalf is<br />
+                <span className="ic-blank"><span>●●●●●●</span></span>.
+              </p>
+              <Lockbox
+                checks={[
+                  <>What this defense <b>gave up</b> in return</>,
+                  <>How to feel <b>safe without bracing</b></>,
+                  <>A gentler way to <b>keep yourself safe</b></>,
+                ]}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── only the beginning (strong) ── */}
+      <section className="ic-scene ic-tall ic-anim">
+        <div className="ic-inner">
+          <p className="ic-big ic-line">And all of this…</p>
+          <p className="ic-big ic-line ic-d1">is only the <b>beginning</b>.</p>
+          <p className="ic-line ic-d2" style={{ marginTop: 22 }}>
+            There&rsquo;s more inside you that<br />hasn&rsquo;t shown its face yet.
+          </p>
+        </div>
+        <span className="ic-scrollhint"><ArrowDown /></span>
+      </section>
+
+      {/* ── teaser rail ── */}
+      <div className="ic-teaser ic-anim">
+        <div className="ic-th"><p>What continues in the report</p><p className="ic-sub">→ swipe across</p></div>
+        <div className="ic-rail">
+          <TeaserCard t={<>This child&rsquo;s<br />full structure</>} d="The story behind the name, and how it shows across three areas" />
+          <TeaserCard t={<>The second<br />child</>} d="The other child behind the veil, and how the two trade places" />
+          <TeaserCard t={<>How to live<br />alongside it</>} d="In relationships, on your own, and inside your own mind" />
+          <TeaserCard t={<>A closing<br />letter</>} d="What the you of today says to that child" />
+        </div>
+      </div>
+
+      {/* ── second child (blurred + lock) ── */}
+      {secondChild && (
+        <div className="ic-cardwrap ic-anim">
+          <div className="ic-card ic-second">
+            <div className="ic-swrap">
+              {secondSrc ? (
+                <img src={secondSrc} alt="" aria-hidden draggable={false} />
+              ) : (
+                <div style={{ width: "100%", height: "100%", borderRadius: 999, background: "#2a2a2e" }} />
+              )}
+              <span className="ic-lk"><LockIcon size={40} /></span>
+            </div>
+            <h2 className="ic-h2">The second child is<br />still keeping its face hidden</h2>
+            <Lockbox
+              center
+              checks={[
+                <>The second child&rsquo;s <b>name and face</b></>,
+                <>How to <b>handle yourself</b> when the two collide</>,
+                <>Why some days you become a <b>completely different you</b></>,
+              ]}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── closing narrative ── */}
+      <section className="ic-scene ic-tall ic-anim">
+        <div className="ic-inner">
+          <p className="ic-line">This child has guarded you for a long time.</p>
+          <p className="ic-line ic-d1">Not one to erase —<br />one to finally <b>call by name</b>.</p>
+          {card.reparenting_line && (
+            <p className="ic-voice ic-line ic-d2" style={{ marginTop: 28 }}>&ldquo;{card.reparenting_line}&rdquo;</p>
+          )}
+        </div>
+      </section>
+
+      {/* ── price ── */}
+      <div className="ic-cardwrap ic-anim" ref={paywallRef}>
+        <h2 className="ic-center" style={{ fontSize: 27, fontWeight: 800, lineHeight: 1.34, letterSpacing: "-0.02em" }}>
+          Ready to meet the parts<br />still kept hidden?
+        </h2>
+        <p className="ic-muted ic-center" style={{ margin: "10px 0 18px" }}>
+          Everything you&rsquo;ve been wondering — down to <b className="ic-ink">how it actually gets better</b> — opens up.
+        </p>
+        <div className="ic-card">
+          <p className="ic-prod-title">Inner Child Deep Report<span className="ic-prod-sub">14 chapters</span></p>
+          <ul className="ic-toc" style={{ margin: "16px 0 0" }}>
+            <li>Why <b>you</b>, specifically — the root of this reaction</li>
+            <li>Where this child <b>first formed</b>, and its full structure</li>
+            <li>How to get <b>free of the thought</b> that keeps circling</li>
+            <li>How to <b>break the loop</b> and move forward</li>
+            <li>A <b>gentler way to protect yourself</b> in relationships</li>
+            <li>Meeting the second child, and <b>a letter to the you of today</b></li>
+          </ul>
+        </div>
+        <div className="ic-pricebox">
+          <div className="ic-pline ic-total"><span className="ic-tlabel">Full report</span><span className="ic-final">{PRICE_LABEL}</span></div>
+        </div>
+      </div>
+
+      <p className="ic-disc">GIBUN Report · INNER CHILD REPORT · {DISCLAIMER}</p>
+      {footerExtra ? <div className="ic-foot-extra">{footerExtra}</div> : null}
+      <div className="ic-foot-space" />
+
+      {/* ── sticky CTA ── */}
+      <div className="ic-sticky">
+        <p className="ic-cap">Opens in seconds · reopen anytime by link</p>
+        <button type="button" className="ic-cta" onClick={openRequest}>Get the full report · {PRICE_LABEL} →</button>
+      </div>
+
+      <RequestReportModal open={requestOpen} onClose={() => setRequestOpen(false)} leadId={leadId} />
+    </div>
+  );
+}
+
+/* ─────────────── pieces ─────────────── */
+
+function Lockbox({ checks, center = false }: { checks: ReactNode[]; center?: boolean }) {
+  return (
+    <div className="ic-lockbox" style={center ? { textAlign: "center" } : undefined}>
+      <span className="ic-lock-ico"><LockIcon size={34} /></span>
+      <p className="ic-lh">+ Here&rsquo;s what the full report opens up</p>
+      <div className="ic-hr" />
+      <ul className="ic-checks" style={center ? { maxWidth: 300, margin: "0 auto" } : undefined}>
+        {checks.map((c, i) => <li key={i}>{c}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function LoopStep({ n, t, d, locked = false }: { n: string; t: string; d: string; locked?: boolean }) {
+  return (
+    <div className={"ic-st" + (locked ? " ic-locked" : "")}>
+      <span className="ic-dot">{n}</span>
+      <div>
+        <p className="ic-st-t">{t}</p>
+        <p className="ic-st-d">{d}</p>
       </div>
     </div>
   );
 }
 
-/* ─────────────── sticky CTA ─────────────── */
-
-function StickyCta({ onRequest }: { onRequest: () => void }) {
+function TeaserCard({ t, d }: { t: ReactNode; d: string }) {
   return (
-    <div
-      style={{
-        position: "fixed",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 50,
-        display: "flex",
-        justifyContent: "center",
-        padding: "10px 12px calc(10px + env(safe-area-inset-bottom, 0px))",
-        background: "linear-gradient(180deg, rgba(5,5,6,0) 0%, rgba(5,5,6,.85) 40%, #15120D 100%)",
-        pointerEvents: "none",
-      }}
-    >
-      <button
-        type="button"
-        className="ic-cta"
-        onClick={onRequest}
-        style={{
-          pointerEvents: "auto",
-          width: "100%",
-          maxWidth: 440,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          padding: "14px 18px",
-          borderRadius: 14,
-          background: INK.grad,
-          color: INK.shell,
-          border: "none",
-          fontFamily: INK.font,
-          cursor: "pointer",
-          boxShadow: "0 18px 44px -14px rgba(166,162,224,.7)",
-        }}
-      >
-        <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.25 }}>
-          <span style={{ fontWeight: 800, fontSize: 15.5 }}>Request the full report →</span>
-          <span style={{ fontSize: 12.5, fontWeight: 800 }}>{PRICE_LABEL}</span>
-        </span>
-        <span style={{ fontFamily: INK.mono, fontSize: 10.5, fontWeight: 600, opacity: 0.7, whiteSpace: "nowrap" }}>instant</span>
-      </button>
+    <div className="ic-tcard">
+      <span className="ic-tlock"><LockIcon size={18} /></span>
+      <p className="ic-tt">{t}</p>
+      <p className="ic-td">{d}</p>
     </div>
   );
 }
 
-function LockIcon({ size = 11 }: { size?: number }) {
+function ArrowDown() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x={4} y={11} width={16} height={9} rx={2} />
-      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 5v14M6 13l6 6 6-6" />
     </svg>
   );
 }
+
+function LockIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x={4} y={10} width={16} height={11} rx={2.5} />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+/* ─────────────── CSS (night-sky narrative + cream cards, lavender accent) ─────────────── */
+
+const CSS = `
+/* Always dark — sales page is dark-fixed (no light/OS auto). */
+.ic-root{
+  --paper:#211D18;--paper-2:#29241D;--ink:#EDE4D3;--pencil:#9A9082;
+  --rule:#342D24;--edge:#3A3228;--sage:#A6A2E0;--sage-soft:#322F47;
+  --shadow:0 0 0;--lock-veil:33 29 24;
+  background:var(--paper);color:var(--ink);
+  font-family:'Inter','Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  line-height:1.7;-webkit-font-smoothing:antialiased;
+  max-width:440px;margin:0 auto;position:relative;overflow-x:hidden;
+}
+.ic-root *{box-sizing:border-box;}
+.ic-root h2,.ic-root p,.ic-root ul{margin:0;}
+.ic-ink{color:var(--ink);}
+.ic-muted{color:var(--pencil);}
+.ic-small{font-size:13px;}
+.ic-center{text-align:center;}
+.ic-h2{font-size:24px;line-height:1.34;letter-spacing:-.01em;font-weight:800;text-align:center;text-wrap:balance;}
+
+/* narrative (night sky, theme-fixed) */
+.ic-scene{position:relative;min-height:78vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 34px;color:#F1E9DA;overflow:hidden;background:radial-gradient(62% 42% at 50% 20%,rgba(92,88,142,.30),transparent 72%),#1C1813;box-shadow:inset 0 -90px 110px -30px rgba(0,0,0,.72),inset 0 70px 90px -40px rgba(0,0,0,.5);}
+.ic-scene.ic-short{min-height:60vh;}
+.ic-scene.ic-tall{min-height:92vh;}
+.ic-stars{position:absolute;inset:-16% 0;z-index:0;pointer-events:none;will-change:transform;}
+.ic-stars::before,.ic-stars::after{content:"";position:absolute;inset:0;}
+.ic-stars::before{background:radial-gradient(1.5px 1.5px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 28% 42%,rgba(255,255,255,.8),transparent),radial-gradient(1.5px 1.5px at 45% 12%,rgba(255,255,255,.9),transparent),radial-gradient(1px 1px at 62% 30%,rgba(255,255,255,.65),transparent),radial-gradient(1.5px 1.5px at 78% 22%,#fff,transparent),radial-gradient(1px 1px at 35% 90%,rgba(255,255,255,.6),transparent);animation:icTw1 4.5s ease-in-out infinite;}
+.ic-stars::after{background:radial-gradient(1px 1px at 88% 48%,rgba(255,255,255,.75),transparent),radial-gradient(1px 1px at 18% 68%,rgba(255,255,255,.6),transparent),radial-gradient(1.5px 1.5px at 52% 78%,rgba(255,255,255,.8),transparent),radial-gradient(1px 1px at 72% 88%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 8% 40%,rgba(255,255,255,.5),transparent),radial-gradient(1.5px 1.5px at 92% 14%,#fff,transparent);animation:icTw2 6s ease-in-out infinite;}
+@keyframes icTw1{0%,100%{opacity:.95}50%{opacity:.5}}
+@keyframes icTw2{0%,100%{opacity:.5}50%{opacity:.95}}
+.ic-inner{position:relative;z-index:1;max-width:340px;}
+.ic-scene p{font-size:21px;line-height:1.85;font-weight:600;color:#F1E9DA;text-wrap:balance;}
+.ic-scene p+p{margin-top:18px;}
+.ic-scene p b{color:#fff;font-weight:800;}
+.ic-scene .ic-big{font-size:25px;}
+.ic-scene .ic-eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#9A9DB8;font-weight:700;margin-bottom:22px;}
+.ic-scene .ic-hint{margin-top:22px;font-size:12.5px;letter-spacing:.06em;color:#8E93AD;font-weight:700;}
+.ic-scene .ic-voice{font-style:italic;color:#B5B1E4;font-size:23px;font-weight:500;line-height:1.7;}
+.ic-scrollhint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:1;color:#8E93AD;opacity:.8;}
+.ic-scrollhint svg{animation:icBob 1.8s ease-in-out infinite;}
+@keyframes icBob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+.ic-line{opacity:0;transform:translateY(16px);filter:blur(7px);transition:opacity 1s ease,transform 1.1s cubic-bezier(.2,.7,.2,1),filter 1.1s ease;}
+.ic-scene.in .ic-line{opacity:1;transform:none;filter:none;}
+.ic-scene.in .ic-d1{transition-delay:.3s;}
+.ic-scene.in .ic-d2{transition-delay:.75s;}
+
+/* cards */
+.ic-cardwrap{padding:42px 26px;position:relative;}
+.ic-card{background:var(--paper-2);border:1.5px solid var(--edge);border-radius:18px;padding:26px 22px;box-shadow:0 12px 30px -20px rgb(var(--shadow)/.5);}
+.ic-eyebrow2{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--pencil);font-weight:700;margin-bottom:12px;text-align:center;}
+.ic-portrait{font-size:17px;line-height:1.9;color:var(--ink);white-space:pre-line;}
+.ic-free{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--sage);border:1.5px solid var(--sage);border-radius:999px;padding:3px 10px 3px 8px;margin-bottom:8px;}
+.ic-free::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--sage);}
+.ic-worry{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--sage);background:var(--sage-soft);border-radius:999px;padding:5px 13px 5px 10px;margin-bottom:12px;}
+.ic-concern-quote{margin:16px 0 0;padding:16px 18px;background:var(--paper);border:1px solid var(--edge);border-left:3px solid var(--sage);border-radius:4px 12px 12px 4px;font-size:16px;line-height:1.75;font-weight:600;color:var(--ink);white-space:pre-wrap;}
+.ic-worry::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--sage);}
+
+.ic-lockbox{border:1.6px dashed var(--sage);border-radius:16px;padding:24px 20px 20px;margin-top:22px;text-align:center;background:rgb(var(--lock-veil)/.5);}
+.ic-lock-ico{color:var(--sage);display:block;margin:0 auto 10px;height:34px;}
+.ic-lh{font-weight:800;font-size:15.5px;margin-bottom:4px;}
+.ic-hr{height:1px;background:var(--edge);margin:15px 2px 17px;}
+.ic-checks{list-style:none;text-align:left;display:grid;gap:13px;}
+.ic-checks li{position:relative;padding-left:30px;font-size:14.5px;line-height:1.5;}
+.ic-checks li::before{content:"";position:absolute;left:0;top:1px;width:19px;height:19px;border-radius:50%;background:var(--sage);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6 9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6 9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px no-repeat;}
+.ic-checks b{font-weight:700;}
+
+.ic-fillsent{font-size:15.5px;line-height:1.95;margin-top:4px;}
+.ic-blank{display:inline-block;border:1.5px solid var(--sage);border-radius:999px;padding:1px 18px;vertical-align:middle;background:var(--sage-soft);}
+.ic-blank span{filter:blur(6px);user-select:none;font-weight:700;color:var(--ink);}
+
+.ic-map{display:grid;gap:13px;margin-top:6px;}
+.ic-row{display:grid;grid-template-columns:92px 1fr 32px;align-items:center;gap:10px;}
+.ic-rl{font-size:13px;font-weight:600;}
+.ic-track{height:12px;background:var(--rule);border-radius:999px;overflow:hidden;}
+.ic-fill{display:block;height:100%;background:var(--sage);border-radius:999px;width:0;transition:width 1.1s cubic-bezier(.2,.7,.2,1);}
+.ic-fill.ic-dim{background:var(--edge);}
+.ic-rv{font-size:12.5px;font-weight:700;text-align:right;color:var(--pencil);font-variant-numeric:tabular-nums;}
+
+.ic-reveal{text-align:center;}
+.ic-avatar{width:168px;height:168px;border-radius:50%;object-fit:cover;border:3px solid var(--paper);box-shadow:0 0 0 2px var(--sage),0 14px 30px -12px rgb(var(--shadow)/.5);margin:6px 0 18px;background:#FBF7EE;}
+.ic-name{font-size:27px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px;}
+
+.ic-thoughts{display:grid;gap:11px;margin:16px 0 4px;}
+.ic-thought{background:var(--paper);border:1.5px solid var(--edge);border-radius:16px 16px 16px 4px;padding:12px 15px;font-size:15px;font-weight:600;position:relative;}
+.ic-thought::after{content:"\\201D";position:absolute;right:12px;bottom:2px;color:var(--edge);font-size:22px;}
+
+.ic-loop{display:grid;gap:0;margin:16px 0 4px;}
+.ic-st{display:grid;grid-template-columns:30px 1fr;gap:12px;padding:0 0 18px;position:relative;}
+.ic-st:not(:last-child)::before{content:"";position:absolute;left:14px;top:28px;bottom:-2px;width:2px;background:var(--edge);}
+.ic-dot{width:28px;height:28px;border-radius:50%;background:var(--sage);color:#fff;font-weight:800;font-size:12px;display:grid;place-items:center;z-index:1;}
+.ic-st-t{font-weight:700;font-size:14.5px;margin:3px 0 3px;}
+.ic-st-d{font-size:13px;color:var(--pencil);}
+.ic-st.ic-locked .ic-dot{background:var(--edge);color:var(--pencil);}
+.ic-st.ic-locked .ic-st-t,.ic-st.ic-locked .ic-st-d{filter:blur(5px);user-select:none;}
+
+.ic-gname{display:flex;align-items:center;gap:10px;margin:6px 0 4px;justify-content:center;}
+.ic-badge{font-size:12.5px;font-weight:800;color:var(--paper);background:var(--ink);border-radius:8px;padding:5px 12px;}
+
+.ic-second{text-align:center;}
+.ic-swrap{position:relative;width:150px;height:150px;margin:6px auto 16px;}
+.ic-swrap img{width:100%;height:100%;border-radius:50%;object-fit:cover;filter:blur(11px) saturate(.7);transform:scale(1.15);}
+.ic-lk{position:absolute;inset:0;display:grid;place-items:center;color:var(--sage);}
+
+.ic-teaser{padding:40px 0 44px;background:#1C1813;position:relative;overflow:hidden;}
+.ic-teaser::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.6),transparent),radial-gradient(1.5px 1.5px at 70% 20%,#fff,transparent),radial-gradient(1px 1px at 85% 60%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 40% 75%,rgba(255,255,255,.5),transparent);}
+.ic-th{text-align:center;padding:0 26px 18px;position:relative;z-index:1;}
+.ic-th p{font-size:20px;font-weight:800;color:#F1E9DA;}
+.ic-th .ic-sub{font-size:13px;color:#9096B0;font-weight:600;margin-top:6px;}
+.ic-rail{display:flex;gap:14px;overflow-x:auto;padding:6px 26px 14px;scroll-snap-type:x mandatory;scrollbar-width:none;position:relative;z-index:1;}
+.ic-rail::-webkit-scrollbar{display:none;}
+.ic-tcard{flex:0 0 150px;scroll-snap-align:center;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:14px;padding:18px 15px;min-height:148px;position:relative;color:#F1E9DA;}
+.ic-tlock{position:absolute;top:12px;right:12px;color:var(--sage);opacity:.9;}
+.ic-tt{font-weight:800;font-size:15px;margin:26px 0 8px;}
+.ic-td{font-size:12.5px;color:#A79E8E;filter:blur(2.5px);}
+
+.ic-prod-title{font-weight:800;font-size:16px;text-align:center;}
+.ic-prod-sub{color:var(--pencil);font-weight:600;font-size:13px;margin-left:8px;}
+.ic-toc{list-style:none;display:grid;gap:10px;}
+.ic-toc li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.5;}
+.ic-toc li::before{content:"";margin-top:7px;width:5px;height:5px;border-radius:50%;background:var(--sage);flex:none;}
+.ic-toc b{font-weight:700;}
+.ic-pricebox{margin-top:20px;padding:4px 4px 0;}
+.ic-pline{display:flex;justify-content:space-between;align-items:center;font-size:15px;padding:8px 2px;}
+.ic-total{padding-top:12px;}
+.ic-tlabel{font-weight:800;font-size:16px;}
+.ic-final{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+
+.ic-disc{font-size:11.5px;color:var(--pencil);line-height:1.6;padding:26px 26px 10px;text-align:center;}
+.ic-foot-extra{padding:0 26px;}
+.ic-foot-space{height:104px;}
+
+.ic-sticky{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;z-index:60;background:linear-gradient(180deg,transparent,var(--paper) 30%);padding:30px 26px calc(18px + env(safe-area-inset-bottom,0px));}
+.ic-cap{text-align:center;font-size:12px;color:var(--pencil);margin-bottom:10px;}
+.ic-cta{display:block;width:100%;text-align:center;cursor:pointer;background:var(--ink);color:var(--paper);border:none;border-radius:14px;font-size:16.5px;font-weight:800;padding:17px;font-family:inherit;}
+
+.ic-anim{opacity:0;transform:translateY(22px) scale(.985);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1);}
+.ic-anim.in{opacity:1;transform:none;}
+@media (prefers-reduced-motion:reduce){
+  .ic-anim,.ic-line{opacity:1;transform:none;filter:none;transition:none;}
+  .ic-fill{transition:none;}
+  .ic-scrollhint svg,.ic-stars::before,.ic-stars::after{animation:none;}
+  .ic-stars{transform:none!important;}
+}
+`;
