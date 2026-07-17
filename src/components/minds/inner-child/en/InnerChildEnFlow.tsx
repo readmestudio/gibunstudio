@@ -25,6 +25,7 @@ import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getEnTypeCard } from "@/lib/minds/inner-child/en/type-cards";
 import { detectCrisisEn } from "@/lib/minds/inner-child/en/crisis-words";
 import { trackEnFunnel } from "@/lib/minds/inner-child/en/track";
+import { trackVisit } from "@/lib/minds/visit";
 
 type Phase = "landing" | "test" | "analyzing" | "report";
 
@@ -55,6 +56,14 @@ export function InnerChildEnFlow() {
   const [leadId, setLeadId] = useState<string | null>(null);
   const [fallbackInput, setFallbackInput] = useState<ScoreInput | null>(null);
   const router = useRouter();
+
+  // 광고 도착 기록 — 리드(테스트 완주)보다 한참 앞선 "분모". 이게 있어야
+  // 광고 세트(지역)별 전환율을 계산할 수 있다. 유입 파라미터가 없으면 서버가 버린다.
+  // 아래 복원 effect 와 분리한 이유: 복원되어 결과로 튕겨나가는 재방문자도
+  // 광고를 눌러 도착한 것은 사실이므로 분모에 들어가야 한다.
+  useEffect(() => {
+    trackVisit("inner_child_en");
+  }, []);
 
   // 재방문 자동 복원 — 이전에 분석을 마친 브라우저면 저장된 결과 페이지로 보낸다.
   useEffect(() => {
