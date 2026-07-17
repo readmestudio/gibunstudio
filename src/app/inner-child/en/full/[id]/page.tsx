@@ -1,9 +1,9 @@
 /**
  * /inner-child/en/full/[id] — 손으로 쓴 유료(베타) 리포트. 로그인 없이 링크로만 연다.
  *
- * [id] 는 minds_leads 의 leadId(UUID). 영어판은 자동 생성 파이프라인이 없어, 운영자가 쓴
- * 원고를 parts_map.manual_report 에서 읽어 낸다(원고는 개인정보라 코드에 두지 않는다).
- * 원고가 없는 id 면 "아직 준비 중" 안내(추측성 본문을 만들어내지 않는다).
+ * [id] 는 minds_leads 의 leadId(UUID). 이메일 요청 시 서버가 자동 생성해 parts_map.manual_report
+ * 에 저장한 리포트를 읽어 낸다(생성 실패 시 운영자 손원고로 대체 — 같은 자리·같은 스키마).
+ * 원고가 아직 없는 id 면(생성 중이거나 실패) "준비 중" 안내(추측성 본문을 만들지 않는다).
  */
 
 import type { Metadata } from "next";
@@ -50,7 +50,7 @@ function NotReadyNotice() {
   return (
     <Notice
       title="This report isn’t ready yet"
-      body="Full reports are written by hand, one at a time. If you requested yours, it’s on the way — we’ll email you the moment it’s finished."
+      body="Your full report is being generated right now. If you just requested it, give it a minute — we’ll email you the moment it’s ready."
     />
   );
 }

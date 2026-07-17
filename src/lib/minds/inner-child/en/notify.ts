@@ -21,32 +21,7 @@ import { getSavedFreeReport } from "@/lib/minds/inner-child/free-report-store";
 import { getEnTypeCard } from "@/lib/minds/inner-child/en/type-cards";
 import { getManualReport } from "@/lib/minds/inner-child/en/manual-report-store";
 import { isManualReportExpired } from "@/lib/minds/inner-child/en/manual-reports";
-
-/**
- * 고객에게 그대로 전달되는 링크는 **항상 정식 도메인**이어야 한다.
- *
- * NEXT_PUBLIC_SITE_URL 은 로컬(.env.local = localhost:3000)이나 프리뷰 값이 들어올 수 있고,
- * 실제로 Vercel prod 에 `gibunstudio.vercel.app`(전 라우트 404)이 박혀 있어서 슬랙에 찍힌
- * 리포트 링크가 전부 죽어 있었다. env 는 별도로 고쳐야 하지만, 정식 도메인이 아닌 값은
- * 여기서 무시해 같은 사고가 반복되지 않게 한다.
- */
-const CANONICAL_SITE_URL = "https://gibunstudio.com";
-
-function customerSiteUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (!raw) return CANONICAL_SITE_URL;
-  try {
-    const { hostname } = new URL(raw);
-    if (hostname === "gibunstudio.com" || hostname.endsWith(".gibunstudio.com")) {
-      return raw.replace(/\/+$/, "");
-    }
-  } catch {
-    // 파싱 불가한 값 — 정식 도메인으로 떨어진다.
-  }
-  return CANONICAL_SITE_URL;
-}
-
-const SITE_URL = customerSiteUrl();
+import { enFreeResultLink, enFullReportLink } from "@/lib/minds/inner-child/en/site-url";
 
 /** KST 타임스탬프 컨텍스트(모든 알림 하단 공통). */
 function timeContext() {
@@ -119,8 +94,8 @@ async function enLeadContext(leadId: string | null): Promise<EnLeadContext> {
   return {
     label: email ? `${email} (EN)` : "익명 방문자 (EN)",
     childName,
-    link: `${SITE_URL}/inner-child/en/r/${leadId}`,
-    fullLink: `${SITE_URL}/inner-child/en/full/${leadId}`,
+    link: enFreeResultLink(leadId),
+    fullLink: enFullReportLink(leadId),
     hasReport,
     expired,
   };
@@ -171,37 +146,72 @@ export async function notifyEnRequestClick(p: { leadId: string | null }): Promis
   );
 }
 
-/* ── ③ 이메일 제출(요청 접수) — 수동 발송 트리거 ── */
+/* ── ③ 이메일 제출(요청 접수) — 자동 생성·발송 파이프라인 시작 ── */
 export async function notifyEnReportRequest(p: {
   leadId: string;
   email: string;
 }): Promise<void> {
   const c = await enLeadContext(p.leadId || null);
+  // 원고가 이미 있으면 자동 재발송(재생성 안 함). 만료된 수동 원고는 자동 연장하지 않는다
+  // (운영자가 쓴 원고를 덮어쓰면 안 되므로) — 그 경우만 수동 연장 안내를 남긴다.
   const headline = c.expired
-    ? `✉️ *[EN] 유료 리포트 재요청* — 원고는 있는데 *7일 만료가 지났어요*. 연장이 필요합니다`
+    ? `✉️ *[EN] 유료 리포트 재요청* — 원고가 *7일 만료됨*. 자동 연장은 안 합니다(수동 원고일 수 있음)`
     : c.hasReport
-      ? `✉️ *[EN] 유료 리포트 재요청* — 원고가 이미 있어요. 아래 링크만 회신하면 끝`
-      : `✉️ *[EN] 유료 리포트 요청 접수* — 원고를 써서 링크로 보내주세요`;
+      ? `✉️ *[EN] 유료 리포트 재요청* — 이미 생성된 리포트를 자동 재발송합니다`
+      : `✉️ *[EN] 유료 리포트 요청 접수* — 자동 생성·발송을 시작합니다(완료 알림이 뒤따릅니다)`;
 
-  // 상태별로 운영자가 할 일이 다르다 — 메시지 안에 그 한 줄만 넣는다.
   const nextStep = c.expired
-    ? `• *다음 순서:* \`LEAD_ID=${p.leadId} EXTEND_ONLY=1 node scripts/put-en-manual-report.js\` → 링크 회신`
-    : c.hasReport
-      ? null
-      : `• *다음 순서:* ① Lead 로 응답 조회 → ② 원고(JSON) 작성 → ③ \`LEAD_ID=${p.leadId} REPORT_FILE=… node scripts/put-en-manual-report.js\` (배포 불필요) → ④ 링크 회신 · 절차: \`docs/EN_REPORT_DELIVERY.md\``;
+    ? `• *수동 연장:* \`LEAD_ID=${p.leadId} EXTEND_ONLY=1 node scripts/put-en-manual-report.js\` → 링크 회신`
+    : null;
 
   const linkState = c.expired
-    ? " ⏳ 만료됨(지금은 만료 안내가 뜸)"
+    ? " ⏳ 만료됨"
     : c.hasReport
-      ? " ✅ 준비됨"
-      : " ⚠️ 원고 없음(지금은 '준비 중' 안내가 뜸)";
+      ? " ✅ 준비됨(재발송)"
+      : " ⏳ 생성 중";
 
   await send(headline, `✉️ [EN] 리포트 요청: ${p.email}`, [
     `• *Email:* ${p.email}`,
     `• *Type:* ${c.childName ?? "(알 수 없음)"}`,
-    c.fullLink ? `• *보낼 링크:* ${c.fullLink}${linkState}` : null,
+    c.fullLink ? `• *링크:* ${c.fullLink}${linkState}` : null,
     c.link ? `• *Free result:* ${c.link}` : null,
     p.leadId ? `• *Lead:* \`${p.leadId}\`` : null,
     nextStep,
   ]);
+}
+
+/* ── ④ 자동 생성·발송 결과 — 성공/실패 ── */
+export async function notifyEnReportSent(p: {
+  leadId: string;
+  email: string;
+  ok: boolean;
+  reason?: string;
+}): Promise<void> {
+  const c = await enLeadContext(p.leadId || null);
+  if (p.ok) {
+    await send(
+      `✅ *[EN] 유료 리포트 자동 발송 완료* — 메일이 나갔어요`,
+      `✅ [EN] 리포트 발송 완료: ${p.email}`,
+      [
+        `• *Email:* ${p.email}`,
+        `• *Type:* ${c.childName ?? "(알 수 없음)"}`,
+        c.fullLink ? `• *링크:* ${c.fullLink}` : null,
+        p.leadId ? `• *Lead:* \`${p.leadId}\`` : null,
+      ],
+    );
+    return;
+  }
+  await send(
+    `⚠️ *[EN] 유료 리포트 자동 생성/발송 실패* — 수동 처리가 필요합니다`,
+    `⚠️ [EN] 리포트 실패: ${p.email}`,
+    [
+      `• *Email:* ${p.email}`,
+      `• *Type:* ${c.childName ?? "(알 수 없음)"}`,
+      p.reason ? `• *사유:* ${p.reason}` : null,
+      c.fullLink ? `• *링크:* ${c.fullLink}` : null,
+      p.leadId
+        ? `• *수동 대안:* ① Lead 응답 조회 → ② 원고 작성 → ③ \`LEAD_ID=${p.leadId} REPORT_FILE=… node scripts/put-en-manual-report.js\` · \`docs/EN_REPORT_DELIVERY.md\``
+        : null,
+    ],
+  );
 }

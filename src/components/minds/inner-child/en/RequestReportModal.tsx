@@ -5,7 +5,7 @@
  *
  * 해외 결제 미지원이라 결제창 대신 이메일만 받는다. 유저가 "Get the full report · $12.90"
  * 를 누르면 이 모달이 뜨고, 무료 베타테스터 선정 축하 + 이메일 입력을 받아
- * POST /api/inner-child/en/request 로 접수한다(운영자 수동 발송).
+ * POST /api/inner-child/en/request 로 접수한다(서버가 자동 생성·Resend 발송).
  *
  * 상태: "form"(축하+입력) → 제출 → "done"(접수 완료).
  */
@@ -160,7 +160,7 @@ function FormView({
         <p style={{ fontSize: 14.5, lineHeight: 1.7, color: INK.t62, margin: "12px auto 0", maxWidth: 360 }}>
           We&rsquo;re still opening up outside Korea, so payments aren&rsquo;t live yet. While we&rsquo;re in beta,
           your full report is <b style={{ color: INK.accent2, fontWeight: 700 }}>on the house</b>. Drop your email
-          and we&rsquo;ll write and send your complete report there.
+          and we&rsquo;ll generate it and send it straight there.
         </p>
       </div>
 
@@ -173,7 +173,7 @@ function FormView({
           </span>
         </div>
         <p style={{ fontFamily: INK.mono, fontSize: 10.5, color: INK.t4, textAlign: "center", margin: "8px 0 0", lineHeight: 1.6 }}>
-          Sent by email, by hand · usually within a day or two
+          Auto-generated · emailed within a few minutes
         </p>
       </div>
 
@@ -237,9 +237,9 @@ function DoneView({ email, onClose }: { email: string; onClose: () => void }) {
         Got it — you&rsquo;re on the list
       </h2>
       <p style={{ fontSize: 14.5, lineHeight: 1.75, color: INK.t62, margin: "14px auto 0", maxWidth: 360 }}>
-        We&rsquo;ll write your full Inner Child report by hand and email a private link to it at{" "}
-        <b style={{ color: INK.t82, fontWeight: 700, wordBreak: "break-all" }}>{email || "your email"}</b>,
-        usually within a day or two. The link is yours alone and stays open for 7 days. Keep an eye on your
+        We&rsquo;re generating your full Inner Child report now and emailing a private link to it at{" "}
+        <b style={{ color: INK.t82, fontWeight: 700, wordBreak: "break-all" }}>{email || "your email"}</b>{" "}
+        — it usually lands within a few minutes. The link is yours alone; reopen it anytime. Keep an eye on your
         inbox (and the spam folder, just in case).
       </p>
       <button type="button" onClick={onClose} style={{ ...btnStyle, marginTop: 24 }}>
