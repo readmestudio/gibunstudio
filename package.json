@@ -19,6 +19,8 @@
     "@supabase/supabase-js": "^2.93.3",
     "framer-motion": "^12.29.2",
     "googleapis": "^171.0.0",
+    "iztro": "^2.5.8",
+    "lunar-typescript": "^1.8.6",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
