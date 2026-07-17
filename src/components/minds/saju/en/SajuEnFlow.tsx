@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getAttribution } from "@/lib/attribution";
+import { trackVisit } from "@/lib/minds/visit";
+import { trackMetaCustom } from "@/lib/meta-pixel";
 import type { Element, SajuChart } from "@/lib/saju/types";
 
 /**
@@ -178,6 +180,12 @@ export function SajuEnFlow() {
   const [sending, setSending] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // 광고 도착 기록 — 리드(이메일 요청)보다 앞선 "분모". 광고 세트별 전환율 계산용.
+  // 유입 파라미터가 없으면 서버가 버린다.
+  useEffect(() => {
+    trackVisit("saju_en");
+  }, []);
+
   // 저장된 leadId 복구 — 새로고침/리마운트로 리드를 잃지 않게
   useEffect(() => {
     const stored = readStoredLeadId();
@@ -239,6 +247,8 @@ export function SajuEnFlow() {
 
   async function goReading() {
     setCasting(true);
+    // 테스트 시작 = 맞춤 전환 StartTest (다른 퍼널과 동일 이벤트명, content_name 으로 구분)
+    trackMetaCustom("StartTest", { content_name: "saju_en" });
     ensureLead();
     const payload = birthPayload();
     try {
