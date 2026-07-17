@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { consumeDailyBudget, clampInput } from "@/lib/llm-budget";
 import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getEnTypeCard } from "@/lib/minds/inner-child/en/type-cards";
 import {
@@ -34,14 +35,18 @@ import {
 
 const DAILY_LIMIT = Number(process.env.MINDS_LLM_DAILY_LIMIT ?? 500);
 
-/** 오늘 LLM 호출이 일일 상한 안인지 확인 + 원자적 증가. DB 오류 시 fail-open. (KR 라우트와 카운터 공유) */
+/**
+ * 오늘 LLM 호출이 일일 상한 안인지 확인 + 원자적 증가. (KR 라우트와 카운터 공유)
+ * DB RPC 실패 시 무제한 fail-open 대신 인메모리 카운터를 예비 천장으로 얹는다
+ * (DB 장애 = 비용 상한 붕괴를 막는 fail-safe 백스톱). KR 라우트와 동일.
+ */
 async function withinDailyBudget(): Promise<boolean> {
   try {
     const admin = createAdminClient();
     const { data, error } = await admin.rpc("minds_llm_bump", { p_limit: DAILY_LIMIT });
     if (error) {
       console.error("[inner-child/en/free-report] 일일 카운터 RPC 오류:", error);
-      return true;
+      return consumeDailyBudget("minds_llm_fallback", DAILY_LIMIT).allowed;
     }
     if (typeof data === "number" && data > DAILY_LIMIT) {
       console.warn(`[inner-child/en/free-report] 일일 상한(${DAILY_LIMIT}) 도달 — 폴백 사용`);
@@ -50,7 +55,7 @@ async function withinDailyBudget(): Promise<boolean> {
     return true;
   } catch (err) {
     console.error("[inner-child/en/free-report] 일일 카운터 확인 실패:", err);
-    return true;
+    return consumeDailyBudget("minds_llm_fallback", DAILY_LIMIT).allowed;
   }
 }
 
@@ -108,6 +113,18 @@ function isScoreInput(v: unknown): v is ScoreInput {
   );
 }
 
+/**
+ * SCT 자유서술을 프롬프트에 넣기 전에 필드별 길이를 캡한다(토큰 폭증 방어).
+ * SCT 는 위기(자·타해) 감지의 유일 입력이므로 위기어를 놓치지 않도록 넉넉히 1000자로 자른다.
+ */
+function clampScoreInputText(input: ScoreInput): void {
+  if (input.sct && typeof input.sct === "object") {
+    for (const key of Object.keys(input.sct) as (keyof typeof input.sct)[]) {
+      input.sct[key] = clampInput(input.sct[key], 1000);
+    }
+  }
+}
+
 export async function POST(req: NextRequest) {
   const limited = checkRateLimit(req, RATE_LIMITS.ai);
   if (limited) return limited;
@@ -125,6 +142,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request format." }, { status: 400 });
   }
   const input = b.input;
+  clampScoreInputText(input);
 
   // [0] 리드당 1회 — 이미 분석한 리드면 저장본 기준으로 응답(LLM 재호출 없음).
   if (leadId) {

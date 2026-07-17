@@ -1,10 +1,10 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { consumeDailyBudget } from "@/lib/llm-budget";
+import { consumeDailyBudget, clampInput } from "@/lib/llm-budget";
 import { computeSajuChart } from "@/lib/saju/engine";
 import { generateSajuReport } from "@/lib/saju/report";
-import { saveSajuBlob } from "@/lib/saju/report-store";
+import { getSavedSaju, saveSajuBlob } from "@/lib/saju/report-store";
 import { sendSajuReportEmail } from "@/lib/saju/email";
 import { notifySajuReportRequest, notifySajuReportSent } from "@/lib/saju/notify";
 import type { BirthInput, Gender } from "@/lib/saju/types";
@@ -30,7 +30,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DAILY_LIMIT = Number(process.env.SAJU_REPORT_DAILY_LIMIT ?? 200);
 
 export async function POST(req: NextRequest) {
-  const limited = checkRateLimit(req, RATE_LIMITS.general);
+  // LLM 을 태우는 라우트이므로 무거운 1회성 호출용 엄격 프리셋(5회/분)을 쓴다.
+  // (기존 general 60회/분은 LLM 라우트엔 지나치게 느슨했다)
+  const limited = checkRateLimit(req, RATE_LIMITS.ai);
   if (limited) return limited;
 
   let body: unknown;
@@ -54,7 +56,9 @@ export async function POST(req: NextRequest) {
   const timeIndex =
     typeof b.timeIndex === "number" && Number.isFinite(b.timeIndex) ? b.timeIndex : null;
   const gender: Gender = b.gender === "male" ? "male" : "female";
-  const concern = typeof b.concern === "string" && b.concern ? b.concern : null;
+  // 자유서술 고민 — 프롬프트에 그대로 들어가므로 길이를 캡해 토큰 폭증을 막는다.
+  const concernText = clampInput(b.concern, 1500);
+  const concern = concernText || null;
 
   const input: BirthInput = { date, timeIndex, gender };
 
@@ -108,6 +112,26 @@ export async function POST(req: NextRequest) {
       personaName: chart.persona.name,
       concern,
     });
+
+    // 중복 방지 — 같은 리드가 이미 리포트를 생성했다면 LLM 을 다시 태우지 않는다.
+    // (재제출/새로고침으로 submitEmail 이 반복돼도 비용은 1회만 발생) 이미 생성된
+    // 경우엔 링크 메일만 다시 보내 사용자가 리포트를 못 받는 일이 없게 한다.
+    if (leadId) {
+      const existing = await getSavedSaju(leadId);
+      if (existing?.report) {
+        const sent = await sendSajuReportEmail({
+          to: email,
+          leadId,
+          personaName: existing.chart.persona.name,
+          polarity: existing.chart.persona.polarity,
+        });
+        await notifySajuReportSent({
+          leadId, email, ok: sent.ok,
+          reason: sent.ok ? "already generated — 링크 재발송" : sent.reason,
+        });
+        return;
+      }
+    }
 
     // LLM 비용 방어 — 상한 도달 시 생성 스킵(요청은 슬랙에 남아 수동 처리 가능).
     const budget = consumeDailyBudget("saju_report", DAILY_LIMIT);
