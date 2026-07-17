@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getAttribution } from "@/lib/attribution";
 import type { Element, SajuChart } from "@/lib/saju/types";
 
 /**
@@ -219,7 +220,9 @@ export function SajuEnFlow() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         channel: "saju",
-        attribution: { landing_path: "/saju/en" },
+        // utm_*·fbclid 를 함께 실어야 어떤 광고가 이 리드를 데려왔는지 알 수 있다.
+        // (전역 AttributionCapture 가 sessionStorage 에 담아둔 값)
+        attribution: { ...getAttribution(), landing_path: "/saju/en" },
       }),
     })
       .then((r) => r.json())
