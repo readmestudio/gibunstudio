@@ -49,17 +49,21 @@ export async function POST(req: NextRequest) {
       ? "kakao"
       : b.channel === "inner_child"
         ? "inner_child"
-        : b.channel === "anon"
-          ? "anon"
-          : "email";
+        : b.channel === "saju"
+          ? "saju"
+          : b.channel === "anon"
+            ? "anon"
+            : "email";
 
   // 어느 테스트/퍼널에서 온 리드인가 — channel(전달수단)과 분리된 전용 태그.
   // 인서트 시점에 확정해 두면 이후 channel 이 바뀌어도(로그인 등) 출처는 고정된다.
-  // inner_child 퍼널은 channel 또는 variant 로 신호하고, 그 외는 모두 minds 퍼널.
+  // inner_child / saju 퍼널은 channel 또는 variant 로 신호하고, 그 외는 모두 minds 퍼널.
   const testType =
-    channel === "inner_child" || b.variant === "inner_child"
-      ? "inner_child"
-      : "minds";
+    channel === "saju" || b.variant === "saju"
+      ? "saju"
+      : channel === "inner_child" || b.variant === "inner_child"
+        ? "inner_child"
+        : "minds";
   let email =
     typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
   let userId: string | null = null;
@@ -78,9 +82,10 @@ export async function POST(req: NextRequest) {
     }
     userId = user.id;
     email = (user.email ?? "").trim().toLowerCase();
-  } else if (channel === "anon" || channel === "inner_child") {
+  } else if (channel === "anon" || channel === "inner_child" || channel === "saju") {
     // 익명 리드 — 연락처를 받지 않는다. email 은 비워 둔다(아래에서 null 저장).
-    // inner_child(내면 아이 퍼널)도 anon 과 동일 처리하되 channel 태그로만 구분한다.
+    // inner_child / saju 퍼널도 anon 과 동일 처리하되 channel 태그로만 구분한다.
+    // (사주는 이후 /api/saju/en/request 에서 요청 이메일로 이 행을 채운다)
     email = "";
   } else if (!EMAIL_REGEX.test(email)) {
     // email 채널이면 형식 검증.
