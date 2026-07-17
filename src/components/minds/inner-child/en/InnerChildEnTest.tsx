@@ -37,26 +37,26 @@ import type { GuardianType, ScaleValue, SctAnswers } from "@/lib/minds/inner-chi
 
 /* ─── ink-orange tokens ─── */
 const INK = {
-  backdrop: "#050506",
-  shell: "#0A0A0B",
-  surface: "#141519",
-  surface2: "#16171b",
-  border2: "#2a2b30",
-  accent: "#FF5A1F",
-  accent2: "#FF8A4C",
-  grad: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 50%,#FFB68A 100%)",
-  white: "#fff",
-  t9: "rgba(255,255,255,.9)",
-  t7: "rgba(255,255,255,.7)",
-  t62: "rgba(255,255,255,.62)",
-  t55: "rgba(255,255,255,.55)",
-  t5: "rgba(255,255,255,.5)",
-  t48: "rgba(255,255,255,.48)",
-  t42: "rgba(255,255,255,.42)",
-  t4: "rgba(255,255,255,.4)",
-  t32: "rgba(255,255,255,.32)",
-  t2: "rgba(255,255,255,.2)",
-  line: "rgba(255,255,255,.1)",
+  backdrop: "#15120D",
+  shell: "#211D18",
+  surface: "#29241D",
+  surface2: "#29241D",
+  border2: "#3A3228",
+  accent: "#A6A2E0",
+  accent2: "#8B89C4",
+  grad: "linear-gradient(135deg,#A6A2E0 0%,#8B89C4 50%,#9A97C8 100%)",
+  white: "#EDE4D3",
+  t9: "rgba(237,228,211,.9)",
+  t7: "rgba(237,228,211,.7)",
+  t62: "rgba(237,228,211,.62)",
+  t55: "rgba(237,228,211,.55)",
+  t5: "rgba(237,228,211,.5)",
+  t48: "rgba(237,228,211,.48)",
+  t42: "rgba(237,228,211,.42)",
+  t4: "rgba(237,228,211,.4)",
+  t32: "rgba(237,228,211,.32)",
+  t2: "rgba(237,228,211,.2)",
+  line: "rgba(237,228,211,.1)",
   font: "'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
   display: "'Inter','Pretendard',-apple-system,system-ui,sans-serif",
   mono: "'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace",
@@ -248,13 +248,13 @@ function Shell({ children }: { children: ReactNode }) {
         @keyframes svqRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
         .svq-scroll::-webkit-scrollbar{width:0;height:0}
         .svq-next{transition:background .2s ease,color .2s ease,border-color .2s ease}
-        .svq-next:hover{background:#FF5A1F!important;color:#fff!important;border-color:#FF5A1F!important}
+        .svq-next:hover{background:#A6A2E0!important;color:#fff!important;border-color:#A6A2E0!important}
         .svq-opt{transition:border-color .15s ease,background .15s ease,transform .15s ease}
-        .svq-opt:hover{border-color:rgba(255,138,76,.55)!important;background:#181a1f!important;transform:translateY(-1px)}
+        .svq-opt:hover{border-color:rgba(166,162,224,.55)!important;background:#181a1f!important;transform:translateY(-1px)}
         .svq-circ{transition:border-color .15s ease,color .15s ease,transform .15s ease}
-        .svq-circ:hover{border-color:#FF8A4C!important;color:#FF8A4C!important;transform:scale(1.06)}
+        .svq-circ:hover{border-color:#8B89C4!important;color:#8B89C4!important;transform:scale(1.06)}
         .svq-block{transition:border-color .15s ease,transform .15s ease}
-        .svq-block:hover{border-color:rgba(255,138,76,.5)!important;transform:translateY(-2px)}
+        .svq-block:hover{border-color:rgba(166,162,224,.5)!important;transform:translateY(-2px)}
       `}</style>
       <div
         style={{
@@ -263,9 +263,9 @@ function Shell({ children }: { children: ReactNode }) {
           width: "100%",
           maxWidth: 440,
           background: INK.shell,
-          border: `1px solid #26272c`,
+          border: `1px solid #3A3228`,
           borderRadius: 26,
-          boxShadow: "0 40px 90px -40px rgba(255,90,31,.4)",
+          boxShadow: "0 40px 90px -40px rgba(166,162,224,.4)",
           display: "flex",
           flexDirection: "column",
         }}
@@ -276,13 +276,13 @@ function Shell({ children }: { children: ReactNode }) {
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px)",
+              "linear-gradient(rgba(237,228,211,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(237,228,211,.045) 1px, transparent 1px)",
             backgroundSize: "44px 44px",
             WebkitMaskImage: "radial-gradient(ellipse at 50% 6%, #000, transparent 60%)",
             maskImage: "radial-gradient(ellipse at 50% 6%, #000, transparent 60%)",
           }}
         />
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(56% 34% at 50% 0%, rgba(255,90,31,.18), transparent 68%)" }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(56% 34% at 50% 0%, rgba(166,162,224,.18), transparent 68%)" }} />
 
         <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: "22px 24px 26px" }}>
           <Breadcrumb />
@@ -310,7 +310,7 @@ function Breadcrumb() {
 
 function LogoMark() {
   return (
-    <span style={{ position: "relative", display: "inline-block", width: 14, height: 14, borderRadius: 999, background: "linear-gradient(135deg,#FF5A1F,#FF8A4C,#FFB68A)" }}>
+    <span style={{ position: "relative", display: "inline-block", width: 14, height: 14, borderRadius: 999, background: "linear-gradient(135deg,#A6A2E0,#8B89C4,#9A97C8)" }}>
       <span style={{ position: "absolute", inset: 3.5, borderRadius: 999, background: INK.shell }} />
     </span>
   );

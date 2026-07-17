@@ -12,13 +12,13 @@ import { InnerChildEnFlow } from "@/components/minds/inner-child/en/InnerChildEn
 export const metadata: Metadata = {
   title: "Find Your Inner Child | GIBUN",
   description:
-    "Some moments shake you far harder than they should. At the root of that reaction is an old inner child. In 3 minutes, meet the child reacting the loudest in you right now. (Free)",
+    "They left you on read. It's been 20 minutes. You've already decided what it means. That's not a flaw — it's a child who learned to watch the door. Meet yours in 3 minutes. (Free)",
   robots: { index: false, follow: false },
 };
 
 export default function InnerChildEnPage() {
   return (
-    <main className="min-h-screen" style={{ background: "#050506" }}>
+    <main className="min-h-screen" style={{ background: "#15120D" }}>
       <InnerChildEnFlow />
     </main>
   );

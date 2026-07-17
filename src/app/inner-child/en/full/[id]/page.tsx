@@ -61,7 +61,7 @@ function Notice({ title, body }: { title: string; body: string }) {
     <div
       style={{
         minHeight: "100dvh",
-        background: "#050506",
+        background: "#15120D",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -74,7 +74,7 @@ function Notice({ title, body }: { title: string; body: string }) {
       <h1 style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", margin: 0 }}>
         {title}
       </h1>
-      <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,.55)", maxWidth: 360 }}>
+      <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: "rgba(237,228,211,.55)", maxWidth: 360 }}>
         {body}
       </p>
       <Link
@@ -83,8 +83,8 @@ function Notice({ title, body }: { title: string; body: string }) {
           marginTop: 28,
           display: "inline-block",
           borderRadius: 999,
-          background: "linear-gradient(135deg,#FF5A1F 0%,#FF8A4C 100%)",
-          color: "#0A0A0B",
+          background: "linear-gradient(135deg,#A6A2E0 0%,#8B89C4 100%)",
+          color: "#211D18",
           padding: "13px 24px",
           fontSize: 14.5,
           fontWeight: 800,
