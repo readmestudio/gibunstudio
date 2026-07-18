@@ -125,6 +125,21 @@ export default async function AdminHomePage() {
 
   const cards: DashboardCard[] = [
     {
+      href: "/admin/funnel",
+      eyebrow: "FUNNEL · 전환 분석",
+      title: "퍼널 분석",
+      description:
+        "사주·내면 아이·마음 배역(영/한) 퍼널별로 방문→테스트 완료→리포트·결제까지 전환을 그래프로 한눈에 봐요.",
+      stats: [
+        { label: "완주", value: leadsDone ?? 0, unit: "명" },
+        { label: "전체 시작", value: leadsTotal ?? 0, unit: "명" },
+      ],
+      subLinks: [
+        { href: "/admin/funnel?range=7", label: "최근 7일" },
+        { href: "/admin/funnel?range=all", label: "전체 기간" },
+      ],
+    },
+    {
       href: "/admin/essays",
       eyebrow: "CMS · 기분레터",
       title: "에세이 관리",
