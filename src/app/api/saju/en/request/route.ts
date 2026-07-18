@@ -7,6 +7,7 @@ import { generateSajuReport } from "@/lib/saju/report";
 import { saveSajuBlob } from "@/lib/saju/report-store";
 import { sendSajuReportEmail } from "@/lib/saju/email";
 import { notifySajuReportRequest, notifySajuReportSent } from "@/lib/saju/notify";
+import { markReportEmailStatus } from "@/lib/minds/report-email-status";
 import type { BirthInput, Gender } from "@/lib/saju/types";
 
 export const runtime = "nodejs";
@@ -134,9 +135,24 @@ export async function POST(req: NextRequest) {
         personaName: chart.persona.name,
         polarity: chart.persona.polarity,
       });
+      // 발송 도장 — 어드민/쿼리가 발송 여부를 볼 수 있게 DB 에 남긴다(saveSajuBlob 이
+      // parts_map 을 통째로 덮으므로 반드시 그 이후에 병합 기록).
+      await markReportEmailStatus(leadId, {
+        ok: sent.ok,
+        at: new Date().toISOString(),
+        reason: sent.reason,
+        messageId: sent.messageId,
+      });
       await notifySajuReportSent({ leadId, email, ok: sent.ok, reason: sent.reason });
     } catch (err) {
       console.error("[saju/en/request] 리포트 생성/발송 실패:", err);
+      if (leadId) {
+        await markReportEmailStatus(leadId, {
+          ok: false,
+          at: new Date().toISOString(),
+          reason: err instanceof Error ? err.message : "unknown",
+        });
+      }
       await notifySajuReportSent({
         leadId, email, ok: false,
         reason: err instanceof Error ? err.message : "unknown",

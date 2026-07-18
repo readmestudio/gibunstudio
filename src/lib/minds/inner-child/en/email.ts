@@ -20,14 +20,14 @@ export async function sendEnFullReportEmail(args: {
   to: string;
   leadId: string;
   childName: string;
-}): Promise<{ ok: boolean; reason?: string }> {
+}): Promise<{ ok: boolean; reason?: string; messageId?: string }> {
   const { to, leadId, childName } = args;
   // ⚠️ 정식 도메인 가드 — env 의 프리뷰/로컬 값이 죽은 링크를 발송하는 사고 방지(site-url.ts).
   const link = enFullReportLink(leadId);
 
   try {
     const resend = getResend();
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: fromAddress(),
       to,
       replyTo: process.env.INNER_CHILD_REPLY_TO ?? undefined,
@@ -66,7 +66,7 @@ export async function sendEnFullReportEmail(args: {
     if (error) {
       return { ok: false, reason: String(error.message ?? error) };
     }
-    return { ok: true };
+    return { ok: true, messageId: data?.id };
   } catch (err) {
     return { ok: false, reason: err instanceof Error ? err.message : String(err) };
   }

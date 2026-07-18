@@ -19,14 +19,14 @@ export async function sendSajuReportEmail(args: {
   leadId: string;
   personaName: string;
   polarity: string;
-}): Promise<{ ok: boolean; reason?: string }> {
+}): Promise<{ ok: boolean; reason?: string; messageId?: string }> {
   const { to, leadId, personaName, polarity } = args;
   // ⚠️ 정식 도메인 가드 — env 의 프리뷰/로컬 값이 죽은 링크를 발송하는 사고 방지
   const link = sajuReportLink(leadId);
 
   try {
     const resend = getResend();
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: fromAddress(),
       to,
       replyTo: process.env.SAJU_REPLY_TO ?? undefined,
@@ -65,7 +65,7 @@ export async function sendSajuReportEmail(args: {
     if (error) {
       return { ok: false, reason: String(error.message ?? error) };
     }
-    return { ok: true };
+    return { ok: true, messageId: data?.id };
   } catch (err) {
     return { ok: false, reason: err instanceof Error ? err.message : String(err) };
   }

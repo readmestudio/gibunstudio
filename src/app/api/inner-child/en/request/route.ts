@@ -10,6 +10,7 @@ import { isManualReportExpired, type ManualReport } from "@/lib/minds/inner-chil
 import { saveManualReport } from "@/lib/minds/inner-child/en/full-report-store";
 import { generateEnFullReport, type GeneratedFull } from "@/lib/minds/inner-child/en/full-report";
 import { sendEnFullReportEmail } from "@/lib/minds/inner-child/en/email";
+import { markReportEmailStatus } from "@/lib/minds/report-email-status";
 
 /**
  * POST /api/inner-child/en/request  (public — no login)
@@ -89,6 +90,12 @@ async function runEnReportPipeline(leadId: string, email: string): Promise<void>
     const existing = await getManualReport(leadId);
     if (existing && !isManualReportExpired(existing)) {
       const sent = await sendEnFullReportEmail({ to: email, leadId, childName: existing.child_name });
+      await markReportEmailStatus(leadId, {
+        ok: sent.ok,
+        at: new Date().toISOString(),
+        reason: sent.reason,
+        messageId: sent.messageId,
+      });
       await notifyEnReportSent({ leadId, email, ok: sent.ok, reason: sent.reason });
       return;
     }
@@ -158,9 +165,23 @@ async function runEnReportPipeline(leadId: string, email: string): Promise<void>
     }
 
     const sent = await sendEnFullReportEmail({ to: email, leadId, childName: card.child_name });
+    // 발송 도장 — saveManualReport 병합 이후이므로 안전하게 email_sent 키만 얹는다.
+    await markReportEmailStatus(leadId, {
+      ok: sent.ok,
+      at: new Date().toISOString(),
+      reason: sent.reason,
+      messageId: sent.messageId,
+    });
     await notifyEnReportSent({ leadId, email, ok: sent.ok, reason: sent.reason });
   } catch (err) {
     console.error("[inner-child/en/request] 파이프라인 예외:", err);
+    if (leadId) {
+      await markReportEmailStatus(leadId, {
+        ok: false,
+        at: new Date().toISOString(),
+        reason: err instanceof Error ? err.message : String(err),
+      }).catch(() => {});
+    }
     await notifyEnReportSent({
       leadId,
       email,

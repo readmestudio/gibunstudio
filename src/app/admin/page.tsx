@@ -57,6 +57,8 @@ export default async function AdminHomePage() {
     { count: innerChildDone },
     { count: leadsTotal },
     { count: leadsDone },
+    { count: sajuRequests },
+    { count: icEnRequests },
   ] = await Promise.all([
     admin
       .from("workbook_waitlist")
@@ -85,7 +87,19 @@ export default async function AdminHomePage() {
       .from("minds_leads")
       .select("*", { count: "exact", head: true })
       .not("parts_map", "is", null),
+    // 리포트 신청자(영어 퍼널) — 이메일=리포트 요청 모델만.
+    admin
+      .from("minds_leads")
+      .select("*", { count: "exact", head: true })
+      .eq("test_type", "saju")
+      .not("email", "is", null),
+    admin
+      .from("minds_leads")
+      .select("*", { count: "exact", head: true })
+      .eq("landing_path", "/inner-child/en")
+      .not("email", "is", null),
   ]);
+  const reportRequestTotal = (sajuRequests ?? 0) + (icEnRequests ?? 0);
 
   // 결제완료(confirmed) 금액 합계 — 4개 결제 테이블을 합산해 환불 카드에 보여준다.
   const PAYMENT_TABLES = [
@@ -176,6 +190,18 @@ export default async function AdminHomePage() {
       stats: [
         { label: "완주", value: innerChildDone ?? 0, unit: "명" },
         { label: "전체 시작", value: innerChildTotal ?? 0, unit: "명" },
+      ],
+    },
+    {
+      href: "/admin/report-requests",
+      eyebrow: "REPORT · 영어 퍼널",
+      title: "리포트 신청자",
+      description:
+        "영어 퍼널(K-Saju·Inner Child)에서 이메일로 리포트를 신청한 사람과, 각 건의 리포트 생성·메일 발송 여부를 확인해요.",
+      stats: [{ label: "신청", value: reportRequestTotal, unit: "명" }],
+      subLinks: [
+        { href: "/admin/report-requests?f=saju", label: "K-Saju만 보기" },
+        { href: "/admin/report-requests?f=innerchild", label: "Inner Child만 보기" },
       ],
     },
     {
