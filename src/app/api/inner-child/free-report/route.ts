@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { consumeDailyBudget, clampInput } from "@/lib/llm-budget";
 import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
 import { getTypeCard } from "@/lib/minds/inner-child/type-cards";
 import {
@@ -37,7 +38,14 @@ import {
 /** 내면 아이 무료 LLM 분석의 전역 일일 호출 상한(비용 천장). /minds 와 카운터 공유. */
 const DAILY_LIMIT = Number(process.env.MINDS_LLM_DAILY_LIMIT ?? 500);
 
-/** 오늘 LLM 호출이 일일 상한 안인지 확인 + 원자적 증가. DB 오류 시 fail-open. */
+/**
+ * 오늘 LLM 호출이 일일 상한 안인지 확인 + 원자적 증가.
+ *
+ * DB RPC(정확한 전역 카운터)가 실패하면 예전엔 무제한 fail-open 이었다 — DB 장애가
+ * 곧 비용 상한 붕괴로 이어졌다. 이제는 인메모리 카운터(consumeDailyBudget)를 예비
+ * 천장으로 얹어, DB 가 죽어도 (인스턴스 수 × DAILY_LIMIT) 선에서 폭주가 멈춘다.
+ * 정상 사용자는 여전히 서비스를 받고, 악용·장애만 막힌다.
+ */
 async function withinDailyBudget(): Promise<boolean> {
   try {
     const admin = createAdminClient();
@@ -46,7 +54,7 @@ async function withinDailyBudget(): Promise<boolean> {
     });
     if (error) {
       console.error("[inner-child/free-report] 일일 카운터 RPC 오류:", error);
-      return true; // fail-open
+      return consumeDailyBudget("minds_llm_fallback", DAILY_LIMIT).allowed; // fail-safe 백스톱
     }
     if (typeof data === "number" && data > DAILY_LIMIT) {
       console.warn(`[inner-child/free-report] 일일 상한(${DAILY_LIMIT}) 도달 — 폴백 사용`);
@@ -55,7 +63,7 @@ async function withinDailyBudget(): Promise<boolean> {
     return true;
   } catch (err) {
     console.error("[inner-child/free-report] 일일 카운터 확인 실패:", err);
-    return true; // fail-open
+    return consumeDailyBudget("minds_llm_fallback", DAILY_LIMIT).allowed; // fail-safe 백스톱
   }
 }
 
@@ -98,6 +106,19 @@ function flattenAnswers(input: ScoreInput): FlatAnswer[] {
   return out;
 }
 
+/**
+ * SCT 자유서술을 프롬프트에 넣기 전에 필드별 길이를 캡한다(토큰 폭증 방어).
+ * SCT 는 위기(자·타해) 감지의 유일 입력이므로, 위기어를 놓치지 않도록 넉넉히
+ * 1000자로 자른다(위기 신호는 짧다). 정상 응답은 수십~수백 자라 영향 없음.
+ */
+function clampScoreInputText(input: ScoreInput): void {
+  if (input.sct && typeof input.sct === "object") {
+    for (const key of Object.keys(input.sct) as (keyof typeof input.sct)[]) {
+      input.sct[key] = clampInput(input.sct[key], 1000);
+    }
+  }
+}
+
 /** 요청 본문이 최소한의 ScoreInput 형태인지 가볍게 확인. */
 function isScoreInput(v: unknown): v is ScoreInput {
   if (!v || typeof v !== "object") return false;
@@ -122,12 +143,14 @@ export async function POST(req: NextRequest) {
   const b = (body ?? {}) as Record<string, unknown>;
   const leadId = typeof b.leadId === "string" ? b.leadId : "";
   // 고민 자유서술(텍스트) — 채점 무관, blob 최상위에 그대로 저장한다. 결과 '고민 카드' 되돌려주기용.
-  const concern = typeof b.concern === "string" ? b.concern.trim() : "";
+  // 프롬프트/저장에 들어가므로 길이를 캡해 토큰 폭증을 막는다.
+  const concern = clampInput(b.concern, 1500);
 
   if (!isScoreInput(b.input)) {
     return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
   }
   const input = b.input;
+  clampScoreInputText(input);
 
   // [0] 리드당 1회 — 이미 분석한 리드면 저장본 기준으로 응답(LLM 재호출 없음).
   if (leadId) {

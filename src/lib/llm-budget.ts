@@ -59,6 +59,26 @@ export interface DailyBudgetResult {
  * // ... LLM 호출
  * ```
  */
+/**
+ * 자유서술 입력을 프롬프트에 넣기 전에 안전 길이로 자른다(토큰 폭증 방어).
+ *
+ * 왜 필요한가:
+ * - LLM 비용은 입력 토큰 수에 비례한다. 사용자가 수십 KB짜리 글을 붙여넣으면
+ *   Rate Limit·일일상한을 다 통과한 "정상 1회 호출"이라도 단가가 폭증한다.
+ * - 심리 자유서술은 길어야 수백 자면 충분하므로, 넉넉한 상한(기본 2000자)을
+ *   넘기면 조용히 잘라낸다. 정상 사용자는 영향받지 않고, 악용만 막힌다.
+ *
+ * null/undefined/비문자열은 빈 문자열로 정규화한다.
+ *
+ * @param text     원본 입력 (null 가능)
+ * @param maxChars 최대 문자 수 (기본 2000)
+ */
+export function clampInput(text: unknown, maxChars = 2000): string {
+  if (typeof text !== "string") return "";
+  const trimmed = text.trim();
+  return trimmed.length > maxChars ? trimmed.slice(0, maxChars) : trimmed;
+}
+
 export function consumeDailyBudget(name: string, limit: number): DailyBudgetResult {
   const day = todayKey();
   const existing = counters.get(name);
