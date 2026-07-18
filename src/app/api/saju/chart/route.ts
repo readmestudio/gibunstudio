@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { computeSajuChart } from "@/lib/saju/engine";
+import { notifySajuTestStart } from "@/lib/saju/notify";
 import type { BirthInput, Gender } from "@/lib/saju/types";
 
 export const runtime = "nodejs";
@@ -31,6 +32,12 @@ export async function POST(req: Request) {
     const input: BirthInput = { date, timeIndex, gender };
 
     const chart = computeSajuChart(input);
+
+    // 테스트 시작 = 이 라우트 도달 시점. 슬랙 "시작" 종을 울린다(저장 없음, fire-and-forget).
+    after(async () => {
+      await notifySajuTestStart({ date, timeIndex, gender });
+    });
+
     return NextResponse.json({ chart });
   } catch {
     return NextResponse.json({ error: "compute_failed" }, { status: 500 });

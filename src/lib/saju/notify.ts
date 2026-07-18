@@ -34,6 +34,20 @@ async function post(headline: string, lines: Array<string | null>): Promise<void
   }
 }
 
+/** 테스트 시작(생년월일 입력 후 명반 열기) — 아직 익명, 이메일 전 */
+export async function notifySajuTestStart(args: {
+  date: string;
+  gender: "male" | "female";
+  timeIndex: number | null;
+}): Promise<void> {
+  const { date, gender, timeIndex } = args;
+  await post("🔮 *[SAJU] 테스트 시작*", [
+    `• 생년월일: ${date}`,
+    `• 성별: ${gender === "male" ? "남" : "여"}`,
+    `• 태어난 시: ${timeIndex === null ? "모름" : `${timeIndex}시 인덱스`}`,
+  ]);
+}
+
 /** 이메일 제출(요청 접수) — 생성 파이프라인 시작 */
 export async function notifySajuReportRequest(args: {
   leadId: string;
