@@ -6,7 +6,8 @@
  * KR notify.ts / track 라우트는 건드리지 않는다(무회귀) — EN 은 전용 라우트로 분리.
  *
  * 단계:
- *   ⓪ test_start     — 랜딩 "Take the free 3-min test" 클릭
+ *   ⓪ test_start      — 랜딩 "Take the free 3-min test" 클릭
+ *   ⓪½ free_report_ready — 설문 완료·무료 리포트 생성(리포트가 열린 순간, 서버 권위 신호)
  *   ① reached_paywall — 무료 리포트를 다 읽고 잠금(페이월) 도달
  *   ② request_click   — "Request the full report · $9.90" 클릭(요청 모달 오픈)
  *   ③ report_request  — 이메일 제출(실제 요청 접수) ← 가장 중요, 수동 발송 트리거
@@ -123,6 +124,31 @@ export async function notifyEnTestStart(p: { leadId: string | null }): Promise<v
     `🌍 *[EN] 테스트 시작* — "Take the free 3-min test" 클릭`,
     `🌍 [EN] 테스트 시작: ${c.label}`,
     [`• ${c.label}`],
+  );
+}
+
+/* ── ⓪½ 무료 리포트 생성(설문 완료) — 시작과 페이월 사이의 공백을 메운다 ──
+ * test_start(브라우저)와 reached_paywall(브라우저 스크롤) 사이엔 신호가 없었다.
+ * 이 알림은 설문을 끝내야만 호출되는 서버 라우트(free-report)에서 발사되므로,
+ * "설문을 안 끝냄" vs "끝내고 리포트를 안 읽음" 을 슬랙만으로 구분하게 해준다.
+ * 위기 응답도 설문 완료지만 페이월로 안 가므로(전문기관 안내) 🆘 로 따로 표기한다. */
+export async function notifyEnFreeReportReady(p: {
+  leadId: string | null;
+  crisis?: boolean;
+}): Promise<void> {
+  const c = await enLeadContext(p.leadId);
+  if (p.crisis) {
+    await send(
+      `🆘 *[EN] 무료 리포트(위기 감지)* — 설문 완료·전문기관 안내 렌더(LLM 스킵)`,
+      `🆘 [EN] 무료 리포트(위기): ${c.label}`,
+      [`• ${c.label}`, c.link ? `• ${c.link}` : null],
+    );
+    return;
+  }
+  await send(
+    `📖 *[EN] 무료 리포트 생성* — 설문 완료, 리포트가 열렸어요`,
+    `📖 [EN] 무료 리포트 생성: ${c.label}`,
+    [`• ${c.label}`, c.childName ? `• *Type:* ${c.childName}` : null, c.link ? `• ${c.link}` : null],
   );
 }
 

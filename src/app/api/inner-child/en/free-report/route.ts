@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { chatCompletion, safeJsonParse } from "@/lib/gemini-client";
+import { notifyEnFreeReportReady } from "@/lib/minds/inner-child/en/notify";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { computeScore, type ScoreInput } from "@/lib/minds/inner-child/scoring";
@@ -178,6 +179,8 @@ export async function POST(req: NextRequest) {
         console.error("[inner-child/en/free-report] 위기 블롭 저장 실패:", err);
       }
     }
+    // 설문 완료(위기) — 페이월엔 안 가므로 🆘 로 따로 알린다. fire-and-forget.
+    after(() => notifyEnFreeReportReady({ leadId: leadId || null, crisis: true }));
     return NextResponse.json({ ok: true, crisis: true });
   }
 
@@ -208,6 +211,9 @@ export async function POST(req: NextRequest) {
       console.error("[inner-child/en/free-report] 리드 UPDATE 실패:", err);
     }
   }
+
+  // 설문 완료·무료 리포트 생성 — 시작↔페이월 사이 공백을 메우는 신호. fire-and-forget.
+  after(() => notifyEnFreeReportReady({ leadId: leadId || null }));
 
   return NextResponse.json({ ok: true, crisis: false });
 }
